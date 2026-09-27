@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -30,7 +31,6 @@ fun LoginScreen(
     onBack: () -> Unit,
     onSuccess: (String) -> Unit
 ) {
-
     var email by remember {
         mutableStateOf("")
     }
@@ -83,8 +83,7 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
             label = {
                 Text(
-                    "البريد الإلكتروني",
-                    color = LoginGold
+                    "البريد الإلكتروني"
                 )
             }
         )
@@ -101,8 +100,7 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
             label = {
                 Text(
-                    "كلمة المرور",
-                    color = LoginGold
+                    "كلمة المرور"
                 )
             }
         )
@@ -114,6 +112,11 @@ fun LoginScreen(
         Button(
             onClick = {
 
+                if (email.isBlank() || password.isBlank()) {
+                    message = "أدخل البريد الإلكتروني وكلمة المرور."
+                    return@Button
+                }
+
                 loading = true
                 message = ""
 
@@ -121,16 +124,13 @@ fun LoginScreen(
 
                     try {
 
-                        val result =
-                            loginToSupabase(
-                                email.trim(),
-                                password
-                            )
+                        val result = loginToSupabase(
+                            email.trim(),
+                            password
+                        )
 
                         val token =
-                            result.getString(
-                                "access_token"
-                            )
+                            result.getString("access_token")
 
                         val userId =
                             result
@@ -167,7 +167,7 @@ fun LoginScreen(
         ) {
 
             Text(
-                if (loading)
+                text = if (loading)
                     "جاري الدخول..."
                 else
                     "دخول"
@@ -183,7 +183,7 @@ fun LoginScreen(
         ) {
 
             Text(
-                "العودة",
+                text = "العودة",
                 color = LoginGold
             )
         }
@@ -192,3 +192,78 @@ fun LoginScreen(
 
             Spacer(
                 modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = message,
+                color = Color.Red
+            )
+        }
+    }
+}
+
+fun loginToSupabase(
+    email: String,
+    password: String
+): JSONObject {
+
+    val url = URL(
+        "$LOGIN_URL/auth/v1/token?grant_type=password"
+    )
+
+    val connection =
+        url.openConnection() as HttpURLConnection
+
+    connection.requestMethod = "POST"
+    connection.doOutput = true
+
+    connection.setRequestProperty(
+        "apikey",
+        LOGIN_KEY
+    )
+
+    connection.setRequestProperty(
+        "Content-Type",
+        "application/json"
+    )
+
+    val body =
+        JSONObject()
+            .put("email", email)
+            .put("password", password)
+            .toString()
+
+    connection.outputStream.use { output ->
+
+        output.write(
+            body.toByteArray(Charsets.UTF_8)
+        )
+    }
+
+    val code =
+        connection.responseCode
+
+    if (code !in 200..299) {
+
+        val error =
+            connection.errorStream
+                ?.bufferedReader()
+                ?.readText()
+                ?: "خطأ في تسجيل الدخول"
+
+        connection.disconnect()
+
+        throw Exception(
+            "HTTP $code: $error"
+        )
+    }
+
+    val response =
+        connection.inputStream
+            .bufferedReader()
+            .readText()
+
+    connection.disconnect()
+
+    return JSONObject(response)
+}
