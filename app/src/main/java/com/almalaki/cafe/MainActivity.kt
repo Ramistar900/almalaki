@@ -1,23 +1,29 @@
 package com.almalaki.cafe
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.net.URL
 
 private val Gold = Color(0xFFD4AF37)
 private val Black = Color(0xFF050505)
@@ -78,7 +84,6 @@ fun RoyalCoffeeApp() {
                     darkMode = darkMode,
 
                     onTheme = {
-
                         darkMode = !darkMode
 
                         prefs.edit()
@@ -103,7 +108,6 @@ fun RoyalCoffeeApp() {
                     },
 
                     onSuccess = { newToken ->
-
                         token = newToken
                         screen = "admin"
                     }
@@ -116,7 +120,6 @@ fun RoyalCoffeeApp() {
                     accessToken = token,
 
                     onLogout = {
-
                         token = ""
                         screen = "customer"
                     }
@@ -150,19 +153,13 @@ fun CustomerScreen(
         Thread {
 
             try {
-
                 products = loadProducts()
-
             } catch (e: Exception) {
-
                 message =
-                    e.message
-                        ?: "تعذر تحميل القائمة."
-
-            } finally {
-
-                loading = false
+                    e.message ?: "تعذر تحميل القائمة."
             }
+
+            loading = false
 
         }.start()
     }
@@ -184,9 +181,9 @@ fun CustomerScreen(
             .fillMaxSize()
             .background(background)
             .padding(
-                start = 18.dp,
-                end = 18.dp,
-                top = 25.dp
+                start = 16.dp,
+                end = 16.dp,
+                top = 22.dp
             )
     ) {
 
@@ -203,9 +200,9 @@ fun CustomerScreen(
                 Text(
                     text = "Royal",
                     color = Gold,
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.Light,
-                    fontFamily = FontFamily.Cursive
+                    fontSize = 46.sp,
+                    fontFamily = FontFamily.Cursive,
+                    fontWeight = FontWeight.Light
                 )
 
                 Text(
@@ -222,29 +219,22 @@ fun CustomerScreen(
 
                 Text(
                     text =
-                        if (darkMode)
-                            "☀"
-                        else
-                            "🌙",
-
-                    fontSize = 22.sp,
-                    color = Gold
+                        if (darkMode) "☀"
+                        else "🌙",
+                    color = Gold,
+                    fontSize = 23.sp
                 )
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
         Text(
             text = "طعمٌ يستحق التجربة",
             color = textColor,
-            fontSize = 16.sp
+            fontSize = 15.sp
         )
 
         Spacer(
-            modifier = Modifier.height(18.dp)
+            modifier = Modifier.height(10.dp)
         )
 
         HorizontalDivider(
@@ -252,59 +242,57 @@ fun CustomerScreen(
         )
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(10.dp)
         )
 
-        if (loading) {
+        when {
 
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment =
-                    Alignment.Center
-            ) {
+            loading -> {
 
-                CircularProgressIndicator(
-                    color = Gold
-                )
-            }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
 
-        } else if (message.isNotEmpty()) {
-
-            Text(
-                text = message,
-                color = Color.Red,
-                modifier = Modifier.padding(8.dp)
-            )
-
-        } else if (products.isEmpty()) {
-
-            Text(
-                text = "لا توجد منتجات حاليًا.",
-                color = textColor,
-                fontSize = 17.sp
-            )
-
-        } else {
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement =
-                    Arrangement.spacedBy(10.dp)
-            ) {
-
-                items(products) { product ->
-
-                    ProductRow(
-                        product = product,
-                        textColor = textColor
+                    CircularProgressIndicator(
+                        color = Gold
                     )
                 }
             }
-        }
 
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
+            message.isNotEmpty() -> {
+
+                Text(
+                    text = message,
+                    color = Color.Red
+                )
+            }
+
+            else -> {
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.weight(1f),
+                    contentPadding =
+                        PaddingValues(bottom = 10.dp),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(10.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(10.dp)
+                ) {
+
+                    items(products) { product ->
+
+                        ProductCard(
+                            product = product
+                        )
+                    }
+                }
+            }
+        }
 
         OutlinedButton(
             onClick = onOwner,
@@ -312,7 +300,7 @@ fun CustomerScreen(
         ) {
 
             Text(
-                text = "دخول المالك",
+                text = "👑 دخول المالك",
                 color = Gold
             )
         }
@@ -320,59 +308,149 @@ fun CustomerScreen(
 }
 
 @Composable
-fun ProductRow(
-    product: Product,
-    textColor: Color
+fun ProductCard(
+    product: Product
 ) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
 
         colors = CardDefaults.cardColors(
-            containerColor =
-                Color(0xFF101010)
+            containerColor = Color(0xFF111111)
         )
     ) {
 
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(8.dp),
 
-            horizontalArrangement =
-                Arrangement.SpaceBetween,
-
-            verticalAlignment =
-                Alignment.CenterVertically
+            horizontalAlignment =
+                Alignment.CenterHorizontally
         ) {
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            if (product.imageUrl.isNotBlank()) {
 
-                Text(
-                    text = product.name,
-                    color = textColor,
-                    fontSize = 19.sp,
-                    fontWeight =
-                        FontWeight.SemiBold
+                RemoteProductImage(
+                    url = product.imageUrl
                 )
 
-                if (product.category.isNotBlank()) {
+            } else {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(
+                            Color(0xFF1C1C1C)
+                        ),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
 
                     Text(
-                        text = product.category,
+                        text = "Royal",
                         color = Gold,
-                        fontSize = 14.sp
+                        fontSize = 24.sp,
+                        fontFamily = FontFamily.Cursive
                     )
                 }
             }
 
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = product.name,
+                color = Cream,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            if (product.category.isNotBlank()) {
+
+                Text(
+                    text = product.category,
+                    color = Gold,
+                    fontSize = 13.sp
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
             Text(
                 text = formatPrice(product.price),
                 color = Gold,
-                fontSize = 17.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun RemoteProductImage(
+    url: String
+) {
+
+    var bitmap by remember(url) {
+        mutableStateOf<android.graphics.Bitmap?>(null)
+    }
+
+    LaunchedEffect(url) {
+
+        Thread {
+
+            try {
+
+                val stream =
+                    URL(url).openStream()
+
+                val loaded =
+                    BitmapFactory.decodeStream(stream)
+
+                stream.close()
+
+                bitmap = loaded
+
+            } catch (_: Exception) {
+                bitmap = null
+            }
+
+        }.start()
+    }
+
+    if (bitmap != null) {
+
+        Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = "صورة المنتج",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            contentScale = ContentScale.Crop
+        )
+
+    } else {
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .background(
+                    Color(0xFF1C1C1C)
+                ),
+            contentAlignment =
+                Alignment.Center
+        ) {
+
+            Text(
+                text = "جاري تحميل الصورة...",
+                color = Gold,
+                fontSize = 13.sp
             )
         }
     }
