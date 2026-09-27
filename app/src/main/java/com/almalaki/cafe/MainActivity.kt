@@ -4,21 +4,54 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,9 +70,9 @@ private const val OWNER_ID =
     "ab88911b-6713-4cf3-84be-5a1d9128281a"
 
 private val Gold = Color(0xFFD4AF37)
-private val BrightGold = Color(0xFFFFE9A6)
+private val BrightGold = Color(0xFFFFE8A0)
 private val Black = Color(0xFF050505)
-private val DarkSurface = Color(0xFF121212)
+private val DarkSurface = Color(0xFF111111)
 private val DarkCard = Color(0xFF181818)
 private val Cream = Color(0xFFF5F0E5)
 private val LightBackground = Color(0xFFF7F2E8)
@@ -96,42 +129,35 @@ fun RoyalCoffeeApp() {
     val textColor =
         if (darkMode) Cream else DarkText
 
-    val surfaceColor =
-        if (darkMode) DarkSurface else LightCard
-
-    val colorScheme =
-        if (darkMode) {
-            darkColorScheme(
-                primary = Gold,
-                secondary = BrightGold,
-                background = background,
-                surface = surfaceColor,
-                onBackground = textColor,
-                onSurface = textColor
-            )
-        } else {
-            lightColorScheme(
-                primary = Gold,
-                secondary = Gold,
-                background = background,
-                surface = surfaceColor,
-                onBackground = textColor,
-                onSurface = textColor
-            )
-        }
-
     MaterialTheme(
-        colorScheme = colorScheme
+        colorScheme =
+            if (darkMode) {
+                darkColorScheme(
+                    primary = Gold,
+                    secondary = BrightGold,
+                    background = background,
+                    surface = DarkSurface,
+                    onBackground = textColor,
+                    onSurface = textColor
+                )
+            } else {
+                lightColorScheme(
+                    primary = Gold,
+                    secondary = Gold,
+                    background = background,
+                    surface = LightCard,
+                    onBackground = textColor,
+                    onSurface = textColor
+                )
+            }
     ) {
 
         when (screen) {
 
             "customer" -> {
-
                 CustomerScreen(
                     darkMode = darkMode,
                     onToggleTheme = {
-
                         darkMode = !darkMode
 
                         preferences.edit()
@@ -148,14 +174,12 @@ fun RoyalCoffeeApp() {
             }
 
             "login" -> {
-
                 LoginScreen(
                     darkMode = darkMode,
                     onBack = {
                         screen = "customer"
                     },
                     onLoginSuccess = { token ->
-
                         accessToken = token
                         screen = "admin"
                     }
@@ -163,12 +187,10 @@ fun RoyalCoffeeApp() {
             }
 
             "admin" -> {
-
                 AdminScreen(
                     darkMode = darkMode,
                     accessToken = accessToken,
                     onLogout = {
-
                         accessToken = ""
                         screen = "customer"
                     }
@@ -183,14 +205,14 @@ fun RoyalTitle(
     darkMode: Boolean
 ) {
 
-    val infiniteTransition =
+    val transition =
         rememberInfiniteTransition(
             label = "goldShine"
         )
 
-    val position by infiniteTransition.animateFloat(
-        initialValue = -1.5f,
-        targetValue = 1.5f,
+    val shinePosition by transition.animateFloat(
+        initialValue = -600f,
+        targetValue = 900f,
         animationSpec =
             infiniteRepeatable(
                 animation =
@@ -200,10 +222,10 @@ fun RoyalTitle(
                     ),
                 repeatMode = RepeatMode.Restart
             ),
-        label = "shinePosition"
+        label = "shine"
     )
 
-    val textBrush =
+    val goldBrush =
         Brush.linearGradient(
             colors = listOf(
                 Gold,
@@ -211,35 +233,34 @@ fun RoyalTitle(
                 BrightGold,
                 Color.White,
                 BrightGold,
-                Gold,
                 Gold
             ),
             start = Offset(
-                position * 500f,
+                shinePosition,
                 0f
             ),
             end = Offset(
-                position * 500f + 500f,
+                shinePosition + 400f,
                 100f
             )
         )
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Text(
             text = "Royal Coffee",
             fontSize = 38.sp,
             fontWeight = FontWeight.Bold,
-            style = androidx.compose.ui.text.TextStyle(
-                brush = textBrush
+            style = TextStyle(
+                brush = goldBrush
             )
         )
 
         Spacer(
-            Modifier.height(4.dp)
+            modifier = Modifier.height(5.dp)
         )
 
         Text(
@@ -303,7 +324,7 @@ fun CustomerScreen(
         mutableStateOf(true)
     }
 
-    var error by remember {
+    var errorMessage by remember {
         mutableStateOf("")
     }
 
@@ -312,19 +333,11 @@ fun CustomerScreen(
         Thread {
 
             try {
-
-                val result =
-                    loadProducts()
-
-                products = result
-                error = ""
-
+                products = loadProducts()
+                errorMessage = ""
             } catch (e: Exception) {
-
-                error =
-                    e.message
-                        ?: "تعذر تحميل المنتجات."
-
+                errorMessage =
+                    e.message ?: "تعذر تحميل المنتجات."
             }
 
             loading = false
@@ -332,7 +345,7 @@ fun CustomerScreen(
         }.start()
     }
 
-    val filtered =
+    val filteredProducts =
         if (category == "الكل") {
             products
         } else {
@@ -359,181 +372,4 @@ fun CustomerScreen(
                 Arrangement.spacedBy(12.dp)
         ) {
 
-            item {
-
-                RoyalTitle(
-                    darkMode = darkMode
-                )
-
-                Spacer(
-                    Modifier.height(14.dp)
-                )
-
-                ThemeButton(
-                    darkMode = darkMode,
-                    onClick = onToggleTheme
-                )
-
-                Spacer(
-                    Modifier.height(10.dp)
-                )
-
-                OutlinedButton(
-                    onClick = onOwnerLogin,
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            contentColor = Gold
-                        ),
-                    border =
-                        androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            Gold
-                        )
-                ) {
-
-                    Text("دخول المالك")
-                }
-
-                Spacer(
-                    Modifier.height(14.dp)
-                )
-            }
-
-            item {
-
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(5.dp)
-                ) {
-
-                    listOf(
-                        "الكل",
-                        "قهوة",
-                        "بارد",
-                        "عصائر",
-                        "حلويات"
-                    ).forEach {
-
-                        FilterChip(
-                            selected =
-                                category == it,
-                            onClick = {
-                                category = it
-                            },
-                            label = {
-                                Text(it)
-                            },
-                            colors =
-                                FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor =
-                                        Gold,
-                                    selectedLabelColor =
-                                        Black,
-                                    labelColor =
-                                        if (darkMode)
-                                            Cream
-                                        else
-                                            DarkText
-                                )
-                        )
-                    }
-                }
-            }
-
-            if (loading) {
-
-                item {
-
-                    Text(
-                        "جاري تحميل المنتجات...",
-                        color =
-                            if (darkMode)
-                                Cream
-                            else
-                                DarkText
-                    )
-                }
-
-            } else if (error.isNotEmpty()) {
-
-                item {
-
-                    Text(
-                        error,
-                        color = Color.Red
-                    )
-                }
-
-            } else {
-
-                items(filtered) { product ->
-
-                    ProductCard(
-                        product = product,
-                        darkMode = darkMode
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProductCard(
-    product: Product,
-    darkMode: Boolean
-) {
-
-    val cardColor =
-        if (darkMode)
-            DarkCard
-        else
-            LightCard
-
-    Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .border(
-                    1.dp,
-                    Gold,
-                    RoundedCornerShape(14.dp)
-                ),
-        shape =
-            RoundedCornerShape(14.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = cardColor
-            )
-    ) {
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-
-            Column(
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-
-                Text(
-                    product.name,
-                    color = Gold,
-                    fontSize = 20.sp,
-                    fontWeight =
-                        FontWeight.Bold
-                )
-
-                Text(
-                    product.category,
-                    color =
-                        if (
+           
