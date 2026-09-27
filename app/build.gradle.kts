@@ -12,8 +12,8 @@ android {
         applicationId = "com.almalaki.cafe"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     compileOptions {
@@ -33,4 +33,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.7.8")
     implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
     implementation("androidx.compose.material3:material3:1.3.1")
+
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.2.1"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
 }
