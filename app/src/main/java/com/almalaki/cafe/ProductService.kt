@@ -80,8 +80,13 @@ fun loadProducts(): List<Product> {
             Product(
                 id = item.getInt("id"),
                 name = item.getString("name"),
-                category = item.getString("category"),
-                price = item.getDouble("price"),
+                category =
+                    item.optString(
+                        "category",
+                        ""
+                    ),
+                price =
+                    item.getDouble("price"),
                 imageUrl =
                     item.optString(
                         "image_url",
@@ -102,10 +107,9 @@ fun addProduct(
     imageUrl: String
 ) {
 
-    val url =
-        URL(
-            "$SUPABASE_URL/rest/v1/products"
-        )
+    val url = URL(
+        "$SUPABASE_URL/rest/v1/products"
+    )
 
     val connection =
         url.openConnection() as HttpURLConnection
@@ -134,16 +138,39 @@ fun addProduct(
     )
 
     val body =
-        JSONObject()
-            .put("name", name)
-            .put("category", category)
-            .put("price", price)
-            .put("image_url", imageUrl)
-            .toString()
+        JSONObject().apply {
+
+            put(
+                "name",
+                name.trim()
+            )
+
+            put(
+                "price",
+                price
+            )
+
+            put(
+                "category",
+                category.trim()
+            )
+
+            put(
+                "image_url",
+                imageUrl
+            )
+
+            put(
+                "description",
+                name.trim()
+            )
+        }.toString()
 
     connection.outputStream.use {
         it.write(
-            body.toByteArray()
+            body.toByteArray(
+                Charsets.UTF_8
+            )
         )
     }
 
@@ -173,10 +200,9 @@ fun deleteProduct(
     id: Int
 ) {
 
-    val url =
-        URL(
-            "$SUPABASE_URL/rest/v1/products?id=eq.$id"
-        )
+    val url = URL(
+        "$SUPABASE_URL/rest/v1/products?id=eq.$id"
+    )
 
     val connection =
         url.openConnection() as HttpURLConnection
