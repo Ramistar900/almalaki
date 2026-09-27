@@ -1,16 +1,25 @@
 package com.almalaki.cafe
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONArray
@@ -27,9 +36,15 @@ private const val SUPABASE_KEY =
 private const val OWNER_ID =
     "ab88911b-6713-4cf3-84be-5a1d9128281a"
 
-private val Black = Color(0xFF0B0B0B)
 private val Gold = Color(0xFFD4AF37)
+private val BrightGold = Color(0xFFFFE9A6)
+private val Black = Color(0xFF050505)
+private val DarkSurface = Color(0xFF121212)
+private val DarkCard = Color(0xFF181818)
 private val Cream = Color(0xFFF5F0E5)
+private val LightBackground = Color(0xFFF7F2E8)
+private val LightCard = Color(0xFFFFFFFF)
+private val DarkText = Color(0xFF171717)
 
 data class Product(
     val id: Int,
@@ -44,13 +59,28 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            AlmalakiApp()
+            RoyalCoffeeApp()
         }
     }
 }
 
 @Composable
-fun AlmalakiApp() {
+fun RoyalCoffeeApp() {
+
+    val context = LocalContext.current
+
+    val preferences = remember {
+        context.getSharedPreferences(
+            "royal_coffee_settings",
+            Context.MODE_PRIVATE
+        )
+    }
+
+    var darkMode by remember {
+        mutableStateOf(
+            preferences.getBoolean("dark_mode", true)
+        )
+    }
 
     var screen by remember {
         mutableStateOf("customer")
@@ -60,50 +90,209 @@ fun AlmalakiApp() {
         mutableStateOf("")
     }
 
+    val background =
+        if (darkMode) Black else LightBackground
+
+    val textColor =
+        if (darkMode) Cream else DarkText
+
+    val surfaceColor =
+        if (darkMode) DarkSurface else LightCard
+
+    val colorScheme =
+        if (darkMode) {
+            darkColorScheme(
+                primary = Gold,
+                secondary = BrightGold,
+                background = background,
+                surface = surfaceColor,
+                onBackground = textColor,
+                onSurface = textColor
+            )
+        } else {
+            lightColorScheme(
+                primary = Gold,
+                secondary = Gold,
+                background = background,
+                surface = surfaceColor,
+                onBackground = textColor,
+                onSurface = textColor
+            )
+        }
+
     MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = Gold,
-            background = Black,
-            surface = Color(0xFF171717)
-        )
+        colorScheme = colorScheme
     ) {
 
         when (screen) {
 
-            "customer" -> CustomerScreen(
-                onOwnerLogin = {
-                    screen = "login"
-                }
-            )
+            "customer" -> {
 
-            "login" -> LoginScreen(
-                onBack = {
-                    screen = "customer"
-                },
-                onLoginSuccess = { token ->
-                    accessToken = token
-                    screen = "admin"
-                }
-            )
+                CustomerScreen(
+                    darkMode = darkMode,
+                    onToggleTheme = {
 
-            "admin" -> AdminScreen(
-                accessToken = accessToken,
-                onLogout = {
-                    accessToken = ""
-                    screen = "customer"
-                }
-            )
+                        darkMode = !darkMode
+
+                        preferences.edit()
+                            .putBoolean(
+                                "dark_mode",
+                                darkMode
+                            )
+                            .apply()
+                    },
+                    onOwnerLogin = {
+                        screen = "login"
+                    }
+                )
+            }
+
+            "login" -> {
+
+                LoginScreen(
+                    darkMode = darkMode,
+                    onBack = {
+                        screen = "customer"
+                    },
+                    onLoginSuccess = { token ->
+
+                        accessToken = token
+                        screen = "admin"
+                    }
+                )
+            }
+
+            "admin" -> {
+
+                AdminScreen(
+                    darkMode = darkMode,
+                    accessToken = accessToken,
+                    onLogout = {
+
+                        accessToken = ""
+                        screen = "customer"
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
+fun RoyalTitle(
+    darkMode: Boolean
+) {
+
+    val infiniteTransition =
+        rememberInfiniteTransition(
+            label = "goldShine"
+        )
+
+    val position by infiniteTransition.animateFloat(
+        initialValue = -1.5f,
+        targetValue = 1.5f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    tween(
+                        durationMillis = 2600,
+                        easing = LinearEasing
+                    ),
+                repeatMode = RepeatMode.Restart
+            ),
+        label = "shinePosition"
+    )
+
+    val textBrush =
+        Brush.linearGradient(
+            colors = listOf(
+                Gold,
+                Gold,
+                BrightGold,
+                Color.White,
+                BrightGold,
+                Gold,
+                Gold
+            ),
+            start = Offset(
+                position * 500f,
+                0f
+            ),
+            end = Offset(
+                position * 500f + 500f,
+                100f
+            )
+        )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+
+        Text(
+            text = "Royal Coffee",
+            fontSize = 38.sp,
+            fontWeight = FontWeight.Bold,
+            style = androidx.compose.ui.text.TextStyle(
+                brush = textBrush
+            )
+        )
+
+        Spacer(
+            Modifier.height(4.dp)
+        )
+
+        Text(
+            text = "طعمٌ يستحق التجربة",
+            color =
+                if (darkMode)
+                    Cream
+                else
+                    DarkText,
+            fontSize = 17.sp
+        )
+    }
+}
+
+@Composable
+fun ThemeButton(
+    darkMode: Boolean,
+    onClick: () -> Unit
+) {
+
+    OutlinedButton(
+        onClick = onClick,
+        colors =
+            ButtonDefaults.outlinedButtonColors(
+                contentColor = Gold
+            ),
+        border =
+            androidx.compose.foundation.BorderStroke(
+                1.dp,
+                Gold
+            )
+    ) {
+
+        Text(
+            if (darkMode)
+                "☀ الوضع الفاتح"
+            else
+                "🌙 الوضع الداكن"
+        )
+    }
+}
+
+@Composable
 fun CustomerScreen(
+    darkMode: Boolean,
+    onToggleTheme: () -> Unit,
     onOwnerLogin: () -> Unit
 ) {
 
     var products by remember {
-        mutableStateOf<List<Product>>(emptyList())
+        mutableStateOf<List<Product>>(
+            emptyList()
+        )
     }
 
     var category by remember {
@@ -114,17 +303,27 @@ fun CustomerScreen(
         mutableStateOf(true)
     }
 
+    var error by remember {
+        mutableStateOf("")
+    }
+
     LaunchedEffect(Unit) {
 
         Thread {
 
             try {
 
-                products = loadProducts()
+                val result =
+                    loadProducts()
+
+                products = result
+                error = ""
 
             } catch (e: Exception) {
 
-                e.printStackTrace()
+                error =
+                    e.message
+                        ?: "تعذر تحميل المنتجات."
 
             }
 
@@ -143,53 +342,72 @@ fun CustomerScreen(
         }
 
     Scaffold(
-        containerColor = Black
+        containerColor =
+            if (darkMode)
+                Black
+            else
+                LightBackground
     ) { padding ->
 
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
             verticalArrangement =
                 Arrangement.spacedBy(12.dp)
         ) {
 
             item {
 
-                Text(
-                    text = "Royal Coffee",
-                    color = Gold,
-                    fontSize = 36.sp
-                )
-
-                Text(
-                    text = "طعمٌ يستحق التجربة",
-                    color = Cream,
-                    fontSize = 18.sp
+                RoyalTitle(
+                    darkMode = darkMode
                 )
 
                 Spacer(
-                    Modifier.height(16.dp)
+                    Modifier.height(14.dp)
+                )
+
+                ThemeButton(
+                    darkMode = darkMode,
+                    onClick = onToggleTheme
+                )
+
+                Spacer(
+                    Modifier.height(10.dp)
                 )
 
                 OutlinedButton(
                     onClick = onOwnerLogin,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            contentColor = Gold
+                        ),
+                    border =
+                        androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            Gold
+                        )
                 ) {
+
                     Text("دخول المالك")
                 }
 
                 Spacer(
-                    Modifier.height(10.dp)
+                    Modifier.height(14.dp)
                 )
             }
 
             item {
 
                 Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.spacedBy(6.dp)
+                        Arrangement.spacedBy(5.dp)
                 ) {
 
                     listOf(
@@ -201,13 +419,26 @@ fun CustomerScreen(
                     ).forEach {
 
                         FilterChip(
-                            selected = category == it,
+                            selected =
+                                category == it,
                             onClick = {
                                 category = it
                             },
                             label = {
                                 Text(it)
-                            }
+                            },
+                            colors =
+                                FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor =
+                                        Gold,
+                                    selectedLabelColor =
+                                        Black,
+                                    labelColor =
+                                        if (darkMode)
+                                            Cream
+                                        else
+                                            DarkText
+                                )
                         )
                     }
                 }
@@ -219,7 +450,21 @@ fun CustomerScreen(
 
                     Text(
                         "جاري تحميل المنتجات...",
-                        color = Cream
+                        color =
+                            if (darkMode)
+                                Cream
+                            else
+                                DarkText
+                    )
+                }
+
+            } else if (error.isNotEmpty()) {
+
+                item {
+
+                    Text(
+                        error,
+                        color = Color.Red
                     )
                 }
 
@@ -227,7 +472,10 @@ fun CustomerScreen(
 
                 items(filtered) { product ->
 
-                    ProductCard(product)
+                    ProductCard(
+                        product = product,
+                        darkMode = darkMode
+                    )
                 }
             }
         }
@@ -235,646 +483,57 @@ fun CustomerScreen(
 }
 
 @Composable
-fun ProductCard(product: Product) {
+fun ProductCard(
+    product: Product,
+    darkMode: Boolean
+) {
+
+    val cardColor =
+        if (darkMode)
+            DarkCard
+        else
+            LightCard
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF191919)
-        )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .border(
+                    1.dp,
+                    Gold,
+                    RoundedCornerShape(14.dp)
+                ),
+        shape =
+            RoundedCornerShape(14.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = cardColor
+            )
     ) {
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
 
             Column(
-                modifier = Modifier.weight(1f)
+                modifier =
+                    Modifier.weight(1f)
             ) {
 
                 Text(
                     product.name,
-                    color = Cream,
-                    fontSize = 19.sp
+                    color = Gold,
+                    fontSize = 20.sp,
+                    fontWeight =
+                        FontWeight.Bold
                 )
 
                 Text(
                     product.category,
-                    color = Color.LightGray
-                )
-            }
-
-            Text(
-                "${"%.2f".format(product.price)} $",
-                color = Gold,
-                fontSize = 17.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun LoginScreen(
-    onBack: () -> Unit,
-    onLoginSuccess: (String) -> Unit
-) {
-
-    var email by remember {
-        mutableStateOf("")
-    }
-
-    var password by remember {
-        mutableStateOf("")
-    }
-
-    var message by remember {
-        mutableStateOf("")
-    }
-
-    var loading by remember {
-        mutableStateOf(false)
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement =
-            Arrangement.Center
-    ) {
-
-        Text(
-            "دخول المالك",
-            color = Gold,
-            fontSize = 32.sp
-        )
-
-        Spacer(
-            Modifier.height(24.dp)
-        )
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = {
-                email = it
-            },
-            label = {
-                Text("البريد الإلكتروني")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            Modifier.height(12.dp)
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-            },
-            label = {
-                Text("كلمة المرور")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            Modifier.height(18.dp)
-        )
-
-        Button(
-            onClick = {
-
-                loading = true
-                message = ""
-
-                Thread {
-
-                    try {
-
-                        val result =
-                            loginWithSupabase(
-                                email,
-                                password
-                            )
-
-                        val token =
-                            result.getString("access_token")
-
-                        val userId =
-                            result
-                                .getJSONObject("user")
-                                .getString("id")
-
-                        if (userId == OWNER_ID) {
-
-                            onLoginSuccess(token)
-
-                        } else {
-
-                            message =
-                                "هذا الحساب ليس حساب المالك."
-                        }
-
-                    } catch (e: Exception) {
-
-                        message =
-                            "البريد أو كلمة المرور غير صحيحة."
-
-                    }
-
-                    loading = false
-
-                }.start()
-
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-
-            Text(
-                if (loading)
-                    "جاري الدخول..."
-                else
-                    "دخول"
-            )
-        }
-
-        Spacer(
-            Modifier.height(12.dp)
-        )
-
-        TextButton(
-            onClick = onBack
-        ) {
-            Text("العودة")
-        }
-
-        if (message.isNotEmpty()) {
-
-            Spacer(
-                Modifier.height(12.dp)
-            )
-
-            Text(
-                message,
-                color = Color.Red
-            )
-        }
-    }
-}
-
-@Composable
-fun AdminScreen(
-    accessToken: String,
-    onLogout: () -> Unit
-) {
-
-    var products by remember {
-        mutableStateOf<List<Product>>(emptyList())
-    }
-
-    var name by remember {
-        mutableStateOf("")
-    }
-
-    var category by remember {
-        mutableStateOf("")
-    }
-
-    var price by remember {
-        mutableStateOf("")
-    }
-
-    var message by remember {
-        mutableStateOf("")
-    }
-
-    fun refresh() {
-
-        Thread {
-
-            try {
-
-                products = loadProducts()
-
-            } catch (e: Exception) {
-
-                message = "تعذر تحميل المنتجات."
-
-            }
-
-        }.start()
-    }
-
-    LaunchedEffect(Unit) {
-        refresh()
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.SpaceBetween
-        ) {
-
-            Text(
-                "لوحة المالك 👑",
-                color = Gold,
-                fontSize = 28.sp
-            )
-
-            TextButton(
-                onClick = onLogout
-            ) {
-                Text("خروج")
-            }
-        }
-
-        Spacer(
-            Modifier.height(12.dp)
-        )
-
-        Text(
-            "إضافة منتج",
-            color = Cream,
-            fontSize = 20.sp
-        )
-
-        Spacer(
-            Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = {
-                name = it
-            },
-            label = {
-                Text("اسم المنتج")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value = category,
-            onValueChange = {
-                category = it
-            },
-            label = {
-                Text("التصنيف")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            Modifier.height(8.dp)
-        )
-
-        OutlinedTextField(
-            value = price,
-            onValueChange = {
-                price = it
-            },
-            label = {
-                Text("السعر")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            Modifier.height(10.dp)
-        )
-
-        Button(
-            onClick = {
-
-                val priceValue =
-                    price.toDoubleOrNull()
-
-                if (
-                    name.isBlank() ||
-                    category.isBlank() ||
-                    priceValue == null
-                ) {
-
-                    message =
-                        "أدخل الاسم والتصنيف والسعر."
-
-                    return@Button
-                }
-
-                Thread {
-
-                    try {
-
-                        addProduct(
-                            accessToken,
-                            name,
-                            category,
-                            priceValue
-                        )
-
-                        name = ""
-                        category = ""
-                        price = ""
-
-                        products = loadProducts()
-
-                        message =
-                            "تمت إضافة المنتج."
-
-                    } catch (e: Exception) {
-
-                        message =
-                            "حدث خطأ أثناء الإضافة."
-                    }
-
-                }.start()
-
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-
-            Text("إضافة المنتج")
-        }
-
-        if (message.isNotEmpty()) {
-
-            Text(
-                message,
-                color = Gold
-            )
-        }
-
-        Spacer(
-            Modifier.height(18.dp)
-        )
-
-        Text(
-            "المنتجات الحالية",
-            color = Cream,
-            fontSize = 20.sp
-        )
-
-        Spacer(
-            Modifier.height(8.dp)
-        )
-
-        LazyColumn(
-            verticalArrangement =
-                Arrangement.spacedBy(8.dp)
-        ) {
-
-            items(products) { product ->
-
-                AdminProductCard(
-                    product = product,
-                    accessToken = accessToken,
-                    onChanged = {
-                        refresh()
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AdminProductCard(
-    product: Product,
-    accessToken: String,
-    onChanged: () -> Unit
-) {
-
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF191919)
-        )
-    ) {
-
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-
-            Text(
-                product.name,
-                color = Cream,
-                fontSize = 18.sp
-            )
-
-            Text(
-                "${product.category} — ${"%.2f".format(product.price)} $",
-                color = Gold
-            )
-
-            Spacer(
-                Modifier.height(8.dp)
-            )
-
-            Button(
-                onClick = {
-
-                    Thread {
-
-                        try {
-
-                            deleteProduct(
-                                accessToken,
-                                product.id
-                            )
-
-                            onChanged()
-
-                        } catch (e: Exception) {
-
-                            e.printStackTrace()
-                        }
-
-                    }.start()
-                }
-            ) {
-
-                Text("حذف")
-            }
-        }
-    }
-}
-
-fun loadProducts(): List<Product> {
-
-    val url = URL(
-        "$SUPABASE_URL/rest/v1/products?select=id,name,category,price&order=id.asc"
-    )
-
-    val connection =
-        url.openConnection() as HttpURLConnection
-
-    connection.requestMethod = "GET"
-
-    connection.setRequestProperty(
-        "apikey",
-        SUPABASE_KEY
-    )
-
-    connection.setRequestProperty(
-        "Authorization",
-        "Bearer $SUPABASE_KEY"
-    )
-
-    val response =
-        connection.inputStream
-            .bufferedReader()
-            .readText()
-
-    val json = JSONArray(response)
-
-    val result =
-        mutableListOf<Product>()
-
-    for (i in 0 until json.length()) {
-
-        val item =
-            json.getJSONObject(i)
-
-        result.add(
-            Product(
-                id = item.getInt("id"),
-                name = item.getString("name"),
-                category = item.getString("category"),
-                price = item.getDouble("price")
-            )
-        )
-    }
-
-    return result
-}
-
-fun loginWithSupabase(
-    email: String,
-    password: String
-): JSONObject {
-
-    val url = URL(
-        "$SUPABASE_URL/auth/v1/token?grant_type=password"
-    )
-
-    val connection =
-        url.openConnection() as HttpURLConnection
-
-    connection.requestMethod = "POST"
-    connection.doOutput = true
-
-    connection.setRequestProperty(
-        "apikey",
-        SUPABASE_KEY
-    )
-
-    connection.setRequestProperty(
-        "Content-Type",
-        "application/json"
-    )
-
-    val body =
-        JSONObject()
-            .put("email", email)
-            .put("password", password)
-            .toString()
-
-    connection.outputStream.use {
-        it.write(body.toByteArray())
-    }
-
-    val response =
-        connection.inputStream
-            .bufferedReader()
-            .readText()
-
-    return JSONObject(response)
-}
-
-fun addProduct(
-    accessToken: String,
-    name: String,
-    category: String,
-    price: Double
-) {
-
-    val url =
-        URL("$SUPABASE_URL/rest/v1/products")
-
-    val connection =
-        url.openConnection() as HttpURLConnection
-
-    connection.requestMethod = "POST"
-    connection.doOutput = true
-
-    connection.setRequestProperty(
-        "apikey",
-        SUPABASE_KEY
-    )
-
-    connection.setRequestProperty(
-        "Authorization",
-        "Bearer $accessToken"
-    )
-
-    connection.setRequestProperty(
-        "Content-Type",
-        "application/json"
-    )
-
-    val body =
-        JSONObject()
-            .put("name", name)
-            .put("category", category)
-            .put("price", price)
-            .toString()
-
-    connection.outputStream.use {
-        it.write(body.toByteArray())
-    }
-
-    connection.inputStream.close()
-}
-
-fun deleteProduct(
-    accessToken: String,
-    id: Int
-) {
-
-    val url =
-        URL(
-            "$SUPABASE_URL/rest/v1/products?id=eq.$id"
-        )
-
-    val connection =
-        url.openConnection() as HttpURLConnection
-
-    connection.requestMethod = "DELETE"
-
-    connection.setRequestProperty(
-        "apikey",
-        SUPABASE_KEY
-    )
-
-    connection.setRequestProperty(
-        "Authorization",
-        "Bearer $accessToken"
-    )
-
-    connection.inputStream.close()
-}
+                    color =
+                        if (
