@@ -3,19 +3,18 @@ package com.almalaki.cafe
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
 
 private val Black = Color(0xFF0B0B0B)
 private val Gold = Color(0xFFD4AF37)
@@ -28,8 +27,10 @@ data class Product(
 )
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             AlmalakiApp()
         }
@@ -39,25 +40,86 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AlmalakiApp() {
 
-    val products = listOf(
-        Product("إسبريسو", "قهوة", 2.5),
-        Product("كابتشينو", "قهوة", 3.5),
-        Product("لاتيه", "قهوة", 3.5),
-        Product("آيس كوفي", "بارد", 4.0),
-        Product("موهيتو", "بارد", 4.0),
-        Product("عصير برتقال", "عصائر", 3.0),
-        Product("تشيز كيك", "حلويات", 4.5),
-        Product("براونيز", "حلويات", 4.0)
-    )
+    var products by remember {
+        mutableStateOf<List<Product>>(emptyList())
+    }
 
-    var category by remember { mutableStateOf("الكل") }
-    var cart by remember { mutableStateOf(listOf<Product>()) }
+    var category by remember {
+        mutableStateOf("الكل")
+    }
+
+    var loading by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(Unit) {
+
+        Thread {
+
+            try {
+
+                val url = URL(
+                    "https://duvxxskgdmgrtaleedqu.supabase.co/rest/v1/products?select=name,category,price"
+                )
+
+                val connection =
+                    url.openConnection() as HttpURLConnection
+
+                connection.requestMethod = "GET"
+
+                connection.setRequestProperty(
+                    "apikey",
+                    "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
+                )
+
+                connection.setRequestProperty(
+                    "Authorization",
+                    "Bearer sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
+                )
+
+                val response =
+                    connection.inputStream
+                        .bufferedReader()
+                        .readText()
+
+                val json = JSONArray(response)
+
+                val result = mutableListOf<Product>()
+
+                for (i in 0 until json.length()) {
+
+                    val item = json.getJSONObject(i)
+
+                    result.add(
+                        Product(
+                            name = item.getString("name"),
+                            category = item.getString("category"),
+                            price = item.getDouble("price")
+                        )
+                    )
+                }
+
+                products = result
+
+            } catch (e: Exception) {
+
+                e.printStackTrace()
+
+            }
+
+            loading = false
+
+        }.start()
+    }
 
     val filtered =
-        if (category == "الكل")
+        if (category == "الكل") {
             products
-        else
-            products.filter { it.category == category }
+        } else {
+            products.filter {
+                it.category == category
+            }
+        }
 
     MaterialTheme(
         colorScheme = darkColorScheme(
@@ -68,38 +130,19 @@ fun AlmalakiApp() {
     ) {
 
         Scaffold(
-            containerColor = Black,
-            bottomBar = {
-                NavigationBar(
-                    containerColor = Color(0xFF111111)
-                ) {
-                    Text(
-                        text = "السلة: ${cart.size}",
-                        color = Gold,
-                        modifier = Modifier.padding(16.dp)
-                    )
-
-                    Spacer(Modifier.weight(1f))
-
-                    Text(
-                        text = "الملكي",
-                        color = Cream,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
+            containerColor = Black
         ) { padding ->
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(16.dp),
+                verticalArrangement =
+                    Arrangement.spacedBy(12.dp)
             ) {
 
                 item {
-                    Spacer(Modifier.height(18.dp))
 
                     Text(
                         text = "الملكي",
@@ -112,19 +155,16 @@ fun AlmalakiApp() {
                         color = Cream
                     )
 
-                    Spacer(Modifier.height(18.dp))
-
-                    Text(
-                        text = "اطلب ما تحب",
-                        color = Cream,
-                        fontSize = 23.sp
+                    Spacer(
+                        Modifier.height(20.dp)
                     )
                 }
 
                 item {
+
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
                     ) {
 
                         listOf(
@@ -137,84 +177,77 @@ fun AlmalakiApp() {
 
                             FilterChip(
                                 selected = category == it,
-                                onClick = { category = it },
-                                label = { Text(it) }
+                                onClick = {
+                                    category = it
+                                },
+                                label = {
+                                    Text(it)
+                                }
                             )
                         }
                     }
                 }
 
-                items(filtered) { product ->
+                if (loading) {
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                cart = cart + product
-                            },
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFF191919)
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
+                    item {
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Text(
+                            text = "جاري تحميل المنتجات...",
+                            color = Cream
+                        )
+                    }
+
+                } else {
+
+                    items(filtered) { product ->
+
+                        Card(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor =
+                                        Color(0xFF191919)
+                                )
                         ) {
 
-                            Column(
-                                modifier = Modifier.weight(1f)
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
                             ) {
 
-                                Text(
-                                    text = product.name,
-                                    color = Cream,
-                                    fontSize = 19.sp
-                                )
+                                Column(
+                                    modifier =
+                                        Modifier.weight(1f)
+                                ) {
+
+                                    Text(
+                                        text =
+                                            product.name,
+                                        color = Cream,
+                                        fontSize = 19.sp
+                                    )
+
+                                    Text(
+                                        text =
+                                            product.category,
+                                        color =
+                                            Color.LightGray
+                                    )
+                                }
 
                                 Text(
-                                    text = product.category,
-                                    color = Color.LightGray
+                                    text =
+                                        "${"%.2f".format(product.price)} $",
+                                    color = Gold
                                 )
                             }
-
-                            Text(
-                                text = "${"%.2f".format(product.price)} $",
-                                color = Gold
-                            )
                         }
                     }
-                }
-
-                item {
-
-                    if (cart.isNotEmpty()) {
-
-                        Button(
-                            onClick = {},
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Gold,
-                                contentColor = Black
-                            )
-                        ) {
-
-                            Text(
-                                text = "متابعة الطلب • ${
-                                    "%.2f".format(
-                                        cart.sumOf { it.price }
-                                    )
-                                } $"
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(24.dp))
                 }
             }
         }
