@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -134,6 +135,7 @@ fun RoyalCoffeeApp() {
                     },
 
                     onSuccess = { newToken ->
+
                         token = newToken
                         screen = "admin"
                     }
@@ -187,10 +189,14 @@ fun CustomerScreen(
         Thread {
 
             try {
+
                 products = loadProducts()
+
             } catch (e: Exception) {
+
                 message =
-                    e.message ?: "تعذر تحميل القائمة."
+                    e.message
+                        ?: "تعذر تحميل القائمة."
             }
 
             loading = false
@@ -272,8 +278,10 @@ fun CustomerScreen(
 
                 Text(
                     text =
-                        if (darkMode) "☀"
-                        else "🌙",
+                        if (darkMode)
+                            "☀"
+                        else
+                            "🌙",
 
                     color = Gold,
                     fontSize = 23.sp
@@ -340,10 +348,18 @@ fun CustomerScreen(
 
                     val columns =
                         when {
-                            maxWidth < 600.dp -> 2
-                            maxWidth < 900.dp -> 3
-                            maxWidth < 1400.dp -> 4
-                            else -> 5
+
+                            maxWidth < 600.dp ->
+                                2
+
+                            maxWidth < 900.dp ->
+                                3
+
+                            maxWidth < 1400.dp ->
+                                4
+
+                            else ->
+                                5
                         }
 
                     LazyVerticalGrid(
@@ -375,7 +391,8 @@ fun CustomerScreen(
                                 product = product,
 
                                 quantity =
-                                    cart[product.id] ?: 0,
+                                    cart[product.id]
+                                        ?: 0,
 
                                 onAdd = {
 
@@ -399,9 +416,12 @@ fun CustomerScreen(
 
                                     cart =
                                         if (old <= 1) {
+
                                             cart -
                                                     product.id
+
                                         } else {
+
                                             cart +
                                                     (
                                                         product.id to
@@ -573,8 +593,11 @@ fun CustomerScreen(
 
                 cart =
                     if (old <= 1) {
+
                         cart - id
+
                     } else {
+
                         cart +
                                 (
                                     id to
@@ -601,6 +624,7 @@ fun RoyalLogo() {
 
             animationSpec =
                 infiniteRepeatable(
+
                     animation =
                         tween(
                             durationMillis = 2600,
@@ -616,6 +640,7 @@ fun RoyalLogo() {
 
     val brush =
         Brush.linearGradient(
+
             colors =
                 listOf(
                     GoldDark,
@@ -627,11 +652,17 @@ fun RoyalLogo() {
                     GoldDark
                 ),
 
-            startX =
-                shinePosition * 500f,
+            start =
+                Offset(
+                    x = shinePosition * 500f,
+                    y = 0f
+                ),
 
-            endX =
-                shinePosition * 500f + 500f
+            end =
+                Offset(
+                    x = shinePosition * 500f + 500f,
+                    y = 0f
+                )
         )
 
     Box(
@@ -673,7 +704,8 @@ fun ProductCard(
 ) {
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier.fillMaxWidth(),
 
         shape =
             RoundedCornerShape(18.dp),
@@ -718,10 +750,13 @@ fun ProductCard(
                     .padding(3.dp)
             ) {
 
-                if (product.imageUrl.isNotBlank()) {
+                if (
+                    product.imageUrl.isNotBlank()
+                ) {
 
                     RemoteProductImage(
-                        url = product.imageUrl
+                        url =
+                            product.imageUrl
                     )
 
                 } else {
@@ -750,33 +785,36 @@ fun ProductCard(
             }
 
             Spacer(
-                modifier = Modifier.height(7.dp)
+                modifier =
+                    Modifier.height(7.dp)
             )
 
             Text(
                 text = product.name,
 
                 color = Cream,
-
                 fontSize = 17.sp,
 
                 fontWeight =
                     FontWeight.SemiBold
             )
 
-            if (product.category.isNotBlank()) {
+            if (
+                product.category.isNotBlank()
+            ) {
 
                 Text(
-                    text = product.category,
+                    text =
+                        product.category,
 
                     color = Gold,
-
                     fontSize = 12.sp
                 )
             }
 
             Spacer(
-                modifier = Modifier.height(3.dp)
+                modifier =
+                    Modifier.height(3.dp)
             )
 
             Text(
@@ -786,7 +824,6 @@ fun ProductCard(
                     ),
 
                 color = GoldLight,
-
                 fontSize = 15.sp,
 
                 fontWeight =
@@ -794,7 +831,8 @@ fun ProductCard(
             )
 
             Spacer(
-                modifier = Modifier.height(6.dp)
+                modifier =
+                    Modifier.height(6.dp)
             )
 
             if (quantity == 0) {
@@ -848,7 +886,6 @@ fun ProductCard(
                             quantity.toString(),
 
                         color = GoldLight,
-
                         fontSize = 19.sp,
 
                         fontWeight =
@@ -874,25 +911,21 @@ fun SmallCartButton(
     Button(
         onClick = onClick,
 
-        modifier = Modifier
-            .size(42.dp),
+        modifier =
+            Modifier.size(42.dp),
 
         contentPadding =
             PaddingValues(0.dp),
 
         colors =
             ButtonDefaults.buttonColors(
-                containerColor =
-                    Gold,
-
-                contentColor =
-                    Black
+                containerColor = Gold,
+                contentColor = Black
             )
     ) {
 
         Text(
             text = text,
-
             fontSize = 23.sp,
 
             fontWeight =
@@ -912,6 +945,7 @@ fun CartDialog(
 ) {
 
     AlertDialog(
+
         onDismissRequest = onClose,
 
         containerColor = CardBlack,
@@ -922,7 +956,6 @@ fun CartDialog(
                 text = "🛒 سلة المشتريات",
 
                 color = Gold,
-
                 fontSize = 24.sp,
 
                 fontWeight =
@@ -939,10 +972,13 @@ fun CartDialog(
 
                 val selectedProducts =
                     products.filter {
+
                         (cart[it.id] ?: 0) > 0
                     }
 
-                if (selectedProducts.isEmpty()) {
+                if (
+                    selectedProducts.isEmpty()
+                ) {
 
                     Text(
                         text =
@@ -962,132 +998,149 @@ fun CartDialog(
                                 )
                     ) {
 
-                        selectedProducts.forEach { product ->
+                        selectedProducts
+                            .forEach { product ->
 
-                            val quantity =
-                                cart[product.id]
-                                    ?: 0
+                                val quantity =
+                                    cart[product.id]
+                                        ?: 0
 
-                            val itemTotal =
-                                product.price *
-                                        quantity
-
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            vertical = 7.dp
-                                        ),
-
-                                verticalAlignment =
-                                    Alignment.CenterVertically
-                            ) {
-
-                                Column(
-                                    modifier =
-                                        Modifier.weight(
-                                            1f
-                                        )
-                                ) {
-
-                                    Text(
-                                        text =
-                                            product.name,
-
-                                        color = Cream,
-
-                                        fontSize = 15.sp,
-
-                                        fontWeight =
-                                            FontWeight.SemiBold
-                                    )
-
-                                    Text(
-                                        text =
-                                            "${quantity} × ${
-                                                formatPrice(
-                                                    product.price
-                                                )
-                                            }",
-
-                                        color = Gold,
-
-                                        fontSize = 12.sp
-                                    )
-
-                                    Text(
-                                        text =
-                                            formatPrice(
-                                                itemTotal
-                                            ),
-
-                                        color =
-                                            GoldLight,
-
-                                        fontSize = 13.sp
-                                    )
-                                }
+                                val itemTotal =
+                                    product.price *
+                                            quantity
 
                                 Row(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                vertical = 7.dp
+                                            ),
+
                                     verticalAlignment =
                                         Alignment.CenterVertically
                                 ) {
 
-                                    TextButton(
-                                        onClick = {
-                                            onDecrease(
-                                                product.id
+                                    Column(
+                                        modifier =
+                                            Modifier.weight(
+                                                1f
                                             )
-                                        }
                                     ) {
 
                                         Text(
-                                            text = "−",
+                                            text =
+                                                product.name,
 
-                                            color = Gold,
+                                            color =
+                                                Cream,
 
-                                            fontSize = 22.sp
+                                            fontSize =
+                                                15.sp,
+
+                                            fontWeight =
+                                                FontWeight
+                                                    .SemiBold
+                                        )
+
+                                        Text(
+                                            text =
+                                                "$quantity × ${
+                                                    formatPrice(
+                                                        product.price
+                                                    )
+                                                }",
+
+                                            color =
+                                                Gold,
+
+                                            fontSize =
+                                                12.sp
+                                        )
+
+                                        Text(
+                                            text =
+                                                formatPrice(
+                                                    itemTotal
+                                                ),
+
+                                            color =
+                                                GoldLight,
+
+                                            fontSize =
+                                                13.sp
                                         )
                                     }
 
-                                    Text(
-                                        text =
-                                            quantity
-                                                .toString(),
-
-                                        color = Cream,
-
-                                        fontWeight =
-                                            FontWeight.Bold
-                                    )
-
-                                    TextButton(
-                                        onClick = {
-                                            onIncrease(
-                                                product.id
-                                            )
-                                        }
+                                    Row(
+                                        verticalAlignment =
+                                            Alignment.CenterVertically
                                     ) {
 
+                                        TextButton(
+                                            onClick = {
+
+                                                onDecrease(
+                                                    product.id
+                                                )
+                                            }
+                                        ) {
+
+                                            Text(
+                                                text =
+                                                    "−",
+
+                                                color =
+                                                    Gold,
+
+                                                fontSize =
+                                                    22.sp
+                                            )
+                                        }
+
                                         Text(
-                                            text = "+",
+                                            text =
+                                                quantity
+                                                    .toString(),
 
-                                            color = Gold,
+                                            color =
+                                                Cream,
 
-                                            fontSize = 22.sp
+                                            fontWeight =
+                                                FontWeight
+                                                    .Bold
                                         )
+
+                                        TextButton(
+                                            onClick = {
+
+                                                onIncrease(
+                                                    product.id
+                                                )
+                                            }
+                                        ) {
+
+                                            Text(
+                                                text =
+                                                    "+",
+
+                                                color =
+                                                    Gold,
+
+                                                fontSize =
+                                                    22.sp
+                                            )
+                                        }
                                     }
                                 }
-                            }
 
-                            HorizontalDivider(
-                                color =
-                                    Gold.copy(
-                                        alpha = 0.18f
-                                    )
-                            )
-                        }
+                                HorizontalDivider(
+                                    color =
+                                        Gold.copy(
+                                            alpha = 0.18f
+                                        )
+                                )
+                            }
                     }
                 }
 
@@ -1097,10 +1150,10 @@ fun CartDialog(
                 )
 
                 Text(
-                    text = "المبلغ المطلوب",
+                    text =
+                        "المبلغ المطلوب",
 
                     color = Gold,
-
                     fontSize = 16.sp,
 
                     fontWeight =
@@ -1114,7 +1167,6 @@ fun CartDialog(
                         ),
 
                     color = GoldLight,
-
                     fontSize = 23.sp,
 
                     fontWeight =
@@ -1129,17 +1181,19 @@ fun CartDialog(
                 onClick = onClose,
 
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            Gold,
+                    ButtonDefaults
+                        .buttonColors(
+                            containerColor =
+                                Gold,
 
-                        contentColor =
-                            Black
-                    )
+                            contentColor =
+                                Black
+                        )
             ) {
 
                 Text(
-                    text = "متابعة التسوق"
+                    text =
+                        "متابعة التسوق"
                 )
             }
         }
@@ -1152,6 +1206,7 @@ fun RemoteProductImage(
 ) {
 
     var bitmap by remember(url) {
+
         mutableStateOf<
                 android.graphics.Bitmap?
                 >(null)
@@ -1217,8 +1272,7 @@ fun RemoteProductImage(
                     "جاري تحميل الصورة...",
 
                 color = Gold,
-
-                fontSize = 12.sp
+                fontSize = 13.sp
             )
         }
     }
