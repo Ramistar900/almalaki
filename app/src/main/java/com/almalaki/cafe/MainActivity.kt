@@ -158,14 +158,15 @@ fun CustomerScreen(
             item {
 
                 Text(
-                    text = "الملكي",
+                    text = "Royal Coffee",
                     color = Gold,
                     fontSize = 36.sp
                 )
 
                 Text(
-                    text = "قهوة • مشروبات • عصائر • حلويات",
-                    color = Cream
+                    text = "طعمٌ يستحق التجربة",
+                    color = Cream,
+                    fontSize = 18.sp
                 )
 
                 Spacer(
