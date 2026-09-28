@@ -39,6 +39,13 @@ fun createOrder(
         throw Exception("نوع الطلب غير صحيح.")
     }
 
+    if (
+        fulfillmentType == "توصيل إلى المنزل" &&
+        deliveryAddress.trim().isEmpty()
+    ) {
+        throw Exception("عنوان التوصيل مطلوب.")
+    }
+
     val orderNumber = generateOrderNumber()
 
     val orderId = insertOrder(
@@ -60,11 +67,10 @@ fun createOrder(
 }
 
 private fun generateOrderNumber(): String {
-    val formatter =
-        SimpleDateFormat(
-            "yyyyMMddHHmmss",
-            Locale.US
-        )
+    val formatter = SimpleDateFormat(
+        "yyyyMMddHHmmssSSS",
+        Locale.US
+    )
 
     return "RC-" + formatter.format(Date())
 }
@@ -108,55 +114,51 @@ private fun insertOrder(
         "return=representation"
     )
 
-    val body =
-        JSONObject().apply {
+    val body = JSONObject()
 
-            put(
-                "order_number",
-                orderNumber
-            )
+    body.put(
+        "order_number",
+        orderNumber
+    )
 
-            put(
-                "customer_name",
-                customerName.trim()
-            )
+    body.put(
+        "customer_name",
+        customerName.trim()
+    )
 
-            put(
-                "customer_phone",
-                customerPhone.trim()
-            )
+    body.put(
+        "customer_phone",
+        customerPhone.trim()
+    )
 
-            put(
-                "delivery_address",
-                deliveryAddress.trim()
-            )
+    body.put(
+        "delivery_address",
+        deliveryAddress.trim()
+    )
 
-            put(
-                "fulfillment_type",
-                fulfillmentType
-            )
+    body.put(
+        "fulfillment_type",
+        fulfillmentType
+    )
 
-            put(
-                "total_amount",
-                totalAmount
-            )
+    body.put(
+        "total_amount",
+        totalAmount
+    )
 
-            put(
-                "status",
-                "new"
-            )
-        }.toString()
+    body.put(
+        "status",
+        "new"
+    )
 
     connection.outputStream.use {
         it.write(
-            body.toByteArray(
-                Charsets.UTF_8
-            )
+            body.toString()
+                .toByteArray(Charsets.UTF_8)
         )
     }
 
-    val code =
-        connection.responseCode
+    val code = connection.responseCode
 
     if (code !in 200..299) {
 
@@ -180,8 +182,7 @@ private fun insertOrder(
 
     connection.disconnect()
 
-    val json =
-        JSONArray(response)
+    val json = JSONArray(response)
 
     if (json.length() == 0) {
         throw Exception(
@@ -199,6 +200,57 @@ private fun insertOrderItems(
     products: List<Product>,
     cart: Map<Int, Int>
 ) {
+
+    val jsonArray = JSONArray()
+
+    products.forEach { product ->
+
+        val quantity =
+            cart[product.id] ?: 0
+
+        if (quantity > 0) {
+
+            val item = JSONObject()
+
+            item.put(
+                "order_id",
+                orderId
+            )
+
+            item.put(
+                "product_id",
+                product.id
+            )
+
+            item.put(
+                "product_name",
+                product.name
+            )
+
+            item.put(
+                "unit_price",
+                product.price
+            )
+
+            item.put(
+                "quantity",
+                quantity
+            )
+
+            item.put(
+                "item_total",
+                product.price * quantity
+            )
+
+            jsonArray.put(item)
+        }
+    }
+
+    if (jsonArray.length() == 0) {
+        throw Exception(
+            "لا توجد منتجات في الطلب."
+        )
+    }
 
     val url = URL(
         "$ORDER_SUPABASE_URL/rest/v1/order_items"
@@ -230,69 +282,14 @@ private fun insertOrderItems(
         "return=minimal"
     )
 
-    val jsonArray =
-        JSONArray()
-
-    products.forEach { product ->
-
-        val quantity =
-            cart[product.id] ?: 0
-
-        if (quantity > 0) {
-
-            val itemTotal =
-                product.price * quantity
-
-            val item =
-                JSONObject().apply {
-
-                    put(
-                        "order_id",
-                        orderId
-                    )
-
-                    put(
-                        "product_id",
-                        product.id
-                    )
-
-                    put(
-                        "product_name",
-                        product.name
-                    )
-
-                    put(
-                        "unit_price",
-                        product.price
-                    )
-
-                    put(
-                        "quantity",
-                        quantity
-                    )
-
-                    put(
-                        "item_total",
-                        itemTotal
-                    )
-                }
-
-            jsonArray.put(item)
-        }
-    }
-
     connection.outputStream.use {
         it.write(
-            jsonArray
-                .toString()
-                .toByteArray(
-                    Charsets.UTF_8
-                )
+            jsonArray.toString()
+                .toByteArray(Charsets.UTF_8)
         )
     }
 
-    val code =
-        connection.responseCode
+    val code = connection.responseCode
 
     if (code !in 200..299) {
 
@@ -300,7 +297,7 @@ private fun insertOrderItems(
             connection.errorStream
                 ?.bufferedReader()
                 ?.readText()
-            ?: "فشل حفظ تفاصيل الطلب."
+                ?: "فشل حفظ تفاصيل الطلب."
 
         connection.disconnect()
 
