@@ -11,7 +11,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,13 +24,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -106,10 +103,8 @@ fun RoyalCoffeeApp() {
         when (screen) {
 
             "customer" -> {
-
                 CustomerScreen(
                     darkMode = darkMode,
-
                     onTheme = {
                         darkMode = !darkMode
 
@@ -120,7 +115,6 @@ fun RoyalCoffeeApp() {
                             )
                             .apply()
                     },
-
                     onOwner = {
                         screen = "login"
                     }
@@ -128,14 +122,11 @@ fun RoyalCoffeeApp() {
             }
 
             "login" -> {
-
                 LoginScreen(
                     onBack = {
                         screen = "customer"
                     },
-
                     onSuccess = { newToken ->
-
                         token = newToken
                         screen = "admin"
                     }
@@ -143,10 +134,8 @@ fun RoyalCoffeeApp() {
             }
 
             "admin" -> {
-
                 AdminScreen(
                     accessToken = token,
-
                     onLogout = {
                         token = ""
                         screen = "customer"
@@ -184,19 +173,32 @@ fun CustomerScreen(
         mutableStateOf(false)
     }
 
+    var showCheckout by remember {
+        mutableStateOf(false)
+    }
+
+    var orderLoading by remember {
+        mutableStateOf(false)
+    }
+
+    var orderMessage by remember {
+        mutableStateOf("")
+    }
+
+    var orderSuccessNumber by remember {
+        mutableStateOf("")
+    }
+
     LaunchedEffect(Unit) {
 
         Thread {
 
             try {
-
                 products = loadProducts()
-
             } catch (e: Exception) {
-
                 message =
                     e.message
-                        ?: "تعذر تحميل القائمة."
+                        ?: "تعذر تحميل المنتجات."
             }
 
             loading = false
@@ -243,10 +245,6 @@ fun CustomerScreen(
 
         RoyalLogo()
 
-        Spacer(
-            modifier = Modifier.height(4.dp)
-        )
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement =
@@ -261,8 +259,7 @@ fun CustomerScreen(
                     text = "قائمة Royal",
                     color = Gold,
                     fontSize = 21.sp,
-                    fontWeight =
-                        FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
@@ -278,10 +275,8 @@ fun CustomerScreen(
 
                 Text(
                     text =
-                        if (darkMode)
-                            "☀"
-                        else
-                            "🌙",
+                        if (darkMode) "☀"
+                        else "🌙",
 
                     color = Gold,
                     fontSize = 23.sp
@@ -294,9 +289,7 @@ fun CustomerScreen(
         )
 
         HorizontalDivider(
-            color = Gold.copy(
-                alpha = 0.45f
-            )
+            color = Gold.copy(alpha = 0.45f)
         )
 
         Spacer(
@@ -311,7 +304,6 @@ fun CustomerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-
                     contentAlignment =
                         Alignment.Center
                 ) {
@@ -328,7 +320,6 @@ fun CustomerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-
                     contentAlignment =
                         Alignment.Center
                 ) {
@@ -349,17 +340,13 @@ fun CustomerScreen(
                     val columns =
                         when {
 
-                            maxWidth < 600.dp ->
-                                2
+                            maxWidth < 600.dp -> 2
 
-                            maxWidth < 900.dp ->
-                                3
+                            maxWidth < 900.dp -> 3
 
-                            maxWidth < 1400.dp ->
-                                4
+                            maxWidth < 1400.dp -> 4
 
-                            else ->
-                                5
+                            else -> 5
                         }
 
                     LazyVerticalGrid(
@@ -391,42 +378,35 @@ fun CustomerScreen(
                                 product = product,
 
                                 quantity =
-                                    cart[product.id]
-                                        ?: 0,
+                                    cart[product.id] ?: 0,
 
                                 onAdd = {
 
                                     val old =
-                                        cart[product.id]
-                                            ?: 0
+                                        cart[product.id] ?: 0
 
                                     cart =
                                         cart +
-                                                (
-                                                    product.id to
-                                                            (old + 1)
-                                                    )
+                                            (
+                                                product.id to
+                                                    old + 1
+                                            )
                                 },
 
                                 onRemove = {
 
                                     val old =
-                                        cart[product.id]
-                                            ?: 0
+                                        cart[product.id] ?: 0
 
                                     cart =
                                         if (old <= 1) {
-
-                                            cart -
-                                                    product.id
-
+                                            cart - product.id
                                         } else {
-
                                             cart +
-                                                    (
-                                                        product.id to
-                                                                (old - 1)
-                                                        )
+                                                (
+                                                    product.id to
+                                                        old - 1
+                                                )
                                         }
                                 }
                             )
@@ -441,23 +421,14 @@ fun CustomerScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        bottom = 8.dp
-                    ),
+                    .padding(bottom = 8.dp),
 
                 shape =
                     RoundedCornerShape(16.dp),
 
                 colors =
                     CardDefaults.cardColors(
-                        containerColor =
-                            CardBlack
-                    ),
-
-                border =
-                    BorderStroke(
-                        1.dp,
-                        Gold
+                        containerColor = CardBlack
                     )
             ) {
 
@@ -487,27 +458,18 @@ fun CustomerScreen(
                         )
 
                         Text(
-                            text =
-                                "المبلغ المطلوب",
-
+                            text = "المبلغ المطلوب",
                             color = Gold,
-                            fontSize = 14.sp,
-
-                            fontWeight =
-                                FontWeight.SemiBold
+                            fontSize = 14.sp
                         )
 
                         Text(
                             text =
-                                formatPrice(
-                                    totalAmount
-                                ),
+                                formatPrice(totalAmount),
 
                             color = GoldLight,
                             fontSize = 19.sp,
-
-                            fontWeight =
-                                FontWeight.Bold
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
@@ -517,22 +479,14 @@ fun CustomerScreen(
                         },
 
                         colors =
-                            ButtonDefaults
-                                .buttonColors(
-                                    containerColor =
-                                        Gold,
-
-                                    contentColor =
-                                        Black
-                                )
+                            ButtonDefaults.buttonColors(
+                                containerColor = Gold,
+                                contentColor = Black
+                            )
                     ) {
 
                         Text(
-                            text =
-                                "عرض السلة 🛒",
-
-                            fontWeight =
-                                FontWeight.Bold
+                            text = "عرض السلة 🛒"
                         )
                     }
                 }
@@ -544,15 +498,7 @@ fun CustomerScreen(
 
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    bottom = 4.dp
-                ),
-
-            border =
-                BorderStroke(
-                    1.dp,
-                    Gold
-                )
+                .padding(bottom = 4.dp)
         ) {
 
             Text(
@@ -573,6 +519,13 @@ fun CustomerScreen(
                 showCart = false
             },
 
+            onCheckout = {
+                showCart = false
+                orderMessage = ""
+                orderSuccessNumber = ""
+                showCheckout = true
+            },
+
             onIncrease = { id ->
 
                 val old =
@@ -580,10 +533,9 @@ fun CustomerScreen(
 
                 cart =
                     cart +
-                            (
-                                id to
-                                        (old + 1)
-                                )
+                        (
+                            id to old + 1
+                        )
             },
 
             onDecrease = { id ->
@@ -593,17 +545,93 @@ fun CustomerScreen(
 
                 cart =
                     if (old <= 1) {
-
                         cart - id
-
                     } else {
-
                         cart +
-                                (
-                                    id to
-                                            (old - 1)
-                                    )
+                            (
+                                id to old - 1
+                            )
                     }
+            }
+        )
+    }
+
+    if (showCheckout) {
+
+        CheckoutDialog(
+            totalAmount = totalAmount,
+            loading = orderLoading,
+            message = orderMessage,
+            successOrderNumber = orderSuccessNumber,
+
+            onClose = {
+                if (!orderLoading) {
+                    showCheckout = false
+                }
+            },
+
+            onConfirm = { name, phone, address, type ->
+
+                when {
+
+                    orderLoading -> {
+                        // لا نفعل شيئًا
+                    }
+
+                    name.trim().isEmpty() -> {
+                        orderMessage = "اكتب اسمك."
+                    }
+
+                    phone.trim().isEmpty() -> {
+                        orderMessage = "اكتب رقم الهاتف."
+                    }
+
+                    type == "توصيل إلى المنزل" &&
+                            address.trim().isEmpty() -> {
+
+                        orderMessage =
+                            "اكتب عنوان التوصيل."
+                    }
+
+                    else -> {
+
+                        orderLoading = true
+                        orderMessage = ""
+
+                        Thread {
+
+                            try {
+
+                                val result =
+                                    createOrder(
+                                        customerName = name,
+                                        customerPhone = phone,
+                                        deliveryAddress = address,
+                                        fulfillmentType = type,
+                                        totalAmount = totalAmount,
+                                        products = products,
+                                        cart = cart
+                                    )
+
+                                orderSuccessNumber =
+                                    result.orderNumber
+
+                                cart = emptyMap()
+
+                            } catch (e: Exception) {
+
+                                orderMessage =
+                                    e.message
+                                        ?: "حدث خطأ أثناء إرسال الطلب."
+
+                            } finally {
+
+                                orderLoading = false
+                            }
+
+                        }.start()
+                    }
+                }
             }
         )
     }
@@ -624,13 +652,11 @@ fun RoyalLogo() {
 
             animationSpec =
                 infiniteRepeatable(
-
                     animation =
                         tween(
                             durationMillis = 2600,
                             easing = LinearEasing
                         ),
-
                     repeatMode =
                         RepeatMode.Restart
                 ),
@@ -653,13 +679,13 @@ fun RoyalLogo() {
                 ),
 
             start =
-                Offset(
+                androidx.compose.ui.geometry.Offset(
                     x = shinePosition * 500f,
                     y = 0f
                 ),
 
             end =
-                Offset(
+                androidx.compose.ui.geometry.Offset(
                     x = shinePosition * 500f + 500f,
                     y = 0f
                 )
@@ -668,9 +694,7 @@ fun RoyalLogo() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                bottom = 2.dp
-            ),
+            .padding(bottom = 2.dp),
 
         contentAlignment =
             Alignment.Center
@@ -679,18 +703,13 @@ fun RoyalLogo() {
         Text(
             text = "Royal Coffee",
 
-            style =
-                TextStyle(
-                    brush = brush
-                ),
+            color = Gold,
 
             fontSize = 39.sp,
 
-            fontFamily =
-                FontFamily.Cursive,
+            fontFamily = FontFamily.Cursive,
 
-            fontWeight =
-                FontWeight.Bold
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -704,576 +723,4 @@ fun ProductCard(
 ) {
 
     Card(
-        modifier =
-            Modifier.fillMaxWidth(),
-
-        shape =
-            RoundedCornerShape(18.dp),
-
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    CardBlack
-            ),
-
-        border =
-            BorderStroke(
-                1.5.dp,
-                Gold.copy(
-                    alpha = 0.75f
-                )
-            )
-    ) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(125.dp)
-                    .clip(
-                        RoundedCornerShape(13.dp)
-                    )
-                    .border(
-                        width = 2.dp,
-                        color = Gold,
-                        shape =
-                            RoundedCornerShape(13.dp)
-                    )
-                    .padding(3.dp)
-            ) {
-
-                if (
-                    product.imageUrl.isNotBlank()
-                ) {
-
-                    RemoteProductImage(
-                        url =
-                            product.imageUrl
-                    )
-
-                } else {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Color(0xFF1C1C1C)
-                            ),
-
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
-
-                        Text(
-                            text = "Royal",
-                            color = Gold,
-                            fontSize = 24.sp,
-
-                            fontFamily =
-                                FontFamily.Cursive
-                        )
-                    }
-                }
-            }
-
-            Spacer(
-                modifier =
-                    Modifier.height(7.dp)
-            )
-
-            Text(
-                text = product.name,
-
-                color = Cream,
-                fontSize = 17.sp,
-
-                fontWeight =
-                    FontWeight.SemiBold
-            )
-
-            if (
-                product.category.isNotBlank()
-            ) {
-
-                Text(
-                    text =
-                        product.category,
-
-                    color = Gold,
-                    fontSize = 12.sp
-                )
-            }
-
-            Spacer(
-                modifier =
-                    Modifier.height(3.dp)
-            )
-
-            Text(
-                text =
-                    formatPrice(
-                        product.price
-                    ),
-
-                color = GoldLight,
-                fontSize = 15.sp,
-
-                fontWeight =
-                    FontWeight.Bold
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(6.dp)
-            )
-
-            if (quantity == 0) {
-
-                Button(
-                    onClick = onAdd,
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    colors =
-                        ButtonDefaults
-                            .buttonColors(
-                                containerColor =
-                                    Gold,
-
-                                contentColor =
-                                    Black
-                            )
-                ) {
-
-                    Text(
-                        text =
-                            "إضافة إلى السلة 🛒",
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-
-            } else {
-
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    verticalAlignment =
-                        Alignment.CenterVertically,
-
-                    horizontalArrangement =
-                        Arrangement.SpaceEvenly
-                ) {
-
-                    SmallCartButton(
-                        text = "−",
-                        onClick = onRemove
-                    )
-
-                    Text(
-                        text =
-                            quantity.toString(),
-
-                        color = GoldLight,
-                        fontSize = 19.sp,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-
-                    SmallCartButton(
-                        text = "+",
-                        onClick = onAdd
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SmallCartButton(
-    text: String,
-    onClick: () -> Unit
-) {
-
-    Button(
-        onClick = onClick,
-
-        modifier =
-            Modifier.size(42.dp),
-
-        contentPadding =
-            PaddingValues(0.dp),
-
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = Gold,
-                contentColor = Black
-            )
-    ) {
-
-        Text(
-            text = text,
-            fontSize = 23.sp,
-
-            fontWeight =
-                FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-fun CartDialog(
-    products: List<Product>,
-    cart: Map<Int, Int>,
-    totalAmount: Double,
-    onClose: () -> Unit,
-    onIncrease: (Int) -> Unit,
-    onDecrease: (Int) -> Unit
-) {
-
-    AlertDialog(
-
-        onDismissRequest = onClose,
-
-        containerColor = CardBlack,
-
-        title = {
-
-            Text(
-                text = "🛒 سلة المشتريات",
-
-                color = Gold,
-                fontSize = 24.sp,
-
-                fontWeight =
-                    FontWeight.Bold
-            )
-        },
-
-        text = {
-
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-            ) {
-
-                val selectedProducts =
-                    products.filter {
-
-                        (cart[it.id] ?: 0) > 0
-                    }
-
-                if (
-                    selectedProducts.isEmpty()
-                ) {
-
-                    Text(
-                        text =
-                            "السلة فارغة.",
-
-                        color = Cream
-                    )
-
-                } else {
-
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(
-                                    max = 380.dp
-                                )
-                    ) {
-
-                        selectedProducts
-                            .forEach { product ->
-
-                                val quantity =
-                                    cart[product.id]
-                                        ?: 0
-
-                                val itemTotal =
-                                    product.price *
-                                            quantity
-
-                                Row(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(
-                                                vertical = 7.dp
-                                            ),
-
-                                    verticalAlignment =
-                                        Alignment.CenterVertically
-                                ) {
-
-                                    Column(
-                                        modifier =
-                                            Modifier.weight(
-                                                1f
-                                            )
-                                    ) {
-
-                                        Text(
-                                            text =
-                                                product.name,
-
-                                            color =
-                                                Cream,
-
-                                            fontSize =
-                                                15.sp,
-
-                                            fontWeight =
-                                                FontWeight
-                                                    .SemiBold
-                                        )
-
-                                        Text(
-                                            text =
-                                                "$quantity × ${
-                                                    formatPrice(
-                                                        product.price
-                                                    )
-                                                }",
-
-                                            color =
-                                                Gold,
-
-                                            fontSize =
-                                                12.sp
-                                        )
-
-                                        Text(
-                                            text =
-                                                formatPrice(
-                                                    itemTotal
-                                                ),
-
-                                            color =
-                                                GoldLight,
-
-                                            fontSize =
-                                                13.sp
-                                        )
-                                    }
-
-                                    Row(
-                                        verticalAlignment =
-                                            Alignment.CenterVertically
-                                    ) {
-
-                                        TextButton(
-                                            onClick = {
-
-                                                onDecrease(
-                                                    product.id
-                                                )
-                                            }
-                                        ) {
-
-                                            Text(
-                                                text =
-                                                    "−",
-
-                                                color =
-                                                    Gold,
-
-                                                fontSize =
-                                                    22.sp
-                                            )
-                                        }
-
-                                        Text(
-                                            text =
-                                                quantity
-                                                    .toString(),
-
-                                            color =
-                                                Cream,
-
-                                            fontWeight =
-                                                FontWeight
-                                                    .Bold
-                                        )
-
-                                        TextButton(
-                                            onClick = {
-
-                                                onIncrease(
-                                                    product.id
-                                                )
-                                            }
-                                        ) {
-
-                                            Text(
-                                                text =
-                                                    "+",
-
-                                                color =
-                                                    Gold,
-
-                                                fontSize =
-                                                    22.sp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                HorizontalDivider(
-                                    color =
-                                        Gold.copy(
-                                            alpha = 0.18f
-                                        )
-                                )
-                            }
-                    }
-                }
-
-                Spacer(
-                    modifier =
-                        Modifier.height(12.dp)
-                )
-
-                Text(
-                    text =
-                        "المبلغ المطلوب",
-
-                    color = Gold,
-                    fontSize = 16.sp,
-
-                    fontWeight =
-                        FontWeight.SemiBold
-                )
-
-                Text(
-                    text =
-                        formatPrice(
-                            totalAmount
-                        ),
-
-                    color = GoldLight,
-                    fontSize = 23.sp,
-
-                    fontWeight =
-                        FontWeight.Bold
-                )
-            }
-        },
-
-        confirmButton = {
-
-            Button(
-                onClick = onClose,
-
-                colors =
-                    ButtonDefaults
-                        .buttonColors(
-                            containerColor =
-                                Gold,
-
-                            contentColor =
-                                Black
-                        )
-            ) {
-
-                Text(
-                    text =
-                        "متابعة التسوق"
-                )
-            }
-        }
-    )
-}
-
-@Composable
-fun RemoteProductImage(
-    url: String
-) {
-
-    var bitmap by remember(url) {
-
-        mutableStateOf<
-                android.graphics.Bitmap?
-                >(null)
-    }
-
-    LaunchedEffect(url) {
-
-        Thread {
-
-            try {
-
-                val stream =
-                    URL(url).openStream()
-
-                val loaded =
-                    BitmapFactory
-                        .decodeStream(stream)
-
-                stream.close()
-
-                bitmap = loaded
-
-            } catch (_: Exception) {
-
-                bitmap = null
-            }
-
-        }.start()
-    }
-
-    if (bitmap != null) {
-
-        Image(
-            bitmap =
-                bitmap!!.asImageBitmap(),
-
-            contentDescription =
-                "صورة المنتج",
-
-            modifier =
-                Modifier.fillMaxSize(),
-
-            contentScale =
-                ContentScale.Crop
-        )
-
-    } else {
-
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Color(0xFF1C1C1C)
-                    ),
-
-            contentAlignment =
-                Alignment.Center
-        ) {
-
-            Text(
-                text =
-                    "جاري تحميل الصورة...",
-
-                color = Gold,
-                fontSize = 13.sp
-            )
-        }
-    }
-}
+        modifier
