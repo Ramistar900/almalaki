@@ -150,6 +150,7 @@ fun AdminScreen(
             AdminSection.TOP_PRODUCTS -> refreshDashboard()
             AdminSection.PRODUCTS -> refreshProducts()
             AdminSection.ORDERS -> refreshOrders()
+            AdminSection.ARCHIVE -> refreshArchive()
         }
     }
 
