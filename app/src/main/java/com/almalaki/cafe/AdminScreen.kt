@@ -268,6 +268,20 @@ fun AdminScreen(
                                 message = e.message ?: "تعذر تحديث حالة الطلب."
                             }
                         }.start()
+                    },
+                    onDeleteOrder = { orderId ->
+                        Thread {
+                            try {
+                                deleteCancelledOrder(
+                                    accessToken = accessToken,
+                                    orderId = orderId
+                                )
+                                orders = loadAdminOrders(accessToken)
+                                message = "تم حذف الطلب الملغى ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر حذف الطلب."
+                            }
+                        }.start()
                     }
                 )
             }
@@ -366,6 +380,17 @@ fun AdminScreen(
                                 message = "تم تحديث حالة الطلب ✅"
                             } catch (e: Exception) {
                                 message = e.message ?: "تعذر تحديث حالة الطلب."
+                            }
+                        }.start()
+                    },
+                    onDeleteOrder = { orderId ->
+                        Thread {
+                            try {
+                                deleteCancelledOrder(accessToken, orderId)
+                                orders = loadAdminOrders(accessToken)
+                                message = "تم حذف الطلب الملغى ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر حذف الطلب."
                             }
                         }.start()
                     }
