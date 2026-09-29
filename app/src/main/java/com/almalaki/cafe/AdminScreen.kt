@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,8 +10,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,19 +21,80 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
-private const val ADMIN_SUPABASE_URL = "https://duvxxskgdmgrtaleedqu.supabase.co"
-private const val ADMIN_SUPABASE_KEY = "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
+private const val ADMIN_SUPABASE_URL =
+    "https://duvxxskgdmgrtaleedqu.supabase.co"
+
+private const val ADMIN_SUPABASE_KEY =
+    "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
+
 private val AdminGold = Color(0xFFD4AF37)
 private val AdminBlack = Color(0xFF050505)
 private val AdminCream = Color(0xFFF5F0E5)
+private val AdminPanel = Color(0xFF111111)
 
-data class AdminOrder(val id: Long, val orderNumber: String, val customerName: String, val customerPhone: String, val deliveryAddress: String, val fulfillmentType: String, val totalAmount: Double, val status: String)
-data class AdminOrderItem(val id: Long, val orderId: Long, val productId: Int, val quantity: Int, val unitPrice: Double, val subtotal: Double)
+private enum class AdminSection {
+    HOME,
+    PRODUCTS,
+    ORDERS,
+    SALES,
+    TOP_PRODUCTS
+}
+
+data class AdminOrder(
+    val id: Long,
+    val orderNumber: String,
+    val customerName: String,
+    val customerPhone: String,
+    val deliveryAddress: String,
+    val fulfillmentType: String,
+    val totalAmount: Double,
+    val status: String
+)
+
+data class AdminOrderItem(
+    val id: Long,
+    val orderId: Long,
+    val productId: Int,
+    val quantity: Int,
+    val unitPrice: Double,
+    val subtotal: Double
+)
+
+data class AdminSalesStats(
+    val today: Double = 0.0,
+    val week: Double = 0.0,
+    val month: Double = 0.0,
+    val todayOrders: Int = 0,
+    val weekOrders: Int = 0,
+    val monthOrders: Int = 0
+)
+
+data class AdminTopProduct(
+    val productId: Int,
+    val name: String,
+    val quantity: Int,
+    val revenue: Double
+)
 
 @Composable
-fun AdminScreen(accessToken: String, onLogout: () -> Unit) {
+fun AdminScreen(
+    accessToken: String,
+    onLogout: () -> Unit
+) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape =
+        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    var section by remember { mutableStateOf(AdminSection.HOME) }
+    var menuOpen by remember { mutableStateOf(false) }
+
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
@@ -38,277 +102,489 @@ fun AdminScreen(accessToken: String, onLogout: () -> Unit) {
     var editingProductId by remember { mutableStateOf<Int?>(null) }
     var message by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
+
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var orders by remember { mutableStateOf<List<AdminOrder>>(emptyList()) }
-    var loadingOrders by remember { mutableStateOf(false) }
+    var salesStats by remember { mutableStateOf(AdminSalesStats()) }
+    var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
+    var loadingDashboard by remember { mutableStateOf(false) }
 
-    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        selectedImageUri = uri
-        message = if (uri != null) "تم اختيار الصورة ✅" else ""
+    val imagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri ->
+            selectedImageUri = uri
+            message = if (uri != null) "تم اختيار الصورة ✅" else ""
+        }
+
+    fun refreshProducts() {
+        Thread {
+            try {
+                products = loadProducts()
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر تحميل المنتجات."
+            }
+        }.start()
     }
 
-    fun refreshProducts() { Thread { try { products = loadProducts() } catch (e: Exception) { message = e.message ?: "تعذر تحميل المنتجات." } }.start() }
-    fun refreshOrders() { loadingOrders = true; Thread { try { orders = loadAdminOrders(accessToken) } catch (e: Exception) { message = e.message ?: "تعذر تحميل الطلبات." } finally { loadingOrders = false } }.start() }
-    LaunchedEffect(Unit) { refreshProducts(); refreshOrders() }
-
-    Column(Modifier.fillMaxSize().background(AdminBlack).padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("لوحة المالك 👑", color = AdminGold, fontSize = 26.sp)
-            TextButton(onClick = onLogout) { Text("خروج", color = AdminGold) }
-        }
-        Spacer(Modifier.height(12.dp))
-        Text(if (editingProductId == null) "إضافة منتج" else "تعديل المنتج", color = AdminGold, fontSize = 22.sp)
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("اسم المنتج") })
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(category, { category = it }, Modifier.fillMaxWidth(), label = { Text("التصنيف") })
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(price, { price = it }, Modifier.fillMaxWidth(), label = { Text("السعر بالليرة السورية") })
-        Spacer(Modifier.height(10.dp))
-        OutlinedButton({ imagePicker.launch("image/*") }, Modifier.fillMaxWidth()) { Text(if (selectedImageUri == null) "📷 اختيار صورة المنتج" else "✅ تم اختيار صورة المنتج") }
-        Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
-                if (name.isBlank()) { message = "اكتب اسم المنتج."; return@Button }
-                val priceValue = price.replace(",", ".").toDoubleOrNull()
-                if (priceValue == null) { message = "أدخل سعرًا صحيحًا."; return@Button }
-                loading = true; message = "جاري الحفظ..."
-                Thread {
-                    try {
-                        var imageUrl = ""
-                        selectedImageUri?.let { uri ->
-                            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: throw Exception("تعذر قراءة الصورة.")
-                            val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
-                            imageUrl = uploadProductImage(accessToken, bytes, mimeType)
-                        }
-                        val id = editingProductId
-                        if (id == null) { addProduct(accessToken, name.trim(), category.trim(), priceValue, imageUrl); message = "تمت إضافة المنتج بنجاح ✅" }
-                        else { updateAdminProduct(accessToken, id, name.trim(), category.trim(), priceValue, imageUrl); message = "تم تعديل المنتج بنجاح ✅" }
-                        products = loadProducts(); name = ""; category = ""; price = ""; selectedImageUri = null; editingProductId = null
-                    } catch (e: Exception) { message = e.message ?: "حدث خطأ أثناء الحفظ." } finally { loading = false }
-                }.start()
-            }, Modifier.weight(1f), enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = AdminGold, contentColor = AdminBlack)) { Text(if (loading) "جاري..." else if (editingProductId == null) "إضافة المنتج" else "حفظ التعديل") }
-            if (editingProductId != null) OutlinedButton({ editingProductId = null; name = ""; category = ""; price = ""; selectedImageUri = null; message = "" }, Modifier.weight(1f)) { Text("إلغاء") }
-        }
-        Spacer(Modifier.height(10.dp))
-        if (message.isNotEmpty()) Text(message, color = AdminCream)
-        Spacer(Modifier.height(16.dp))
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            item {
-                Text(
-                    "المنتجات الحالية",
-                    color = AdminGold,
-                    fontSize = 22.sp
-                )
-                Spacer(Modifier.height(8.dp))
+    fun refreshOrders() {
+        Thread {
+            try {
+                orders = loadAdminOrders(accessToken)
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر تحميل الطلبات."
             }
+        }.start()
+    }
 
-            items(products, key = { "product_" + it.id }) { product ->
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Text(product.name, color = AdminCream, fontSize = 18.sp)
-                    Text(
-                        "${product.category} • ${formatPrice(product.price)}",
-                        color = AdminGold
-                    )
-                    if (product.imageUrl.isNotEmpty()) {
-                        Text(
-                            "📷 توجد صورة للمنتج",
-                            color = AdminCream,
-                            fontSize = 13.sp
-                        )
+    fun refreshDashboard() {
+        loadingDashboard = true
+        Thread {
+            try {
+                val currentProducts = loadProducts()
+                val currentOrders = loadAdminOrders(accessToken)
+                val completedOrders =
+                    currentOrders.filter {
+                        it.status.equals("completed", ignoreCase = true)
                     }
-                    Spacer(Modifier.height(6.dp))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            {
-                                editingProductId = product.id
-                                name = product.name
-                                category = product.category
-                                price = product.price.toString()
-                                selectedImageUri = null
-                                message = "يمكنك تعديل بيانات المنتج الآن."
-                            },
-                            Modifier.weight(1f)
-                        ) { Text("تعديل") }
 
-                        OutlinedButton(
-                            {
-                                Thread {
-                                    try {
-                                        deleteProduct(accessToken, product.id)
-                                        products = loadProducts()
-                                        message = "تم حذف المنتج بنجاح ✅"
-                                    } catch (e: Exception) {
-                                        message = e.message ?: "تعذر حذف المنتج."
-                                    }
-                                }.start()
-                            },
-                            Modifier.weight(1f)
-                        ) {
-                            Text("حذف", color = Color.Red)
-                        }
-                    }
-                    HorizontalDivider(Modifier.padding(top = 8.dp))
-                }
-            }
-
-            item {
-                Spacer(Modifier.height(16.dp))
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("الطلبات", color = AdminGold, fontSize = 22.sp)
-                    OutlinedButton(
-                        { refreshOrders() },
-                        enabled = !loadingOrders
-                    ) {
-                        Text(if (loadingOrders) "جاري..." else "تحديث")
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-            }
-
-            items(orders, key = { "order_" + it.id }) { order ->
-                AdminOrderCard(
-                    order = order,
+                products = currentProducts
+                orders = currentOrders
+                salesStats = calculateSalesStats(accessToken)
+                topProducts = calculateTopProducts(
                     accessToken = accessToken,
-                    onUpdated = { refreshOrders() }
+                    completedOrders = completedOrders,
+                    products = currentProducts
+                )
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر تحديث لوحة التحكم."
+            } finally {
+                loadingDashboard = false
+            }
+        }.start()
+    }
+
+    LaunchedEffect(Unit) {
+        refreshDashboard()
+    }
+
+    fun openSection(target: AdminSection) {
+        section = target
+        menuOpen = false
+
+        when (target) {
+            AdminSection.HOME,
+            AdminSection.SALES,
+            AdminSection.TOP_PRODUCTS -> refreshDashboard()
+            AdminSection.PRODUCTS -> refreshProducts()
+            AdminSection.ORDERS -> refreshOrders()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AdminBlack)
+    ) {
+        if (isLandscape) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                AdminSidebar(
+                    section = section,
+                    onSectionSelected = ::openSection,
+                    onLogout = onLogout,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(220.dp)
+                )
+
+                VerticalDivider(color = AdminGold.copy(alpha = 0.35f))
+
+                AdminContent(
+                    section = section,
+                    products = products,
+                    orders = orders,
+                    salesStats = salesStats,
+                    topProducts = topProducts,
+                    loadingDashboard = loadingDashboard,
+                    message = message,
+                    name = name,
+                    category = category,
+                    price = price,
+                    selectedImageUri = selectedImageUri,
+                    editingProductId = editingProductId,
+                    loading = loading,
+                    accessToken = accessToken,
+                    context = context,
+                    onNameChange = { name = it },
+                    onCategoryChange = { category = it },
+                    onPriceChange = { price = it },
+                    onPickImage = { imagePicker.launch("image/*") },
+                    onEditProduct = {
+                        editingProductId = it.id
+                        name = it.name
+                        category = it.category
+                        price = it.price.toString()
+                        selectedImageUri = null
+                        message = "يمكنك تعديل بيانات المنتج الآن."
+                        section = AdminSection.PRODUCTS
+                    },
+                    onDeleteProduct = { product ->
+                        Thread {
+                            try {
+                                deleteProduct(
+                                    accessToken = accessToken,
+                                    id = product.id
+                                )
+                                products = loadProducts()
+                                message = "تم حذف المنتج بنجاح ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر حذف المنتج."
+                            }
+                        }.start()
+                    },
+                    onSaveProduct = {
+                        saveProduct(
+                            context = context,
+                            accessToken = accessToken,
+                            name = name,
+                            category = category,
+                            price = price,
+                            selectedImageUri = selectedImageUri,
+                            editingProductId = editingProductId,
+                            onLoading = { loading = it },
+                            onMessage = { message = it },
+                            onProductsLoaded = { products = it },
+                            onClear = {
+                                name = ""
+                                category = ""
+                                price = ""
+                                selectedImageUri = null
+                                editingProductId = null
+                            }
+                        )
+                    },
+                    onCancelEdit = {
+                        editingProductId = null
+                        name = ""
+                        category = ""
+                        price = ""
+                        selectedImageUri = null
+                        message = ""
+                    },
+                    onRefresh = { refreshDashboard() },
+                    onOrderStatus = { orderId, status ->
+                        Thread {
+                            try {
+                                updateOrderStatusAsync(
+                                    accessToken = accessToken,
+                                    orderId = orderId,
+                                    status = status
+                                )
+                                orders = loadAdminOrders(accessToken)
+                                salesStats = calculateSalesStats(accessToken)
+                                message = "تم تحديث حالة الطلب ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر تحديث حالة الطلب."
+                            }
+                        }.start()
+                    }
                 )
             }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                AdminTopBar(
+                    title = adminSectionTitle(section),
+                    menuOpen = menuOpen,
+                    onMenuClick = { menuOpen = !menuOpen },
+                    onLogout = onLogout
+                )
 
-            if (orders.isEmpty()) {
-                item {
-                    Text(
-                        if (loadingOrders)
-                            "جاري تحميل الطلبات..."
-                        else
-                            "لا توجد طلبات حاليًا.",
-                        color = AdminCream,
-                        modifier = Modifier.padding(vertical = 12.dp)
+                if (menuOpen) {
+                    AdminHorizontalMenu(
+                        section = section,
+                        onSectionSelected = ::openSection
                     )
                 }
+
+                AdminContent(
+                    section = section,
+                    products = products,
+                    orders = orders,
+                    salesStats = salesStats,
+                    topProducts = topProducts,
+                    loadingDashboard = loadingDashboard,
+                    message = message,
+                    name = name,
+                    category = category,
+                    price = price,
+                    selectedImageUri = selectedImageUri,
+                    editingProductId = editingProductId,
+                    loading = loading,
+                    accessToken = accessToken,
+                    context = context,
+                    onNameChange = { name = it },
+                    onCategoryChange = { category = it },
+                    onPriceChange = { price = it },
+                    onPickImage = { imagePicker.launch("image/*") },
+                    onEditProduct = {
+                        editingProductId = it.id
+                        name = it.name
+                        category = it.category
+                        price = it.price.toString()
+                        selectedImageUri = null
+                        message = "يمكنك تعديل بيانات المنتج الآن."
+                        section = AdminSection.PRODUCTS
+                    },
+                    onDeleteProduct = { product ->
+                        Thread {
+                            try {
+                                deleteProduct(accessToken, product.id)
+                                products = loadProducts()
+                                message = "تم حذف المنتج بنجاح ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر حذف المنتج."
+                            }
+                        }.start()
+                    },
+                    onSaveProduct = {
+                        saveProduct(
+                            context = context,
+                            accessToken = accessToken,
+                            name = name,
+                            category = category,
+                            price = price,
+                            selectedImageUri = selectedImageUri,
+                            editingProductId = editingProductId,
+                            onLoading = { loading = it },
+                            onMessage = { message = it },
+                            onProductsLoaded = { products = it },
+                            onClear = {
+                                name = ""
+                                category = ""
+                                price = ""
+                                selectedImageUri = null
+                                editingProductId = null
+                            }
+                        )
+                    },
+                    onCancelEdit = {
+                        editingProductId = null
+                        name = ""
+                        category = ""
+                        price = ""
+                        selectedImageUri = null
+                        message = ""
+                    },
+                    onRefresh = { refreshDashboard() },
+                    onOrderStatus = { orderId, status ->
+                        Thread {
+                            try {
+                                updateOrderStatusAsync(accessToken, orderId, status)
+                                orders = loadAdminOrders(accessToken)
+                                salesStats = calculateSalesStats(accessToken)
+                                message = "تم تحديث حالة الطلب ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر تحديث حالة الطلب."
+                            }
+                        }.start()
+                    }
+                )
             }
         }
-
     }
 }
 
 @Composable
-private fun AdminOrderCard(order: AdminOrder, accessToken: String, onUpdated: () -> Unit) {
-    var expanded by remember(order.id) { mutableStateOf(false) }
-    var orderItems by remember(order.id) { mutableStateOf<List<AdminOrderItem>>(emptyList()) }
-    var loadingItems by remember(order.id) { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text("طلب ${order.orderNumber}", color = AdminGold, fontSize = 18.sp)
-        Text("العميل: ${order.customerName}", color = AdminCream)
-        Text("الهاتف: ${order.customerPhone}", color = AdminCream)
-        if (order.deliveryAddress.isNotBlank()) Text("العنوان: ${order.deliveryAddress}", color = AdminCream)
-        Text("النوع: ${order.fulfillmentType}", color = AdminCream)
-        Text("المجموع: ${formatPrice(order.totalAmount)}", color = AdminGold)
-        Text("الحالة: ${adminStatusText(order.status)}", color = AdminCream)
-        Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton({
-                expanded = !expanded
-                if (expanded && orderItems.isEmpty()) { loadingItems = true; Thread { try { orderItems = loadOrderItems(accessToken, order.id) } catch (_: Exception) {} finally { loadingItems = false } }.start() }
-            }, Modifier.weight(1f)) { Text(if (expanded) "إخفاء التفاصيل" else "تفاصيل الطلب") }
-            OutlinedButton({ Thread { try { updateOrderStatusAsync(accessToken, order.id, "preparing"); onUpdated() } catch (_: Exception) {} }.start() }, Modifier.weight(1f)) { Text("تحضير") }
+private fun AdminSidebar(
+    section: AdminSection,
+    onSectionSelected: (AdminSection) -> Unit,
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .background(AdminPanel)
+            .padding(12.dp)
+    ) {
+        Text(
+            text = "الملكي 👑",
+            color = AdminGold,
+            fontSize = 25.sp,
+            modifier = Modifier.padding(8.dp)
+        )
+
+        Text(
+            text = "لوحة المالك",
+            color = AdminCream,
+            fontSize = 15.sp,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        AdminMenuItem("⌂", "الرئيسية", section == AdminSection.HOME) {
+            onSectionSelected(AdminSection.HOME)
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton({ Thread { try { updateOrderStatusAsync(accessToken, order.id, "ready"); onUpdated() } catch (_: Exception) {} }.start() }, Modifier.weight(1f)) { Text("جاهز") }
-            OutlinedButton({ Thread { try { updateOrderStatusAsync(accessToken, order.id, "completed"); onUpdated() } catch (_: Exception) {} }.start() }, Modifier.weight(1f)) { Text("مكتمل") }
+        AdminMenuItem("▣", "تعديل المنتجات", section == AdminSection.PRODUCTS) {
+            onSectionSelected(AdminSection.PRODUCTS)
         }
-        if (expanded) {
-            Spacer(Modifier.height(8.dp))
-            if (loadingItems) Text("جاري تحميل التفاصيل...", color = AdminCream)
-            else if (orderItems.isEmpty()) Text("لا توجد تفاصيل للطلب.", color = AdminCream)
-            else orderItems.forEach { item -> Text("المنتج #${item.productId} × ${item.quantity} — ${formatPrice(item.subtotal)}", color = AdminCream, modifier = Modifier.padding(vertical = 2.dp)) }
+        AdminMenuItem("▤", "الطلبات", section == AdminSection.ORDERS) {
+            onSectionSelected(AdminSection.ORDERS)
         }
-        HorizontalDivider(Modifier.padding(top = 10.dp))
+        AdminMenuItem("◈", "المبيعات", section == AdminSection.SALES) {
+            onSectionSelected(AdminSection.SALES)
+        }
+        AdminMenuItem("★", "الأكثر طلبًا", section == AdminSection.TOP_PRODUCTS) {
+            onSectionSelected(AdminSection.TOP_PRODUCTS)
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        OutlinedButton(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("تسجيل الخروج")
+        }
     }
 }
 
-private fun loadAdminOrders(accessToken: String): List<AdminOrder> {
-    val connection = URL("$ADMIN_SUPABASE_URL/rest/v1/orders?select=id,order_number,customer_name,customer_phone,delivery_address,fulfillment_type,total_amount,status&order=id.desc").openConnection() as HttpURLConnection
-    try {
-        connection.requestMethod = "GET"
-        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
-        connection.setRequestProperty("Authorization", "Bearer $accessToken")
-        val code = connection.responseCode
-        if (code !in 200..299) throw Exception("HTTP $code: ${connection.errorStream?.bufferedReader()?.readText() ?: "تعذر تحميل الطلبات."}")
-        val json = JSONArray(connection.inputStream.bufferedReader().readText())
-        val result = mutableListOf<AdminOrder>()
-        for (i in 0 until json.length()) {
-            val item = json.getJSONObject(i)
-            result.add(AdminOrder(item.getLong("id"), item.optString("order_number", ""), item.optString("customer_name", ""), item.optString("customer_phone", ""), item.optString("delivery_address", ""), item.optString("fulfillment_type", ""), item.optDouble("total_amount", 0.0), item.optString("status", "new")))
+@Composable
+private fun AdminMenuItem(
+    icon: String,
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val container = if (selected) AdminGold else Color.Transparent
+    val textColor = if (selected) AdminBlack else AdminCream
+
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = container,
+            contentColor = textColor
+        )
+    ) {
+        Text("$icon  $title")
+    }
+}
+
+@Composable
+private fun AdminTopBar(
+    title: String,
+    menuOpen: Boolean,
+    onMenuClick: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AdminPanel)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        IconButton(onClick = onMenuClick) {
+            Text(
+                text = if (menuOpen) "×" else "☰",
+                color = AdminGold,
+                fontSize = 27.sp
+            )
         }
-        return result
-    } finally { connection.disconnect() }
-}
 
-private fun loadOrderItems(accessToken: String, orderId: Long): List<AdminOrderItem> {
-    val connection = URL("$ADMIN_SUPABASE_URL/rest/v1/order_items?select=id,order_id,product_id,quantity,unit_price,subtotal&order_id=eq.$orderId&order=id.asc").openConnection() as HttpURLConnection
-    try {
-        connection.requestMethod = "GET"
-        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
-        connection.setRequestProperty("Authorization", "Bearer $accessToken")
-        val code = connection.responseCode
-        if (code !in 200..299) throw Exception("HTTP $code: ${connection.errorStream?.bufferedReader()?.readText() ?: "تعذر تحميل تفاصيل الطلب."}")
-        val json = JSONArray(connection.inputStream.bufferedReader().readText())
-        val result = mutableListOf<AdminOrderItem>()
-        for (i in 0 until json.length()) {
-            val item = json.getJSONObject(i)
-            result.add(AdminOrderItem(item.getLong("id"), item.getLong("order_id"), item.optInt("product_id", 0), item.optInt("quantity", 0), item.optDouble("unit_price", 0.0), item.optDouble("subtotal", 0.0)))
+        Text(
+            text = title,
+            color = AdminGold,
+            fontSize = 21.sp,
+            modifier = Modifier.weight(1f)
+        )
+
+        TextButton(onClick = onLogout) {
+            Text("خروج", color = AdminGold)
         }
-        return result
-    } finally { connection.disconnect() }
+    }
 }
 
-private fun updateAdminProduct(accessToken: String, id: Int, name: String, category: String, price: Double, imageUrl: String) {
-    val connection = URL("$ADMIN_SUPABASE_URL/rest/v1/products?id=eq.$id").openConnection() as HttpURLConnection
-    try {
-        connection.requestMethod = "PATCH"; connection.doOutput = true
-        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
-        connection.setRequestProperty("Authorization", "Bearer $accessToken")
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.setRequestProperty("Prefer", "return=minimal")
-        val body = JSONObject().apply { put("name", name); put("category", category); put("price", price); put("description", name); if (imageUrl.isNotBlank()) put("image_url", imageUrl) }.toString()
-        connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-        val code = connection.responseCode
-        if (code !in 200..299) throw Exception("HTTP $code: ${connection.errorStream?.bufferedReader()?.readText() ?: "تعذر تعديل المنتج."}")
-    } finally { connection.disconnect() }
+@Composable
+private fun AdminHorizontalMenu(
+    section: AdminSection,
+    onSectionSelected: (AdminSection) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AdminPanel)
+            .heightIn(max = 280.dp)
+            .padding(horizontal = 8.dp)
+    ) {
+        item {
+            AdminMenuItem("⌂", "الرئيسية", section == AdminSection.HOME) {
+                onSectionSelected(AdminSection.HOME)
+            }
+        }
+        item {
+            AdminMenuItem("▣", "تعديل المنتجات", section == AdminSection.PRODUCTS) {
+                onSectionSelected(AdminSection.PRODUCTS)
+            }
+        }
+        item {
+            AdminMenuItem("▤", "الطلبات", section == AdminSection.ORDERS) {
+                onSectionSelected(AdminSection.ORDERS)
+            }
+        }
+        item {
+            AdminMenuItem("◈", "المبيعات", section == AdminSection.SALES) {
+                onSectionSelected(AdminSection.SALES)
+            }
+        }
+        item {
+            AdminMenuItem("★", "الأكثر طلبًا", section == AdminSection.TOP_PRODUCTS) {
+                onSectionSelected(AdminSection.TOP_PRODUCTS)
+            }
+        }
+    }
 }
 
-private fun updateOrderStatusAsync(accessToken: String, orderId: Long, status: String) {
-    val connection = URL("$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId").openConnection() as HttpURLConnection
-    try {
-        connection.requestMethod = "PATCH"; connection.doOutput = true
-        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
-        connection.setRequestProperty("Authorization", "Bearer $accessToken")
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.setRequestProperty("Prefer", "return=minimal")
-        connection.outputStream.use { it.write(JSONObject().put("status", status).toString().toByteArray(Charsets.UTF_8)) }
-        val code = connection.responseCode
-        if (code !in 200..299) throw Exception("HTTP $code: ${connection.errorStream?.bufferedReader()?.readText() ?: "تعذر تحديث حالة الطلب."}")
-    } finally { connection.disconnect() }
-}
-
-private fun adminStatusText(status: String): String = when (status.lowercase()) {
-    "new" -> "جديد 🆕"
-    "preparing" -> "قيد التحضير 👨‍🍳"
-    "ready" -> "جاهز ✅"
-    "completed" -> "مكتمل 🎉"
-    "cancelled" -> "ملغى ❌"
-    else -> status
-}
+@Composable
+private fun AdminContent(
+    section: AdminSection,
+    products: List<Product>,
+    orders: List<AdminOrder>,
+    salesStats: AdminSalesStats,
+    topProducts: List<AdminTopProduct>,
+    loadingDashboard: Boolean,
+    message: String,
+    name: String,
+    category: String,
+    price: String,
+    selectedImageUri: Uri?,
+    editingProductId: Int?,
+    loading: Boolean,
+    accessToken: String,
+    context: android.content.Context,
+    onNameChange: (String) -> Unit,
+    onCategoryChange: (String) -> Unit,
+    onPriceChange: (String) -> Unit,
+    onPickImage: () -> Unit,
+    onEditProduct: (Product) -> Unit,
+    onDeleteProduct: (Product) -> Unit,
+    onSaveProduct: () -> Unit,
+    onCancelEdit: () -> Unit,
+    onRefresh: () -> Unit,
+    onOrderStatus: (Long, String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        when (section) {
+            AdminSection.HOME -> {
+                item {
+                    DashboardHeader(
+                        
