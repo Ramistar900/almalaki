@@ -138,19 +138,82 @@ fun deleteCancelledOrder(accessToken: String, orderId: Long) {
     adminRequest("DELETE", "orders?id=eq.$orderId&status=eq.cancelled", accessToken)
 }
 
-fun calculateSalesStats(accessToken: String): AdminSalesStats {
-    val completed = loadAdminOrders(accessToken).filter { it.status.equals("completed", true) }
-    val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0); set(Calendar.MILLISECOND,0) }
-    val week = Calendar.getInstance().apply { set(Calendar.DAY_OF_WEEK, firstDayOfWeek); set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0); set(Calendar.MILLISECOND,0) }
-    val month = Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH,1); set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0); set(Calendar.MILLISECOND,0) }
-    var td=0.0; var wk=0.0; var mo=0.0; var tdo=0; var wko=0; var moO=0
-    for (order in completed) {
-        val date = parseSupabaseDate(order.createdAt) ?: continue
-        if (!date.before(month.time)) { mo += order.totalAmount; moO++ }
-        if (!date.before(week.time)) { wk += order.totalAmount; wko++ }
-        if (!date.before(today.time)) { td += order.totalAmount; tdo++ }
+private data class SaleRecord(
+    val totalAmount: Double,
+    val soldAt: Date
+)
+
+private fun loadSalesHistory(accessToken: String): List<SaleRecord> {
+    val response = adminRequest(
+        "GET",
+        "sales_history?select=total_amount,sold_at&order=sold_at.desc",
+        accessToken
+    )
+    val json = JSONArray(response)
+    val result = mutableListOf<SaleRecord>()
+
+    for (i in 0 until json.length()) {
+        val item = json.getJSONObject(i)
+        val soldAt = parseSupabaseDate(item.optString("sold_at", "")) ?: continue
+        result.add(
+            SaleRecord(
+                totalAmount = item.optDouble("total_amount", 0.0),
+                soldAt = soldAt
+            )
+        )
     }
-    return AdminSalesStats(td, wk, mo, tdo, wko, moO)
+    return result
+}
+
+fun calculateSalesStats(accessToken: String): AdminSalesStats {
+    // المبيعات تُقرأ من sales_history، وليس من orders.
+    // لذلك تبقى الإحصائيات محفوظة حتى بعد حذف الطلبات.
+    val sales = loadSalesHistory(accessToken)
+
+    val today = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    val week = Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    val month = Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_MONTH, 1)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+    var td = 0.0
+    var wk = 0.0
+    var mo = 0.0
+    var tdo = 0
+    var wko = 0
+    var moo = 0
+
+    for (sale in sales) {
+        if (!sale.soldAt.before(month.time)) {
+            mo += sale.totalAmount
+            moo++
+        }
+        if (!sale.soldAt.before(week.time)) {
+            wk += sale.totalAmount
+            wko++
+        }
+        if (!sale.soldAt.before(today.time)) {
+            td += sale.totalAmount
+            tdo++
+        }
+    }
+
+    return AdminSalesStats(td, wk, mo, tdo, wko, moo)
 }
 
 fun calculateTopProducts(accessToken: String, completedOrders: List<AdminOrder>, products: List<Product>): List<AdminTopProduct> {
