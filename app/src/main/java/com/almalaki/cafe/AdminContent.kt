@@ -1,10 +1,6 @@
 package com.almalaki.cafe
 
-import android.content.res.Configuration
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,20 +8,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.json.JSONArray
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 @Composable
 fun AdminContent(
@@ -63,6 +47,7 @@ fun AdminContent(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         when (section) {
+
             AdminSection.HOME -> {
                 item {
                     DashboardHeader(
@@ -70,15 +55,18 @@ fun AdminContent(
                         onRefresh = onRefresh
                     )
                 }
+
                 item {
                     SalesCards(salesStats)
                 }
+
                 item {
                     QuickStats(
                         ordersCount = orders.size,
                         productsCount = products.size
                     )
                 }
+
                 item {
                     Text(
                         text = "الأكثر طلبًا 🔥",
@@ -86,6 +74,7 @@ fun AdminContent(
                         fontSize = 21.sp
                     )
                 }
+
                 items(topProducts.take(5)) { product ->
                     TopProductRow(product)
                 }
@@ -108,9 +97,11 @@ fun AdminContent(
                         onCancelEdit = onCancelEdit
                     )
                 }
+
                 item {
                     SectionTitle("المنتجات الحالية")
                 }
+
                 items(products, key = { it.id }) { product ->
                     ProductRow(
                         product = product,
@@ -121,7 +112,10 @@ fun AdminContent(
             }
 
             AdminSection.ORDERS -> {
-                item { SectionTitle("الطلبات") }
+                item {
+                    SectionTitle("الطلبات")
+                }
+
                 if (orders.isEmpty()) {
                     item {
                         Text(
@@ -141,6 +135,20 @@ fun AdminContent(
                 }
             }
 
+            AdminSection.ARCHIVE -> {
+                item {
+                    SectionTitle("الأرشيف 📦")
+                }
+
+                item {
+                    Text(
+                        text = "قسم الأرشيف جاهز. سنربطه بالطلبات المؤرشفة في الخطوة التالية.",
+                        color = AdminCream,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+
             AdminSection.SALES -> {
                 item {
                     DashboardHeader(
@@ -148,7 +156,11 @@ fun AdminContent(
                         onRefresh = onRefresh
                     )
                 }
-                item { SalesCards(salesStats) }
+
+                item {
+                    SalesCards(salesStats)
+                }
+
                 item {
                     SalesInfo(
                         todayOrders = salesStats.todayOrders,
@@ -165,7 +177,11 @@ fun AdminContent(
                         onRefresh = onRefresh
                     )
                 }
-                item { SectionTitle("الأكثر طلبًا 🔥") }
+
+                item {
+                    SectionTitle("الأكثر طلبًا 🔥")
+                }
+
                 if (topProducts.isEmpty()) {
                     item {
                         Text(
@@ -205,12 +221,15 @@ fun DashboardHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
                 text = "لوحة المالك 👑",
                 color = AdminGold,
                 fontSize = 25.sp
             )
+
             Text(
                 text = "ملخص نشاط الكافيه",
                 color = AdminCream,
@@ -222,29 +241,60 @@ fun DashboardHeader(
             onClick = onRefresh,
             enabled = !loading
         ) {
-            Text(if (loading) "جاري..." else "تحديث")
+            Text(
+                if (loading) "جاري..."
+                else "تحديث"
+            )
         }
     }
 }
 
 @Composable
 fun SalesCards(stats: AdminSalesStats) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SalesCard("إجمالي مبيعات اليوم", stats.today)
-        SalesCard("إجمالي مبيعات هذا الأسبوع", stats.week)
-        SalesCard("إجمالي مبيعات هذا الشهر", stats.month)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SalesCard(
+            "إجمالي مبيعات اليوم",
+            stats.today
+        )
+
+        SalesCard(
+            "إجمالي مبيعات هذا الأسبوع",
+            stats.week
+        )
+
+        SalesCard(
+            "إجمالي مبيعات هذا الشهر",
+            stats.month
+        )
     }
 }
 
 @Composable
-fun SalesCard(title: String, amount: Double) {
+fun SalesCard(
+    title: String,
+    amount: Double
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+        colors = CardDefaults.cardColors(
+            containerColor = AdminPanel
+        )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, color = AdminCream, fontSize = 15.sp)
-            Spacer(modifier = Modifier.height(5.dp))
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                title,
+                color = AdminCream,
+                fontSize = 15.sp
+            )
+
+            Spacer(
+                modifier = Modifier.height(5.dp)
+            )
+
             Text(
                 formatPrice(amount),
                 color = AdminGold,
@@ -263,8 +313,17 @@ fun QuickStats(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SmallStat("الطلبات", ordersCount.toString(), Modifier.weight(1f))
-        SmallStat("المنتجات", productsCount.toString(), Modifier.weight(1f))
+        SmallStat(
+            "الطلبات",
+            ordersCount.toString(),
+            Modifier.weight(1f)
+        )
+
+        SmallStat(
+            "المنتجات",
+            productsCount.toString(),
+            Modifier.weight(1f)
+        )
     }
 }
 
@@ -276,11 +335,23 @@ fun SmallStat(
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+        colors = CardDefaults.cardColors(
+            containerColor = AdminPanel
+        )
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(title, color = AdminCream)
-            Text(value, color = AdminGold, fontSize = 22.sp)
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                title,
+                color = AdminCream
+            )
+
+            Text(
+                value,
+                color = AdminGold,
+                fontSize = 22.sp
+            )
         }
     }
 }
@@ -291,15 +362,30 @@ fun SalesInfo(
     weekOrders: Int,
     monthOrders: Int
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("طلبات اليوم: $todayOrders", color = AdminCream)
-        Text("طلبات هذا الأسبوع: $weekOrders", color = AdminCream)
-        Text("طلبات هذا الشهر: $monthOrders", color = AdminCream)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            "طلبات اليوم: $todayOrders",
+            color = AdminCream
+        )
+
+        Text(
+            "طلبات هذا الأسبوع: $weekOrders",
+            color = AdminCream
+        )
+
+        Text(
+            "طلبات هذا الشهر: $monthOrders",
+            color = AdminCream
+        )
     }
 }
 
 @Composable
-fun SectionTitle(title: String) {
+fun SectionTitle(
+    title: String
+) {
     Text(
         text = title,
         color = AdminGold,
@@ -307,4 +393,3 @@ fun SectionTitle(title: String) {
         modifier = Modifier.padding(vertical = 6.dp)
     )
 }
-
