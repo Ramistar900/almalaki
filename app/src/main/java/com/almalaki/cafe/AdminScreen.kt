@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
-// Shared admin models used by AdminContent, AdminProductsOrders and AdminBackend.
 data class AdminOrder(
     val id: Long,
     val orderNumber: String,
@@ -58,6 +57,7 @@ fun AdminScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
+
     val isLandscape =
         configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -129,9 +129,13 @@ fun AdminScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         selectedImageUri = uri
+
         message =
-            if (uri != null) "تم اختيار الصورة ✅"
-            else ""
+            if (uri != null) {
+                "تم اختيار الصورة ✅"
+            } else {
+                ""
+            }
     }
 
     fun refreshProducts() {
@@ -152,16 +156,17 @@ fun AdminScreen(
                 val loaded =
                     loadAdminOrders(accessToken)
 
-                orders = loaded.filter {
-                    !it.status.equals(
-                        "completed",
-                        ignoreCase = true
-                    ) &&
-                    !it.status.equals(
-                        "cancelled",
-                        ignoreCase = true
-                    )
-                }
+                orders =
+                    loaded.filter {
+                        !it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        ) &&
+                        !it.status.equals(
+                            "cancelled",
+                            ignoreCase = true
+                        )
+                    }
             } catch (e: Exception) {
                 message =
                     e.message ?: "تعذر تحميل الطلبات."
@@ -178,9 +183,11 @@ fun AdminScreen(
                     loadArchivedOrders(accessToken)
 
                 archivedOrders = loaded
+
             } catch (e: Exception) {
                 message =
                     e.message ?: "تعذر تحميل الأرشيف."
+
             } finally {
                 loadingArchive = false
             }
@@ -235,8 +242,8 @@ fun AdminScreen(
 
             } catch (e: Exception) {
                 message =
-                    e.message
-                        ?: "تعذر تحديث لوحة التحكم."
+                    e.message ?: "تعذر تحديث لوحة التحكم."
+
             } finally {
                 loadingDashboard = false
             }
@@ -250,12 +257,185 @@ fun AdminScreen(
         selectedImageUri = null
         editingProductId = null
     }
-    
 
     fun openSection(target: AdminSection) {
         section = target
         menuOpen = false
 
         when (target) {
-            AdminSection.HOME
-            AdminSection.SALES
+            AdminSection.HOME -> {
+                refreshDashboard()
+            }
+
+            AdminSection.PRODUCTS -> {
+                refreshProducts()
+            }
+
+            AdminSection.ORDERS -> {
+                refreshOrders()
+            }
+
+            AdminSection.ARCHIVE -> {
+                refreshArchive()
+            }
+
+            AdminSection.SALES -> {
+                refreshDashboard()
+            }
+
+            AdminSection.TOP_PRODUCTS -> {
+                refreshDashboard()
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshDashboard()
+        refreshArchive()
+    }
+
+    fun saveCurrentProduct() {
+        saveProduct(
+            context = context,
+            accessToken = accessToken,
+            name = name,
+            category = category,
+            price = price,
+            selectedImageUri = selectedImageUri,
+            editingProductId = editingProductId,
+            onLoading = {
+                loading = it
+            },
+            onMessage = {
+                message = it
+            },
+            onProductsLoaded = {
+                products = it
+            },
+            onClear = {
+                clearProductForm()
+            }
+        )
+    }
+
+    fun editProduct(product: Product) {
+        editingProductId = product.id
+        name = product.name
+        category = product.category
+        price = product.price.toString()
+        selectedImageUri = null
+        section = AdminSection.PRODUCTS
+        menuOpen = false
+        message = "يمكنك تعديل بيانات المنتج الآن."
+    }
+
+    fun removeProduct(product: Product) {
+        Thread {
+            try {
+                deleteProduct(
+                    accessToken,
+                    product.id
+                )
+
+                products = loadProducts()
+
+                message =
+                    "تم حذف المنتج بنجاح ✅"
+
+            } catch (e: Exception) {
+                message =
+                    e.message ?: "تعذر حذف المنتج."
+            }
+        }.start()
+    }
+
+    fun changeOrderStatus(
+        orderId: Long,
+        status: String
+    ) {
+        Thread {
+            try {
+                updateOrderStatusAsync(
+                    accessToken,
+                    orderId,
+                    status
+                )
+
+                val currentOrders =
+                    loadAdminOrders(accessToken)
+
+                orders =
+                    currentOrders.filter {
+                        !it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        ) &&
+                        !it.status.equals(
+                            "cancelled",
+                            ignoreCase = true
+                        )
+                    }
+
+                salesStats =
+                    calculateSalesStats(accessToken)
+
+                val completed =
+                    currentOrders.filter {
+                        it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        )
+                    }
+
+                topProducts =
+                    calculateTopProducts(
+                        accessToken,
+                        completed,
+                        products
+                    )
+
+                refreshArchive()
+
+                message =
+                    "تم تحديث حالة الطلب ✅"
+
+            } catch (e: Exception) {
+                message =
+                    e.message ?: "تعذر تحديث حالة الطلب."
+            }
+        }.start()
+    }
+
+    fun removeCancelledOrder(
+        orderId: Long
+    ) {
+        Thread {
+            try {
+                deleteCancelledOrder(
+                    accessToken,
+                    orderId
+                )
+
+                val currentOrders =
+                    loadAdminOrders(accessToken)
+
+                orders =
+                    currentOrders.filter {
+                        !it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        ) &&
+                        !it.status.equals(
+                            "cancelled",
+                            ignoreCase = true
+                        )
+                    }
+
+                refreshArchive()
+
+                message =
+                    "تم حذف الطلب وأرشفته ✅"
+
+            } catch (e: Exception) {
+                message =
+                    e
