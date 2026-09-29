@@ -250,11 +250,12 @@ fun AdminScreen(
         selectedImageUri = null
         editingProductId = null
     }
+    
 
     fun openSection(target: AdminSection) {
         section = target
         menuOpen = false
 
         when (target) {
-            AdminSection.HOME,
+            AdminSection.HOME
             AdminSection.SALES
