@@ -440,6 +440,9 @@ fun AdminScreen(
             }
         }.start()
         }
-            } catch (e: Exception) {
-    message = e.message ?: "تعذر حذف الطلب."
+                        } catch (e: Exception) {
+                message = e.message ?: "تعذر حذف الطلب."
             }
+        }.start()
+    }
+}
