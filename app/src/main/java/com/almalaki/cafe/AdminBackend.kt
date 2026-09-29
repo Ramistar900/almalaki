@@ -16,6 +16,7 @@ fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.HOME -> "الرئيسية"
     AdminSection.PRODUCTS -> "تعديل المنتجات"
     AdminSection.ORDERS -> "الطلبات"
+    AdminSection.ARCHIVE -> "الأرشيف"
     AdminSection.SALES -> "المبيعات"
     AdminSection.TOP_PRODUCTS -> "الأكثر طلبًا"
 }
