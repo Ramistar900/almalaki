@@ -97,16 +97,6 @@ private fun insertOrder(
         connection.requestMethod = "POST"
         connection.doOutput = true
 
-        /*
-         * مهم جدًا:
-         * Publishable Key يرسل في apikey فقط.
-         *
-         * لا نضع:
-         * Authorization: Bearer $ORDER_SUPABASE_KEY
-         *
-         * لأن المفتاح ليس JWT للمستخدم.
-         */
-
         connection.setRequestProperty(
             "apikey",
             ORDER_SUPABASE_KEY
@@ -118,13 +108,13 @@ private fun insertOrder(
         )
 
         /*
-         * لا نطلب representation حتى لا نحتاج
-         * إلى صلاحية SELECT للعميل.
+         * مهم:
+         * لا نستخدم return=representation
+         * لأنه يحتاج SELECT.
          *
-         * Supabase/PostgREST سيعيد Location
-         * يحتوي على رقم السجل الجديد.
+         * headers-only يعيد Location
+         * بدون إعادة بيانات الصف.
          */
-
         connection.setRequestProperty(
             "Prefer",
             "return=headers-only"
@@ -167,77 +157,83 @@ private fun insertOrder(
             "new"
         )
 
-        connection.outputStream.use {
-            it.write(
+        connection.outputStream.use { output ->
+
+            output.write(
                 body.toString()
                     .toByteArray(Charsets.UTF_8)
             )
+
+            output.flush()
         }
 
-        val code =
+        val responseCode =
             connection.responseCode
 
-        if (code !in 200..299) {
+        if (responseCode !in 200..299) {
 
             val error =
                 connection.errorStream
                     ?.bufferedReader()
-                    ?.readText()
+                    ?.use { it.readText() }
                     ?: "فشل إنشاء الطلب."
 
             throw Exception(
-                "HTTP $code: $error"
+                "HTTP $responseCode: $error"
             )
         }
 
         /*
-         * PostgREST يعيد Location مثل:
+         * PostgREST يعيد عادة:
          *
          * /orders?id=eq.123
          *
-         * نحاول قراءته من Location أولًا.
+         * أو رابطًا كاملًا.
          */
 
         val location =
             connection.getHeaderField("Location")
-                ?: connection.getHeaderField("Content-Location")
+
+        val contentLocation =
+            connection.getHeaderField(
+                "Content-Location"
+            )
 
         val orderId =
-            extractIdFromLocation(location)
+            extractOrderId(location)
+                ?: extractOrderId(contentLocation)
 
         if (orderId != null) {
             return orderId
         }
 
         /*
-         * في بعض البيئات قد يكون الرابط داخل
-         * أحد رؤوس الاستجابة الأخرى.
+         * نجرب جميع الرؤوس لأن بعض الخوادم
+         * قد تعيد الرأس باسم مختلف.
          */
 
-        val headers =
+        val headerFields =
             connection.headerFields
 
-        for ((name, values) in headers) {
+        for ((headerName, values) in headerFields) {
 
-            if (
-                name != null &&
-                values != null
-            ) {
+            if (values.isNullOrEmpty()) {
+                continue
+            }
 
-                for (value in values) {
+            for (value in values) {
 
-                    val id =
-                        extractIdFromLocation(value)
+                val id =
+                    extractOrderId(value)
 
-                    if (id != null) {
-                        return id
-                    }
+                if (id != null) {
+                    return id
                 }
             }
         }
 
         throw Exception(
-            "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
+            "تم إنشاء الطلب، لكن لم يتم الحصول على رقم الطلب الداخلي."
         )
 
     } finally {
@@ -246,148 +242,24 @@ private fun insertOrder(
     }
 }
 
-private fun extractIdFromLocation(
-    location: String?
+private fun extractOrderId(
+    value: String?
 ): Long? {
 
-    if (location.isNullOrBlank()) {
+    if (value.isNullOrBlank()) {
         return null
     }
 
     /*
-     * مثال:
-     * /orders?id=eq.123
+     * أمثلة مقبولة:
      *
-     * أو:
-     * https://.../orders?id=eq.123
+     * /orders?id=eq.22
+     *
+     * https://.../orders?id=eq.22
+     *
+     * /orders?id=eq.22&...
      */
 
-    val regex =
-        Regex("""[?&]id=eq[.]([0-9]+)""")
-
-    val match =
-        regex.find(location)
-
-    return match
-        ?.groupValues
-        ?.getOrNull(1)
-        ?.toLongOrNull()
-}
-
-private fun insertOrderItems(
-    orderId: Long,
-    products: List<Product>,
-    cart: Map<Int, Int>
-) {
-
-    val jsonArray = JSONArray()
-
-    products.forEach { product ->
-
-        val quantity =
-            cart[product.id] ?: 0
-
-        if (quantity > 0) {
-
-            val item = JSONObject()
-
-            item.put(
-                "order_id",
-                orderId
-            )
-
-            item.put(
-                "product_id",
-                product.id
-            )
-
-            item.put(
-                "product_name",
-                product.name
-            )
-
-            item.put(
-                "unit_price",
-                product.price
-            )
-
-            item.put(
-                "quantity",
-                quantity
-            )
-
-            item.put(
-                "item_total",
-                product.price * quantity
-            )
-
-            jsonArray.put(item)
-        }
-    }
-
-    if (jsonArray.length() == 0) {
-
-        throw Exception(
-            "لا توجد منتجات في الطلب."
-        )
-    }
-
-    val url = URL(
-        "$ORDER_SUPABASE_URL/rest/v1/order_items"
-    )
-
-    val connection =
-        url.openConnection() as HttpURLConnection
-
-    try {
-
-        connection.requestMethod = "POST"
-        connection.doOutput = true
-
-        connection.setRequestProperty(
-            "apikey",
-            ORDER_SUPABASE_KEY
-        )
-
-        connection.setRequestProperty(
-            "Content-Type",
-            "application/json"
-        )
-
-        /*
-         * لا نحتاج إلى قراءة البيانات بعد الإدخال.
-         */
-
-        connection.setRequestProperty(
-            "Prefer",
-            "return=minimal"
-        )
-
-        connection.outputStream.use {
-            it.write(
-                jsonArray.toString()
-                    .toByteArray(Charsets.UTF_8)
-            )
-        }
-
-        val code =
-            connection.responseCode
-
-        if (code !in 200..299) {
-
-            val error =
-                connection.errorStream
-                    ?.bufferedReader()
-                    ?.readText()
-                    ?: "فشل حفظ تفاصيل الطلب."
-
-            throw Exception(
-                "HTTP $code: $error"
-            )
-        }
-
-    } finally {
-
-        connection.disconnect()
-    }
-}
+    val patterns = listOf(
+        Regex("""[?&]id=eq[.]([0-9]+)"""),
+        Regex("""id=
