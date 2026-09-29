@@ -71,14 +71,13 @@ fun AdminContent(
                 }
 
                 item {
-                    Text(
-                        text = "الأكثر طلبًا 🔥",
-                        color = AdminGold,
-                        fontSize = 21.sp
-                    )
+                    SectionTitle("الأكثر طلبًا 🔥")
                 }
 
-                items(topProducts.take(5)) { product ->
+                items(
+                    topProducts.take(5),
+                    key = { it.productId }
+                ) { product ->
                     TopProductRow(product)
                 }
             }
@@ -129,7 +128,7 @@ fun AdminContent(
                 if (orders.isEmpty()) {
                     item {
                         Text(
-                            "لا توجد طلبات حاليًا.",
+                            text = "لا توجد طلبات حاليًا.",
                             color = AdminCream
                         )
                     }
@@ -194,7 +193,7 @@ fun AdminContent(
                 if (topProducts.isEmpty()) {
                     item {
                         Text(
-                            "لا توجد مبيعات مكتملة لعرض الترتيب بعد.",
+                            text = "لا توجد مبيعات مكتملة لعرض الترتيب بعد.",
                             color = AdminCream
                         )
                     }
@@ -214,9 +213,7 @@ fun AdminContent(
                 Text(
                     text = message,
                     color = AdminCream,
-                    modifier = Modifier.padding(
-                        vertical = 8.dp
-                    )
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
         }
@@ -253,8 +250,7 @@ fun DashboardHeader(
             enabled = !loading
         ) {
             Text(
-                if (loading) "جاري..."
-                else "تحديث"
+                text = if (loading) "جاري..." else "تحديث"
             )
         }
     }
@@ -265,21 +261,22 @@ fun SalesCards(
     stats: AdminSalesStats
 ) {
     Column(
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         SalesCard(
-            "إجمالي مبيعات اليوم",
-            stats.today
+            title = "إجمالي مبيعات اليوم",
+            amount = stats.today
         )
 
         SalesCard(
-            "إجمالي مبيعات هذا الأسبوع",
-            stats.week
+            title = "إجمالي مبيعات هذا الأسبوع",
+            amount = stats.week
         )
 
         SalesCard(
-            "إجمالي مبيعات هذا الشهر",
-            stats.month
+            title = "إجمالي مبيعات هذا الشهر",
+            amount = stats.month
         )
     }
 }
@@ -299,7 +296,7 @@ fun SalesCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                title,
+                text = title,
                 color = AdminCream,
                 fontSize = 15.sp
             )
@@ -309,7 +306,7 @@ fun SalesCard(
             )
 
             Text(
-                formatPrice(amount),
+                text = formatPrice(amount),
                 color = AdminGold,
                 fontSize = 25.sp
             )
@@ -327,15 +324,15 @@ fun QuickStats(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         SmallStat(
-            "الطلبات",
-            ordersCount.toString(),
-            Modifier.weight(1f)
+            title = "الطلبات",
+            value = ordersCount.toString(),
+            modifier = Modifier.weight(1f)
         )
 
         SmallStat(
-            "المنتجات",
-            productsCount.toString(),
-            Modifier.weight(1f)
+            title = "المنتجات",
+            value = productsCount.toString(),
+            modifier = Modifier.weight(1f)
         )
     }
 }
@@ -346,4 +343,64 @@ fun SmallStat(
     value: String,
     modifier: Modifier
 ) {
-   
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = AdminPanel
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                text = title,
+                color = AdminCream
+            )
+
+            Text(
+                text = value,
+                color = AdminGold,
+                fontSize = 22.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun SalesInfo(
+    todayOrders: Int,
+    weekOrders: Int,
+    monthOrders: Int
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = "طلبات اليوم: $todayOrders",
+            color = AdminCream
+        )
+
+        Text(
+            text = "طلبات هذا الأسبوع: $weekOrders",
+            color = AdminCream
+        )
+
+        Text(
+            text = "طلبات هذا الشهر: $monthOrders",
+            color = AdminCream
+        )
+    }
+}
+
+@Composable
+fun SectionTitle(
+    title: String
+) {
+    Text(
+        text = title,
+        color = AdminGold,
+        fontSize = 22.sp,
+        modifier = Modifier.padding(vertical = 6.dp)
+    )
+}
