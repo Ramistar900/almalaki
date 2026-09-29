@@ -58,28 +58,80 @@ fun AdminScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape =
+        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    var section by remember { mutableStateOf(AdminSection.HOME) }
-    var menuOpen by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var editingProductId by remember { mutableStateOf<Int?>(null) }
-    var message by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
-    var products by remember { mutableStateOf<List<Product>>(emptyList()) }
-    var orders by remember { mutableStateOf<List<AdminOrder>>(emptyList()) }
-    var salesStats by remember { mutableStateOf(AdminSalesStats()) }
-    var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
-    var loadingDashboard by remember { mutableStateOf(false) }
+    var section by remember {
+        mutableStateOf(AdminSection.HOME)
+    }
+
+    var menuOpen by remember {
+        mutableStateOf(false)
+    }
+
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var category by remember {
+        mutableStateOf("")
+    }
+
+    var price by remember {
+        mutableStateOf("")
+    }
+
+    var selectedImageUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    var editingProductId by remember {
+        mutableStateOf<Int?>(null)
+    }
+
+    var message by remember {
+        mutableStateOf("")
+    }
+
+    var loading by remember {
+        mutableStateOf(false)
+    }
+
+    var products by remember {
+        mutableStateOf<List<Product>>(emptyList())
+    }
+
+    var orders by remember {
+        mutableStateOf<List<AdminOrder>>(emptyList())
+    }
+
+    var archivedOrders by remember {
+        mutableStateOf<List<AdminArchivedOrder>>(emptyList())
+    }
+
+    var salesStats by remember {
+        mutableStateOf(AdminSalesStats())
+    }
+
+    var topProducts by remember {
+        mutableStateOf<List<AdminTopProduct>>(emptyList())
+    }
+
+    var loadingDashboard by remember {
+        mutableStateOf(false)
+    }
+
+    var loadingArchive by remember {
+        mutableStateOf(false)
+    }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         selectedImageUri = uri
-        message = if (uri != null) "تم اختيار الصورة ✅" else ""
+        message =
+            if (uri != null) "تم اختيار الصورة ✅"
+            else ""
     }
 
     fun refreshProducts() {
@@ -88,7 +140,8 @@ fun AdminScreen(
                 val loaded = loadProducts()
                 products = loaded
             } catch (e: Exception) {
-                message = e.message ?: "تعذر تحميل المنتجات."
+                message =
+                    e.message ?: "تعذر تحميل المنتجات."
             }
         }.start()
     }
@@ -96,37 +149,94 @@ fun AdminScreen(
     fun refreshOrders() {
         Thread {
             try {
-                val loaded = loadAdminOrders(accessToken)
-                orders = loaded
+                val loaded =
+                    loadAdminOrders(accessToken)
+
+                orders = loaded.filter {
+                    !it.status.equals(
+                        "completed",
+                        ignoreCase = true
+                    ) &&
+                    !it.status.equals(
+                        "cancelled",
+                        ignoreCase = true
+                    )
+                }
             } catch (e: Exception) {
-                message = e.message ?: "تعذر تحميل الطلبات."
+                message =
+                    e.message ?: "تعذر تحميل الطلبات."
+            }
+        }.start()
+    }
+
+    fun refreshArchive() {
+        loadingArchive = true
+
+        Thread {
+            try {
+                val loaded =
+                    loadArchivedOrders(accessToken)
+
+                archivedOrders = loaded
+            } catch (e: Exception) {
+                message =
+                    e.message ?: "تعذر تحميل الأرشيف."
+            } finally {
+                loadingArchive = false
             }
         }.start()
     }
 
     fun refreshDashboard() {
         loadingDashboard = true
+
         Thread {
             try {
-                val currentProducts = loadProducts()
-                val currentOrders = loadAdminOrders(accessToken)
-                val completedOrders = currentOrders.filter {
-                    it.status.equals("completed", ignoreCase = true)
-                }
+                val currentProducts =
+                    loadProducts()
 
-                val stats = calculateSalesStats(accessToken)
-                val top = calculateTopProducts(
-                    accessToken = accessToken,
-                    completedOrders = completedOrders,
-                    products = currentProducts
-                )
+                val currentOrders =
+                    loadAdminOrders(accessToken)
+
+                val activeOrders =
+                    currentOrders.filter {
+                        !it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        ) &&
+                        !it.status.equals(
+                            "cancelled",
+                            ignoreCase = true
+                        )
+                    }
+
+                val completedOrders =
+                    currentOrders.filter {
+                        it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        )
+                    }
+
+                val stats =
+                    calculateSalesStats(accessToken)
+
+                val top =
+                    calculateTopProducts(
+                        accessToken = accessToken,
+                        completedOrders = completedOrders,
+                        products = currentProducts
+                    )
 
                 products = currentProducts
-                orders = currentOrders
+                orders = activeOrders
                 salesStats = stats
                 topProducts = top
+
             } catch (e: Exception) {
-                message = e.message ?: "تعذر تحديث لوحة التحكم."
+                message =
+                    e.message
+                        ?: "تعذر تحديث لوحة التحكم."
             } finally {
                 loadingDashboard = false
             }
@@ -144,184 +254,7 @@ fun AdminScreen(
     fun openSection(target: AdminSection) {
         section = target
         menuOpen = false
+
         when (target) {
             AdminSection.HOME,
-            AdminSection.SALES,
-            AdminSection.TOP_PRODUCTS -> refreshDashboard()
-            AdminSection.PRODUCTS -> refreshProducts()
-            AdminSection.ORDERS -> refreshOrders()
-            AdminSection.ARCHIVE -> refreshArchive()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        refreshDashboard()
-    }
-
-    fun saveCurrentProduct() {
-        saveProduct(
-            context = context,
-            accessToken = accessToken,
-            name = name,
-            category = category,
-            price = price,
-            selectedImageUri = selectedImageUri,
-            editingProductId = editingProductId,
-            onLoading = { loading = it },
-            onMessage = { message = it },
-            onProductsLoaded = { products = it },
-            onClear = { clearProductForm() }
-        )
-    }
-
-    fun editProduct(product: Product) {
-        editingProductId = product.id
-        name = product.name
-        category = product.category
-        price = product.price.toString()
-        selectedImageUri = null
-        section = AdminSection.PRODUCTS
-        menuOpen = false
-        message = "يمكنك تعديل بيانات المنتج الآن."
-    }
-
-    fun removeProduct(product: Product) {
-        Thread {
-            try {
-                deleteProduct(accessToken, product.id)
-                products = loadProducts()
-                message = "تم حذف المنتج بنجاح ✅"
-            } catch (e: Exception) {
-                message = e.message ?: "تعذر حذف المنتج."
-            }
-        }.start()
-    }
-
-    fun changeOrderStatus(orderId: Long, status: String) {
-        Thread {
-            try {
-                updateOrderStatusAsync(accessToken, orderId, status)
-                orders = loadAdminOrders(accessToken)
-                salesStats = calculateSalesStats(accessToken)
-                val completed = orders.filter { it.status.equals("completed", true) }
-                topProducts = calculateTopProducts(accessToken, completed, products)
-                message = "تم تحديث حالة الطلب ✅"
-            } catch (e: Exception) {
-                message = e.message ?: "تعذر تحديث حالة الطلب."
-            }
-        }.start()
-    }
-
-    fun removeCancelledOrder(orderId: Long) {
-        Thread {
-            try {
-                deleteCancelledOrder(accessToken, orderId)
-                orders = loadAdminOrders(accessToken)
-                message = "تم حذف الطلب الملغى ✅"
-            } catch (e: Exception) {
-                message = e.message ?: "تعذر حذف الطلب."
-            }
-        }.start()
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AdminBlack)
-    ) {
-        if (isLandscape) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                AdminSidebar(
-                    section = section,
-                    onSectionSelected = ::openSection,
-                    onLogout = onLogout,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(220.dp)
-                )
-
-                VerticalDivider(color = AdminGold.copy(alpha = 0.35f))
-
-                AdminContent(
-                    section = section,
-                    products = products,
-                    orders = orders,
-                    salesStats = salesStats,
-                    topProducts = topProducts,
-                    loadingDashboard = loadingDashboard,
-                    message = message,
-                    name = name,
-                    category = category,
-                    price = price,
-                    selectedImageUri = selectedImageUri,
-                    editingProductId = editingProductId,
-                    loading = loading,
-                    accessToken = accessToken,
-                    context = context,
-                    onNameChange = { name = it },
-                    onCategoryChange = { category = it },
-                    onPriceChange = { price = it },
-                    onPickImage = { imagePicker.launch("image/*") },
-                    onEditProduct = ::editProduct,
-                    onDeleteProduct = ::removeProduct,
-                    onSaveProduct = ::saveCurrentProduct,
-                    onCancelEdit = {
-                        clearProductForm()
-                        message = ""
-                    },
-                    onRefresh = ::refreshDashboard,
-                    onOrderStatus = ::changeOrderStatus,
-                    onDeleteOrder = ::removeCancelledOrder
-                )
-            }
-        } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                AdminTopBar(
-                    title = adminSectionTitle(section),
-                    menuOpen = menuOpen,
-                    onMenuClick = { menuOpen = !menuOpen },
-                    onLogout = onLogout
-                )
-
-                if (menuOpen) {
-                    AdminHorizontalMenu(
-                        section = section,
-                        onSectionSelected = ::openSection
-                    )
-                }
-
-                AdminContent(
-                    section = section,
-                    products = products,
-                    orders = orders,
-                    salesStats = salesStats,
-                    topProducts = topProducts,
-                    loadingDashboard = loadingDashboard,
-                    message = message,
-                    name = name,
-                    category = category,
-                    price = price,
-                    selectedImageUri = selectedImageUri,
-                    editingProductId = editingProductId,
-                    loading = loading,
-                    accessToken = accessToken,
-                    context = context,
-                    onNameChange = { name = it },
-                    onCategoryChange = { category = it },
-                    onPriceChange = { price = it },
-                    onPickImage = { imagePicker.launch("image/*") },
-                    onEditProduct = ::editProduct,
-                    onDeleteProduct = ::removeProduct,
-                    onSaveProduct = ::saveCurrentProduct,
-                    onCancelEdit = {
-                        clearProductForm()
-                        message = ""
-                    },
-                    onRefresh = ::refreshDashboard,
-                    onOrderStatus = ::changeOrderStatus,
-                    onDeleteOrder = ::removeCancelledOrder
-                )
-            }
-        }
-    }
-}
+            AdminSection.SALES
