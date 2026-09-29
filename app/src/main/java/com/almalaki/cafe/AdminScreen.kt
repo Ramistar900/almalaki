@@ -93,30 +93,114 @@ fun AdminScreen(accessToken: String, onLogout: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         if (message.isNotEmpty()) Text(message, color = AdminCream)
         Spacer(Modifier.height(16.dp))
-        Text("المنتجات الحالية", color = AdminGold, fontSize = 22.sp)
-        Spacer(Modifier.height(8.dp))
-        LazyColumn(Modifier.weight(1f)) {
-            items(products, key = { it.id }) { product ->
-                Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            item {
+                Text(
+                    "المنتجات الحالية",
+                    color = AdminGold,
+                    fontSize = 22.sp
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            items(products, key = { "product_" + it.id }) { product ->
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
                     Text(product.name, color = AdminCream, fontSize = 18.sp)
-                    Text("${product.category} • ${formatPrice(product.price)}", color = AdminGold)
-                    if (product.imageUrl.isNotEmpty()) Text("📷 توجد صورة للمنتج", color = AdminCream, fontSize = 13.sp)
+                    Text(
+                        "${product.category} • ${formatPrice(product.price)}",
+                        color = AdminGold
+                    )
+                    if (product.imageUrl.isNotEmpty()) {
+                        Text(
+                            "📷 توجد صورة للمنتج",
+                            color = AdminCream,
+                            fontSize = 13.sp
+                        )
+                    }
                     Spacer(Modifier.height(6.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton({ editingProductId = product.id; name = product.name; category = product.category; price = product.price.toString(); selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن." }, Modifier.weight(1f)) { Text("تعديل") }
-                        OutlinedButton({ Thread { try { deleteProduct(accessToken, product.id); products = loadProducts(); message = "تم حذف المنتج بنجاح ✅" } catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." } }.start() }, Modifier.weight(1f)) { Text("حذف", color = Color.Red) }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            {
+                                editingProductId = product.id
+                                name = product.name
+                                category = product.category
+                                price = product.price.toString()
+                                selectedImageUri = null
+                                message = "يمكنك تعديل بيانات المنتج الآن."
+                            },
+                            Modifier.weight(1f)
+                        ) { Text("تعديل") }
+
+                        OutlinedButton(
+                            {
+                                Thread {
+                                    try {
+                                        deleteProduct(accessToken, product.id)
+                                        products = loadProducts()
+                                        message = "تم حذف المنتج بنجاح ✅"
+                                    } catch (e: Exception) {
+                                        message = e.message ?: "تعذر حذف المنتج."
+                                    }
+                                }.start()
+                            },
+                            Modifier.weight(1f)
+                        ) {
+                            Text("حذف", color = Color.Red)
+                        }
                     }
                     HorizontalDivider(Modifier.padding(top = 8.dp))
                 }
             }
+
+            item {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("الطلبات", color = AdminGold, fontSize = 22.sp)
+                    OutlinedButton(
+                        { refreshOrders() },
+                        enabled = !loadingOrders
+                    ) {
+                        Text(if (loadingOrders) "جاري..." else "تحديث")
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+
+            items(orders, key = { "order_" + it.id }) { order ->
+                AdminOrderCard(
+                    order = order,
+                    accessToken = accessToken,
+                    onUpdated = { refreshOrders() }
+                )
+            }
+
+            if (orders.isEmpty()) {
+                item {
+                    Text(
+                        if (loadingOrders)
+                            "جاري تحميل الطلبات..."
+                        else
+                            "لا توجد طلبات حاليًا.",
+                        color = AdminCream,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                }
+            }
         }
-        Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("الطلبات", color = AdminGold, fontSize = 22.sp)
-            OutlinedButton({ refreshOrders() }, enabled = !loadingOrders) { Text(if (loadingOrders) "جاري..." else "تحديث") }
-        }
-        Spacer(Modifier.height(6.dp))
-        LazyColumn(Modifier.weight(1f)) { items(orders, key = { it.id }) { order -> AdminOrderCard(order, accessToken) { refreshOrders() } } }
+
     }
 }
 
