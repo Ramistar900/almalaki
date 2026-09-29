@@ -35,7 +35,8 @@ data class AdminOrder(
     val deliveryAddress: String,
     val fulfillmentType: String,
     val totalAmount: Double,
-    val status: String
+    val status: String,
+    val createdAt: String = ""
 )
 
 data class AdminOrderItem(
@@ -70,40 +71,94 @@ fun AdminScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
+
     val isLandscape =
-        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        configuration.orientation ==
+            Configuration.ORIENTATION_LANDSCAPE
 
-    var section by remember { mutableStateOf(AdminSection.HOME) }
-    var menuOpen by remember { mutableStateOf(false) }
+    var section by remember {
+        mutableStateOf(AdminSection.HOME)
+    }
 
-    var name by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var editingProductId by remember { mutableStateOf<Int?>(null) }
-    var message by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
+    var menuOpen by remember {
+        mutableStateOf(false)
+    }
 
-    var products by remember { mutableStateOf<List<Product>>(emptyList()) }
-    var orders by remember { mutableStateOf<List<AdminOrder>>(emptyList()) }
-    var salesStats by remember { mutableStateOf(AdminSalesStats()) }
-    var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
-    var loadingDashboard by remember { mutableStateOf(false) }
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var category by remember {
+        mutableStateOf("")
+    }
+
+    var price by remember {
+        mutableStateOf("")
+    }
+
+    var selectedImageUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    var editingProductId by remember {
+        mutableStateOf<Int?>(null)
+    }
+
+    var message by remember {
+        mutableStateOf("")
+    }
+
+    var loading by remember {
+        mutableStateOf(false)
+    }
+
+    var products by remember {
+        mutableStateOf<List<Product>>(emptyList())
+    }
+
+    var orders by remember {
+        mutableStateOf<List<AdminOrder>>(emptyList())
+    }
+
+    var salesStats by remember {
+        mutableStateOf(AdminSalesStats())
+    }
+
+    var topProducts by remember {
+        mutableStateOf<List<AdminTopProduct>>(emptyList())
+    }
+
+    var loadingDashboard by remember {
+        mutableStateOf(false)
+    }
 
     val imagePicker =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
+            contract =
+                ActivityResultContracts.GetContent()
         ) { uri ->
+
             selectedImageUri = uri
-            message = if (uri != null) "تم اختيار الصورة ✅" else ""
+
+            message =
+                if (uri != null) {
+                    "تم اختيار الصورة ✅"
+                } else {
+                    ""
+                }
         }
 
     fun refreshProducts() {
         Thread {
             try {
+
                 products = loadProducts()
+
             } catch (e: Exception) {
-                message = e.message ?: "تعذر تحميل المنتجات."
+
+                message =
+                    e.message
+                        ?: "تعذر تحميل المنتجات."
             }
         }.start()
     }
@@ -111,37 +166,77 @@ fun AdminScreen(
     fun refreshOrders() {
         Thread {
             try {
-                orders = loadAdminOrders(accessToken)
+
+                orders =
+                    loadAdminOrders(
+                        accessToken
+                    )
+
             } catch (e: Exception) {
-                message = e.message ?: "تعذر تحميل الطلبات."
+
+                message =
+                    e.message
+                        ?: "تعذر تحميل الطلبات."
             }
         }.start()
     }
 
     fun refreshDashboard() {
+
         loadingDashboard = true
+
         Thread {
+
             try {
-                val currentProducts = loadProducts()
-                val currentOrders = loadAdminOrders(accessToken)
+
+                val currentProducts =
+                    loadProducts()
+
+                val currentOrders =
+                    loadAdminOrders(
+                        accessToken
+                    )
+
                 val completedOrders =
                     currentOrders.filter {
-                        it.status.equals("completed", ignoreCase = true)
+                        it.status.equals(
+                            "completed",
+                            ignoreCase = true
+                        )
                     }
 
-                products = currentProducts
-                orders = currentOrders
-                salesStats = calculateSalesStats(accessToken)
-                topProducts = calculateTopProducts(
-                    accessToken = accessToken,
-                    completedOrders = completedOrders,
-                    products = currentProducts
-                )
+                products =
+                    currentProducts
+
+                orders =
+                    currentOrders
+
+                salesStats =
+                    calculateSalesStats(
+                        accessToken
+                    )
+
+                topProducts =
+                    calculateTopProducts(
+                        accessToken =
+                            accessToken,
+                        completedOrders =
+                            completedOrders,
+                        products =
+                            currentProducts
+                    )
+
             } catch (e: Exception) {
-                message = e.message ?: "تعذر تحديث لوحة التحكم."
+
+                message =
+                    e.message
+                        ?: "تعذر تحديث لوحة التحكم."
+
             } finally {
+
                 loadingDashboard = false
             }
+
         }.start()
     }
 
@@ -149,254 +244,45 @@ fun AdminScreen(
         refreshDashboard()
     }
 
-    fun openSection(target: AdminSection) {
+    fun openSection(
+        target: AdminSection
+    ) {
+
         section = target
         menuOpen = false
 
         when (target) {
+
             AdminSection.HOME,
             AdminSection.SALES,
-            AdminSection.TOP_PRODUCTS -> refreshDashboard()
-            AdminSection.PRODUCTS -> refreshProducts()
-            AdminSection.ORDERS -> refreshOrders()
+            AdminSection.TOP_PRODUCTS -> {
+                refreshDashboard()
+            }
+
+            AdminSection.PRODUCTS -> {
+                refreshProducts()
+            }
+
+            AdminSection.ORDERS -> {
+                refreshOrders()
+            }
         }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AdminBlack)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    AdminBlack
+                )
     ) {
+
         if (isLandscape) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                AdminSidebar(
-                    section = section,
-                    onSectionSelected = ::openSection,
-                    onLogout = onLogout,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(220.dp)
-                )
 
-                VerticalDivider(color = AdminGold.copy(alpha = 0.35f))
+            Row(
+                modifier =
+                    Modifier.fillMaxSize()
+            ) {
 
-                AdminContent(
-                    section = section,
-                    products = products,
-                    orders = orders,
-                    salesStats = salesStats,
-                    topProducts = topProducts,
-                    loadingDashboard = loadingDashboard,
-                    message = message,
-                    name = name,
-                    category = category,
-                    price = price,
-                    selectedImageUri = selectedImageUri,
-                    editingProductId = editingProductId,
-                    loading = loading,
-                    accessToken = accessToken,
-                    context = context,
-                    onNameChange = { name = it },
-                    onCategoryChange = { category = it },
-                    onPriceChange = { price = it },
-                    onPickImage = { imagePicker.launch("image/*") },
-                    onEditProduct = {
-                        editingProductId = it.id
-                        name = it.name
-                        category = it.category
-                        price = it.price.toString()
-                        selectedImageUri = null
-                        message = "يمكنك تعديل بيانات المنتج الآن."
-                        section = AdminSection.PRODUCTS
-                    },
-                    onDeleteProduct = { product ->
-                        Thread {
-                            try {
-                                deleteProduct(
-                                    accessToken = accessToken,
-                                    id = product.id
-                                )
-                                products = loadProducts()
-                                message = "تم حذف المنتج بنجاح ✅"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر حذف المنتج."
-                            }
-                        }.start()
-                    },
-                    onSaveProduct = {
-                        saveProduct(
-                            context = context,
-                            accessToken = accessToken,
-                            name = name,
-                            category = category,
-                            price = price,
-                            selectedImageUri = selectedImageUri,
-                            editingProductId = editingProductId,
-                            onLoading = { loading = it },
-                            onMessage = { message = it },
-                            onProductsLoaded = { products = it },
-                            onClear = {
-                                name = ""
-                                category = ""
-                                price = ""
-                                selectedImageUri = null
-                                editingProductId = null
-                            }
-                        )
-                    },
-                    onCancelEdit = {
-                        editingProductId = null
-                        name = ""
-                        category = ""
-                        price = ""
-                        selectedImageUri = null
-                        message = ""
-                    },
-                    onRefresh = { refreshDashboard() },
-                    onOrderStatus = { orderId, status ->
-                        Thread {
-                            try {
-                                updateOrderStatusAsync(
-                                    accessToken = accessToken,
-                                    orderId = orderId,
-                                    status = status
-                                )
-                                orders = loadAdminOrders(accessToken)
-                                salesStats = calculateSalesStats(accessToken)
-                                message = "تم تحديث حالة الطلب ✅"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر تحديث حالة الطلب."
-                            }
-                        }.start()
-                    },
-                    onDeleteOrder = { orderId ->
-                        Thread {
-                            try {
-                                deleteCancelledOrder(
-                                    accessToken = accessToken,
-                                    orderId = orderId
-                                )
-                                orders = loadAdminOrders(accessToken)
-                                message = "تم حذف الطلب الملغى ✅"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر حذف الطلب."
-                            }
-                        }.start()
-                    }
-                )
-            }
-        } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                AdminTopBar(
-                    title = adminSectionTitle(section),
-                    menuOpen = menuOpen,
-                    onMenuClick = { menuOpen = !menuOpen },
-                    onLogout = onLogout
-                )
-
-                if (menuOpen) {
-                    AdminHorizontalMenu(
-                        section = section,
-                        onSectionSelected = ::openSection
-                    )
-                }
-
-                AdminContent(
-                    section = section,
-                    products = products,
-                    orders = orders,
-                    salesStats = salesStats,
-                    topProducts = topProducts,
-                    loadingDashboard = loadingDashboard,
-                    message = message,
-                    name = name,
-                    category = category,
-                    price = price,
-                    selectedImageUri = selectedImageUri,
-                    editingProductId = editingProductId,
-                    loading = loading,
-                    accessToken = accessToken,
-                    context = context,
-                    onNameChange = { name = it },
-                    onCategoryChange = { category = it },
-                    onPriceChange = { price = it },
-                    onPickImage = { imagePicker.launch("image/*") },
-                    onEditProduct = {
-                        editingProductId = it.id
-                        name = it.name
-                        category = it.category
-                        price = it.price.toString()
-                        selectedImageUri = null
-                        message = "يمكنك تعديل بيانات المنتج الآن."
-                        section = AdminSection.PRODUCTS
-                    },
-                    onDeleteProduct = { product ->
-                        Thread {
-                            try {
-                                deleteProduct(accessToken, product.id)
-                                products = loadProducts()
-                                message = "تم حذف المنتج بنجاح ✅"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر حذف المنتج."
-                            }
-                        }.start()
-                    },
-                    onSaveProduct = {
-                        saveProduct(
-                            context = context,
-                            accessToken = accessToken,
-                            name = name,
-                            category = category,
-                            price = price,
-                            selectedImageUri = selectedImageUri,
-                            editingProductId = editingProductId,
-                            onLoading = { loading = it },
-                            onMessage = { message = it },
-                            onProductsLoaded = { products = it },
-                            onClear = {
-                                name = ""
-                                category = ""
-                                price = ""
-                                selectedImageUri = null
-                                editingProductId = null
-                            }
-                        )
-                    },
-                    onCancelEdit = {
-                        editingProductId = null
-                        name = ""
-                        category = ""
-                        price = ""
-                        selectedImageUri = null
-                        message = ""
-                    },
-                    onRefresh = { refreshDashboard() },
-                    onOrderStatus = { orderId, status ->
-                        Thread {
-                            try {
-                                updateOrderStatusAsync(accessToken, orderId, status)
-                                orders = loadAdminOrders(accessToken)
-                                salesStats = calculateSalesStats(accessToken)
-                                message = "تم تحديث حالة الطلب ✅"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر تحديث حالة الطلب."
-                            }
-                        }.start()
-                    },
-                    onDeleteOrder = { orderId ->
-                        Thread {
-                            try {
-                                deleteCancelledOrder(accessToken, orderId)
-                                orders = loadAdminOrders(accessToken)
-                                message = "تم حذف الطلب الملغى ✅"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر حذف الطلب."
-                            }
-                        }.start()
-                    }
-                )
-            }
-        }
-    }
-}
-
+                AdminSidebar
