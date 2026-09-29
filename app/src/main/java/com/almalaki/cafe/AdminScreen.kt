@@ -437,5 +437,5 @@ fun AdminScreen(
                     "تم حذف الطلب وأرشفته ✅"
 
             } catch (e: Exception) {
-                message =
-                    e
+    message = e.message ?: "تعذر حذف الطلب."
+            }
