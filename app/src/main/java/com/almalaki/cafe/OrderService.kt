@@ -7,6 +7,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.random.Random
 
 private const val ORDER_SUPABASE_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
@@ -48,7 +49,21 @@ fun createOrder(
 
     val orderNumber = generateOrderNumber()
 
-    val orderId = insertOrder(
+    /*
+     * ننشئ رقم ID من التطبيق نفسه.
+     *
+     * بهذه الطريقة لا نحتاج:
+     * RETURNING
+     * ولا SELECT
+     * ولا Location header
+     *
+     * وهذا يتجنب مشكلة RLS التي ظهرت عند
+     * محاولة إرجاع الصف الذي تم إدخاله.
+     */
+    val orderId = generateOrderId()
+
+    insertOrder(
+        orderId = orderId,
         orderNumber = orderNumber,
         customerName = customerName,
         customerPhone = customerPhone,
@@ -76,14 +91,32 @@ private fun generateOrderNumber(): String {
     return "RC-" + formatter.format(Date())
 }
 
+private fun generateOrderId(): Long {
+
+    /*
+     * نستخدم الوقت الحالي بالميلي ثانية
+     * مع رقم عشوائي صغير لتقليل احتمال التكرار.
+     *
+     * الناتج يبقى ضمن نطاق Long بسهولة.
+     */
+    val timePart =
+        System.currentTimeMillis() * 1000L
+
+    val randomPart =
+        Random.nextInt(0, 1000).toLong()
+
+    return timePart + randomPart
+}
+
 private fun insertOrder(
+    orderId: Long,
     orderNumber: String,
     customerName: String,
     customerPhone: String,
     deliveryAddress: String,
     fulfillmentType: String,
     totalAmount: Double
-): Long {
+) {
 
     val url = URL(
         "$ORDER_SUPABASE_URL/rest/v1/orders"
@@ -108,19 +141,22 @@ private fun insertOrder(
         )
 
         /*
-         * مهم:
          * لا نستخدم return=representation
-         * لأنه يحتاج SELECT.
+         * ولا headers-only.
          *
-         * headers-only يعيد Location
-         * بدون إعادة بيانات الصف.
+         * الإدخال فقط.
          */
         connection.setRequestProperty(
             "Prefer",
-            "return=headers-only"
+            "return=minimal"
         )
 
         val body = JSONObject()
+
+        body.put(
+            "id",
+            orderId
+        )
 
         body.put(
             "order_number",
@@ -183,83 +219,125 @@ private fun insertOrder(
             )
         }
 
-        /*
-         * PostgREST يعيد عادة:
-         *
-         * /orders?id=eq.123
-         *
-         * أو رابطًا كاملًا.
-         */
-
-        val location =
-            connection.getHeaderField("Location")
-
-        val contentLocation =
-            connection.getHeaderField(
-                "Content-Location"
-            )
-
-        val orderId =
-            extractOrderId(location)
-                ?: extractOrderId(contentLocation)
-
-        if (orderId != null) {
-            return orderId
-        }
-
-        /*
-         * نجرب جميع الرؤوس لأن بعض الخوادم
-         * قد تعيد الرأس باسم مختلف.
-         */
-
-        val headerFields =
-            connection.headerFields
-
-        for ((headerName, values) in headerFields) {
-
-            if (values.isNullOrEmpty()) {
-                continue
-            }
-
-            for (value in values) {
-
-                val id =
-                    extractOrderId(value)
-
-                if (id != null) {
-                    return id
-                }
-            }
-        }
-
-        throw Exception(
-            "تم إنشاء الطلب، لكن لم يتم الحصول على رقم الطلب الداخلي."
-        )
-
     } finally {
 
         connection.disconnect()
     }
 }
 
-private fun extractOrderId(
-    value: String?
-): Long? {
+private fun insertOrderItems(
+    orderId: Long,
+    products: List<Product>,
+    cart: Map<Int, Int>
+) {
 
-    if (value.isNullOrBlank()) {
-        return null
+    val jsonArray = JSONArray()
+
+    products.forEach { product ->
+
+        val quantity =
+            cart[product.id] ?: 0
+
+        if (quantity > 0) {
+
+            val item = JSONObject()
+
+            item.put(
+                "order_id",
+                orderId
+            )
+
+            item.put(
+                "product_id",
+                product.id
+            )
+
+            item.put(
+                "product_name",
+                product.name
+            )
+
+            item.put(
+                "unit_price",
+                product.price
+            )
+
+            item.put(
+                "quantity",
+                quantity
+            )
+
+            item.put(
+                "item_total",
+                product.price * quantity
+            )
+
+            jsonArray.put(item)
+        }
     }
 
-    /*
-     * أمثلة مقبولة:
-     *
-     * /orders?id=eq.22
-     *
-     * https://.../orders?id=eq.22
-     *
-     * /orders?id=eq.22&...
-     */
+    if (jsonArray.length() == 0) {
 
-    val patterns = listOf(
-        Regex("""[?&]id=eq[.]([0-9]+)"""),
-        Regex("""id=
+        throw Exception(
+            "لا توجد منتجات في الطلب."
+        )
+    }
+
+    val url = URL(
+        "$ORDER_SUPABASE_URL/rest/v1/order_items"
+    )
+
+    val connection =
+        url.openConnection() as HttpURLConnection
+
+    try {
+
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+
+        connection.setRequestProperty(
+            "apikey",
+            ORDER_SUPABASE_KEY
+        )
+
+        connection.setRequestProperty(
+            "Content-Type",
+            "application/json"
+        )
+
+        connection.setRequestProperty(
+            "Prefer",
+            "return=minimal"
+        )
+
+        connection.outputStream.use { output ->
+
+            output.write(
+                jsonArray.toString()
+                    .toByteArray(Charsets.UTF_8)
+            )
+
+            output.flush()
+        }
+
+        val responseCode =
+            connection.responseCode
+
+        if (responseCode !in 200..299) {
+
+            val error =
+                connection.errorStream
+                    ?.bufferedReader()
+                    ?.use { it.readText() }
+                    ?: "فشل حفظ تفاصيل الطلب."
+
+            throw Exception(
+                "HTTP $responseCode: $error"
+            )
+        }
+
+    } finally {
+
+        connection.disconnect()
+    }
+}
