@@ -35,7 +35,8 @@ data class AdminOrder(
     val deliveryAddress: String,
     val fulfillmentType: String,
     val totalAmount: Double,
-    val status: String
+  val status: String
+    val createdAt: String = ""
 )
 
 data class AdminOrderItem(
