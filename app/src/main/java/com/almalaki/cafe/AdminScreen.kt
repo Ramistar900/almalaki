@@ -406,7 +406,7 @@ fun AdminScreen(
         }.start()
     }
 
-    fun removeCancelledOrder(
+        fun removeCancelledOrder(
         orderId: Long
     ) {
         Thread {
@@ -433,9 +433,13 @@ fun AdminScreen(
 
                 refreshArchive()
 
-                message =
-                    "تم حذف الطلب وأرشفته ✅"
+                message = "تم حذف الطلب وأرشفته ✅"
 
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر حذف الطلب."
+            }
+        }.start()
+        }
             } catch (e: Exception) {
     message = e.message ?: "تعذر حذف الطلب."
             }
