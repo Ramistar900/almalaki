@@ -181,5 +181,3 @@ fun AdminHorizontalMenu(
         }
     }
 }
-
-@Composable
