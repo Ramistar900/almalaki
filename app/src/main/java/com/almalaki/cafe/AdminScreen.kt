@@ -35,7 +35,8 @@ data class AdminOrder(
     val deliveryAddress: String,
     val fulfillmentType: String,
     val totalAmount: Double,
-    val status: String
+    val status: String,
+    val createdAt: String = ""
 )
 
 data class AdminOrderItem(
@@ -86,9 +87,11 @@ fun AdminScreen(
 
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var orders by remember { mutableStateOf<List<AdminOrder>>(emptyList()) }
+    var archivedOrders by remember { mutableStateOf<List<AdminArchivedOrder>>(emptyList()) }
     var salesStats by remember { mutableStateOf(AdminSalesStats()) }
     var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
     var loadingDashboard by remember { mutableStateOf(false) }
+    var loadingArchive by remember { mutableStateOf(false) }
 
     val imagePicker =
         rememberLauncherForActivityResult(
@@ -114,6 +117,19 @@ fun AdminScreen(
                 orders = loadAdminOrders(accessToken)
             } catch (e: Exception) {
                 message = e.message ?: "تعذر تحميل الطلبات."
+            }
+        }.start()
+    }
+
+    fun refreshArchive() {
+        loadingArchive = true
+        Thread {
+            try {
+                archivedOrders = loadArchivedOrders(accessToken)
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر تحميل الأرشيف."
+            } finally {
+                loadingArchive = false
             }
         }.start()
     }
@@ -147,6 +163,7 @@ fun AdminScreen(
 
     LaunchedEffect(Unit) {
         refreshDashboard()
+        refreshArchive()
     }
 
     fun openSection(target: AdminSection) {
@@ -159,6 +176,7 @@ fun AdminScreen(
             AdminSection.TOP_PRODUCTS -> refreshDashboard()
             AdminSection.PRODUCTS -> refreshProducts()
             AdminSection.ORDERS -> refreshOrders()
+            AdminSection.ARCHIVE -> refreshArchive()
         }
     }
 
@@ -184,6 +202,8 @@ fun AdminScreen(
                     section = section,
                     products = products,
                     orders = orders,
+                    archivedOrders = archivedOrders,
+                    loadingArchive = loadingArchive,
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
@@ -253,6 +273,7 @@ fun AdminScreen(
                         message = ""
                     },
                     onRefresh = { refreshDashboard() },
+                    onRefreshArchive = { refreshArchive() },
                     onOrderStatus = { orderId, status ->
                         Thread {
                             try {
@@ -305,6 +326,8 @@ fun AdminScreen(
                     section = section,
                     products = products,
                     orders = orders,
+                    archivedOrders = archivedOrders,
+                    loadingArchive = loadingArchive,
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
@@ -371,6 +394,7 @@ fun AdminScreen(
                         message = ""
                     },
                     onRefresh = { refreshDashboard() },
+                    onRefreshArchive = { refreshArchive() },
                     onOrderStatus = { orderId, status ->
                         Thread {
                             try {
