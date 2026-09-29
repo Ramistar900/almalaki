@@ -168,7 +168,8 @@ fun ProductRow(
 fun AdminOrderCard(
     order: AdminOrder,
     accessToken: String,
-    onStatus: (Long, String) -> Unit
+    onStatus: (Long, String) -> Unit,
+    onDelete: (Long) -> Unit
 ) {
     var expanded by remember(order.id) { mutableStateOf(false) }
     var orderItems by remember(order.id) {
@@ -258,6 +259,35 @@ fun AdminOrderCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("مكتمل")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (order.status.lowercase() != "completed" &&
+                    order.status.lowercase() != "cancelled"
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            onStatus(order.id, "cancelled")
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("إلغاء الطلب", color = Color.Red)
+                    }
+                }
+
+                if (order.status.lowercase() == "cancelled") {
+                    OutlinedButton(
+                        onClick = {
+                            onDelete(order.id)
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("حذف الطلب", color = Color.Red)
+                    }
                 }
             }
 
