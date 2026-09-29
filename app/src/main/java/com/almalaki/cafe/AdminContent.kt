@@ -53,7 +53,8 @@ fun AdminContent(
     onSaveProduct: () -> Unit,
     onCancelEdit: () -> Unit,
     onRefresh: () -> Unit,
-    onOrderStatus: (Long, String) -> Unit
+    onOrderStatus: (Long, String) -> Unit,
+    onDeleteOrder: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -133,7 +134,8 @@ fun AdminContent(
                         AdminOrderCard(
                             order = order,
                             accessToken = accessToken,
-                            onStatus = onOrderStatus
+                            onStatus = onOrderStatus,
+                            onDelete = onDeleteOrder
                         )
                     }
                 }
