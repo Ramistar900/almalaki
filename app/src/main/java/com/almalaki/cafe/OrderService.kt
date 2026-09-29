@@ -48,15 +48,6 @@ fun createOrder(
 
     val orderNumber = generateOrderNumber()
 
-    /*
-     * ننشئ الطلب ونطلب من Supabase إرجاع
-     * رقم id مباشرة.
-     *
-     * ملاحظة:
-     * هذا يتطلب أن تسمح سياسة SELECT للطلب الذي
-     * تم إنشاؤه. إذا كان RLS يمنع ذلك، سنعالج
-     * سياسة القراءة بشكل منفصل.
-     */
     val orderId = insertOrder(
         orderNumber = orderNumber,
         customerName = customerName,
@@ -106,14 +97,19 @@ private fun insertOrder(
         connection.requestMethod = "POST"
         connection.doOutput = true
 
+        /*
+         * مهم جدًا:
+         * Publishable Key يرسل في apikey فقط.
+         *
+         * لا نضع:
+         * Authorization: Bearer $ORDER_SUPABASE_KEY
+         *
+         * لأن المفتاح ليس JWT للمستخدم.
+         */
+
         connection.setRequestProperty(
             "apikey",
             ORDER_SUPABASE_KEY
-        )
-
-        connection.setRequestProperty(
-            "Authorization",
-            "Bearer $ORDER_SUPABASE_KEY"
         )
 
         connection.setRequestProperty(
@@ -121,9 +117,17 @@ private fun insertOrder(
             "application/json"
         )
 
+        /*
+         * لا نطلب representation حتى لا نحتاج
+         * إلى صلاحية SELECT للعميل.
+         *
+         * Supabase/PostgREST سيعيد Location
+         * يحتوي على رقم السجل الجديد.
+         */
+
         connection.setRequestProperty(
             "Prefer",
-            "return=representation"
+            "return=headers-only"
         )
 
         val body = JSONObject()
@@ -186,41 +190,88 @@ private fun insertOrder(
             )
         }
 
-        val response =
-            connection.inputStream
-                .bufferedReader()
-                .readText()
+        /*
+         * PostgREST يعيد Location مثل:
+         *
+         * /orders?id=eq.123
+         *
+         * نحاول قراءته من Location أولًا.
+         */
 
-        if (response.isBlank()) {
-            throw Exception(
-                "تم إنشاء الطلب لكن Supabase لم يُرجع بيانات الطلب."
-            )
+        val location =
+            connection.getHeaderField("Location")
+                ?: connection.getHeaderField("Content-Location")
+
+        val orderId =
+            extractIdFromLocation(location)
+
+        if (orderId != null) {
+            return orderId
         }
 
-        val json =
-            JSONArray(response)
+        /*
+         * في بعض البيئات قد يكون الرابط داخل
+         * أحد رؤوس الاستجابة الأخرى.
+         */
 
-        if (json.length() == 0) {
-            throw Exception(
-                "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
-            )
+        val headers =
+            connection.headerFields
+
+        for ((name, values) in headers) {
+
+            if (
+                name != null &&
+                values != null
+            ) {
+
+                for (value in values) {
+
+                    val id =
+                        extractIdFromLocation(value)
+
+                    if (id != null) {
+                        return id
+                    }
+                }
+            }
         }
 
-        val first =
-            json.getJSONObject(0)
-
-        if (!first.has("id")) {
-            throw Exception(
-                "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
-            )
-        }
-
-        return first.getLong("id")
+        throw Exception(
+            "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
+        )
 
     } finally {
 
         connection.disconnect()
     }
+}
+
+private fun extractIdFromLocation(
+    location: String?
+): Long? {
+
+    if (location.isNullOrBlank()) {
+        return null
+    }
+
+    /*
+     * مثال:
+     * /orders?id=eq.123
+     *
+     * أو:
+     * https://.../orders?id=eq.123
+     */
+
+    val regex =
+        Regex("""[?&]id=eq[.]([0-9]+)""")
+
+    val match =
+        regex.find(location)
+
+    return match
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toLongOrNull()
 }
 
 private fun insertOrderItems(
@@ -299,14 +350,13 @@ private fun insertOrderItems(
         )
 
         connection.setRequestProperty(
-            "Authorization",
-            "Bearer $ORDER_SUPABASE_KEY"
-        )
-
-        connection.setRequestProperty(
             "Content-Type",
             "application/json"
         )
+
+        /*
+         * لا نحتاج إلى قراءة البيانات بعد الإدخال.
+         */
 
         connection.setRequestProperty(
             "Prefer",
