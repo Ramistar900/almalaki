@@ -12,7 +12,7 @@ private const val ORDER_SUPABASE_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
 
 private const val ORDER_SUPABASE_KEY =
-    "sb_publishable_[REDACTED]"
+    "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
 
 data class OrderResult(
     val orderNumber: String
