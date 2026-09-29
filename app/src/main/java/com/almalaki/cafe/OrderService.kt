@@ -48,6 +48,15 @@ fun createOrder(
 
     val orderNumber = generateOrderNumber()
 
+    /*
+     * ننشئ الطلب ونطلب من Supabase إرجاع
+     * رقم id مباشرة.
+     *
+     * ملاحظة:
+     * هذا يتطلب أن تسمح سياسة SELECT للطلب الذي
+     * تم إنشاؤه. إذا كان RLS يمنع ذلك، سنعالج
+     * سياسة القراءة بشكل منفصل.
+     */
     val orderId = insertOrder(
         orderNumber = orderNumber,
         customerName = customerName,
@@ -103,16 +112,18 @@ private fun insertOrder(
         )
 
         connection.setRequestProperty(
+            "Authorization",
+            "Bearer $ORDER_SUPABASE_KEY"
+        )
+
+        connection.setRequestProperty(
             "Content-Type",
             "application/json"
         )
 
-        // مهم:
-        // لا نطلب إرجاع الصف حتى لا يحتاج anon إلى SELECT.
-        // Supabase يعيد رابط الصف الجديد في Location.
         connection.setRequestProperty(
             "Prefer",
-            "return=headers"
+            "return=representation"
         )
 
         val body = JSONObject()
@@ -159,7 +170,8 @@ private fun insertOrder(
             )
         }
 
-        val code = connection.responseCode
+        val code =
+            connection.responseCode
 
         if (code !in 200..299) {
 
@@ -174,73 +186,41 @@ private fun insertOrder(
             )
         }
 
-        /*
-         * مع Prefer: return=headers
-         * يعيد PostgREST رابط الصف الجديد في Location.
-         *
-         * مثال تقريبي:
-         * /rest/v1/orders?id=eq.123
-         *
-         * نستخرج منه رقم id بدون إجراء SELECT.
-         */
-        val location =
-            connection.getHeaderField("Location")
-                ?: throw Exception(
-                    "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
-                )
+        val response =
+            connection.inputStream
+                .bufferedReader()
+                .readText()
 
-        val orderId =
-            extractOrderIdFromLocation(location)
-
-        if (orderId <= 0) {
+        if (response.isBlank()) {
             throw Exception(
-                "تعذر استخراج رقم الطلب من استجابة Supabase."
+                "تم إنشاء الطلب لكن Supabase لم يُرجع بيانات الطلب."
             )
         }
 
-        return orderId
+        val json =
+            JSONArray(response)
+
+        if (json.length() == 0) {
+            throw Exception(
+                "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
+            )
+        }
+
+        val first =
+            json.getJSONObject(0)
+
+        if (!first.has("id")) {
+            throw Exception(
+                "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
+            )
+        }
+
+        return first.getLong("id")
 
     } finally {
+
         connection.disconnect()
     }
-}
-
-private fun extractOrderIdFromLocation(
-    location: String
-): Long {
-
-    val match =
-        Regex(
-            """id=eq\.([0-9]+)"""
-        ).find(location)
-
-    if (match != null) {
-
-        return match
-            .groupValues[1]
-            .toLong()
-    }
-
-    /*
-     * احتياط إضافي لبعض صيغ Location.
-     */
-    val numbers =
-        Regex(
-            """[0-9]+"""
-        ).findAll(location)
-            .map {
-                it.value
-            }
-            .toList()
-
-    if (numbers.isNotEmpty()) {
-
-        return numbers.last().toLong()
-    }
-
-    throw Exception(
-        "تعذر قراءة رقم الطلب من Location."
-    )
 }
 
 private fun insertOrderItems(
@@ -319,6 +299,11 @@ private fun insertOrderItems(
         )
 
         connection.setRequestProperty(
+            "Authorization",
+            "Bearer $ORDER_SUPABASE_KEY"
+        )
+
+        connection.setRequestProperty(
             "Content-Type",
             "application/json"
         )
@@ -352,6 +337,7 @@ private fun insertOrderItems(
         }
 
     } finally {
+
         connection.disconnect()
     }
 }
