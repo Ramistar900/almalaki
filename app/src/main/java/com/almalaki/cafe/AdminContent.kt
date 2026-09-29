@@ -21,6 +21,11 @@ fun AdminContent(
     topProducts: List<AdminTopProduct>,
     loadingDashboard: Boolean,
     loadingArchive: Boolean,
+    accountEmail: String,
+    loadingAccount: Boolean,
+    onRefreshAccount: () -> Unit,
+    onChangeEmail: (String) -> Unit,
+    onChangePassword: (String, String, String) -> Unit,
     message: String,
     name: String,
     category: String,
@@ -169,6 +174,18 @@ fun AdminContent(
                     ) { order ->
                         ArchivedOrderCard(order)
                     }
+                }
+            }
+
+            AdminSection.ACCOUNT_SETTINGS -> {
+                item {
+                    AccountSettingsScreen(
+                        currentEmail = accountEmail,
+                        loading = loadingAccount,
+                        onRefresh = onRefreshAccount,
+                        onChangeEmail = onChangeEmail,
+                        onChangePassword = onChangePassword
+                    )
                 }
             }
 
