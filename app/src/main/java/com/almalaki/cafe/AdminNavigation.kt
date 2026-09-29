@@ -38,7 +38,7 @@ val AdminBlack = Color(0xFF050505)
 val AdminCream = Color(0xFFF5F0E5)
 val AdminPanel = Color(0xFF111111)
 
-private enum class AdminSection {
+enum class AdminSection {
     HOME,
     PRODUCTS,
     ORDERS,
