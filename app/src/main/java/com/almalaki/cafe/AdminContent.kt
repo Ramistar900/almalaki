@@ -50,7 +50,6 @@ fun AdminContent(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         when (section) {
-
             AdminSection.HOME -> {
                 item {
                     DashboardHeader(
@@ -58,22 +57,14 @@ fun AdminContent(
                         onRefresh = onRefresh
                     )
                 }
-
-                item {
-                    SalesCards(salesStats)
-                }
-
+                item { SalesCards(salesStats) }
                 item {
                     QuickStats(
                         ordersCount = orders.size,
                         productsCount = products.size
                     )
                 }
-
-                item {
-                    SectionTitle("الأكثر طلبًا 🔥")
-                }
-
+                item { SectionTitle("الأكثر طلبًا 🔥") }
                 items(
                     topProducts.take(5),
                     key = { it.productId }
@@ -99,32 +90,21 @@ fun AdminContent(
                         onCancelEdit = onCancelEdit
                     )
                 }
-
-                item {
-                    SectionTitle("المنتجات الحالية")
-                }
-
+                item { SectionTitle("المنتجات الحالية") }
                 items(
                     products,
                     key = { it.id }
                 ) { product ->
                     ProductRow(
                         product = product,
-                        onEdit = {
-                            onEditProduct(product)
-                        },
-                        onDelete = {
-                            onDeleteProduct(product)
-                        }
+                        onEdit = { onEditProduct(product) },
+                        onDelete = { onDeleteProduct(product) }
                     )
                 }
             }
 
             AdminSection.ORDERS -> {
-                item {
-                    SectionTitle("الطلبات")
-                }
-
+                item { SectionTitle("الطلبات") }
                 if (orders.isEmpty()) {
                     item {
                         Text(
@@ -149,11 +129,46 @@ fun AdminContent(
 
             AdminSection.ARCHIVE -> {
                 item {
-                    ArchiveScreen(
-                        archivedOrders = archivedOrders,
-                        loading = loadingArchive,
-                        onRefresh = onRefreshArchive
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "الأرشيف 📦",
+                            color = AdminGold,
+                            fontSize = 24.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedButton(
+                            onClick = onRefreshArchive,
+                            enabled = !loadingArchive
+                        ) {
+                            Text(
+                                if (loadingArchive) "جاري..."
+                                else "تحديث"
+                            )
+                        }
+                    }
+                }
+
+                if (archivedOrders.isEmpty()) {
+                    item {
+                        Text(
+                            text = if (loadingArchive) {
+                                "جاري تحميل الأرشيف..."
+                            } else {
+                                "لا توجد طلبات مؤرشفة."
+                            },
+                            color = AdminCream
+                        )
+                    }
+                } else {
+                    items(
+                        archivedOrders,
+                        key = { it.archiveId }
+                    ) { order ->
+                        ArchivedOrderCard(order)
+                    }
                 }
             }
 
@@ -164,11 +179,7 @@ fun AdminContent(
                         onRefresh = onRefresh
                     )
                 }
-
-                item {
-                    SalesCards(salesStats)
-                }
-
+                item { SalesCards(salesStats) }
                 item {
                     SalesInfo(
                         todayOrders = salesStats.todayOrders,
@@ -185,11 +196,7 @@ fun AdminContent(
                         onRefresh = onRefresh
                     )
                 }
-
-                item {
-                    SectionTitle("الأكثر طلبًا 🔥")
-                }
-
+                item { SectionTitle("الأكثر طلبًا 🔥") }
                 if (topProducts.isEmpty()) {
                     item {
                         Text(
@@ -229,82 +236,52 @@ fun DashboardHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "لوحة المالك 👑",
                 color = AdminGold,
                 fontSize = 25.sp
             )
-
             Text(
                 text = "ملخص نشاط الكافيه",
                 color = AdminCream,
                 fontSize = 14.sp
             )
         }
-
         OutlinedButton(
             onClick = onRefresh,
             enabled = !loading
         ) {
-            Text(
-                text = if (loading) "جاري..." else "تحديث"
-            )
+            Text(if (loading) "جاري..." else "تحديث")
         }
     }
 }
 
 @Composable
-fun SalesCards(
-    stats: AdminSalesStats
-) {
+fun SalesCards(stats: AdminSalesStats) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SalesCard(
-            title = "إجمالي مبيعات اليوم",
-            amount = stats.today
-        )
-
-        SalesCard(
-            title = "إجمالي مبيعات هذا الأسبوع",
-            amount = stats.week
-        )
-
-        SalesCard(
-            title = "إجمالي مبيعات هذا الشهر",
-            amount = stats.month
-        )
+        SalesCard("إجمالي مبيعات اليوم", stats.today)
+        SalesCard("إجمالي مبيعات هذا الأسبوع", stats.week)
+        SalesCard("إجمالي مبيعات هذا الشهر", stats.month)
     }
 }
 
 @Composable
-fun SalesCard(
-    title: String,
-    amount: Double
-) {
+fun SalesCard(title: String, amount: Double) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = AdminPanel
-        )
+        colors = CardDefaults.cardColors(containerColor = AdminPanel)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
                 color = AdminCream,
                 fontSize = 15.sp
             )
-
-            Spacer(
-                modifier = Modifier.height(5.dp)
-            )
-
+            Spacer(modifier = Modifier.height(5.dp))
             Text(
                 text = formatPrice(amount),
                 color = AdminGold,
@@ -328,7 +305,6 @@ fun QuickStats(
             value = ordersCount.toString(),
             modifier = Modifier.weight(1f)
         )
-
         SmallStat(
             title = "المنتجات",
             value = productsCount.toString(),
@@ -345,18 +321,10 @@ fun SmallStat(
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = AdminPanel
-        )
+        colors = CardDefaults.cardColors(containerColor = AdminPanel)
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Text(
-                text = title,
-                color = AdminCream
-            )
-
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(text = title, color = AdminCream)
             Text(
                 text = value,
                 color = AdminGold,
@@ -376,27 +344,14 @@ fun SalesInfo(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(
-            text = "طلبات اليوم: $todayOrders",
-            color = AdminCream
-        )
-
-        Text(
-            text = "طلبات هذا الأسبوع: $weekOrders",
-            color = AdminCream
-        )
-
-        Text(
-            text = "طلبات هذا الشهر: $monthOrders",
-            color = AdminCream
-        )
+        Text("طلبات اليوم: $todayOrders", color = AdminCream)
+        Text("طلبات هذا الأسبوع: $weekOrders", color = AdminCream)
+        Text("طلبات هذا الشهر: $monthOrders", color = AdminCream)
     }
 }
 
 @Composable
-fun SectionTitle(
-    title: String
-) {
+fun SectionTitle(title: String) {
     Text(
         text = title,
         color = AdminGold,
