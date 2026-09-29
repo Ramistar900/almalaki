@@ -115,7 +115,11 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
 
     Column(Modifier.fillMaxSize().background(background).padding(start = 14.dp, end = 14.dp, top = 18.dp)) {
         RoyalLogo()
-        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column {
                 Text("قائمة Royal", color = Gold, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
                 Text("طعمٌ يستحق التجربة", color = textColor, fontSize = 14.sp)
@@ -154,7 +158,11 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
 
         if (totalItems > 0) {
             Card(Modifier.fillMaxWidth().padding(bottom = 8.dp), RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = CardBlack)) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), Alignment.CenterVertically, Arrangement.SpaceBetween) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column {
                         Text("🛒 $totalItems منتجات", color = Cream, fontSize = 14.sp)
                         Text("المبلغ المطلوب", color = Gold, fontSize = 14.sp)
@@ -214,7 +222,15 @@ fun RoyalLogo() {
         end = androidx.compose.ui.geometry.Offset(shinePosition * 500f + 500f, 0f)
     )
     Box(Modifier.fillMaxWidth().padding(bottom = 2.dp), Alignment.Center) {
-        Text("Royal Coffee", color = brush, fontSize = 39.sp, fontFamily = FontFamily.Cursive, fontWeight = FontWeight.Bold)
+        Text(
+            text = "Royal Coffee",
+            style = androidx.compose.ui.text.TextStyle(
+                brush = brush,
+                fontSize = 39.sp,
+                fontFamily = FontFamily.Cursive,
+                fontWeight = FontWeight.Bold
+            )
+        )
     }
 }
 
@@ -231,7 +247,11 @@ fun ProductCard(product: Product, quantity: Int, onAdd: () -> Unit, onRemove: ()
             Text(formatPrice(product.price), color = GoldLight, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             if (quantity == 0) Button(onClick = onAdd, Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) { Text("إضافة إلى السلة 🛒") }
-            else Row(Modifier.fillMaxWidth(), Alignment.CenterVertically, Arrangement.SpaceEvenly) {
+            else Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 SmallCartButton("−", onRemove)
                 Text(quantity.toString(), color = GoldLight, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                 SmallCartButton("+", onAdd)
@@ -260,13 +280,16 @@ fun CartDialog(products: List<Product>, cart: Map<Int, Int>, totalAmount: Double
                     selectedProducts.forEach { product ->
                         val quantity = cart[product.id] ?: 0
                         val itemTotal = product.price * quantity
-                        Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Column(Modifier.weight(1f)) {
                                 Text(product.name, color = Cream, fontSize = 15.sp)
                                 Text("$quantity × ${formatPrice(product.price)}", color = Gold, fontSize = 12.sp)
                                 Text(formatPrice(itemTotal), color = GoldLight, fontSize = 13.sp)
                             }
-                            Row(Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 TextButton(onClick = { onDecrease(product.id) }) { Text("−", color = Gold, fontSize = 22.sp) }
                                 Text(quantity.toString(), color = Cream, fontWeight = FontWeight.Bold)
                                 TextButton(onClick = { onIncrease(product.id) }) { Text("+", color = Gold, fontSize = 22.sp) }
@@ -317,11 +340,11 @@ fun CheckoutDialog(totalAmount: Double, loading: Boolean, message: String, succe
                 Spacer(Modifier.height(10.dp))
                 Text("طريقة استلام الطلب", color = Gold, fontSize = 15.sp)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    Row(Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(fulfillmentType == "داخل المحل", { fulfillmentType = "داخل المحل" }, enabled = !loading)
                         Text("داخل المحل", color = Cream)
                     }
-                    Row(Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(fulfillmentType == "توصيل إلى المنزل", { fulfillmentType = "توصيل إلى المنزل" }, enabled = !loading)
                         Text("توصيل للمنزل", color = Cream)
                     }
