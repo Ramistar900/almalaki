@@ -21,7 +21,7 @@ fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.TOP_PRODUCTS -> "الأكثر طلبًا"
 }
 
-private fun adminRequest(
+fun adminRequest(
     method: String,
     path: String,
     accessToken: String,
