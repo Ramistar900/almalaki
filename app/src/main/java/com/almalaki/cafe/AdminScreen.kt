@@ -125,27 +125,25 @@ fun AdminScreen(
         mutableStateOf(false)
     }
 
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        selectedImageUri = uri
-
-        message =
-            if (uri != null) {
-                "تم اختيار الصورة ✅"
-            } else {
-                ""
-            }
-    }
+    val imagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri ->
+            selectedImageUri = uri
+            message =
+                if (uri != null) {
+                    "تم اختيار الصورة ✅"
+                } else {
+                    ""
+                }
+        }
 
     fun refreshProducts() {
         Thread {
             try {
-                val loaded = loadProducts()
-                products = loaded
+                products = loadProducts()
             } catch (e: Exception) {
-                message =
-                    e.message ?: "تعذر تحميل المنتجات."
+                message = e.message ?: "تعذر تحميل المنتجات."
             }
         }.start()
     }
@@ -168,8 +166,7 @@ fun AdminScreen(
                         )
                     }
             } catch (e: Exception) {
-                message =
-                    e.message ?: "تعذر تحميل الطلبات."
+                message = e.message ?: "تعذر تحميل الطلبات."
             }
         }.start()
     }
@@ -179,15 +176,10 @@ fun AdminScreen(
 
         Thread {
             try {
-                val loaded =
+                archivedOrders =
                     loadArchivedOrders(accessToken)
-
-                archivedOrders = loaded
-
             } catch (e: Exception) {
-                message =
-                    e.message ?: "تعذر تحميل الأرشيف."
-
+                message = e.message ?: "تعذر تحميل الأرشيف."
             } finally {
                 loadingArchive = false
             }
@@ -243,7 +235,6 @@ fun AdminScreen(
             } catch (e: Exception) {
                 message =
                     e.message ?: "تعذر تحديث لوحة التحكم."
-
             } finally {
                 loadingDashboard = false
             }
@@ -339,8 +330,7 @@ fun AdminScreen(
 
                 products = loadProducts()
 
-                message =
-                    "تم حذف المنتج بنجاح ✅"
+                message = "تم حذف المنتج بنجاح ✅"
 
             } catch (e: Exception) {
                 message =
@@ -406,7 +396,7 @@ fun AdminScreen(
         }.start()
     }
 
-        fun removeCancelledOrder(
+    fun removeCancelledOrder(
         orderId: Long
     ) {
         Thread {
@@ -433,16 +423,72 @@ fun AdminScreen(
 
                 refreshArchive()
 
-                message = "تم حذف الطلب وأرشفته ✅"
+                message =
+                    "تم حذف الطلب وأرشفته ✅"
 
             } catch (e: Exception) {
-                message = e.message ?: "تعذر حذف الطلب."
-            }
-        }.start()
-        }
-                        } catch (e: Exception) {
-                message = e.message ?: "تعذر حذف الطلب."
+                message =
+                    e.message ?: "تعذر حذف الطلب."
             }
         }.start()
     }
-}
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AdminBlack)
+    ) {
+
+        if (isLandscape) {
+
+            Row(
+                modifier = Modifier.fillMaxSize()
+            ) {
+
+                AdminSidebar(
+                    section = section,
+                    onSectionSelected = ::openSection,
+                    onLogout = onLogout,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(220.dp)
+                )
+
+                VerticalDivider(
+                    color = AdminGold.copy(
+                        alpha = 0.35f
+                    )
+                )
+
+                AdminContent(
+                    section = section,
+                    products = products,
+                    orders = orders,
+                    archivedOrders = archivedOrders,
+                    salesStats = salesStats,
+                    topProducts = topProducts,
+                    loadingDashboard = loadingDashboard,
+                    loadingArchive = loadingArchive,
+                    message = message,
+                    name = name,
+                    category = category,
+                    price = price,
+                    selectedImageUri = selectedImageUri,
+                    editingProductId = editingProductId,
+                    loading = loading,
+                    accessToken = accessToken,
+                    context = context,
+                    onNameChange = {
+                        name = it
+                    },
+                    onCategoryChange = {
+                        category = it
+                    },
+                    onPriceChange = {
+                        price = it
+                    },
+                    onPickImage = {
+                        imagePicker.launch("image/*")
+                    },
+                    onEditProduct = ::editProduct,
+                    onDeleteProduct = ::
