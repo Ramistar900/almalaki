@@ -338,13 +338,9 @@ fun CustomerScreen(
 
                     val columns =
                         when {
-
                             maxWidth < 600.dp -> 2
-
                             maxWidth < 900.dp -> 3
-
                             maxWidth < 1400.dp -> 4
-
                             else -> 5
                         }
 
@@ -388,7 +384,7 @@ fun CustomerScreen(
                                         cart +
                                             (
                                                 product.id to
-                                                    (old + 1)
+                                                    old + 1
                                             )
                                 },
 
@@ -404,7 +400,7 @@ fun CustomerScreen(
                                             cart +
                                                 (
                                                     product.id to
-                                                        (old - 1)
+                                                        old - 1
                                                 )
                                         }
                                 }
@@ -451,6 +447,7 @@ fun CustomerScreen(
                         Text(
                             text =
                                 "🛒 $totalItems منتجات",
+
                             color = Cream,
                             fontSize = 14.sp
                         )
@@ -464,6 +461,7 @@ fun CustomerScreen(
                         Text(
                             text =
                                 formatPrice(totalAmount),
+
                             color = GoldLight,
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold
@@ -531,8 +529,7 @@ fun CustomerScreen(
                 cart =
                     cart +
                         (
-                            id to
-                                (old + 1)
+                            id to old + 1
                         )
             },
 
@@ -547,8 +544,7 @@ fun CustomerScreen(
                     } else {
                         cart +
                             (
-                                id to
-                                    (old - 1)
+                                id to old - 1
                             )
                     }
             }
@@ -569,11 +565,7 @@ fun CustomerScreen(
                 }
             },
 
-            onConfirm = {
-                    name,
-                    phone,
-                    address,
-                    type ->
+            onConfirm = { name, phone, address, type ->
 
                 when {
 
@@ -581,8 +573,7 @@ fun CustomerScreen(
                     }
 
                     name.trim().isEmpty() -> {
-                        orderMessage =
-                            "اكتب اسمك."
+                        orderMessage = "اكتب اسمك."
                     }
 
                     type == "توصيل إلى المنزل" &&
@@ -702,18 +693,13 @@ fun RoyalLogo() {
         Text(
             text = "Royal Coffee",
 
-            style =
-                androidx.compose.ui.text.TextStyle(
-                    brush = brush
-                ),
+            color = brush,
 
             fontSize = 39.sp,
 
-            fontFamily =
-                FontFamily.Cursive,
+            fontFamily = FontFamily.Cursive,
 
-            fontWeight =
-                FontWeight.Bold
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -773,4 +759,14 @@ fun ProductCard(
                 } else {
 
                     Box(
-                        mod
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Color(0xFF1C1C1C)
+                            ),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+
+                    
