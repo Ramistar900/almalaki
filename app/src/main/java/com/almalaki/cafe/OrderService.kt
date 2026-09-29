@@ -67,6 +67,7 @@ fun createOrder(
 }
 
 private fun generateOrderNumber(): String {
+
     val formatter = SimpleDateFormat(
         "yyyyMMddHHmmssSSS",
         Locale.US
@@ -91,103 +92,155 @@ private fun insertOrder(
     val connection =
         url.openConnection() as HttpURLConnection
 
-    connection.requestMethod = "POST"
-    connection.doOutput = true
+    try {
 
-    connection.setRequestProperty(
-        "apikey",
-        ORDER_SUPABASE_KEY
-    )
+        connection.requestMethod = "POST"
+        connection.doOutput = true
 
-    connection.setRequestProperty(
-        "Content-Type",
-        "application/json"
-    )
-
-    connection.setRequestProperty(
-        "Prefer",
-        "return=representation"
-    )
-
-    val body = JSONObject()
-
-    body.put(
-        "order_number",
-        orderNumber
-    )
-
-    body.put(
-        "customer_name",
-        customerName.trim()
-    )
-
-    body.put(
-        "customer_phone",
-        customerPhone.trim()
-    )
-
-    body.put(
-        "delivery_address",
-        deliveryAddress.trim()
-    )
-
-    body.put(
-        "fulfillment_type",
-        fulfillmentType
-    )
-
-    body.put(
-        "total_amount",
-        totalAmount
-    )
-
-    body.put(
-        "status",
-        "new"
-    )
-
-    connection.outputStream.use {
-        it.write(
-            body.toString()
-                .toByteArray(Charsets.UTF_8)
+        connection.setRequestProperty(
+            "apikey",
+            ORDER_SUPABASE_KEY
         )
-    }
 
-    val code = connection.responseCode
+        connection.setRequestProperty(
+            "Content-Type",
+            "application/json"
+        )
 
-    if (code !in 200..299) {
+        // مهم:
+        // لا نطلب إرجاع الصف حتى لا يحتاج anon إلى SELECT.
+        // Supabase يعيد رابط الصف الجديد في Location.
+        connection.setRequestProperty(
+            "Prefer",
+            "return=headers"
+        )
 
-        val error =
-            connection.errorStream
-                ?.bufferedReader()
-                ?.readText()
-                ?: "فشل إنشاء الطلب."
+        val body = JSONObject()
 
+        body.put(
+            "order_number",
+            orderNumber
+        )
+
+        body.put(
+            "customer_name",
+            customerName.trim()
+        )
+
+        body.put(
+            "customer_phone",
+            customerPhone.trim()
+        )
+
+        body.put(
+            "delivery_address",
+            deliveryAddress.trim()
+        )
+
+        body.put(
+            "fulfillment_type",
+            fulfillmentType
+        )
+
+        body.put(
+            "total_amount",
+            totalAmount
+        )
+
+        body.put(
+            "status",
+            "new"
+        )
+
+        connection.outputStream.use {
+            it.write(
+                body.toString()
+                    .toByteArray(Charsets.UTF_8)
+            )
+        }
+
+        val code = connection.responseCode
+
+        if (code !in 200..299) {
+
+            val error =
+                connection.errorStream
+                    ?.bufferedReader()
+                    ?.readText()
+                    ?: "فشل إنشاء الطلب."
+
+            throw Exception(
+                "HTTP $code: $error"
+            )
+        }
+
+        /*
+         * مع Prefer: return=headers
+         * يعيد PostgREST رابط الصف الجديد في Location.
+         *
+         * مثال تقريبي:
+         * /rest/v1/orders?id=eq.123
+         *
+         * نستخرج منه رقم id بدون إجراء SELECT.
+         */
+        val location =
+            connection.getHeaderField("Location")
+                ?: throw Exception(
+                    "تم إنشاء الطلب لكن لم يتم الحصول على رقم الطلب الداخلي."
+                )
+
+        val orderId =
+            extractOrderIdFromLocation(location)
+
+        if (orderId <= 0) {
+            throw Exception(
+                "تعذر استخراج رقم الطلب من استجابة Supabase."
+            )
+        }
+
+        return orderId
+
+    } finally {
         connection.disconnect()
+    }
+}
 
-        throw Exception(
-            "HTTP $code: $error"
-        )
+private fun extractOrderIdFromLocation(
+    location: String
+): Long {
+
+    val match =
+        Regex(
+            """id=eq\.([0-9]+)"""
+        ).find(location)
+
+    if (match != null) {
+
+        return match
+            .groupValues[1]
+            .toLong()
     }
 
-    val response =
-        connection.inputStream
-            .bufferedReader()
-            .readText()
+    /*
+     * احتياط إضافي لبعض صيغ Location.
+     */
+    val numbers =
+        Regex(
+            """[0-9]+"""
+        ).findAll(location)
+            .map {
+                it.value
+            }
+            .toList()
 
-    connection.disconnect()
+    if (numbers.isNotEmpty()) {
 
-    val json = JSONArray(response)
-
-    if (json.length() == 0) {
-        throw Exception(
-            "لم يتم إنشاء الطلب."
-        )
+        return numbers.last().toLong()
     }
 
-    return json
-        .getJSONObject(0)
-        .getLong("id")
+    throw Exception(
+        "تعذر قراءة رقم الطلب من Location."
+    )
 }
 
 private fun insertOrderItems(
@@ -242,6 +295,7 @@ private fun insertOrderItems(
     }
 
     if (jsonArray.length() == 0) {
+
         throw Exception(
             "لا توجد منتجات في الطلب."
         )
@@ -254,47 +308,50 @@ private fun insertOrderItems(
     val connection =
         url.openConnection() as HttpURLConnection
 
-    connection.requestMethod = "POST"
-    connection.doOutput = true
+    try {
 
-    connection.setRequestProperty(
-        "apikey",
-        ORDER_SUPABASE_KEY
-    )
+        connection.requestMethod = "POST"
+        connection.doOutput = true
 
-    connection.setRequestProperty(
-        "Content-Type",
-        "application/json"
-    )
-
-    connection.setRequestProperty(
-        "Prefer",
-        "return=minimal"
-    )
-
-    connection.outputStream.use {
-        it.write(
-            jsonArray.toString()
-                .toByteArray(Charsets.UTF_8)
+        connection.setRequestProperty(
+            "apikey",
+            ORDER_SUPABASE_KEY
         )
-    }
 
-    val code = connection.responseCode
+        connection.setRequestProperty(
+            "Content-Type",
+            "application/json"
+        )
 
-    if (code !in 200..299) {
+        connection.setRequestProperty(
+            "Prefer",
+            "return=minimal"
+        )
 
-        val error =
-            connection.errorStream
-                ?.bufferedReader()
-                ?.readText()
-                ?: "فشل حفظ تفاصيل الطلب."
+        connection.outputStream.use {
+            it.write(
+                jsonArray.toString()
+                    .toByteArray(Charsets.UTF_8)
+            )
+        }
 
+        val code =
+            connection.responseCode
+
+        if (code !in 200..299) {
+
+            val error =
+                connection.errorStream
+                    ?.bufferedReader()
+                    ?.readText()
+                    ?: "فشل حفظ تفاصيل الطلب."
+
+            throw Exception(
+                "HTTP $code: $error"
+            )
+        }
+
+    } finally {
         connection.disconnect()
-
-        throw Exception(
-            "HTTP $code: $error"
-        )
     }
-
-    connection.disconnect()
 }
