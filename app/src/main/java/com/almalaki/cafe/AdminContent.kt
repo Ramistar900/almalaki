@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,9 +16,11 @@ fun AdminContent(
     section: AdminSection,
     products: List<Product>,
     orders: List<AdminOrder>,
+    archivedOrders: List<AdminArchivedOrder>,
     salesStats: AdminSalesStats,
     topProducts: List<AdminTopProduct>,
     loadingDashboard: Boolean,
+    loadingArchive: Boolean,
     message: String,
     name: String,
     category: String,
@@ -37,6 +39,7 @@ fun AdminContent(
     onSaveProduct: () -> Unit,
     onCancelEdit: () -> Unit,
     onRefresh: () -> Unit,
+    onRefreshArchive: () -> Unit,
     onOrderStatus: (Long, String) -> Unit,
     onDeleteOrder: (Long) -> Unit
 ) {
@@ -102,11 +105,18 @@ fun AdminContent(
                     SectionTitle("المنتجات الحالية")
                 }
 
-                items(products, key = { it.id }) { product ->
+                items(
+                    products,
+                    key = { it.id }
+                ) { product ->
                     ProductRow(
                         product = product,
-                        onEdit = { onEditProduct(product) },
-                        onDelete = { onDeleteProduct(product) }
+                        onEdit = {
+                            onEditProduct(product)
+                        },
+                        onDelete = {
+                            onDeleteProduct(product)
+                        }
                     )
                 }
             }
@@ -124,7 +134,10 @@ fun AdminContent(
                         )
                     }
                 } else {
-                    items(orders, key = { it.id }) { order ->
+                    items(
+                        orders,
+                        key = { it.id }
+                    ) { order ->
                         AdminOrderCard(
                             order = order,
                             accessToken = accessToken,
@@ -137,14 +150,10 @@ fun AdminContent(
 
             AdminSection.ARCHIVE -> {
                 item {
-                    SectionTitle("الأرشيف 📦")
-                }
-
-                item {
-                    Text(
-                        text = "قسم الأرشيف جاهز. سنربطه بالطلبات المؤرشفة في الخطوة التالية.",
-                        color = AdminCream,
-                        fontSize = 15.sp
+                    ArchiveScreen(
+                        archivedOrders = archivedOrders,
+                        loading = loadingArchive,
+                        onRefresh = onRefreshArchive
                     )
                 }
             }
@@ -205,7 +214,9 @@ fun AdminContent(
                 Text(
                     text = message,
                     color = AdminCream,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(
+                        vertical = 8.dp
+                    )
                 )
             }
         }
@@ -250,7 +261,9 @@ fun DashboardHeader(
 }
 
 @Composable
-fun SalesCards(stats: AdminSalesStats) {
+fun SalesCards(
+    stats: AdminSalesStats
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -333,63 +346,4 @@ fun SmallStat(
     value: String,
     modifier: Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = AdminPanel
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Text(
-                title,
-                color = AdminCream
-            )
-
-            Text(
-                value,
-                color = AdminGold,
-                fontSize = 22.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun SalesInfo(
-    todayOrders: Int,
-    weekOrders: Int,
-    monthOrders: Int
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text(
-            "طلبات اليوم: $todayOrders",
-            color = AdminCream
-        )
-
-        Text(
-            "طلبات هذا الأسبوع: $weekOrders",
-            color = AdminCream
-        )
-
-        Text(
-            "طلبات هذا الشهر: $monthOrders",
-            color = AdminCream
-        )
-    }
-}
-
-@Composable
-fun SectionTitle(
-    title: String
-) {
-    Text(
-        text = title,
-        color = AdminGold,
-        fontSize = 22.sp,
-        modifier = Modifier.padding(vertical = 6.dp)
-    )
-}
+   
