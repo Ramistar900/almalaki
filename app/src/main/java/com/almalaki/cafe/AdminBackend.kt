@@ -137,6 +137,7 @@ fun updateOrderStatusAsync(accessToken: String, orderId: Long, status: String) {
 fun deleteCancelledOrder(accessToken: String, orderId: Long) {
     adminRequest("DELETE", "orders?id=eq.$orderId&status=eq.cancelled", accessToken)
 }
+}
 
 private data class SaleRecord(
     val totalAmount: Double,
