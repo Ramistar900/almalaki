@@ -235,7 +235,7 @@ fun PasswordResetScreen(
                     )
 
                     Button(
-                        onClick = { RoyalSoundManager.playClick(); onFinished() },
+                        onClick = onFinished,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Gold,
                             contentColor = Black
@@ -445,7 +445,7 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
                 Text("قائمة Royal", color = Gold, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
                 Text("طعمٌ يستحق التجربة", color = textColor, fontSize = 14.sp)
             }
-            TextButton(onClick = { RoyalSoundManager.playClick(); onTheme() }) { Text(if (darkMode) "☀" else "🌙", color = Gold, fontSize = 23.sp) }
+            TextButton(onClick = onTheme) { Text(if (darkMode) "☀" else "🌙", color = Gold, fontSize = 23.sp) }
         }
         Spacer(Modifier.height(8.dp))
         HorizontalDivider(color = Gold.copy(alpha = 0.45f))
@@ -489,11 +489,11 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
                         Text("المبلغ المطلوب", color = Gold, fontSize = 14.sp)
                         Text(formatPrice(totalAmount), color = GoldLight, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                     }
-                    Button(onClick = { RoyalSoundManager.playClick(); showCart = true }, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) { Text("عرض السلة 🛒") }
+                    Button(onClick = { showCart = true }, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) { Text("عرض السلة 🛒") }
                 }
             }
         }
-        OutlinedButton(onClick = { RoyalSoundManager.playClick(); onOwner() }, Modifier.fillMaxWidth().padding(bottom = 4.dp)) { Text("👑 دخول المالك", color = Gold) }
+        OutlinedButton(onClick = onOwner, Modifier.fillMaxWidth().padding(bottom = 4.dp)) { Text("👑 دخول المالك", color = Gold) }
     }
 
     if (showCart) CartDialog(
@@ -519,6 +519,16 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
                         try {
                             val result = createOrder(name, phone, address, type, totalAmount, products, cart)
                             orderSuccessNumber = result.orderNumber
-                            RoyalSoundManager.playOrderSent()
                             cart = emptyMap()
-                        } catch (e: Exception) { orderMessage = e.message ?: "حدث خطأ أثن
+                        } catch (e: Exception) { orderMessage = e.message ?: "تعذر إرسال الطلب." }
+                        finally { orderLoading = false }
+                    }.start()
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun RoyalLogo() {
+    val transition = remem
