@@ -651,19 +651,3 @@ fun CheckoutDialog(totalAmount: Double, loading: Boolean, message: String, succe
     )
 }
 
-@Composable
-fun RemoteProductImage(url: String) {
-    var bitmap by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    LaunchedEffect(url) {
-        Thread {
-            try {
-                val stream = URL(url).openStream()
-                val loaded = BitmapFactory.decodeStream(stream)
-                stream.close()
-                bitmap = loaded
-            } catch (_: Exception) { bitmap = null }
-        }.start()
-    }
-    if (bitmap != null) Image(bitmap!!.asImageBitmap(), "صورة المنتج", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-    else Box(Modifier.fillMaxSize().background(Color(0xFF1C1C1C)), Alignment.Center) { Text("جاري تحميل الصورة...", color = Gold, fontSize = 13.sp) }
-}
