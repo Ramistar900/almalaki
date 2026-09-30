@@ -538,3 +538,49 @@ fun adminStatusText(status: String): String = when (status.lowercase()) {
     "cancelled" -> "ملغى ❌"
     else -> status
 }
+fun adminRequest(
+    method: String,
+    path: String,
+    accessToken: String,
+    body: String? = null
+): String {
+    val connection = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/$path"
+    ).openConnection() as HttpURLConnection
+
+    try {
+        connection.requestMethod = method
+        connection.doOutput = body != null
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Prefer", "return=minimal")
+
+        if (body != null) {
+            connection.outputStream.use {
+                it.write(body.toByteArray(Charsets.UTF_8))
+            }
+        }
+
+        val code = connection.responseCode
+
+        val response =
+            if (code in 200..299) {
+                connection.inputStream?.bufferedReader()?.readText().orEmpty()
+            } else {
+                connection.errorStream?.bufferedReader()?.readText().orEmpty()
+            }
+
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: ${
+                    response.ifBlank { "حدث خطأ في طلب قاعدة البيانات." }
+                }"
+            )
+        }
+
+        return response
+    } finally {
+        connection.disconnect()
+    }
+}
