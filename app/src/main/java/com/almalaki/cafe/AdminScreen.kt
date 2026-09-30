@@ -482,13 +482,22 @@ fun AdminScreen(
                             }
                         }.start()
                     },
-                    onDeleteOrder = { orderId ->
+                                        onDeleteOrder = { orderId ->
                         Thread {
                             try {
-                                deleteCancelledOrder(accessToken, orderId)
+                                deleteCancelledOrder(
+                                    accessToken = accessToken,
+                                    orderId = orderId
+                                )
                                 orders = loadAdminOrders(accessToken)
                                 message = "تم حذف الطلب الملغى ✅"
                             } catch (e: Exception) {
                                 message = e.message ?: "تعذر حذف الطلب."
                             }
-                       
+                        }.start()
+                    }
+                )
+            }
+        }
+    }
+}
