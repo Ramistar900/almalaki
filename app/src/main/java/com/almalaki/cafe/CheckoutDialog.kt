@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,9 +84,7 @@ fun CheckoutDialog(
                         fontSize = 16.sp
                     )
 
-                    Spacer(
-                        Modifier.height(12.dp)
-                    )
+                    Spacer(Modifier.height(12.dp))
 
                     Text(
                         "رقم الطلب",
@@ -102,7 +101,10 @@ fun CheckoutDialog(
 
             confirmButton = {
                 Button(
-                    onClick = onClose,
+                    onClick = {
+                        AppSounds.buttonClick(context)
+                        onClose()
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Gold,
                         contentColor = Black
@@ -140,32 +142,40 @@ fun CheckoutDialog(
                     onValueChange = {
                         customerName = it
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                AppSounds.buttonClick(context)
+                            }
+                        },
                     label = {
                         Text("الاسم")
                     },
                     singleLine = true
                 )
 
-                Spacer(
-                    Modifier.height(8.dp)
-                )
+                Spacer(Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = customerPhone,
                     onValueChange = {
                         customerPhone = it
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                AppSounds.buttonClick(context)
+                            }
+                        },
                     label = {
                         Text("رقم الهاتف (اختياري)")
                     },
                     singleLine = true
                 )
 
-                Spacer(
-                    Modifier.height(10.dp)
-                )
+                Spacer(Modifier.height(10.dp))
 
                 Text(
                     "طريقة استلام الطلب",
@@ -212,16 +222,20 @@ fun CheckoutDialog(
                 }
 
                 if (fulfillmentType == "توصيل إلى المنزل") {
-                    Spacer(
-                        Modifier.height(8.dp)
-                    )
+                    Spacer(Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = deliveryAddress,
                         onValueChange = {
                             deliveryAddress = it
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    AppSounds.buttonClick(context)
+                                }
+                            },
                         label = {
                             Text("عنوان التوصيل")
                         },
@@ -229,9 +243,7 @@ fun CheckoutDialog(
                     )
                 }
 
-                Spacer(
-                    Modifier.height(10.dp)
-                )
+                Spacer(Modifier.height(10.dp))
 
                 Text(
                     "المبلغ المطلوب: ${formatPrice(totalAmount)}",
@@ -240,9 +252,7 @@ fun CheckoutDialog(
                 )
 
                 if (message.isNotEmpty()) {
-                    Spacer(
-                        Modifier.height(8.dp)
-                    )
+                    Spacer(Modifier.height(8.dp))
 
                     Text(
                         message,
@@ -271,6 +281,7 @@ fun CheckoutDialog(
             Button(
                 onClick = {
                     AppSounds.buttonClick(context)
+
                     onConfirm(
                         customerName,
                         customerPhone,
