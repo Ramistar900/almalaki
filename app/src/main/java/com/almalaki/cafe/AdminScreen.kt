@@ -2,8 +2,6 @@ package com.almalaki.cafe
 
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -85,6 +83,14 @@ fun AdminScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var editingProductId by remember { mutableStateOf<Int?>(null) }
     var message by remember { mutableStateOf("") }
+
+    LaunchedEffect(message) {
+        if (message.isNotEmpty()) {
+            kotlinx.coroutines.delay(4000)
+            message = ""
+        }
+    }
+
     var loading by remember { mutableStateOf(false) }
 
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
@@ -94,8 +100,6 @@ fun AdminScreen(
     var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
     var loadingDashboard by remember { mutableStateOf(false) }
     var loadingArchive by remember { mutableStateOf(false) }
-    var accountEmail by remember { mutableStateOf("") }
-    var loadingAccount by remember { mutableStateOf(false) }
 
     val imagePicker =
         rememberLauncherForActivityResult(
@@ -138,19 +142,6 @@ fun AdminScreen(
         }.start()
     }
 
-    fun refreshAccount() {
-        loadingAccount = true
-        Thread {
-            try {
-                accountEmail = loadCurrentAccountEmail(accessToken)
-            } catch (e: Exception) {
-                message = e.message ?: "تعذر تحميل بيانات الحساب."
-            } finally {
-                loadingAccount = false
-            }
-        }.start()
-    }
-
     fun refreshDashboard() {
         loadingDashboard = true
         Thread {
@@ -181,7 +172,6 @@ fun AdminScreen(
     LaunchedEffect(Unit) {
         refreshDashboard()
         refreshArchive()
-        refreshAccount()
     }
 
     fun openSection(target: AdminSection) {
@@ -195,33 +185,7 @@ fun AdminScreen(
             AdminSection.PRODUCTS -> refreshProducts()
             AdminSection.ORDERS -> refreshOrders()
             AdminSection.ARCHIVE -> refreshArchive()
-            AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
         }
-    }
-
-    fun changePassword(
-        currentPassword: String,
-        newPassword: String,
-        confirmPassword: String
-    ) {
-        Thread {
-            try {
-                updateAccountPassword(
-                    accessToken = accessToken,
-                    currentPassword = currentPassword,
-                    newPassword = newPassword,
-                    confirmPassword = confirmPassword
-                )
-
-                Handler(Looper.getMainLooper()).post {
-                    message = "تم تغيير كلمة المرور بنجاح ✓"
-                }
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post {
-                    message = e.message ?: "تعذر تغيير كلمة المرور."
-                }
-            }
-        }.start()
     }
 
     Column(
@@ -248,21 +212,6 @@ fun AdminScreen(
                     orders = orders,
                     archivedOrders = archivedOrders,
                     loadingArchive = loadingArchive,
-                    accountEmail = accountEmail,
-                    loadingAccount = loadingAccount,
-                    onRefreshAccount = { refreshAccount() },
-                    onChangeEmail = { newEmail ->
-                        Thread {
-                            try {
-                                updateAccountEmail(accessToken, newEmail)
-                                accountEmail = loadCurrentAccountEmail(accessToken)
-                                message = "تم إرسال رابط تأكيد البريد الإلكتروني الجديد 📧"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر تغيير البريد الإلكتروني."
-                            }
-                        }.start()
-                    },
-                    onChangePassword = ::changePassword,
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
@@ -387,21 +336,6 @@ fun AdminScreen(
                     orders = orders,
                     archivedOrders = archivedOrders,
                     loadingArchive = loadingArchive,
-                    accountEmail = accountEmail,
-                    loadingAccount = loadingAccount,
-                    onRefreshAccount = { refreshAccount() },
-                    onChangeEmail = { newEmail ->
-                        Thread {
-                            try {
-                                updateAccountEmail(accessToken, newEmail)
-                                accountEmail = loadCurrentAccountEmail(accessToken)
-                                message = "تم إرسال رابط تأكيد البريد الإلكتروني الجديد 📧"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر تغيير البريد الإلكتروني."
-                            }
-                        }.start()
-                    },
-                    onChangePassword = ::changePassword,
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
@@ -484,10 +418,7 @@ fun AdminScreen(
                     onDeleteOrder = { orderId ->
                         Thread {
                             try {
-                                deleteCancelledOrder(
-                                    accessToken = accessToken,
-                                    orderId = orderId
-                                )
+                                deleteCancelledOrder(accessToken, orderId)
                                 orders = loadAdminOrders(accessToken)
                                 message = "تم حذف الطلب الملغى ✅"
                             } catch (e: Exception) {
@@ -500,3 +431,4 @@ fun AdminScreen(
         }
     }
 }
+
