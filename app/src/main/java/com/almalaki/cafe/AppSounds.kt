@@ -13,7 +13,8 @@ object AppSounds {
         play(
             context,
             ToneGenerator.TONE_PROP_BEEP2,
-            45
+            45,
+            70
         )
     }
 
@@ -22,7 +23,8 @@ object AppSounds {
         play(
             context,
             ToneGenerator.TONE_PROP_BEEP,
-            55
+            55,
+            60
         )
     }
 
@@ -31,7 +33,8 @@ object AppSounds {
         play(
             context,
             ToneGenerator.TONE_PROP_NACK,
-            180
+            180,
+            70
         )
     }
 
@@ -40,30 +43,55 @@ object AppSounds {
         play(
             context,
             ToneGenerator.TONE_PROP_ACK,
-            220
+            220,
+            65
         )
     }
 
-    // صوت نجاح عند تأكيد الطلب
+    // صوت نجاح عند تأكيد الطلب للعميل
     fun orderSuccess(context: Context) {
         play(
             context,
             ToneGenerator.TONE_PROP_ACK,
-            300
+            300,
+            65
+        )
+    }
+
+    // 🔔 إشعار وصول طلب جديد للمالك
+    // أعلى قليلًا وواضح للتنبيه
+    fun newOrder(context: Context) {
+        play(
+            context,
+            ToneGenerator.TONE_PROP_PROMPT,
+            350,
+            90
+        )
+    }
+
+    // 💳 إشعار الدفع
+    // هادئ وسلس ومختلف عن صوت الطلب
+    fun paymentSuccess(context: Context) {
+        play(
+            context,
+            ToneGenerator.TONE_PROP_ACK,
+            420,
+            55
         )
     }
 
     private fun play(
         context: Context,
         tone: Int,
-        duration: Int
+        duration: Int,
+        volume: Int
     ) {
         try {
             toneGenerator?.release()
 
             toneGenerator = ToneGenerator(
                 AudioManager.STREAM_MUSIC,
-                70
+                volume
             )
 
             toneGenerator?.startTone(
