@@ -201,7 +201,8 @@ fun AdminScreen(
                     confirmPassword = confirmPassword
                 )
                 Handler(Looper.getMainLooper()).post {
-                    message = "تم تغيير كلمة المرور بنجاح ✓"
+    AppSounds.passwordChanged(context)
+    message = "تم تغيير كلمة المرور بنجاح ✓"
                 }
             } catch (e: Exception) {
                 Handler(Looper.getMainLooper()).post {
