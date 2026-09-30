@@ -2,6 +2,8 @@ package com.almalaki.cafe
 
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -83,14 +85,6 @@ fun AdminScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var editingProductId by remember { mutableStateOf<Int?>(null) }
     var message by remember { mutableStateOf("") }
-
-    LaunchedEffect(message) {
-        if (message.isNotEmpty()) {
-            kotlinx.coroutines.delay(4000)
-            message = ""
-        }
-    }
-
     var loading by remember { mutableStateOf(false) }
 
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
@@ -100,6 +94,15 @@ fun AdminScreen(
     var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
     var loadingDashboard by remember { mutableStateOf(false) }
     var loadingArchive by remember { mutableStateOf(false) }
+    var accountEmail by remember { mutableStateOf("") }
+    var loadingAccount by remember { mutableStateOf(false) }
+
+    LaunchedEffect(message) {
+        if (message.isNotEmpty()) {
+            kotlinx.coroutines.delay(4000)
+            message = ""
+        }
+    }
 
     val imagePicker =
         rememberLauncherForActivityResult(
@@ -142,6 +145,76 @@ fun AdminScreen(
         }.start()
     }
 
+    fun refreshAccount() {
+        loadingAccount = true
+        Thread {
+            try {
+                val email = loadCurrentAccountEmail(accessToken)
+                Handler(Looper.getMainLooper()).post {
+                    accountEmail = email
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post {
+                    message = e.message ?: "تعذر تحميل بيانات الحساب."
+                }
+            } finally {
+                Handler(Looper.getMainLooper()).post {
+                    loadingAccount = false
+                }
+            }
+        }.start()
+    }
+
+    fun changeEmail(newEmail: String) {
+        loadingAccount = true
+        Thread {
+            try {
+                updateAccountEmail(accessToken, newEmail)
+                Handler(Looper.getMainLooper()).post {
+                    accountEmail = newEmail.trim()
+                    message = "تم تغيير البريد الإلكتروني بنجاح ✓"
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post {
+                    message = e.message ?: "تعذر تغيير البريد الإلكتروني."
+                }
+            } finally {
+                Handler(Looper.getMainLooper()).post {
+                    loadingAccount = false
+                }
+            }
+        }.start()
+    }
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ) {
+        loadingAccount = true
+        Thread {
+            try {
+                updateAccountPassword(
+                    accessToken = accessToken,
+                    currentPassword = currentPassword,
+                    newPassword = newPassword,
+                    confirmPassword = confirmPassword
+                )
+                Handler(Looper.getMainLooper()).post {
+                    message = "تم تغيير كلمة المرور بنجاح ✓"
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post {
+                    message = e.message ?: "تعذر تغيير كلمة المرور."
+                }
+            } finally {
+                Handler(Looper.getMainLooper()).post {
+                    loadingAccount = false
+                }
+            }
+        }.start()
+    }
+
     fun refreshDashboard() {
         loadingDashboard = true
         Thread {
@@ -172,6 +245,7 @@ fun AdminScreen(
     LaunchedEffect(Unit) {
         refreshDashboard()
         refreshArchive()
+        refreshAccount()
     }
 
     fun openSection(target: AdminSection) {
@@ -185,6 +259,7 @@ fun AdminScreen(
             AdminSection.PRODUCTS -> refreshProducts()
             AdminSection.ORDERS -> refreshOrders()
             AdminSection.ARCHIVE -> refreshArchive()
+            AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
         }
     }
 
@@ -215,6 +290,11 @@ fun AdminScreen(
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
+                    accountEmail = accountEmail,
+                    loadingAccount = loadingAccount,
+                    onRefreshAccount = ::refreshAccount,
+                    onChangeEmail = ::changeEmail,
+                    onChangePassword = ::changePassword,
                     message = message,
                     name = name,
                     category = category,
@@ -339,6 +419,11 @@ fun AdminScreen(
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
+                    accountEmail = accountEmail,
+                    loadingAccount = loadingAccount,
+                    onRefreshAccount = ::refreshAccount,
+                    onChangeEmail = ::changeEmail,
+                    onChangePassword = ::changePassword,
                     message = message,
                     name = name,
                     category = category,
