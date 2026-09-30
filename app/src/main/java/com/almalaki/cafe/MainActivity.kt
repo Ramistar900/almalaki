@@ -41,13 +41,6 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-private val Gold = Color(0xFFD4AF37)
-private val GoldLight = Color(0xFFFFE9A3)
-private val GoldDark = Color(0xFF8C6B16)
-private val Black = Color(0xFF050505)
-private val CardBlack = Color(0xFF111111)
-private val Cream = Color(0xFFF5F0E5)
-
 private const val RESET_SCHEME = "com.almalaki"
 private const val RESET_HOST = "reset-password"
 
