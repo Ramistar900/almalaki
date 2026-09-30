@@ -325,7 +325,7 @@ fun calculateTopProducts(
 
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/order_items" +
-                "?select=product_id,quantity,subtotal" +
+                "?select=product_id,quantity,item_total" +
                 "&order_id=in.($inValue)&limit=5000"
     )
 
@@ -355,12 +355,12 @@ fun calculateTopProducts(
             val item = json.getJSONObject(i)
             val productId = item.optInt("product_id", 0)
             val quantity = item.optInt("quantity", 0)
-            val subtotal = item.optDouble("subtotal", 0.0)
+            val itemTotal = item.optDouble("item_total", 0.0)
 
             quantities[productId] =
                 (quantities[productId] ?: 0) + quantity
             revenues[productId] =
-                (revenues[productId] ?: 0.0) + subtotal
+                (revenues[productId] ?: 0.0) + itemTotal
         }
 
         val names = products.associateBy { it.id }
