@@ -54,6 +54,24 @@ fun AdminContent(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        if (section == AdminSection.ACCOUNT_SETTINGS && message.isNotEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = AdminPanel
+                    )
+                ) {
+                    Text(
+                        text = message,
+                        color = AdminGold,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(14.dp)
+                    )
+                }
+            }
+        }
+
         when (section) {
             AdminSection.HOME -> {
                 item {
