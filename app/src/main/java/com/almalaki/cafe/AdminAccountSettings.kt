@@ -197,7 +197,7 @@ fun AccountSettingsScreen(
             )
 
             OutlinedButton(
-                onClick = onRefresh,
+                onClick = { RoyalSoundManager.playClick(); onRefresh() },
                 enabled = !loading
             ) {
                 Text(if (loading) "جاري..." else "تحديث")
@@ -230,6 +230,7 @@ fun AccountSettingsScreen(
 
                 Button(
                     onClick = {
+                        RoyalSoundManager.playClick()
                         onChangeEmail(newEmail)
                     },
                     enabled = !loading && newEmail.isNotBlank(),
@@ -318,6 +319,7 @@ fun AccountSettingsScreen(
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
+                            RoyalSoundManager.playClick()
                             submitPasswordChange()
                         }
                     ),
@@ -326,6 +328,7 @@ fun AccountSettingsScreen(
 
                 Button(
                     onClick = {
+                        RoyalSoundManager.playClick()
                         submitPasswordChange()
                     },
                     enabled = !loading && newPassword.isNotBlank(),
