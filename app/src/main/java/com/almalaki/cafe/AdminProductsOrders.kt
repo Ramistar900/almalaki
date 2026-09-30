@@ -28,55 +28,6 @@ import java.util.Locale
 import java.util.TimeZone
 
 @Composable
-fun ProductRow(
-    product: Product,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AdminPanel)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                product.name,
-                color = AdminCream,
-                fontSize = 18.sp
-            )
-            Text(
-                "${product.category} • ${formatPrice(product.price)}",
-                color = AdminGold
-            )
-            if (product.imageUrl.isNotEmpty()) {
-                Text(
-                    "📷 توجد صورة للمنتج",
-                    color = AdminCream,
-                    fontSize = 13.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { RoyalSoundManager.playClick(); onEdit() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("تعديل")
-                }
-                OutlinedButton(
-                    onClick = { RoyalSoundManager.playClick(); onDelete() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("حذف", color = Color.Red)
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun AdminOrderCard(
     order: AdminOrder,
     accessToken: String,
