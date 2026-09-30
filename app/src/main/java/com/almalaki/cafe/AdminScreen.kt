@@ -2,6 +2,8 @@ package com.almalaki.cafe
 
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -197,6 +199,31 @@ fun AdminScreen(
         }
     }
 
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String
+    ) {
+        Thread {
+            try {
+                updateAccountPassword(
+                    accessToken = accessToken,
+                    currentPassword = currentPassword,
+                    newPassword = newPassword,
+                    confirmPassword = confirmPassword
+                )
+
+                Handler(Looper.getMainLooper()).post {
+                    message = "تم تغيير كلمة المرور بنجاح ✓"
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post {
+                    message = e.message ?: "تعذر تغيير كلمة المرور."
+                }
+            }
+        }.start()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -235,21 +262,7 @@ fun AdminScreen(
                             }
                         }.start()
                     },
-                    onChangePassword = { currentPassword, newPassword, confirmPassword ->
-                        Thread {
-                            try {
-                                updateAccountPassword(
-                                    accessToken = accessToken,
-                                    currentPassword = currentPassword,
-                                    newPassword = newPassword,
-                                    confirmPassword = confirmPassword
-                                )
-                                message = "تم تغيير كلمة المرور بنجاح 🔐"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر تغيير كلمة المرور."
-                            }
-                        }.start()
-                    },
+                    onChangePassword = ::changePassword,
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
@@ -388,21 +401,7 @@ fun AdminScreen(
                             }
                         }.start()
                     },
-                    onChangePassword = { currentPassword, newPassword, confirmPassword ->
-                        Thread {
-                            try {
-                                updateAccountPassword(
-                                    accessToken = accessToken,
-                                    currentPassword = currentPassword,
-                                    newPassword = newPassword,
-                                    confirmPassword = confirmPassword
-                                )
-                                message = "تم تغيير كلمة المرور بنجاح 🔐"
-                            } catch (e: Exception) {
-                                message = e.message ?: "تعذر تغيير كلمة المرور."
-                            }
-                        }.start()
-                    },
+                    onChangePassword = ::changePassword,
                     salesStats = salesStats,
                     topProducts = topProducts,
                     loadingDashboard = loadingDashboard,
@@ -482,7 +481,7 @@ fun AdminScreen(
                             }
                         }.start()
                     },
-                                        onDeleteOrder = { orderId ->
+                    onDeleteOrder = { orderId ->
                         Thread {
                             try {
                                 deleteCancelledOrder(
