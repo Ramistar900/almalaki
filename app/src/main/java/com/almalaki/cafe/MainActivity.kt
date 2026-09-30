@@ -523,32 +523,6 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
 }
 
 @Composable
-fun RoyalLogo() {
-    val transition = rememberInfiniteTransition(label = "royal_shine")
-    val shinePosition by transition.animateFloat(
-        initialValue = -1f, targetValue = 2f,
-        animationSpec = infiniteRepeatable(tween(2600, easing = LinearEasing), RepeatMode.Restart),
-        label = "shine_position"
-    )
-    val brush = Brush.linearGradient(
-        colors = listOf(GoldDark, Gold, GoldLight, Color.White, GoldLight, Gold, GoldDark),
-        start = androidx.compose.ui.geometry.Offset(shinePosition * 500f, 0f),
-        end = androidx.compose.ui.geometry.Offset(shinePosition * 500f + 500f, 0f)
-    )
-    Box(Modifier.fillMaxWidth().padding(bottom = 2.dp), Alignment.Center) {
-        Text(
-            text = "Royal Coffee",
-            style = androidx.compose.ui.text.TextStyle(
-                brush = brush,
-                fontSize = 39.sp,
-                fontFamily = FontFamily.Cursive,
-                fontWeight = FontWeight.Bold
-            )
-        )
-    }
-}
-
-@Composable
 fun ProductCard(product: Product, quantity: Int, onAdd: () -> Unit, onRemove: () -> Unit) {
     Card(Modifier.fillMaxWidth(), RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = CardBlack)) {
         Column(Modifier.fillMaxWidth().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
