@@ -574,4 +574,183 @@ fun AdminScreen(
     },
     onLogout = onLogout
 )
-                        
+
+if (menuOpen) {
+    AdminHorizontalMenu(
+        section = section,
+        onSectionSelected = ::openSection
+    )
+}
+
+AdminContent(
+    section = section,
+    products = products,
+    orders = orders,
+    archivedOrders = archivedOrders,
+    loadingArchive = loadingArchive,
+    salesStats = salesStats,
+    topProducts = topProducts,
+    loadingDashboard = loadingDashboard,
+    accountEmail = accountEmail,
+    loadingAccount = loadingAccount,
+    onRefreshAccount = ::refreshAccount,
+    onChangeEmail = ::changeEmail,
+    onChangePassword = ::changePassword,
+    message = message,
+    name = name,
+    category = category,
+    price = price,
+    selectedImageUri = selectedImageUri,
+    editingProductId = editingProductId,
+    loading = loading,
+    accessToken = accessToken,
+    context = context,
+    onNameChange = { name = it },
+    onCategoryChange = { category = it },
+    onPriceChange = { price = it },
+    onPickImage = { imagePicker.launch("image/*") },
+    onEditProduct = {
+        editingProductId = it.id
+        name = it.name
+        category = it.category
+        price = it.price.toString()
+        selectedImageUri = null
+        message = "يمكنك تعديل بيانات المنتج الآن."
+        section = AdminSection.PRODUCTS
+    },
+    onDeleteProduct = { product ->
+        Thread {
+            try {
+                deleteProduct(accessToken, product.id)
+                products = loadProducts()
+                message = "تم حذف المنتج بنجاح ✅"
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر حذف المنتج."
+            }
+        }.start()
+    },
+    onSaveProduct = {
+        saveProduct(
+            context = context,
+            accessToken = accessToken,
+            name = name,
+            category = category,
+            price = price,
+            selectedImageUri = selectedImageUri,
+            editingProductId = editingProductId,
+            onLoading = { loading = it },
+            onMessage = { message = it },
+            onProductsLoaded = { products = it },
+            onClear = {
+                name = ""
+                category = ""
+                price = ""
+                selectedImageUri = null
+                editingProductId = null
+            }
+        )
+    },
+    onCancelEdit = {
+        editingProductId = null
+        name = ""
+        category = ""
+        price = ""
+        selectedImageUri = null
+        message = ""
+    },
+    onRefresh = { refreshDashboard() },
+    onRefreshArchive = { refreshArchive() },
+    onOrderStatus = { orderId, status ->
+        Thread {
+            try {
+                updateOrderStatusAsync(
+                    accessToken = accessToken,
+                    orderId = orderId,
+                    status = status
+                )
+                orders = loadAdminOrders(accessToken)
+                salesStats = calculateSalesStats(accessToken)
+                message = "تم تحديث حالة الطلب ✅"
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر تحديث حالة الطلب."
+            }
+        }.start()
+    },
+    onDeleteOrder = { orderId ->
+        Thread {
+            try {
+                deleteCancelledOrder(
+                    accessToken = accessToken,
+                    orderId = orderId
+                )
+                orders = loadAdminOrders(accessToken)
+                knownOrderIds = orders.map { it.id }.toSet()
+                message = "تم حذف الطلب الملغى ✅"
+            } catch (e: Exception) {
+                message = e.message ?: "تعذر حذف الطلب."
+            }
+        }.start()
+    }
+)
+        }
+    }
+
+    // 🪟 نافذة إشعار الطلب الجديد للمالك فقط
+    if (showNewOrderDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showNewOrderDialog = false
+            },
+            title = {
+                Text(
+                    text = "🔔 طلب جديد",
+                    color = AdminGold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "وصل طلب جديد إلى الكافيه.",
+                        color = Color.White
+                    )
+
+                    Text(
+                        text = "رقم الطلب: $newOrderNumber",
+                        color = AdminGold,
+                        fontSize = 18.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        AppSounds.buttonClick(context)
+                        showNewOrderDialog = false
+                        openSection(AdminSection.ORDERS)
+                    }
+                ) {
+                    Text(
+                        text = "عرض الطلب",
+                        color = AdminGold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        AppSounds.buttonClick(context)
+                        showNewOrderDialog = false
+                    }
+                ) {
+                    Text(
+                        text = "إغلاق",
+                        color = Color.LightGray
+                    )
+                }
+            },
+            containerColor = AdminBlack
+        )
+    }
+    }
