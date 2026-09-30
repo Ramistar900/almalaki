@@ -27,6 +27,10 @@ fun AdminOrderCard(
         mutableStateOf(false)
     }
 
+    var products by remember(order.id) {
+        mutableStateOf<List<Product>>(emptyList())
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -75,7 +79,9 @@ fun AdminOrderCard(
                 color = AdminCream
             )
 
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(
+                modifier = Modifier.height(7.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -97,6 +103,9 @@ fun AdminOrderCard(
                                         accessToken,
                                         order.id
                                     )
+
+                                    products = loadProducts()
+
                                 } catch (_: Exception) {
                                 } finally {
                                     loadingItems = false
@@ -107,15 +116,21 @@ fun AdminOrderCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        if (expanded) "إخفاء"
-                        else "التفاصيل"
+                        if (expanded) {
+                            "إخفاء"
+                        } else {
+                            "التفاصيل"
+                        }
                     )
                 }
 
                 OutlinedButton(
                     onClick = {
                         RoyalSoundManager.playClick()
-                        onStatus(order.id, "preparing")
+                        onStatus(
+                            order.id,
+                            "preparing"
+                        )
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -131,7 +146,10 @@ fun AdminOrderCard(
                 OutlinedButton(
                     onClick = {
                         RoyalSoundManager.playClick()
-                        onStatus(order.id, "ready")
+                        onStatus(
+                            order.id,
+                            "ready"
+                        )
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -141,7 +159,10 @@ fun AdminOrderCard(
                 OutlinedButton(
                     onClick = {
                         RoyalSoundManager.playClick()
-                        onStatus(order.id, "completed")
+                        onStatus(
+                            order.id,
+                            "completed"
+                        )
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -158,10 +179,15 @@ fun AdminOrderCard(
                     order.status.lowercase() != "completed" &&
                     order.status.lowercase() != "cancelled"
                 ) {
+
                     OutlinedButton(
                         onClick = {
                             RoyalSoundManager.playClick()
-                            onStatus(order.id, "cancelled")
+
+                            onStatus(
+                                order.id,
+                                "cancelled"
+                            )
                         },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -172,7 +198,10 @@ fun AdminOrderCard(
                     }
                 }
 
-                if (order.status.lowercase() == "cancelled") {
+                if (
+                    order.status.lowercase() == "cancelled"
+                ) {
+
                     OutlinedButton(
                         onClick = {
                             RoyalSoundManager.playClick()
@@ -222,29 +251,63 @@ fun AdminOrderCard(
 
                     orderItems.forEach { item ->
 
-                        Column(
+                        val productName =
+                            products
+                                .firstOrNull {
+                                    it.id == item.productId
+                                }
+                                ?.name
+                                ?: "منتج #${item.productId}"
+
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp)
+                                .padding(vertical = 3.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = AdminBlack
+                            )
                         ) {
 
-                            Text(
-                                item.productName,
-                                color = AdminCream,
-                                fontSize = 15.sp
-                            )
+                            Column(
+                                modifier = Modifier.padding(10.dp)
+                            ) {
 
-                            Text(
-                                "الكمية: ${item.quantity}",
-                                color = AdminCream,
-                                fontSize = 14.sp
-                            )
+                                Text(
+                                    productName,
+                                    color = AdminCream,
+                                    fontSize = 16.sp
+                                )
 
-                            Text(
-                                "السعر: ${formatPrice(item.price)}",
-                                color = AdminGold,
-                                fontSize = 14.sp
-                            )
+                                Spacer(
+                                    modifier = Modifier.height(3.dp)
+                                )
+
+                                Text(
+                                    "الكمية: ${item.quantity}",
+                                    color = AdminCream,
+                                    fontSize = 14.sp
+                                )
+
+                                Text(
+                                    "سعر القطعة: ${
+                                        formatPrice(
+                                            item.unitPrice
+                                        )
+                                    }",
+                                    color = AdminGold,
+                                    fontSize = 14.sp
+                                )
+
+                                Text(
+                                    "الإجمالي: ${
+                                        formatPrice(
+                                            item.subtotal
+                                        )
+                                    }",
+                                    color = AdminGold,
+                                    fontSize = 14.sp
+                                )
+                            }
                         }
                     }
                 }
