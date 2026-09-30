@@ -180,6 +180,7 @@ fun CheckoutDialog(
                     RadioButton(
                         selected = fulfillmentType == "داخل المحل",
                         onClick = {
+                            AppSounds.buttonClick(context)
                             fulfillmentType = "داخل المحل"
                         },
                         enabled = !loading
@@ -198,6 +199,7 @@ fun CheckoutDialog(
                     RadioButton(
                         selected = fulfillmentType == "توصيل إلى المنزل",
                         onClick = {
+                            AppSounds.buttonClick(context)
                             fulfillmentType = "توصيل إلى المنزل"
                         },
                         enabled = !loading
@@ -252,7 +254,10 @@ fun CheckoutDialog(
 
         dismissButton = {
             TextButton(
-                onClick = onClose,
+                onClick = {
+                    AppSounds.buttonClick(context)
+                    onClose()
+                },
                 enabled = !loading
             ) {
                 Text(
@@ -265,6 +270,7 @@ fun CheckoutDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    AppSounds.buttonClick(context)
                     onConfirm(
                         customerName,
                         customerPhone,
