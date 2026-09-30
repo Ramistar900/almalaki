@@ -89,7 +89,6 @@ fun AdminScreen(
 
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var orders by remember { mutableStateOf<List<AdminOrder>>(emptyList()) }
-    var knownOrderIds by remember { mutableStateOf<Set<Long>?>(null) }
     var archivedOrders by remember { mutableStateOf<List<AdminArchivedOrder>>(emptyList()) }
     var salesStats by remember { mutableStateOf(AdminSalesStats()) }
     var topProducts by remember { mutableStateOf<List<AdminTopProduct>>(emptyList()) }
@@ -227,7 +226,6 @@ fun AdminScreen(
                         it.status.equals("completed", ignoreCase = true)
                     }
 
-                knownOrderIds = currentOrders.map { it.id }.toSet()
                 products = currentProducts
                 orders = currentOrders
                 salesStats = calculateSalesStats(accessToken)
@@ -244,35 +242,10 @@ fun AdminScreen(
         }.start()
     }
 
-    fun checkForNewOrders() {
-        Thread {
-            try {
-                val currentOrders = loadAdminOrders(accessToken)
-                val previousIds = knownOrderIds
-                if (previousIds != null) {
-                    val hasNewOrder = currentOrders.any {
-                        it.id !in previousIds &&
-                            it.status.equals("new", ignoreCase = true)
-                    }
-                    if (hasNewOrder) {
-                        RoyalSoundManager.playOrderNotification()
-                    }
-                }
-                knownOrderIds = currentOrders.map { it.id }.toSet()
-                orders = currentOrders
-            } catch (_: Exception) {
-            }
-        }.start()
-    }
-
     LaunchedEffect(Unit) {
         refreshDashboard()
         refreshArchive()
         refreshAccount()
-        while (true) {
-            kotlinx.coroutines.delay(5000)
-            checkForNewOrders()
-        }
     }
 
     fun openSection(target: AdminSection) {
@@ -526,4 +499,21 @@ fun AdminScreen(
                                 message = e.message ?: "تعذر تحديث حالة الطلب."
                             }
                         }.start()
- 
+                    },
+                    onDeleteOrder = { orderId ->
+                        Thread {
+                            try {
+                                deleteCancelledOrder(accessToken, orderId)
+                                orders = loadAdminOrders(accessToken)
+                                message = "تم حذف الطلب الملغى ✅"
+                            } catch (e: Exception) {
+                                message = e.message ?: "تعذر حذف الطلب."
+                            }
+                        }.start()
+                    }
+                )
+            }
+        }
+    }
+}
+
