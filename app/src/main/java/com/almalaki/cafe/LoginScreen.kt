@@ -62,6 +62,8 @@ fun LoginScreen(
                         try {
                             sendPasswordResetEmail(resetEmail.trim())
 
+                            AppSounds.passwordChanged(context)
+
                             message =
                                 "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني 📧"
                         } catch (e: Exception) {
