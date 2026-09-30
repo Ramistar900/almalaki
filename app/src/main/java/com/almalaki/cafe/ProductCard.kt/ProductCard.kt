@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -109,7 +108,7 @@ fun ProductCard(
             if (quantity == 0) {
                 Button(
                     onClick = onAdd,
-                    Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Gold,
                         contentColor = Black
@@ -146,8 +145,8 @@ fun SmallCartButton(
 ) {
     Button(
         onClick = onClick,
-        Modifier.size(42.dp),
-        contentPadding = PaddingValues(0.dp),
+        modifier = Modifier.size(42.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Gold,
             contentColor = Black
@@ -156,7 +155,4 @@ fun SmallCartButton(
         Text(
             text,
             fontSize = 23.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
+            font
