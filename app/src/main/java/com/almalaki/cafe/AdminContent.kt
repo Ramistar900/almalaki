@@ -21,11 +21,6 @@ fun AdminContent(
     topProducts: List<AdminTopProduct>,
     loadingDashboard: Boolean,
     loadingArchive: Boolean,
-    accountEmail: String,
-    loadingAccount: Boolean,
-    onRefreshAccount: () -> Unit,
-    onChangeEmail: (String) -> Unit,
-    onChangePassword: (String, String, String) -> Unit,
     message: String,
     name: String,
     category: String,
@@ -54,24 +49,6 @@ fun AdminContent(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (section == AdminSection.ACCOUNT_SETTINGS && message.isNotEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = AdminPanel
-                    )
-                ) {
-                    Text(
-                        text = message,
-                        color = AdminGold,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(14.dp)
-                    )
-                }
-            }
-        }
-
         when (section) {
             AdminSection.HOME -> {
                 item {
@@ -163,7 +140,7 @@ fun AdminContent(
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedButton(
-                            onClick = onRefreshArchive,
+                            onClick = { RoyalSoundManager.playClick(); onRefreshArchive() },
                             enabled = !loadingArchive
                         ) {
                             Text(
@@ -192,18 +169,6 @@ fun AdminContent(
                     ) { order ->
                         ArchivedOrderCard(order)
                     }
-                }
-            }
-
-            AdminSection.ACCOUNT_SETTINGS -> {
-                item {
-                    AccountSettingsScreen(
-                        currentEmail = accountEmail,
-                        loading = loadingAccount,
-                        onRefresh = onRefreshAccount,
-                        onChangeEmail = onChangeEmail,
-                        onChangePassword = onChangePassword
-                    )
                 }
             }
 
@@ -249,6 +214,22 @@ fun AdminContent(
                 }
             }
         }
+
+        if (section == AdminSection.ACCOUNT_SETTINGS && message.isNotEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = AdminPanel)
+                ) {
+                    Text(
+                        text = message,
+                        color = AdminGold,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(14.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -274,7 +255,7 @@ fun DashboardHeader(
             )
         }
         OutlinedButton(
-            onClick = onRefresh,
+            onClick = { RoyalSoundManager.playClick(); onRefresh() },
             enabled = !loading
         ) {
             Text(if (loading) "جاري..." else "تحديث")
