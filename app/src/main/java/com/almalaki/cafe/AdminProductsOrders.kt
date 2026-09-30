@@ -26,32 +26,3 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
-@Composable
-fun TopProductRow(product: AdminTopProduct) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AdminPanel)
-    ) {
-        Row(
-            modifier = Modifier.padding(13.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "${product.quantity}×",
-                color = AdminGold,
-                fontSize = 20.sp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(product.name, color = AdminCream, fontSize = 17.sp)
-                Text(
-                    "مبيعات: ${formatPrice(product.revenue)}",
-                    color = AdminGold,
-                    fontSize = 13.sp
-                )
-            }
-        }
-    }
-}
-
