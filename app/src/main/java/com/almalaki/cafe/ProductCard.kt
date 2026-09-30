@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,8 @@ fun ProductCard(
     onAdd: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Card(
         Modifier.fillMaxWidth(),
         RoundedCornerShape(18.dp),
@@ -48,6 +52,7 @@ fun ProductCard(
                 .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -107,7 +112,10 @@ fun ProductCard(
 
             if (quantity == 0) {
                 Button(
-                    onClick = onAdd,
+                    onClick = {
+                        AppSounds.productClick(context)
+                        onAdd()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Gold,
@@ -122,7 +130,13 @@ fun ProductCard(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SmallCartButton("−", onRemove)
+                    SmallCartButton(
+                        text = "−",
+                        onClick = {
+                            AppSounds.buttonClick(context)
+                            onRemove()
+                        }
+                    )
 
                     Text(
                         quantity.toString(),
@@ -131,7 +145,13 @@ fun ProductCard(
                         fontWeight = FontWeight.Bold
                     )
 
-                    SmallCartButton("+", onAdd)
+                    SmallCartButton(
+                        text = "+",
+                        onClick = {
+                            AppSounds.productClick(context)
+                            onAdd()
+                        }
+                    )
                 }
             }
         }
