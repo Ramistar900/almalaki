@@ -532,3 +532,5 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
 @Composable
 fun RoyalLogo() {
     val transition = remem
+
+    
