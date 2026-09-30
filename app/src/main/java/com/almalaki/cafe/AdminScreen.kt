@@ -566,4 +566,12 @@ fun AdminScreen(
             ) {
 
                 AdminTopBar(
-                    title =
+    title = adminSectionTitle(section),
+    menuOpen = menuOpen,
+    onMenuClick = {
+        AppSounds.buttonClick(context)
+        menuOpen = !menuOpen
+    },
+    onLogout = onLogout
+)
+                        
