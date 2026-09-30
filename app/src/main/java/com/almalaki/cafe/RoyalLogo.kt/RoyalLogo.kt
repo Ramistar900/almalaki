@@ -29,10 +29,7 @@ fun RoyalLogo() {
         initialValue = -1f,
         targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            tween(
-                2600,
-                easing = LinearEasing
-            ),
+            tween(2600, easing = LinearEasing),
             RepeatMode.Restart
         ),
         label = "shine_position"
