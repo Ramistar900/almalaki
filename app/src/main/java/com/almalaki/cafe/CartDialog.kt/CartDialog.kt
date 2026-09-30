@@ -15,7 +15,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -40,8 +39,7 @@ fun CartDialog(
             Text(
                 "🛒 سلة المشتريات",
                 color = Gold,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 24.sp
             )
         },
 
@@ -71,7 +69,6 @@ fun CartDialog(
                                 verticalAlignment =
                                     Alignment.CenterVertically
                             ) {
-
                                 Column(
                                     Modifier.weight(1f)
                                 ) {
@@ -82,9 +79,7 @@ fun CartDialog(
                                     )
 
                                     Text(
-                                        "$quantity × ${
-                                            formatPrice(product.price)
-                                        }",
+                                        "$quantity × ${formatPrice(product.price)}",
                                         color = Gold,
                                         fontSize = 12.sp
                                     )
@@ -114,8 +109,7 @@ fun CartDialog(
 
                                     Text(
                                         quantity.toString(),
-                                        color = Cream,
-                                        fontWeight = FontWeight.Bold
+                                        color = Cream
                                     )
 
                                     TextButton(
@@ -148,8 +142,7 @@ fun CartDialog(
                 Text(
                     formatPrice(totalAmount),
                     color = GoldLight,
-                    fontSize = 23.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 23.sp
                 )
             }
         },
