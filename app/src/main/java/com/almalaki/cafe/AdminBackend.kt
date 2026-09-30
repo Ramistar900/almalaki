@@ -1,7 +1,22 @@
 package com.almalaki.cafe
 
-import android.content.Context
+import android.content.res.Configuration
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -17,85 +32,13 @@ fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.PRODUCTS -> "تعديل المنتجات"
     AdminSection.ORDERS -> "الطلبات"
     AdminSection.ARCHIVE -> "الأرشيف"
+    AdminSection.ACCOUNT_SETTINGS -> "إعدادات الحساب"
     AdminSection.SALES -> "المبيعات"
     AdminSection.TOP_PRODUCTS -> "الأكثر طلبًا"
 }
 
-fun adminRequest(
-    method: String,
-    path: String,
-    accessToken: String,
-    body: String? = null
-): String {
-
-    val connection = (
-        URL("$ADMIN_SUPABASE_URL/rest/v1/$path")
-            .openConnection() as HttpURLConnection
-        )
-
-    connection.requestMethod = method
-
-    connection.setRequestProperty(
-        "apikey",
-        ADMIN_SUPABASE_KEY
-    )
-
-    connection.setRequestProperty(
-        "Authorization",
-        "Bearer $accessToken"
-    )
-
-    connection.setRequestProperty(
-        "Content-Type",
-        "application/json"
-    )
-
-    connection.setRequestProperty(
-        "Accept",
-        "application/json"
-    )
-
-    if (body != null) {
-        connection.doOutput = true
-
-        connection.setRequestProperty(
-            "Prefer",
-            "return=minimal"
-        )
-
-        connection.outputStream.use {
-            it.write(
-                body.toByteArray(Charsets.UTF_8)
-            )
-        }
-    }
-
-    val code = connection.responseCode
-
-    val stream =
-        if (code in 200..299) {
-            connection.inputStream
-        } else {
-            connection.errorStream
-        }
-
-    val response =
-        stream?.bufferedReader()?.readText()
-            ?: ""
-
-    connection.disconnect()
-
-    if (code !in 200..299) {
-        throw Exception(
-            "HTTP $code: $response"
-        )
-    }
-
-    return response
-}
-
 fun saveProduct(
-    context: Context,
+    context: android.content.Context,
     accessToken: String,
     name: String,
     category: String,
@@ -107,19 +50,13 @@ fun saveProduct(
     onProductsLoaded: (List<Product>) -> Unit,
     onClear: () -> Unit
 ) {
-
-    val cleanName = name.trim()
-    val cleanCategory = category.trim()
-
-    val priceValue =
-        price.replace(",", ".").toDoubleOrNull()
-
-    if (cleanName.isBlank()) {
+    if (name.isBlank()) {
         onMessage("اكتب اسم المنتج.")
         return
     }
 
-    if (priceValue == null || priceValue < 0) {
+    val priceValue = price.replace(",", ".").toDoubleOrNull()
+    if (priceValue == null) {
         onMessage("أدخل سعرًا صحيحًا.")
         return
     }
@@ -128,91 +65,335 @@ fun saveProduct(
     onMessage("جاري الحفظ...")
 
     Thread {
-
         try {
-
             var imageUrl = ""
+            selectedImageUri?.let { uri ->
+                val bytes = context.contentResolver
+                    .openInputStream(uri)
+                    ?.use { it.readBytes() }
+                    ?: throw Exception("تعذر قراءة الصورة.")
 
-            if (selectedImageUri != null) {
-
-                val bytes =
-                    context.contentResolver
-                        .openInputStream(selectedImageUri)
-                        ?.use { it.readBytes() }
-                        ?: throw Exception(
-                            "تعذر قراءة الصورة."
-                        )
+                val mimeType =
+                    context.contentResolver.getType(uri) ?: "image/jpeg"
 
                 imageUrl = uploadProductImage(
                     accessToken = accessToken,
                     bytes = bytes,
-                    mimeType =
-                        context.contentResolver
-                            .getType(selectedImageUri)
-                            ?: "image/jpeg"
+                    mimeType = mimeType
                 )
             }
 
             if (editingProductId == null) {
-
                 addProduct(
-                    accessToken,
-                    cleanName,
-                    cleanCategory,
-                    priceValue,
-                    imageUrl
+                    accessToken = accessToken,
+                    name = name.trim(),
+                    category = category.trim(),
+                    price = priceValue,
+                    imageUrl = imageUrl
                 )
-
-                onMessage(
-                    "تمت إضافة المنتج بنجاح ✅"
-                )
-
+                onMessage("تمت إضافة المنتج بنجاح ✅")
             } else {
-
-                val old =
-                    loadProducts()
-                        .firstOrNull {
-                            it.id == editingProductId
-                        }
-
                 updateAdminProduct(
                     accessToken = accessToken,
                     id = editingProductId,
-                    name = cleanName,
-                    category = cleanCategory,
+                    name = name.trim(),
+                    category = category.trim(),
                     price = priceValue,
-                    imageUrl =
-                        if (imageUrl.isNotBlank()) {
-                            imageUrl
-                        } else {
-                            old?.imageUrl.orEmpty()
-                        }
+                    imageUrl = imageUrl
                 )
-
-                onMessage(
-                    "تم تعديل المنتج بنجاح ✅"
-                )
+                onMessage("تم تعديل المنتج بنجاح ✅")
             }
 
-            onProductsLoaded(
-                loadProducts()
-            )
-
+            onProductsLoaded(loadProducts())
             onClear()
-
         } catch (e: Exception) {
-
-            onMessage(
-                e.message
-                    ?: "حدث خطأ أثناء الحفظ."
-            )
-
+            onMessage(e.message ?: "حدث خطأ أثناء الحفظ.")
         } finally {
-
             onLoading(false)
         }
-
     }.start()
+}
+
+fun loadAdminOrders(
+    accessToken: String
+): List<AdminOrder> {
+    val url = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/orders" +
+                "?select=id,order_number,customer_name," +
+                "customer_phone,delivery_address,fulfillment_type," +
+                "total_amount,status&order=id.desc"
+    )
+
+    val connection = url.openConnection() as HttpURLConnection
+    try {
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+
+        val code = connection.responseCode
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: " +
+                        (connection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر تحميل الطلبات.")
+            )
+        }
+
+        val json = JSONArray(
+            connection.inputStream.bufferedReader().readText()
+        )
+
+        val result = mutableListOf<AdminOrder>()
+        for (i in 0 until json.length()) {
+            val item = json.getJSONObject(i)
+            result.add(
+                AdminOrder(
+                    id = item.getLong("id"),
+                    orderNumber = item.optString("order_number", ""),
+                    customerName = item.optString("customer_name", ""),
+                    customerPhone = item.optString("customer_phone", ""),
+                    deliveryAddress = item.optString("delivery_address", ""),
+                    fulfillmentType = item.optString("fulfillment_type", ""),
+                    totalAmount = item.optDouble("total_amount", 0.0),
+                    status = item.optString("status", "new")
+                )
+            )
+        }
+        return result
+    } finally {
+        connection.disconnect()
+    }
+}
+
+fun loadOrderItems(
+    accessToken: String,
+    orderId: Long
+): List<AdminOrderItem> {
+    val url = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/order_items" +
+                "?select=id,order_id,product_id,quantity,unit_price,subtotal" +
+                "&order_id=eq.$orderId&order=id.asc"
+    )
+
+    val connection = url.openConnection() as HttpURLConnection
+    try {
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+
+        val code = connection.responseCode
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: " +
+                        (connection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر تحميل تفاصيل الطلب.")
+            )
+        }
+
+        val json = JSONArray(
+            connection.inputStream.bufferedReader().readText()
+        )
+        val result = mutableListOf<AdminOrderItem>()
+
+        for (i in 0 until json.length()) {
+            val item = json.getJSONObject(i)
+            result.add(
+                AdminOrderItem(
+                    id = item.getLong("id"),
+                    orderId = item.getLong("order_id"),
+                    productId = item.optInt("product_id", 0),
+                    quantity = item.optInt("quantity", 0),
+                    unitPrice = item.optDouble("unit_price", 0.0),
+                    subtotal = item.optDouble("subtotal", 0.0)
+                )
+            )
+        }
+        return result
+    } finally {
+        connection.disconnect()
+    }
+}
+
+fun calculateSalesStats(
+    accessToken: String
+): AdminSalesStats {
+    val url = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/orders" +
+                "?select=total_amount,created_at,status" +
+                "&status=eq.completed&order=created_at.desc&limit=1000"
+    )
+
+    val connection = url.openConnection() as HttpURLConnection
+    try {
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+
+        val code = connection.responseCode
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: " +
+                        (connection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر تحميل المبيعات.")
+            )
+        }
+
+        val json = JSONArray(
+            connection.inputStream.bufferedReader().readText()
+        )
+
+        val now = Calendar.getInstance()
+        val todayStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val weekStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+        }
+
+        val monthStart = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        var today = 0.0
+        var week = 0.0
+        var month = 0.0
+        var todayOrders = 0
+        var weekOrders = 0
+        var monthOrders = 0
+
+        for (i in 0 until json.length()) {
+            val item = json.getJSONObject(i)
+            val date = parseSupabaseDate(item.optString("created_at")) ?: continue
+            val amount = item.optDouble("total_amount", 0.0)
+
+            if (!date.before(todayStart.time)) {
+                today += amount
+                todayOrders++
+            }
+            if (!date.before(weekStart.time)) {
+                week += amount
+                weekOrders++
+            }
+            if (!date.before(monthStart.time)) {
+                month += amount
+                monthOrders++
+            }
+        }
+
+        now.timeInMillis = System.currentTimeMillis()
+
+        return AdminSalesStats(
+            today = today,
+            week = week,
+            month = month,
+            todayOrders = todayOrders,
+            weekOrders = weekOrders,
+            monthOrders = monthOrders
+        )
+    } finally {
+        connection.disconnect()
+    }
+}
+
+fun calculateTopProducts(
+    accessToken: String,
+    completedOrders: List<AdminOrder>,
+    products: List<Product>
+): List<AdminTopProduct> {
+    if (completedOrders.isEmpty()) return emptyList()
+
+    val ids = completedOrders.map { it.id }
+    val inValue = ids.joinToString(",")
+
+    val url = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/order_items" +
+                "?select=product_id,quantity,subtotal" +
+                "&order_id=in.($inValue)&limit=5000"
+    )
+
+    val connection = url.openConnection() as HttpURLConnection
+    try {
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+
+        val code = connection.responseCode
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: " +
+                        (connection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر حساب الأكثر طلبًا.")
+            )
+        }
+
+        val json = JSONArray(
+            connection.inputStream.bufferedReader().readText()
+        )
+
+        val quantities = mutableMapOf<Int, Int>()
+        val revenues = mutableMapOf<Int, Double>()
+
+        for (i in 0 until json.length()) {
+            val item = json.getJSONObject(i)
+            val productId = item.optInt("product_id", 0)
+            val quantity = item.optInt("quantity", 0)
+            val subtotal = item.optDouble("subtotal", 0.0)
+
+            quantities[productId] =
+                (quantities[productId] ?: 0) + quantity
+            revenues[productId] =
+                (revenues[productId] ?: 0.0) + subtotal
+        }
+
+        val names = products.associateBy { it.id }
+
+        return quantities.keys
+            .sortedByDescending { quantities[it] ?: 0 }
+            .map { id ->
+                AdminTopProduct(
+                    productId = id,
+                    name = names[id]?.name ?: "منتج #$id",
+                    quantity = quantities[id] ?: 0,
+                    revenue = revenues[id] ?: 0.0
+                )
+            }
+    } finally {
+        connection.disconnect()
+    }
+}
+
+fun parseSupabaseDate(value: String): Date? {
+    if (value.isBlank()) return null
+
+    val patterns = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'"
+    )
+
+    for (pattern in patterns) {
+        try {
+            val format = SimpleDateFormat(pattern, Locale.US)
+            format.timeZone = TimeZone.getTimeZone("UTC")
+            return format.parse(value)
+        } catch (_: Exception) {
+        }
+    }
+
+    return null
 }
 
 fun updateAdminProduct(
@@ -223,184 +404,91 @@ fun updateAdminProduct(
     price: Double,
     imageUrl: String
 ) {
+    val connection = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/products?id=eq.$id"
+    ).openConnection() as HttpURLConnection
 
-    val body =
-        JSONObject().apply {
+    try {
+        connection.requestMethod = "PATCH"
+        connection.doOutput = true
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Prefer", "return=minimal")
 
-            put(
-                "name",
-                name.trim()
-            )
-
-            put(
-                "category",
-                category.trim()
-            )
-
-            put(
-                "price",
-                price
-            )
-
-            put(
-                "image_url",
-                imageUrl
-            )
-
-            put(
-                "description",
-                name.trim()
-            )
-
+        val body = JSONObject().apply {
+            put("name", name)
+            put("category", category)
+            put("price", price)
+            put("description", name)
+            if (imageUrl.isNotBlank()) put("image_url", imageUrl)
         }.toString()
 
-    adminRequest(
-        "PATCH",
-        "products?id=eq.$id",
-        accessToken,
-        body
-    )
-}
+        connection.outputStream.use {
+            it.write(body.toByteArray(Charsets.UTF_8))
+        }
 
-fun loadAdminOrders(
-    accessToken: String
-): List<AdminOrder> {
-
-    val response =
-        adminRequest(
-            "GET",
-            "orders?select=id,order_number,customer_name,customer_phone,delivery_address,fulfillment_type,total_amount,status,created_at&order=id.desc",
-            accessToken
-        )
-
-    val json =
-        JSONArray(response)
-
-    val result =
-        mutableListOf<AdminOrder>()
-
-    for (i in 0 until json.length()) {
-
-        val item =
-            json.getJSONObject(i)
-
-        result.add(
-            AdminOrder(
-
-                id =
-                    item.getLong("id"),
-
-                orderNumber =
-                    item.optString(
-                        "order_number",
-                        item.getLong("id").toString()
-                    ),
-
-                customerName =
-                    item.optString(
-                        "customer_name",
-                        ""
-                    ),
-
-                customerPhone =
-                    item.optString(
-                        "customer_phone",
-                        ""
-                    ),
-
-                deliveryAddress =
-                    item.optString(
-                        "delivery_address",
-                        ""
-                    ),
-
-                fulfillmentType =
-                    item.optString(
-                        "fulfillment_type",
-                        ""
-                    ),
-
-                totalAmount =
-                    item.optDouble(
-                        "total_amount",
-                        0.0
-                    ),
-
-                status =
-                    item.optString(
-                        "status",
-                        ""
-                    ),
-
-                createdAt =
-                    item.optString(
-                        "created_at",
-                        ""
-                    )
+        val code = connection.responseCode
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: " +
+                        (connection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر تعديل المنتج.")
             )
-        )
+        }
+    } finally {
+        connection.disconnect()
     }
-
-    return result
 }
 
-fun loadOrderItems(
+fun deleteCancelledOrder(
     accessToken: String,
     orderId: Long
-): List<AdminOrderItem> {
+) {
+    // حذف تفاصيل الطلب أولًا ثم الطلب نفسه.
+    val itemsConnection = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/order_items?order_id=eq.$orderId"
+    ).openConnection() as HttpURLConnection
 
-    val response =
-        adminRequest(
-            "GET",
-            "order_items?select=id,order_id,product_id,quantity,unit_price,item_total&order_id=eq.$orderId",
-            accessToken
-        )
+    try {
+        itemsConnection.requestMethod = "DELETE"
+        itemsConnection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        itemsConnection.setRequestProperty("Authorization", "Bearer $accessToken")
+        itemsConnection.setRequestProperty("Prefer", "return=minimal")
 
-    val json =
-        JSONArray(response)
-
-    val result =
-        mutableListOf<AdminOrderItem>()
-
-    for (i in 0 until json.length()) {
-
-        val item =
-            json.getJSONObject(i)
-
-        val quantity =
-            item.optInt(
-                "quantity",
-                0
+        val itemsCode = itemsConnection.responseCode
+        if (itemsCode !in 200..299) {
+            throw Exception(
+                "HTTP $itemsCode: " +
+                        (itemsConnection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر حذف تفاصيل الطلب.")
             )
-
-        val unitPrice =
-            item.optDouble(
-                "unit_price",
-                0.0
-            )
-
-        result.add(
-            AdminOrderItem(
-
-                item.getLong("id"),
-
-                item.getLong("order_id"),
-
-                item.getInt("product_id"),
-
-                quantity,
-
-                unitPrice,
-
-                item.optDouble(
-                    "item_total",
-                    quantity * unitPrice
-                )
-            )
-        )
+        }
+    } finally {
+        itemsConnection.disconnect()
     }
 
-    return result
+    val orderConnection = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId&status=eq.cancelled"
+    ).openConnection() as HttpURLConnection
+
+    try {
+        orderConnection.requestMethod = "DELETE"
+        orderConnection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        orderConnection.setRequestProperty("Authorization", "Bearer $accessToken")
+        orderConnection.setRequestProperty("Prefer", "return=minimal")
+
+        val orderCode = orderConnection.responseCode
+        if (orderCode !in 200..299) {
+            throw Exception(
+                "HTTP $orderCode: " +
+                        (orderConnection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر حذف الطلب.")
+            )
+        }
+    } finally {
+        orderConnection.disconnect()
+    }
 }
 
 fun updateOrderStatusAsync(
@@ -408,371 +496,45 @@ fun updateOrderStatusAsync(
     orderId: Long,
     status: String
 ) {
+    val connection = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId"
+    ).openConnection() as HttpURLConnection
 
-    val body =
-        JSONObject()
-            .put(
-                "status",
-                status
+    try {
+        connection.requestMethod = "PATCH"
+        connection.doOutput = true
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Prefer", "return=minimal")
+
+        connection.outputStream.use {
+            it.write(
+                JSONObject()
+                    .put("status", status)
+                    .toString()
+                    .toByteArray(Charsets.UTF_8)
             )
-            .toString()
+        }
 
-    adminRequest(
-        "PATCH",
-        "orders?id=eq.$orderId",
-        accessToken,
-        body
-    )
+        val code = connection.responseCode
+        if (code !in 200..299) {
+            throw Exception(
+                "HTTP $code: " +
+                        (connection.errorStream?.bufferedReader()?.readText()
+                            ?: "تعذر تحديث حالة الطلب.")
+            )
+        }
+    } finally {
+        connection.disconnect()
+    }
 }
 
-/*
- * حذف الطلب أصبح متاحًا لأي حالة:
- * pending
- * confirmed
- * preparing
- * ready
- * completed
- * cancelled
- * delivered
- *
- * قبل الحذف، تقوم قاعدة بيانات Supabase
- * بأرشفة الطلب تلقائيًا في orders_archive.
- */
-fun deleteCancelledOrder(
-    accessToken: String,
-    orderId: Long
-) {
-
-    adminRequest(
-        "DELETE",
-        "orders?id=eq.$orderId",
-        accessToken
-    )
+fun adminStatusText(status: String): String = when (status.lowercase()) {
+    "new" -> "جديد 🆕"
+    "preparing" -> "قيد التحضير 👨‍🍳"
+    "ready" -> "جاهز ✅"
+    "completed" -> "مكتمل 🎉"
+    "cancelled" -> "ملغى ❌"
+    else -> status
 }
-
-private data class SaleRecord(
-    val totalAmount: Double,
-    val soldAt: Date
-)
-
-private fun loadSalesHistory(
-    accessToken: String
-): List<SaleRecord> {
-
-    val response =
-        adminRequest(
-            "GET",
-            "sales_history?select=total_amount,sold_at&order=sold_at.desc",
-            accessToken
-        )
-
-    val json =
-        JSONArray(response)
-
-    val result =
-        mutableListOf<SaleRecord>()
-
-    for (i in 0 until json.length()) {
-
-        val item =
-            json.getJSONObject(i)
-
-        val soldAt =
-            parseSupabaseDate(
-                item.optString(
-                    "sold_at",
-                    ""
-                )
-            ) ?: continue
-
-        result.add(
-            SaleRecord(
-                totalAmount =
-                    item.optDouble(
-                        "total_amount",
-                        0.0
-                    ),
-                soldAt = soldAt
-            )
-        )
-    }
-
-    return result
-}
-
-fun calculateSalesStats(
-    accessToken: String
-): AdminSalesStats {
-
-    /*
-     * المبيعات تُقرأ من sales_history
-     * وليس من orders.
-     *
-     * لذلك تبقى المبيعات محفوظة
-     * حتى بعد حذف الطلب.
-     */
-
-    val sales =
-        loadSalesHistory(
-            accessToken
-        )
-
-    val today =
-        Calendar.getInstance().apply {
-
-            set(
-                Calendar.HOUR_OF_DAY,
-                0
-            )
-
-            set(
-                Calendar.MINUTE,
-                0
-            )
-
-            set(
-                Calendar.SECOND,
-                0
-            )
-
-            set(
-                Calendar.MILLISECOND,
-                0
-            )
-        }
-
-    val week =
-        Calendar.getInstance().apply {
-
-            set(
-                Calendar.DAY_OF_WEEK,
-                firstDayOfWeek
-            )
-
-            set(
-                Calendar.HOUR_OF_DAY,
-                0
-            )
-
-            set(
-                Calendar.MINUTE,
-                0
-            )
-
-            set(
-                Calendar.SECOND,
-                0
-            )
-
-            set(
-                Calendar.MILLISECOND,
-                0
-            )
-        }
-
-    val month =
-        Calendar.getInstance().apply {
-
-            set(
-                Calendar.DAY_OF_MONTH,
-                1
-            )
-
-            set(
-                Calendar.HOUR_OF_DAY,
-                0
-            )
-
-            set(
-                Calendar.MINUTE,
-                0
-            )
-
-            set(
-                Calendar.SECOND,
-                0
-            )
-
-            set(
-                Calendar.MILLISECOND,
-                0
-            )
-        }
-
-    var td = 0.0
-    var wk = 0.0
-    var mo = 0.0
-
-    var tdo = 0
-    var wko = 0
-    var moo = 0
-
-    for (sale in sales) {
-
-        if (!sale.soldAt.before(month.time)) {
-
-            mo += sale.totalAmount
-            moo++
-        }
-
-        if (!sale.soldAt.before(week.time)) {
-
-            wk += sale.totalAmount
-            wko++
-        }
-
-        if (!sale.soldAt.before(today.time)) {
-
-            td += sale.totalAmount
-            tdo++
-        }
-    }
-
-    return AdminSalesStats(
-        td,
-        wk,
-        mo,
-        tdo,
-        wko,
-        moo
-    )
-}
-
-fun calculateTopProducts(
-    accessToken: String,
-    completedOrders: List<AdminOrder>,
-    products: List<Product>
-): List<AdminTopProduct> {
-
-    val quantities =
-        mutableMapOf<Int, Int>()
-
-    val revenues =
-        mutableMapOf<Int, Double>()
-
-    val names =
-        products.associateBy {
-            it.id
-        }
-
-    for (order in completedOrders) {
-
-        for (
-            item in loadOrderItems(
-                accessToken,
-                order.id
-            )
-        ) {
-
-            quantities[item.productId] =
-                (quantities[item.productId] ?: 0) +
-                        item.quantity
-
-            revenues[item.productId] =
-                (revenues[item.productId] ?: 0.0) +
-                        item.subtotal
-        }
-    }
-
-    return quantities.keys
-        .map { id ->
-
-            AdminTopProduct(
-
-                id,
-
-                names[id]?.name
-                    ?: "منتج #$id",
-
-                quantities[id]
-                    ?: 0,
-
-                revenues[id]
-                    ?: 0.0
-            )
-        }
-        .sortedByDescending {
-            it.quantity
-        }
-}
-
-fun parseSupabaseDate(
-    value: String
-): Date? {
-
-    if (value.isBlank()) {
-        return null
-    }
-
-    val formats =
-        listOf(
-
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX",
-
-            "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
-
-            "yyyy-MM-dd'T'HH:mm:ssXXX",
-
-            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
-
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-
-            "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        )
-
-    for (format in formats) {
-
-        try {
-
-            return SimpleDateFormat(
-                format,
-                Locale.US
-            ).apply {
-
-                timeZone =
-                    TimeZone.getTimeZone(
-                        "UTC"
-                    )
-
-            }.parse(value)
-
-        } catch (_: Exception) {
-        }
-    }
-
-    return null
-}
-
-fun adminStatusText(
-    status: String
-): String =
-    when (
-        status.lowercase(
-            Locale.ROOT
-        )
-    ) {
-
-        "pending" ->
-            "قيد الانتظار"
-
-        "confirmed" ->
-            "تم التأكيد"
-
-        "preparing" ->
-            "قيد التحضير"
-
-        "ready" ->
-            "جاهز"
-
-        "completed" ->
-            "مكتمل"
-
-        "cancelled" ->
-            "ملغى"
-
-        "delivered" ->
-            "تم التسليم"
-
-        else ->
-            status
-    }
