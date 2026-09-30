@@ -54,6 +54,24 @@ fun AdminContent(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        if (message.isNotEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = AdminPanel
+                    )
+                ) {
+                    Text(
+                        text = message,
+                        color = AdminGold,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(14.dp)
+                    )
+                }
+            }
+        }
+
         when (section) {
             AdminSection.HOME -> {
                 item {
@@ -229,16 +247,6 @@ fun AdminContent(
                         TopProductRow(product)
                     }
                 }
-            }
-        }
-
-        if (message.isNotEmpty()) {
-            item {
-                Text(
-                    text = message,
-                    color = AdminCream,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
             }
         }
     }
