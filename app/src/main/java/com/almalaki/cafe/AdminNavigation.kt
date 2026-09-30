@@ -1,15 +1,31 @@
 package com.almalaki.cafe
 
+import android.content.res.Configuration
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun AdminSidebar(
@@ -48,12 +64,6 @@ fun AdminSidebar(
         AdminMenuItem("▤", "الطلبات", section == AdminSection.ORDERS) {
             onSectionSelected(AdminSection.ORDERS)
         }
-        AdminMenuItem("📦", "الأرشيف", section == AdminSection.ARCHIVE) {
-            onSectionSelected(AdminSection.ARCHIVE)
-        }
-        AdminMenuItem("⚙", "إعدادات الحساب", section == AdminSection.ACCOUNT_SETTINGS) {
-            onSectionSelected(AdminSection.ACCOUNT_SETTINGS)
-        }
         AdminMenuItem("◈", "المبيعات", section == AdminSection.SALES) {
             onSectionSelected(AdminSection.SALES)
         }
@@ -64,7 +74,7 @@ fun AdminSidebar(
         Spacer(modifier = Modifier.weight(1f))
 
         OutlinedButton(
-            onClick = onLogout,
+            onClick = { RoyalSoundManager.playClick(); onLogout() },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("تسجيل الخروج")
@@ -83,7 +93,7 @@ fun AdminMenuItem(
     val textColor = if (selected) AdminBlack else AdminCream
 
     Button(
-        onClick = onClick,
+        onClick = { RoyalSoundManager.playClick(); onClick() },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 3.dp),
@@ -111,7 +121,7 @@ fun AdminTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(onClick = onMenuClick) {
+        IconButton(onClick = { RoyalSoundManager.playClick(); onMenuClick() }) {
             Text(
                 text = if (menuOpen) "×" else "☰",
                 color = AdminGold,
@@ -126,7 +136,7 @@ fun AdminTopBar(
             modifier = Modifier.weight(1f)
         )
 
-        TextButton(onClick = onLogout) {
+        TextButton(onClick = { RoyalSoundManager.playClick(); onLogout() }) {
             Text("خروج", color = AdminGold)
         }
     }
@@ -141,7 +151,7 @@ fun AdminHorizontalMenu(
         modifier = Modifier
             .fillMaxWidth()
             .background(AdminPanel)
-            .heightIn(max = 360.dp)
+            .heightIn(max = 280.dp)
             .padding(horizontal = 8.dp)
     ) {
         item {
@@ -157,16 +167,6 @@ fun AdminHorizontalMenu(
         item {
             AdminMenuItem("▤", "الطلبات", section == AdminSection.ORDERS) {
                 onSectionSelected(AdminSection.ORDERS)
-            }
-        }
-        item {
-            AdminMenuItem("📦", "الأرشيف", section == AdminSection.ARCHIVE) {
-                onSectionSelected(AdminSection.ARCHIVE)
-            }
-        }
-        item {
-            AdminMenuItem("⚙", "إعدادات الحساب", section == AdminSection.ACCOUNT_SETTINGS) {
-                onSectionSelected(AdminSection.ACCOUNT_SETTINGS)
             }
         }
         item {
