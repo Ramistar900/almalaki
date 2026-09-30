@@ -164,24 +164,25 @@ fun loadAdminOrders(
         connection.disconnect()
     }
 }
-
 fun loadOrderItems(
     accessToken: String,
     orderId: Long
 ): List<AdminOrderItem> {
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/order_items" +
-                "?select=id,order_id,product_id,quantity,unit_price,subtotal" +
+                "?select=id,order_id,product_id,product_name,quantity,unit_price,item_total" +
                 "&order_id=eq.$orderId&order=id.asc"
     )
 
     val connection = url.openConnection() as HttpURLConnection
+
     try {
         connection.requestMethod = "GET"
         connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
         connection.setRequestProperty("Authorization", "Bearer $accessToken")
 
         val code = connection.responseCode
+
         if (code !in 200..299) {
             throw Exception(
                 "HTTP $code: " +
@@ -193,22 +194,27 @@ fun loadOrderItems(
         val json = JSONArray(
             connection.inputStream.bufferedReader().readText()
         )
+
         val result = mutableListOf<AdminOrderItem>()
 
         for (i in 0 until json.length()) {
             val item = json.getJSONObject(i)
+
             result.add(
                 AdminOrderItem(
                     id = item.getLong("id"),
                     orderId = item.getLong("order_id"),
                     productId = item.optInt("product_id", 0),
+                    productName = item.optString("product_name", "منتج"),
                     quantity = item.optInt("quantity", 0),
                     unitPrice = item.optDouble("unit_price", 0.0),
-                    subtotal = item.optDouble("subtotal", 0.0)
+                    subtotal = item.optDouble("item_total", 0.0)
                 )
             )
         }
+
         return result
+
     } finally {
         connection.disconnect()
     }
