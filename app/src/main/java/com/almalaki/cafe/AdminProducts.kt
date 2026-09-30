@@ -139,8 +139,24 @@ fun ProductRow(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Row(
+                        Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-               
+                OutlinedButton(
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("تعديل")
+                }
+
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("حذف", color = Color.Red)
+                }
+            }
+        }
+    }
+}
