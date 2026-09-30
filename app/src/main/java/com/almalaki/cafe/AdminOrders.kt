@@ -15,7 +15,9 @@ fun AdminOrderCard(
     onStatus: (Long, String) -> Unit,
     onDelete: (Long) -> Unit
 ) {
-    var expanded by remember(order.id) { mutableStateOf(false) }
+    var expanded by remember(order.id) {
+        mutableStateOf(false)
+    }
 
     var orderItems by remember(order.id) {
         mutableStateOf<List<AdminOrderItem>>(emptyList())
@@ -27,11 +29,14 @@ fun AdminOrderCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+        colors = CardDefaults.cardColors(
+            containerColor = AdminPanel
+        )
     ) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
+
             Text(
                 "طلب ${order.orderNumber}",
                 color = AdminGold,
@@ -76,6 +81,7 @@ fun AdminOrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+
                 OutlinedButton(
                     onClick = {
                         RoyalSoundManager.playClick()
@@ -121,6 +127,7 @@ fun AdminOrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+
                 OutlinedButton(
                     onClick = {
                         RoyalSoundManager.playClick()
@@ -146,6 +153,7 @@ fun AdminOrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+
                 if (
                     order.status.lowercase() != "completed" &&
                     order.status.lowercase() != "cancelled"
@@ -167,4 +175,80 @@ fun AdminOrderCard(
                 if (order.status.lowercase() == "cancelled") {
                     OutlinedButton(
                         onClick = {
-                            RoyalSoundManager
+                            RoyalSoundManager.playClick()
+                            onDelete(order.id)
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            "حذف الطلب",
+                            color = Color.Red
+                        )
+                    }
+                }
+            }
+
+            if (expanded) {
+
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                if (loadingItems) {
+
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = AdminGold
+                    )
+
+                } else if (orderItems.isEmpty()) {
+
+                    Text(
+                        "لا توجد تفاصيل للطلب",
+                        color = AdminCream
+                    )
+
+                } else {
+
+                    Text(
+                        "تفاصيل الطلب",
+                        color = AdminGold,
+                        fontSize = 16.sp
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(6.dp)
+                    )
+
+                    orderItems.forEach { item ->
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+
+                            Text(
+                                item.productName,
+                                color = AdminCream,
+                                fontSize = 15.sp
+                            )
+
+                            Text(
+                                "الكمية: ${item.quantity}",
+                                color = AdminCream,
+                                fontSize = 14.sp
+                            )
+
+                            Text(
+                                "السعر: ${formatPrice(item.price)}",
+                                color = AdminGold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
