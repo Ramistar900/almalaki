@@ -523,46 +523,6 @@ fun CustomerScreen(darkMode: Boolean, onTheme: () -> Unit, onOwner: () -> Unit) 
 }
 
 @Composable
-fun CartDialog(products: List<Product>, cart: Map<Int, Int>, totalAmount: Double, onClose: () -> Unit, onCheckout: () -> Unit, onIncrease: (Int) -> Unit, onDecrease: (Int) -> Unit) {
-    val selectedProducts = products.filter { (cart[it.id] ?: 0) > 0 }
-    AlertDialog(
-        onDismissRequest = onClose, containerColor = CardBlack,
-        title = { Text("🛒 سلة المشتريات", color = Gold, fontSize = 24.sp, fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
-                if (selectedProducts.isEmpty()) Text("السلة فارغة.", color = Cream)
-                else Column(Modifier.heightIn(max = 380.dp)) {
-                    selectedProducts.forEach { product ->
-                        val quantity = cart[product.id] ?: 0
-                        val itemTotal = product.price * quantity
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(product.name, color = Cream, fontSize = 15.sp)
-                                Text("$quantity × ${formatPrice(product.price)}", color = Gold, fontSize = 12.sp)
-                                Text(formatPrice(itemTotal), color = GoldLight, fontSize = 13.sp)
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = { onDecrease(product.id) }) { Text("−", color = Gold, fontSize = 22.sp) }
-                                Text(quantity.toString(), color = Cream, fontWeight = FontWeight.Bold)
-                                TextButton(onClick = { onIncrease(product.id) }) { Text("+", color = Gold, fontSize = 22.sp) }
-                            }
-                        }
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-                Text("المبلغ المطلوب", color = Gold, fontSize = 16.sp)
-                Text(formatPrice(totalAmount), color = GoldLight, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text("متابعة التسوق", color = Gold) } },
-        confirmButton = { Button(onClick = onCheckout, enabled = selectedProducts.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) { Text("متابعة إلى تأكيد الطلب") } }
-    )
-}
-
-@Composable
 fun CheckoutDialog(totalAmount: Double, loading: Boolean, message: String, successOrderNumber: String, onClose: () -> Unit, onConfirm: (String, String, String, String) -> Unit) {
     var customerName by remember { mutableStateOf("") }
     var customerPhone by remember { mutableStateOf("") }
