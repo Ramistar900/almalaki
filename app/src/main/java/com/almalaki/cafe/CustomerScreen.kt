@@ -123,7 +123,6 @@ fun CustomerScreen(
             )
     ) {
         RoyalLogo()
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement =
@@ -145,14 +144,26 @@ fun CustomerScreen(
                 )
             }
 
-            Text(
-                if (darkMode) "☀" else "🌙",
-                color = Gold,
-                fontSize = 23.sp,
-                modifier = Modifier.padding(8.dp)
-            )
-        }
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                RoyalDateTime(
+                    language = "ar",
+                    style = androidx.compose.ui.text.TextStyle(
+                        color = Gold,
+                        fontSize = 12.sp
+                    )
+                )
 
+                Text(
+                    if (darkMode) "☀" else "🌙",
+                    color = Gold,
+                    fontSize = 23.sp,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+        }
         Spacer(
             Modifier.height(8.dp)
         )
