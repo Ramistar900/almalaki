@@ -31,9 +31,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -173,380 +174,114 @@ fun CheckoutDialog(
 
             if (successOrderNumber.isNotEmpty()) {
 
+                /*
+                 * ================================
+                 * دائرة النجاح الملكية
+                 * ================================
+                 */
+
+                val successTransition =
+                    rememberInfiniteTransition(
+                        label = "royal_success_animation"
+                    )
+
+                val successGlow by
+                    successTransition.animateFloat(
+                        initialValue = 0.45f,
+                        targetValue = 1f,
+                        animationSpec =
+                            infiniteRepeatable(
+                                animation =
+                                    tween(
+                                        durationMillis = 1300,
+                                        easing = LinearEasing
+                                    ),
+                                repeatMode =
+                                    RepeatMode.Reverse
+                            ),
+                        label = "royal_success_glow"
+                    )
+
+                val successRotation by
+                    successTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec =
+                            infiniteRepeatable(
+                                animation =
+                                    tween(
+                                        durationMillis = 4200,
+                                        easing = LinearEasing
+                                    ),
+                                repeatMode =
+                                    RepeatMode.Restart
+                            ),
+                        label = "royal_success_rotation"
+                    )
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment =
                         Alignment.CenterHorizontally
                 ) {
 
-                    Text(
-                        text = "♛",
-                        color = goldLight,
-                        fontSize = 38.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(5.dp)
-                    )
-
-                    Text(
-                        text = "تم تأكيد الطلب",
-                        color = gold,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
-
-                    Text(
-                        text = "تم إرسال طلبك بنجاح",
-                        color = goldLight.copy(alpha = 0.75f),
-                        fontSize = 14.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(18.dp)
-                    )
-
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = gold.copy(alpha = 0.08f),
-                                    shape = RoundedCornerShape(18.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = gold.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(18.dp)
-                                )
-                                .padding(18.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment =
-                                Alignment.CenterHorizontally
-                        ) {
-
-                            Text(
-                                text = "رقم الطلب",
-                                color =
-                                    goldLight.copy(
-                                        alpha = 0.72f
-                                    ),
-                                fontSize = 12.sp
-                            )
-
-                            Spacer(
-                                modifier =
-                                    Modifier.height(5.dp)
-                            )
-
-                            Text(
-                                text = successOrderNumber,
-                                color = goldLight,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    Spacer(
-                        modifier = Modifier.height(20.dp)
-                    )
-
-                    Button(
-                        onClick = {
-                            AppSounds.buttonClick(context)
-                            onClose()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = gold,
-                                contentColor = royalBlack
-                            )
-                    ) {
-                        Text(
-                            text = "إغلاق",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-            } else {
-
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment =
-                            Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "♛",
-                            color = goldLight,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(2.dp)
-                        )
-
-                        Text(
-                            text = "تأكيد الطلب",
-                            color = gold,
-                            fontSize = 23.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(3.dp)
-                        )
-
-                        Text(
-                            text = "أكمل بيانات طلبك الملكي",
-                            color = goldLight.copy(alpha = 0.68f),
-                            fontSize = 11.sp
-                        )
-                    }
-
-                    Spacer(
-                        modifier = Modifier.height(16.dp)
-                    )
-
-                    CheckoutField(
-                        value = customerName,
-                        onValueChange = {
-                            customerName = it
-                        },
-                        label = "الاسم",
-                        enabled = !loading,
-                        onFocus = {
-                            AppSounds.buttonClick(context)
-                        }
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(9.dp)
-                    )
-
-                    CheckoutField(
-                        value = customerPhone,
-                        onValueChange = {
-                            customerPhone = it
-                        },
-                        label = "رقم الهاتف (اختياري)",
-                        enabled = !loading,
-                        onFocus = {
-                            AppSounds.buttonClick(context)
-                        }
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(15.dp)
-                    )
-
-                    Text(
-                        text = "طريقة استلام الطلب",
-                        color = gold,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
-
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color =
-                                        if (
-                                            fulfillmentType ==
-                                                "داخل المحل"
-                                        ) {
-                                            gold.copy(
-                                                alpha = 0.12f
-                                            )
-                                        } else {
-                                            royalBlack2
-                                        },
-                                    shape =
-                                        RoundedCornerShape(14.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color =
-                                        if (
-                                            fulfillmentType ==
-                                                "داخل المحل"
-                                        ) {
-                                            gold.copy(
-                                                alpha = 0.45f
-                                            )
-                                        } else {
-                                            gold.copy(
-                                                alpha = 0.18f
-                                            )
-                                        },
-                                    shape =
-                                        RoundedCornerShape(14.dp)
-                                )
-                                .padding(12.dp),
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                            Modifier.size(124.dp),
+                        contentAlignment =
+                            Alignment.Center
                     ) {
 
-                        CheckoutChoiceButton(
-                            selected =
-                                fulfillmentType ==
-                                    "داخل المحل",
-                            icon = "☕",
-                            title = "داخل المحل",
-                            enabled = !loading,
-                            onClick = {
-                                AppSounds.buttonClick(context)
-                                fulfillmentType =
-                                    "داخل المحل"
-                            }
-                        )
-                    }
-
-                    Spacer(
-                        modifier = Modifier.height(7.dp)
-                    )
-
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color =
-                                        if (
-                                            fulfillmentType ==
-                                                "توصيل إلى المنزل"
-                                        ) {
-                                            gold.copy(
-                                                alpha = 0.12f
-                                            )
-                                        } else {
-                                            royalBlack2
-                                        },
-                                    shape =
-                                        RoundedCornerShape(14.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color =
-                                        if (
-                                            fulfillmentType ==
-                                                "توصيل إلى المنزل"
-                                        ) {
-                                            gold.copy(
-                                                alpha = 0.45f
-                                            )
-                                        } else {
-                                            gold.copy(
-                                                alpha = 0.18f
-                                            )
-                                        },
-                                    shape =
-                                        RoundedCornerShape(14.dp)
-                                )
-                                .padding(12.dp),
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-
-                        CheckoutChoiceButton(
-                            selected =
-                                fulfillmentType ==
-                                    "توصيل إلى المنزل",
-                            icon = "🏠",
-                            title = "توصيل إلى المنزل",
-                            enabled = !loading,
-                            onClick = {
-                                AppSounds.buttonClick(context)
-                                fulfillmentType =
-                                    "توصيل إلى المنزل"
-                            }
-                        )
-                    }
-
-                    if (
-                        fulfillmentType ==
-                            "توصيل إلى المنزل"
-                    ) {
-                        Spacer(
+                        /*
+                         * الحلقة الذهبية الخارجية المتحركة
+                         */
+                        Box(
                             modifier =
-                                Modifier.height(10.dp)
+                                Modifier
+                                    .size(124.dp)
+                                    .graphicsLayer {
+                                        rotationZ =
+                                            successRotation
+                                    }
+                                    .border(
+                                        width =
+                                            (2.5f *
+                                                successGlow).dp,
+                                        brush =
+                                            Brush.sweepGradient(
+                                                colors =
+                                                    listOf(
+                                                        goldDark,
+                                                        gold,
+                                                        goldLight,
+                                                        Color.White.copy(
+                                                            alpha = 0.95f
+                                                        ),
+                                                        gold,
+                                                        goldDark
+                                                    )
+                                            ),
+                                        shape =
+                                            RoundedCornerShape(
+                                                100.dp
+                                            )
+                                    )
                         )
 
-                        CheckoutField(
-                            value = deliveryAddress,
-                            onValueChange = {
-                                deliveryAddress = it
-                            },
-                            label = "عنوان التوصيل",
-                            enabled = !loading,
-                            minLines = 2,
-                            onFocus = {
-                                AppSounds.buttonClick(context)
-                            }
-                        )
-                    }
-
-                    Spacer(
-                        modifier = Modifier.height(14.dp)
-                    )
-
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color =
-                                        gold.copy(
-                                            alpha = 0.08f
-                                        ),
-                                    shape =
-                                        RoundedCornerShape(15.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color =
-                                        gold.copy(
-                                            alpha = 0.28f
-                                        ),
-                                    shape =
-                                        RoundedCornerShape(15.dp)
-                                )
-                                .padding(13.dp)
-                    ) {
-                        Row(
+                        /*
+                         * جسم الدائرة:
+                         * أرجواني + أسود
+                         */
+                        Box(
                             modifier =
-                                Modifier.fillMaxWidth(),
-                            verticalAlignment =
-                                Alignment.CenterVertically
-                        ) {
-
-                            Column(
-                                modifier =
-                                    Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "المبلغ المطلوب",
-                                    color =
-                                        
+                                Modifier
+                                    .size(106.dp)
+                                    .background(
+                                        brush =
+                                            Brush.linearGradient(
+                                                colors =
+                                                    listOf(
+                                                        Color(0xFF4A2165),
+                                                        Color(0xFF21142F),
+                                                        Color(0xFF09070B),
+                                                        Color(0xFF
