@@ -33,6 +33,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -222,6 +223,26 @@ fun RoyalSalesRecordsScreen(
     val totalOrders = filtered.size
     val totalQuantity = filtered.sumOf { it.items.sumOf { item -> item.quantity } }
     val averageOrder = if (totalOrders == 0) 0.0 else totalRevenue / totalOrders
+    val damascusZone = ZoneId.of("Asia/Damascus")
+val today = LocalDate.now(damascusZone)
+
+val todayRecords = records.filter { record ->
+    try {
+        Instant.parse(record.soldAt)
+            .atZone(damascusZone)
+            .toLocalDate() == today
+    } catch (_: Exception) {
+        false
+    }
+}
+
+val todayRevenue = todayRecords.sumOf { it.totalAmount }
+val todayOrders = todayRecords.size
+val todayQuantity = todayRecords.sumOf {
+    it.items.sumOf { item -> item.quantity }
+}
+val todayAverageOrder =
+    if (todayOrders == 0) 0.0 else todayRevenue / todayOrders
 
     Column(
         modifier = modifier.fillMaxSize().background(AdminBlack).padding(14.dp)
@@ -358,6 +379,37 @@ fun RoyalSalesRecordsScreen(
                     }
                 }
             }
+                        item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = AdminPanel)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            "تقرير اليوم 📅",
+                            color = AdminGold,
+                            fontSize = 20.sp
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "مبيعات اليوم: ${formatPrice(todayRevenue)}",
+                            color = AdminCream
+                        )
+                        Text(
+                            "عدد الطلبات اليوم: $todayOrders",
+                            color = AdminCream
+                        )
+                        Text(
+                            "الكميات المباعة اليوم: $todayQuantity",
+                            color = AdminCream
+                        )
+                        Text(
+                            "متوسط قيمة الطلب: ${formatPrice(todayAverageOrder)}",
+                            color = AdminCream
+                        )
+                    }
+                }
+                        }
 
             if (loading) item { Text("جاري تحميل سجلات المبيعات...", color = AdminCream) }
             if (error.isNotBlank()) item { Text(error, color = Color(0xFFFF7777)) }
