@@ -422,7 +422,7 @@ RoyalDateTime(
                             )
                         ) {
                             Text(
-                                text = "🖨️ طباعة",
+                                text = "طباعة",
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -489,7 +489,7 @@ RoyalDateTime(
                         )
                     ) {
                         Text(
-                            text = "📤 مشاركة",
+                            text = "مشاركة",
                             fontWeight = FontWeight.Bold
                         )
                     }
