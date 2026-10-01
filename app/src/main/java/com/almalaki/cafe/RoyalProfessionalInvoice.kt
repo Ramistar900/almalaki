@@ -56,7 +56,9 @@ fun RoyalProfessionalInvoice(
     deliveryAddress: String,
     items: List<RoyalInvoiceItem>,
     totalAmount: Double,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    isOwner: Boolean = false
+
 ) {
     val context = LocalContext.current
     Dialog(
@@ -336,6 +338,95 @@ RoyalDateTime(
     modifier = Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp)
 ) {
+                                        if (isOwner) {
+                        Button(
+                            onClick = {
+                                val printManager =
+                                    context.getSystemService(
+                                        android.content.Context.PRINT_SERVICE
+                                    ) as android.print.PrintManager
+
+                                val webView =
+                                    android.webkit.WebView(context)
+
+                                val html = buildString {
+                                    append("<html dir=\"rtl\"><body>")
+                                    append("<h1>ROYAL COFFEE</h1>")
+                                    append("<h2>فاتورة الطلب</h2>")
+                                    append("<p><b>رقم الطلب:</b> $orderNumber</p>")
+                                    append("<p><b>العميل:</b> $customerName</p>")
+
+                                    if (customerPhone.isNotBlank()) {
+                                        append("<p><b>الهاتف:</b> $customerPhone</p>")
+                                    }
+
+                                    append("<p><b>نوع الطلب:</b> $fulfillmentType</p>")
+
+                                    if (deliveryAddress.isNotBlank()) {
+                                        append("<p><b>العنوان:</b> $deliveryAddress</p>")
+                                    }
+
+                                    append("<hr>")
+                                    append("<h3>المنتجات</h3>")
+
+                                    items.forEach { item ->
+                                        append(
+                                            "<p>${item.name} × ${item.quantity} = ${
+                                                formatPrice(item.total)
+                                            }</p>"
+                                        )
+                                    }
+
+                                    append("<hr>")
+                                    append(
+                                        "<h2>الإجمالي: ${
+                                            formatPrice(totalAmount)
+                                        }</h2>"
+                                    )
+
+                                    append("</body></html>")
+                                }
+
+                                webView.webViewClient =
+                                    object : android.webkit.WebViewClient() {
+                                        override fun onPageFinished(
+                                            view: android.webkit.WebView?,
+                                            url: String?
+                                        ) {
+                                            val adapter =
+                                                webView.createPrintDocumentAdapter(
+                                                    "Royal_Coffee_$orderNumber"
+                                                )
+
+                                            printManager.print(
+                                                "Royal Coffee - $orderNumber",
+                                                adapter,
+                                                null
+                                            )
+                                        }
+                                    }
+
+                                webView.loadDataWithBaseURL(
+                                    null,
+                                    html,
+                                    "text/html",
+                                    "UTF-8",
+                                    null
+                                )
+                            },
+                            modifier = Modifier.weight(1.2f),
+                            shape = RoundedCornerShape(13.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = InvoiceGold,
+                                contentColor = InvoiceBlack
+                            )
+                        ) {
+                            Text(
+                                text = "🖨️ طباعة",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                                        }
                         TextButton(
                         onClick = onClose,
                         modifier = Modifier.weight(1f)
