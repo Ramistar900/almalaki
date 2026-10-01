@@ -206,15 +206,16 @@ fun AdminContent(
                     )
                 }
             }
-
-            AdminSection.SALES -> {
+AdminSection.SALES -> {
     item {
         RoyalSalesRecordsScreen(
             accessToken = accessToken,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(600.dp)
         )
     }
-            }
+}
 
             AdminSection.TOP_PRODUCTS -> {
                 item {
