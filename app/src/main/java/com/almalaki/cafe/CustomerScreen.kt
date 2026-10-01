@@ -75,7 +75,37 @@ fun CustomerScreen(
     var orderSuccessNumber by remember {
         mutableStateOf("")
     }
+var showInvoice by remember {
+    mutableStateOf(false)
+}
 
+var invoiceOrderNumber by remember {
+    mutableStateOf("")
+}
+
+var invoiceCustomerName by remember {
+    mutableStateOf("")
+}
+
+var invoiceCustomerPhone by remember {
+    mutableStateOf("")
+}
+
+var invoiceFulfillmentType by remember {
+    mutableStateOf("")
+}
+
+var invoiceDeliveryAddress by remember {
+    mutableStateOf("")
+}
+
+var invoiceItems by remember {
+    mutableStateOf<List<RoyalInvoiceItem>>(emptyList())
+}
+
+var invoiceTotalAmount by remember {
+    mutableStateOf(0.0)
+}
     /*
      * البحث والتصنيف
      */
