@@ -208,20 +208,12 @@ fun AdminContent(
             }
 
             AdminSection.SALES -> {
-                item {
-                    DashboardHeader(
-                        loading = loadingDashboard,
-                        onRefresh = onRefresh
-                    )
-                }
-                item { SalesCards(salesStats) }
-                item {
-                    SalesInfo(
-                        todayOrders = salesStats.todayOrders,
-                        weekOrders = salesStats.weekOrders,
-                        monthOrders = salesStats.monthOrders
-                    )
-                }
+    item {
+        RoyalSalesRecordsScreen(
+            accessToken = accessToken,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
             }
 
             AdminSection.TOP_PRODUCTS -> {
