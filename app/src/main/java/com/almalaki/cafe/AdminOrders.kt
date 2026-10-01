@@ -233,8 +233,11 @@ OutlinedButton(
                                 )
                             },
                             totalAmount = order.totalAmount,
-                            onClose = {
+                                                        onClose = {
                                 showInvoice = false
+                            },
+                            isOwner = true
+                        )
                             }
                         )
                     }
