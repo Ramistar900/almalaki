@@ -34,6 +34,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.time.Instant
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -243,7 +244,76 @@ val todayQuantity = todayRecords.sumOf {
 }
 val todayAverageOrder =
     if (todayOrders == 0) 0.0 else todayRevenue / todayOrders
+val weekStart = today.minusDays(6)
 
+val weekRecords = records.filter { record ->
+    try {
+        val recordDate = Instant.parse(record.soldAt)
+            .atZone(damascusZone)
+            .toLocalDate()
+
+        !recordDate.isBefore(weekStart) &&
+            !recordDate.isAfter(today)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+val weekRevenue = weekRecords.sumOf { it.totalAmount }
+val weekOrders = weekRecords.size
+val weekQuantity = weekRecords.sumOf {
+    it.items.sumOf { item -> item.quantity }
+}
+val weekAverageOrder =
+    if (weekOrders == 0) 0.0 else weekRevenue / weekOrders
+
+
+val monthStart = today.minusDays(29)
+
+val monthRecords = records.filter { record ->
+    try {
+        val recordDate = Instant.parse(record.soldAt)
+            .atZone(damascusZone)
+            .toLocalDate()
+
+        !recordDate.isBefore(monthStart) &&
+            !recordDate.isAfter(today)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+val monthRevenue = monthRecords.sumOf { it.totalAmount }
+val monthOrders = monthRecords.size
+val monthQuantity = monthRecords.sumOf {
+    it.items.sumOf { item -> item.quantity }
+}
+val monthAverageOrder =
+    if (monthOrders == 0) 0.0 else monthRevenue / monthOrders
+
+
+val yearStart = LocalDate.of(today.year, 1, 1)
+
+val yearRecords = records.filter { record ->
+    try {
+        val recordDate = Instant.parse(record.soldAt)
+            .atZone(damascusZone)
+            .toLocalDate()
+
+        !recordDate.isBefore(yearStart) &&
+            !recordDate.isAfter(today)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+val yearRevenue = yearRecords.sumOf { it.totalAmount }
+val yearOrders = yearRecords.size
+val yearQuantity = yearRecords.sumOf {
+    it.items.sumOf { item -> item.quantity }
+}
+val yearAverageOrder =
+    if (yearOrders == 0) 0.0 else yearRevenue / yearOrders
     Column(
         modifier = modifier.fillMaxSize().background(AdminBlack).padding(14.dp)
     ) {
@@ -409,6 +479,99 @@ val todayAverageOrder =
                         )
                     }
                 }
+                        }
+                        item {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                "تقرير آخر 7 أيام 📊",
+                color = AdminGold,
+                fontSize = 20.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "مبيعات آخر 7 أيام: ${formatPrice(weekRevenue)}",
+                color = AdminCream
+            )
+            Text(
+                "عدد الطلبات: $weekOrders",
+                color = AdminCream
+            )
+            Text(
+                "الكميات المباعة: $weekQuantity",
+                color = AdminCream
+            )
+            Text(
+                "متوسط قيمة الطلب: ${formatPrice(weekAverageOrder)}",
+                color = AdminCream
+            )
+        }
+    }
+                        }
+                        item {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                "تقرير آخر 30 يومًا 📆",
+                color = AdminGold,
+                fontSize = 20.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "مبيعات آخر 30 يومًا: ${formatPrice(monthRevenue)}",
+                color = AdminCream
+            )
+            Text(
+                "عدد الطلبات: $monthOrders",
+                color = AdminCream
+            )
+            Text(
+                "الكميات المباعة: $monthQuantity",
+                color = AdminCream
+            )
+            Text(
+                "متوسط قيمة الطلب: ${formatPrice(monthAverageOrder)}",
+                color = AdminCream
+            )
+        }
+    }
+                        }
+                        item {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                "تقرير السنة ${today.year} 📆",
+                color = AdminGold,
+                fontSize = 20.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "مبيعات السنة: ${formatPrice(yearRevenue)}",
+                color = AdminCream
+            )
+            Text(
+                "عدد الطلبات: $yearOrders",
+                color = AdminCream
+            )
+            Text(
+                "الكميات المباعة: $yearQuantity",
+                color = AdminCream
+            )
+            Text(
+                "متوسط قيمة الطلب: ${formatPrice(yearAverageOrder)}",
+                color = AdminCream
+            )
+        }
+    }
                         }
 
             if (loading) item { Text("جاري تحميل سجلات المبيعات...", color = AdminCream) }
