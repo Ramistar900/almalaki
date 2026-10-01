@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
@@ -95,7 +97,70 @@ fun RoyalProfessionalInvoice(
                         rememberScrollState()
                     )
             ) {
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+) {
 
+    // زر تم - يسار
+    Box(
+        modifier = Modifier
+            .width(46.dp)
+            .height(46.dp)
+            .background(
+                color = Color(0xFF1B5E20),
+                shape = CircleShape
+            )
+            .border(
+                width = 1.dp,
+                color = InvoiceGold,
+                shape = CircleShape
+            )
+            .clickable {
+                onClose()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "✓",
+            color = InvoiceGold,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+
+    // زر إغلاق - يمين
+    Box(
+        modifier = Modifier
+            .width(46.dp)
+            .height(46.dp)
+            .background(
+                color = Color(0xFFB71C1C),
+                shape = CircleShape
+            )
+            .border(
+                width = 1.dp,
+                color = InvoiceGold,
+                shape = CircleShape
+            )
+            .clickable {
+                onClose()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "X",
+            color = InvoiceGold,
+            fontSize = 19.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+Spacer(
+    Modifier.height(10.dp)
+)
                 // =========================
                 // رأس الفاتورة
                 // =========================
@@ -427,17 +492,7 @@ RoyalDateTime(
                             )
                         }
                                         }
-                        TextButton(
-                        onClick = onClose,
-                        modifier = Modifier.weight(0.8f)
-                    ) {
-                        Text(
-                            text = "إغلاق",
-                            color = InvoiceGold,
-                            fontSize = 14.sp
-                        )
-                    }
-
+                        
                     Button(
                         onClick = {
                             val shareText = buildString {
@@ -493,23 +548,6 @@ RoyalDateTime(
                             fontWeight = FontWeight.Bold
                         )
                     }
-
-                    Button(
-                        onClick = onClose,
-                        modifier = Modifier.weight(1.1f),
-                        shape = RoundedCornerShape(13.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = InvoiceGold,
-                            contentColor = InvoiceBlack
-                        )
-                    ) {
-                        Text(
-                            text = "تم",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
         }
     }
 }
