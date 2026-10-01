@@ -757,7 +757,22 @@ var invoiceTotalAmount by remember {
                     }
 
                     else -> {
+val invoiceItemsSnapshot =
+    products.mapNotNull { product ->
+        val quantity = cart[product.id] ?: 0
 
+        if (quantity > 0) {
+            RoyalInvoiceItem(
+                name = product.name,
+                quantity = quantity,
+                unitPrice = product.price
+            )
+        } else {
+            null
+        }
+    }
+
+val invoiceTotalSnapshot = totalAmount
                         orderLoading = true
                         orderMessage = ""
 
