@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
@@ -78,6 +76,17 @@ fun CustomerScreen(
         mutableStateOf("")
     }
 
+    /*
+     * البحث والتصنيف
+     */
+    var searchQuery by remember {
+        mutableStateOf("")
+    }
+
+    var selectedCategory by remember {
+        mutableStateOf("الكل")
+    }
+
     LaunchedEffect(Unit) {
         Thread {
             try {
@@ -112,6 +121,41 @@ fun CustomerScreen(
 
     val totalItems =
         cart.values.sum()
+
+    /*
+     * استخراج التصنيفات الموجودة فعليًا في المنتجات
+     */
+    val categories =
+        remember(products) {
+            listOf("الكل") +
+                products
+                    .map { it.category.trim() }
+                    .filter { it.isNotEmpty() }
+                    .distinct()
+        }
+
+    /*
+     * المنتجات بعد تطبيق البحث والتصنيف
+     */
+    val filteredProducts =
+        products.filter { product ->
+
+            val matchesCategory =
+                selectedCategory == "الكل" ||
+                    product.category.trim() == selectedCategory
+
+            val query =
+                searchQuery.trim()
+
+            val matchesSearch =
+                query.isEmpty() ||
+                    product.name.contains(
+                        query,
+                        ignoreCase = true
+                    )
+
+            matchesCategory && matchesSearch
+        }
 
     Column(
         Modifier
@@ -224,6 +268,35 @@ fun CustomerScreen(
             modifier = Modifier.height(10.dp)
         )
 
+        /*
+         * البحث
+         */
+        ProductSearchBox(
+            query = searchQuery,
+            onQueryChange = {
+                searchQuery = it
+            }
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        /*
+         * التصنيفات
+         */
+        ProductCategoryRow(
+            categories = categories,
+            selectedCategory = selectedCategory,
+            onCategorySelected = {
+                selectedCategory = it
+            }
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
         when {
 
             /*
@@ -300,6 +373,51 @@ fun CustomerScreen(
             }
 
             /*
+             * لا توجد نتائج
+             */
+            filteredProducts.isEmpty() -> {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    RoyalPremiumCard(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment =
+                                Alignment.CenterHorizontally
+                        ) {
+
+                            RoyalPremiumBadge(
+                                text = "لا توجد نتائج"
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(10.dp)
+                            )
+
+                            Text(
+                                text =
+                                    if (searchQuery.trim().isNotEmpty()) {
+                                        "لم نجد منتجًا يطابق بحثك."
+                                    } else {
+                                        "لا توجد منتجات في هذا التصنيف."
+                                    },
+                                color =
+                                    textColor.copy(
+                                        alpha = 0.75f
+                                    ),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            /*
              * قائمة المنتجات
              */
             else -> {
@@ -337,7 +455,7 @@ fun CustomerScreen(
                     ) {
 
                         items(
-                            products,
+                            filteredProducts,
                             key = { it.id }
                         ) { product ->
 
@@ -596,7 +714,7 @@ fun CustomerScreen(
 
                     orderLoading -> Unit
 
-                    name.trim().isEmpty() -> {
+       name.trim().isEmpty() -> {
                         orderMessage =
                             "اكتب اسمك."
                     }
