@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -134,14 +135,16 @@ fun CheckoutDialog(
                     royalBronze,
                     goldDark
                 ),
-            start = androidx.compose.ui.geometry.Offset(
-                x = shinePosition * 900f,
-                y = 0f
-            ),
-            end = androidx.compose.ui.geometry.Offset(
-                x = shinePosition * 900f + 500f,
-                y = 700f
-            )
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    x = shinePosition * 900f,
+                    y = 0f
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    x = shinePosition * 900f + 500f,
+                    y = 700f
+                )
         )
 
     Dialog(
@@ -175,9 +178,9 @@ fun CheckoutDialog(
             if (successOrderNumber.isNotEmpty()) {
 
                 /*
-                 * ================================
+                 * ==========================================
                  * دائرة النجاح الملكية
-                 * ================================
+                 * ==========================================
                  */
 
                 val successTransition =
@@ -196,8 +199,7 @@ fun CheckoutDialog(
                                         durationMillis = 1300,
                                         easing = LinearEasing
                                     ),
-                                repeatMode =
-                                    RepeatMode.Reverse
+                                repeatMode = RepeatMode.Reverse
                             ),
                         label = "royal_success_glow"
                     )
@@ -213,8 +215,7 @@ fun CheckoutDialog(
                                         durationMillis = 4200,
                                         easing = LinearEasing
                                     ),
-                                repeatMode =
-                                    RepeatMode.Restart
+                                repeatMode = RepeatMode.Restart
                             ),
                         label = "royal_success_rotation"
                     )
@@ -225,20 +226,24 @@ fun CheckoutDialog(
                         Alignment.CenterHorizontally
                 ) {
 
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+
                     Box(
-                        modifier =
-                            Modifier.size(124.dp),
+                        modifier = Modifier.size(132.dp),
                         contentAlignment =
                             Alignment.Center
                     ) {
 
                         /*
-                         * الحلقة الذهبية الخارجية المتحركة
+                         * الحلقة الذهبية الخارجية
+                         * تدور ببطء
                          */
                         Box(
                             modifier =
                                 Modifier
-                                    .size(124.dp)
+                                    .size(128.dp)
                                     .graphicsLayer {
                                         rotationZ =
                                             successRotation
@@ -258,30 +263,25 @@ fun CheckoutDialog(
                                                             alpha = 0.95f
                                                         ),
                                                         gold,
+                                                        royalBronze,
                                                         goldDark
                                                     )
                                             ),
-                                        shape =
-                                            RoundedCornerShape(
-                                                100.dp
-                                            )
+                                        shape = CircleShape
                                     )
                         )
 
                         /*
-                         * جسم الدائرة:
-                         * أرجواني + أسود
+                         * الدائرة الداخلية:
+                         * بنفسجي + أسود
                          */
                         Box(
                             modifier =
                                 Modifier
-                                    .size(106.dp)
+                                    .size(108.dp)
                                     .background(
                                         brush =
                                             Brush.linearGradient(
                                                 colors =
                                                     listOf(
-                                                        Color(0xFF4A2165),
-                                                        Color(0xFF21142F),
-                                                        Color(0xFF09070B),
-                                                        Color(0xFF
+                                                        Color(
