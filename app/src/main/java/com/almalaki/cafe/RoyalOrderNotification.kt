@@ -3,7 +3,7 @@ package com.almalaki.cafe
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
-import android.media.RingtoneManager
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -27,9 +27,9 @@ fun startRoyalOrderAlert(context: Context) {
     if (royalOrderAlertPlayer?.isPlaying == true) return
 
     stopRoyalOrderAlert()
-
-    val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-
+val uri = Uri.parse(
+    "android.resource://${context.packageName}/${R.raw.royal_order_alert}"
+)
     royalOrderAlertPlayer = MediaPlayer().apply {
         setAudioAttributes(
             AudioAttributes.Builder()
