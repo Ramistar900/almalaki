@@ -429,7 +429,7 @@ RoyalDateTime(
                                         }
                         TextButton(
                         onClick = onClose,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(0.8f)
                     ) {
                         Text(
                             text = "إغلاق",
@@ -481,7 +481,7 @@ RoyalDateTime(
                                 )
                             )
                         },
-                        modifier = Modifier.weight(1.3f),
+                        modifier = Modifier.weight(1.5f),
                         shape = RoundedCornerShape(13.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = InvoiceBronze,
