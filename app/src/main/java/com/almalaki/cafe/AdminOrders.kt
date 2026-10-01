@@ -206,7 +206,18 @@ var showInvoice by remember(order.id) { mutableStateOf(false) }
                         }
                     }
                 }
-            }
+           
+            Spacer(modifier = Modifier.height(8.dp))
+
+OutlinedButton(
+    onClick = {
+        RoyalSoundManager.playClick()
+        showInvoice = true
+    },
+    modifier = Modifier.fillMaxWidth()
+) {
+    Text("🧾 فتح الفاتورة")
+}
         }
     }
 }
