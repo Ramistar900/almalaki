@@ -19,12 +19,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun CartDialog(
@@ -47,11 +49,11 @@ fun CartDialog(
         products.filter { (cart[it.id] ?: 0) > 0 }
 
     /*
-     * Royal animated shine
+     * الحركة الذهبية
      */
     val infiniteTransition =
         rememberInfiniteTransition(
-            label = "cart_royal_shine"
+            label = "royal_cart_shine"
         )
 
     val shinePosition by
@@ -67,9 +69,12 @@ fun CartDialog(
                         ),
                     repeatMode = RepeatMode.Restart
                 ),
-            label = "cart_shine_position"
+            label = "royal_cart_shine_position"
         )
 
+    /*
+     * ألوان Royal Premium
+     */
     val royalBlack =
         Color(0xFF050505)
 
@@ -94,6 +99,9 @@ fun CartDialog(
     val goldLight =
         Color(0xFFFFE9A3)
 
+    /*
+     * خلفية النافذة
+     */
     val dialogBackground =
         Brush.verticalGradient(
             colors =
@@ -104,6 +112,9 @@ fun CartDialog(
                 )
         )
 
+    /*
+     * إطار ذهبي متحرك
+     */
     val animatedBorder =
         Brush.linearGradient(
             colors =
@@ -126,43 +137,46 @@ fun CartDialog(
             )
         )
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onClose,
 
-        containerColor = Color.Transparent,
+        properties =
+            DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+    ) {
 
-        title = {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = dialogBackground,
+                        shape =
+                            RoundedCornerShape(24.dp)
+                    )
+                    .border(
+                        width = 2.dp,
+                        brush = animatedBorder,
+                        shape =
+                            RoundedCornerShape(24.dp)
+                    )
+                    .padding(14.dp)
+        ) {
 
-            Box(
+            Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        royalPurple,
-                                        royalBlack2
-                                    )
-                            ),
-                            shape =
-                                RoundedCornerShape(18.dp)
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = animatedBorder,
-                            shape =
-                                RoundedCornerShape(18.dp)
-                        )
-                        .padding(
-                            horizontal = 12.dp,
-                            vertical = 10.dp
-                        )
+                    Modifier.fillMaxWidth()
             ) {
 
+                /*
+                 * التاج والعنوان
+                 */
                 Column(
                     modifier =
                         Modifier.fillMaxWidth(),
+
                     horizontalAlignment =
                         Alignment.CenterHorizontally
                 ) {
@@ -170,16 +184,63 @@ fun CartDialog(
                     Text(
                         text = "♛",
                         color = goldLight,
-                        fontSize = 28.sp
+                        fontSize = 31.sp,
+                        fontWeight =
+                            FontWeight.Bold
                     )
 
-                    Text(
-                        text = "سلة المشتريات",
-                        color = gold,
-                        fontSize = 22.sp,
-                        fontWeight =
-                            FontWeight.SemiBold
+                    Spacer(
+                        modifier =
+                            Modifier.height(2.dp)
                     )
+
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+
+                        verticalAlignment =
+                            Alignment.CenterVertically,
+
+                        horizontalArrangement =
+                            Arrangement.Center
+                    ) {
+
+                        Text(
+                            text = "━━━━",
+                            color =
+                                gold.copy(
+                                    alpha = 0.55f
+                                ),
+                            fontSize = 9.sp
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.size(6.dp)
+                        )
+
+                        Text(
+                            text = "🛒 سلة المشتريات",
+                            color = gold,
+                            fontSize = 22.sp,
+                            fontWeight =
+                                FontWeight.SemiBold
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.size(6.dp)
+                        )
+
+                        Text(
+                            text = "━━━━",
+                            color =
+                                gold.copy(
+                                    alpha = 0.55f
+                                ),
+                            fontSize = 9.sp
+                        )
+                    }
 
                     Spacer(
                         modifier =
@@ -195,308 +256,6 @@ fun CartDialog(
                         fontSize = 11.sp
                     )
                 }
-            }
-        },
 
-        text = {
-
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = dialogBackground,
-                            shape =
-                                RoundedCornerShape(18.dp)
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = animatedBorder,
-                            shape =
-                                RoundedCornerShape(18.dp)
-                        )
-                        .padding(12.dp)
-            ) {
-
-                Column(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-
-                    if (selectedProducts.isEmpty()) {
-
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                            contentAlignment =
-                                Alignment.Center
-                        ) {
-
-                            Column(
-                                horizontalAlignment =
-                                    Alignment.CenterHorizontally
-                            ) {
-
-                                Text(
-                                    text = "🛒",
-                                    fontSize = 35.sp
-                                )
-
-                                Spacer(
-                                    modifier =
-                                        Modifier.height(8.dp)
-                                )
-
-                                Text(
-                                    text = "السلة فارغة.",
-                                    color = Cream,
-                                    fontSize = 15.sp
-                                )
-                            }
-                        }
-
-                    } else {
-
-                        Column(
-                            Modifier.heightIn(
-                                max = 380.dp
-                            )
-                        ) {
-
-                            selectedProducts.forEach { product ->
-
-                                val quantity =
-                                    cart[product.id] ?: 0
-
-                                val itemTotal =
-                                    product.price * quantity
-
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(
-                                                vertical = 4.dp
-                                            )
-                                            .background(
-                                                color =
-                                                    Color.Black.copy(
-                                                        alpha = 0.28f
-                                                    ),
-                                                shape =
-                                                    RoundedCornerShape(
-                                                        14.dp
-                                                    )
-                                            )
-                                            .border(
-                                                width = 1.dp,
-                                                color =
-                                                    gold.copy(
-                                                        alpha = 0.20f
-                                                    ),
-                                                shape =
-                                                    RoundedCornerShape(
-                                                        14.dp
-                                                    )
-                                            )
-                                            .padding(10.dp)
-                                ) {
-
-                                    Row(
-                                        modifier =
-                                            Modifier.fillMaxWidth(),
-                                        verticalAlignment =
-                                            Alignment.CenterVertically
-                                    ) {
-
-                                        Column(
-                                            modifier =
-                                                Modifier.weight(1f)
-                                        ) {
-
-                                            Text(
-                                                text =
-                                                    product.name,
-                                                color = Cream,
-                                                fontSize = 15.sp,
-                                                fontWeight =
-                                                    FontWeight.SemiBold
-                                            )
-
-                                            Spacer(
-                                                modifier =
-                                                    Modifier.height(
-                                                        2.dp
-                                                    )
-                                            )
-
-                                            Text(
-                                                text =
-                                                    "$quantity × ${
-                                                        formatPrice(
-                                                            product.price
-                                                        )
-                                                    }",
-                                                color =
-                                                    gold.copy(
-                                                        alpha = 0.82f
-                                                    ),
-                                                fontSize = 12.sp
-                                            )
-
-                                            Spacer(
-                                                modifier =
-                                                    Modifier.height(
-                                                        2.dp
-                                                    )
-                                            )
-
-                                            Text(
-                                                text =
-                                                    formatPrice(
-                                                        itemTotal
-                                                    ),
-                                                color =
-                                                    goldLight,
-                                                fontSize = 14.sp,
-                                                fontWeight =
-                                                    FontWeight.Bold
-                                            )
-                                        }
-
-                                        Row(
-                                            verticalAlignment =
-                                                Alignment.CenterVertically,
-                                            horizontalArrangement =
-                                                Arrangement.spacedBy(
-                                                    3.dp
-                                                )
-                                        ) {
-
-                                            CartQuantityButton(
-                                                text = "−",
-                                                onClick = {
-                                                    onDecrease(
-                                                        product.id
-                                                    )
-                                                }
-                                            )
-
-                                            Box(
-                                                modifier =
-                                                    Modifier
-                                                        .size(36.dp)
-                                                        .background(
-                                                            color =
-                                                                gold.copy(
-                                                                    alpha = 0.10f
-                                                                ),
-                                                            shape =
-                                                                RoundedCornerShape(
-                                                                    10.dp
-                                                                )
-                                                        )
-                                                        .border(
-                                                            width = 1.dp,
-                                                            color =
-                                                                gold.copy(
-                                                                    alpha = 0.35f
-                                                                ),
-                                                            shape =
-                                                                RoundedCornerShape(
-                                                                    10.dp
-                                                                )
-                                                        ),
-                                                contentAlignment =
-                                                    Alignment.Center
-                                            ) {
-
-                                                Text(
-                                                    text =
-                                                        quantity.toString(),
-                                                    color =
-                                                        goldLight,
-                                                    fontSize = 15.sp,
-                                                    fontWeight =
-                                                        FontWeight.Bold
-                                                )
-                                            }
-
-                                            CartQuantityButton(
-                                                text = "+",
-                                                onClick = {
-                                                    onIncrease(
-                                                        product.id
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(12.dp)
-                    )
-
-                    /*
-                     * Total
-                     */
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color =
-                                        gold.copy(
-                                            alpha = 0.08f
-                                        ),
-                                    shape =
-                                        RoundedCornerShape(
-                                            14.dp
-                                        )
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color =
-                                        gold.copy(
-                                            alpha = 0.32f
-                                        ),
-                                    shape =
-                                        RoundedCornerShape(
-                                            14.dp
-                                        )
-                                )
-                                .padding(12.dp)
-                    ) {
-
-                        Row(
-                            modifier =
-                                Modifier.fillMaxWidth(),
-                            horizontalArrangement =
-                                Arrangement.SpaceBetween,
-                            verticalAlignment =
-                                Alignment.CenterVertically
-                        ) {
-
-                            Text(
-                                text = "المبلغ المطلوب",
-                                color = Gold,
-                                fontSize = 15.sp,
-                                fontWeight =
-                                    FontWeight.SemiBold
-                            )
-
-                            Text(
-                                text =
-                                    formatPrice(
-                                        totalAmount
-                                    ),
-                                color = goldLight,
-                                fontSize = 21.sp,
-                                fontWe
+                Spacer(
+                    modifier
