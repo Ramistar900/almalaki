@@ -1,7 +1,7 @@
 package com.almalaki.cafe
+
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
