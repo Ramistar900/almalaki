@@ -414,7 +414,7 @@ RoyalDateTime(
                                     null
                                 )
                             },
-                            modifier = Modifier.weight(1.2f),
+                            modifier = Modifier.weight(1.5f),
                             shape = RoundedCornerShape(13.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = InvoiceGold,
