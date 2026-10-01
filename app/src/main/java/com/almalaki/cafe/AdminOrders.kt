@@ -218,6 +218,26 @@ OutlinedButton(
 ) {
     Text("🧾 فتح الفاتورة")
 }
+                    if (showInvoice) {
+                        RoyalProfessionalInvoice(
+                            orderNumber = order.orderNumber,
+                            customerName = order.customerName,
+                            customerPhone = order.customerPhone,
+                            fulfillmentType = order.fulfillmentType,
+                            deliveryAddress = order.deliveryAddress,
+                            items = orderItems.map {
+                                RoyalInvoiceItem(
+                                    name = it.productName,
+                                    quantity = it.quantity,
+                                    unitPrice = it.unitPrice
+                                )
+                            },
+                            totalAmount = order.totalAmount,
+                            onClose = {
+                                showInvoice = false
+                            }
+                        )
+                    }
         }
     }
 }
