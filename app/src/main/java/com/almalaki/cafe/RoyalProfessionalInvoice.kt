@@ -330,12 +330,35 @@ RoyalDateTime(
                 // =========================
 
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+) {
+    TextButton(
+        onClick = onClose,
+        modifier = Modifier.weight(1f)
+    ) {
+        Text(
+            text = "إغلاق",
+            color = InvoiceGold,
+            fontSize = 14.sp
+        )
+    }
 
-                    horizontalArrangement =
-                        Arrangement.spacedBy(8.dp)
-                ) {
+    Button(
+        onClick = onClose,
+        modifier = Modifier.weight(1.4f),
+        shape = RoundedCornerShape(13.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = InvoiceGold,
+            contentColor = InvoiceBlack
+        )
+    ) {
+        Text(
+            text = "تم",
+            fontWeight = FontWeight.Bold
+        )
+    }
+                }
 
                     TextButton(
                         onClick = onClose,
