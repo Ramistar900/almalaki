@@ -791,10 +791,19 @@ val invoiceTotalSnapshot = totalAmount
                                         cart
                                     )
 
-                                orderSuccessNumber =
-                                    result.orderNumber
+                                invoiceOrderNumber = result.orderNumber
+invoiceCustomerName = name
+invoiceCustomerPhone = phone
+invoiceFulfillmentType = type
+invoiceDeliveryAddress = address
+invoiceItems = invoiceItemsSnapshot
+invoiceTotalAmount = invoiceTotalSnapshot
 
-                                cart = emptyMap()
+orderSuccessNumber = result.orderNumber
+cart = emptyMap()
+
+showCheckout = false
+showInvoice = true
 
                             } catch (e: Exception) {
 
