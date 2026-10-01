@@ -48,9 +48,6 @@ fun CartDialog(
     val selectedProducts =
         products.filter { (cart[it.id] ?: 0) > 0 }
 
-    /*
-     * الحركة الذهبية
-     */
     val infiniteTransition =
         rememberInfiniteTransition(
             label = "royal_cart_shine"
@@ -72,49 +69,27 @@ fun CartDialog(
             label = "royal_cart_shine_position"
         )
 
-    /*
-     * ألوان Royal Premium
-     */
-    val royalBlack =
-        Color(0xFF050505)
+    val royalBlack = Color(0xFF050505)
+    val royalBlack2 = Color(0xFF0B090D)
+    val royalPurple = Color(0xFF21142F)
+    val royalPurpleDark = Color(0xFF120B19)
+    val royalBronze = Color(0xFF6E4D18)
 
-    val royalBlack2 =
-        Color(0xFF0B090D)
+    val goldDark = Color(0xFF8C6B16)
+    val gold = Color(0xFFD4AF37)
+    val goldLight = Color(0xFFFFE9A3)
 
-    val royalPurple =
-        Color(0xFF21142F)
-
-    val royalPurpleDark =
-        Color(0xFF120B19)
-
-    val royalBronze =
-        Color(0xFF6E4D18)
-
-    val goldDark =
-        Color(0xFF8C6B16)
-
-    val gold =
-        Color(0xFFD4AF37)
-
-    val goldLight =
-        Color(0xFFFFE9A3)
-
-    /*
-     * خلفية النافذة
-     */
     val dialogBackground =
         Brush.verticalGradient(
             colors =
                 listOf(
                     royalPurpleDark,
+                    royalPurple,
                     royalBlack2,
                     royalBlack
                 )
         )
 
-    /*
-     * إطار ذهبي متحرك
-     */
     val animatedBorder =
         Brush.linearGradient(
             colors =
@@ -139,123 +114,431 @@ fun CartDialog(
 
     Dialog(
         onDismissRequest = onClose,
-
         properties =
             DialogProperties(
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true
             )
     ) {
-
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .background(
                         brush = dialogBackground,
-                        shape =
-                            RoundedCornerShape(24.dp)
+                        shape = RoundedCornerShape(24.dp)
                     )
                     .border(
                         width = 2.dp,
                         brush = animatedBorder,
-                        shape =
-                            RoundedCornerShape(24.dp)
+                        shape = RoundedCornerShape(24.dp)
                     )
                     .padding(14.dp)
         ) {
-
             Column(
-                modifier =
-                    Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
 
-                /*
-                 * التاج والعنوان
-                 */
                 Column(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    horizontalAlignment =
-                        Alignment.CenterHorizontally
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-
                     Text(
                         text = "♛",
                         color = goldLight,
                         fontSize = 31.sp,
-                        fontWeight =
-                            FontWeight.Bold
+                        fontWeight = FontWeight.Bold
                     )
 
                     Spacer(
-                        modifier =
-                            Modifier.height(2.dp)
+                        modifier = Modifier.height(2.dp)
                     )
 
                     Row(
-                        modifier =
-                            Modifier.fillMaxWidth(),
-
-                        verticalAlignment =
-                            Alignment.CenterVertically,
-
-                        horizontalArrangement =
-                            Arrangement.Center
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-
                         Text(
                             text = "━━━━",
-                            color =
-                                gold.copy(
-                                    alpha = 0.55f
-                                ),
+                            color = gold.copy(alpha = 0.55f),
                             fontSize = 9.sp
                         )
 
                         Spacer(
-                            modifier =
-                                Modifier.size(6.dp)
+                            modifier = Modifier.size(6.dp)
                         )
 
                         Text(
                             text = "🛒 سلة المشتريات",
                             color = gold,
                             fontSize = 22.sp,
-                            fontWeight =
-                                FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold
                         )
 
                         Spacer(
-                            modifier =
-                                Modifier.size(6.dp)
+                            modifier = Modifier.size(6.dp)
                         )
 
                         Text(
                             text = "━━━━",
-                            color =
-                                gold.copy(
-                                    alpha = 0.55f
-                                ),
+                            color = gold.copy(alpha = 0.55f),
                             fontSize = 9.sp
                         )
                     }
 
                     Spacer(
-                        modifier =
-                            Modifier.height(3.dp)
+                        modifier = Modifier.height(3.dp)
                     )
 
                     Text(
                         text = "اختياراتك الملكية",
-                        color =
-                            goldLight.copy(
-                                alpha = 0.68f
-                            ),
+                        color = goldLight.copy(alpha = 0.68f),
                         fontSize = 11.sp
                     )
                 }
 
                 Spacer(
-                    modifier
+                    modifier = Modifier.height(14.dp)
+                )
+
+                if (selectedProducts.isEmpty()) {
+
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = royalBlack2,
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = gold.copy(alpha = 0.25f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment =
+                                Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "🛒",
+                                fontSize = 38.sp
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(8.dp)
+                            )
+
+                            Text(
+                                text = "السلة فارغة",
+                                color = gold,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(4.dp)
+                            )
+
+                            Text(
+                                text = "أضف منتجاتك المفضلة للمتابعة",
+                                color = goldLight.copy(alpha = 0.65f),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                } else {
+
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 360.dp)
+                    ) {
+                        selectedProducts.forEach { product ->
+
+                            val quantity =
+                                cart[product.id] ?: 0
+
+                            val itemTotal =
+                                product.price * quantity
+
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            vertical = 6.dp
+                                        ),
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+
+                                Column(
+                                    modifier =
+                                        Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = product.name,
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight =
+                                            FontWeight.SemiBold
+                                    )
+
+                                    Spacer(
+                                        modifier =
+                                            Modifier.height(2.dp)
+                                    )
+
+                                    Text(
+                                        text =
+                                            "$quantity × ${
+                                                formatPrice(
+                                                    product.price
+                                                )
+                                            }",
+                                        color =
+                                            gold.copy(
+                                                alpha = 0.75f
+                                            ),
+                                        fontSize = 11.sp
+                                    )
+
+                                    Spacer(
+                                        modifier =
+                                            Modifier.height(2.dp)
+                                    )
+
+                                    Text(
+                                        text =
+                                            formatPrice(
+                                                itemTotal
+                                            ),
+                                        color = goldLight,
+                                        fontSize = 13.sp,
+                                        fontWeight =
+                                            FontWeight.Bold
+                                    )
+                                }
+
+                                Row(
+                                    verticalAlignment =
+                                        Alignment.CenterVertically
+                                ) {
+
+                                    CartQuantityButton(
+                                        text = "−",
+                                        onClick = {
+                                            onDecrease(
+                                                product.id
+                                            )
+                                        }
+                                    )
+
+                                    Text(
+                                        text =
+                                            quantity.toString(),
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight =
+                                            FontWeight.Bold,
+                                        modifier =
+                                            Modifier.padding(
+                                                horizontal = 8.dp
+                                            )
+                                    )
+
+                                    CartQuantityButton(
+                                        text = "+",
+                                        onClick = {
+                                            onIncrease(
+                                                product.id
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+
+                            Spacer(
+                                modifier = Modifier.height(3.dp)
+                            )
+
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(
+                                            gold.copy(
+                                                alpha = 0.12f
+                                            )
+                                        )
+                            )
+                        }
+                    }
+                }
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = gold.copy(
+                                    alpha = 0.08f
+                                ),
+                                shape =
+                                    RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color =
+                                    gold.copy(
+                                        alpha = 0.30f
+                                    ),
+                                shape =
+                                    RoundedCornerShape(16.dp)
+                            )
+                            .padding(13.dp)
+                ) {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+
+                        Column(
+                            modifier =
+                                Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "المبلغ المطلوب",
+                                color =
+                                    goldLight.copy(
+                                        alpha = 0.75f
+                                    ),
+                                fontSize = 12.sp
+                            )
+
+                            Spacer(
+                                modifier =
+                                    Modifier.height(2.dp)
+                            )
+
+                            Text(
+                                text = "الإجمالي",
+                                color = gold,
+                                fontSize = 15.sp,
+                                fontWeight =
+                                    FontWeight.SemiBold
+                            )
+                        }
+
+                        Text(
+                            text =
+                                formatPrice(
+                                    totalAmount
+                                ),
+                            color = goldLight,
+                            fontSize = 22.sp,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+
+                    TextButton(
+                        onClick = onClose,
+                        modifier =
+                            Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "متابعة التسوق",
+                            color = gold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = onCheckout,
+                        enabled =
+                            selectedProducts.isNotEmpty(),
+                        modifier =
+                            Modifier.weight(1.35f),
+                        shape =
+                            RoundedCornerShape(13.dp),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = gold,
+                                contentColor = royalBlack,
+                                disabledContainerColor =
+                                    gold.copy(
+                                        alpha = 0.25f
+                                    ),
+                                disabledContentColor =
+                                    goldLight.copy(
+                                        alpha = 0.45f
+                                    )
+                            )
+                    ) {
+                        Text(
+                            text = "متابعة الطلب",
+                            fontSize = 13.sp,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CartQuantityButton(
+    text: String,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.size(38.dp),
+        contentPadding =
+            androidx.compose.foundation.layout.PaddingValues(
+                0.dp
+            ),
+        shape = RoundedCornerShape(11.dp),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor =
+                    Color(0xFFD4AF37),
+                contentColor =
+                    Color(0xFF050505)
+            )
+    ) {
+        Text(
+            text = text,
+            fontSize = 21.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
