@@ -23,7 +23,7 @@ fun AdminOrderCard(
     }
     var loadingItems by remember(order.id) { mutableStateOf(false) }
     var detailsError by remember(order.id) { mutableStateOf("") }
-
+var showInvoice by remember(order.id) { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = AdminPanel)
