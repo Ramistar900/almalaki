@@ -2,11 +2,12 @@ package com.almalaki.cafe
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
@@ -63,28 +64,44 @@ fun ProductCategoryRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         categories.forEach { category ->
-            val selected = category == selectedCategory
+
+            val selected =
+                category == selectedCategory
 
             Text(
                 text = category,
-                color = if (selected) SearchBlack else SearchGold,
+                color =
+                    if (selected) {
+                        SearchBlack
+                    } else {
+                        SearchGold
+                    },
                 fontSize = 13.sp,
                 modifier = Modifier
                     .background(
-                        color = if (selected) {
-                            SearchGold
-                        } else {
-                            SearchBlack
-                        },
+                        color =
+                            if (selected) {
+                                SearchGold
+                            } else {
+                                SearchBlack
+                            },
                         shape = RoundedCornerShape(50.dp)
                     )
                     .border(
                         width = 1.dp,
                         color = SearchGold.copy(
-                            alpha = if (selected) 1f else 0.45f
+                            alpha =
+                                if (selected) {
+                                    1f
+                                } else {
+                                    0.45f
+                                }
                         ),
                         shape = RoundedCornerShape(50.dp)
                     )
+                    .clickable {
+                        onCategorySelected(category)
+                    }
                     .padding(
                         horizontal = 14.dp,
                         vertical = 8.dp
