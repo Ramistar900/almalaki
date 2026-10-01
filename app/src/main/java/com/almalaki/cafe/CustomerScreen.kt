@@ -822,7 +822,7 @@ showInvoice = true
             }
         )
     }
-}
+
 if (showInvoice) {
     RoyalProfessionalInvoice(
         orderNumber = invoiceOrderNumber,
