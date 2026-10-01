@@ -823,3 +823,17 @@ showInvoice = true
         )
     }
 }
+if (showInvoice) {
+    RoyalProfessionalInvoice(
+        orderNumber = invoiceOrderNumber,
+        customerName = invoiceCustomerName,
+        customerPhone = invoiceCustomerPhone,
+        fulfillmentType = invoiceFulfillmentType,
+        deliveryAddress = invoiceDeliveryAddress,
+        items = invoiceItems,
+        totalAmount = invoiceTotalAmount,
+        onClose = {
+            showInvoice = false
+        }
+    )
+}
