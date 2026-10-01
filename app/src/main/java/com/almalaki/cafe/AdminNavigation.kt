@@ -101,7 +101,6 @@ fun AdminMenuItem(
         Text("$icon  $title")
     }
 }
-
 @Composable
 fun AdminTopBar(
     title: String,
@@ -132,12 +131,19 @@ fun AdminTopBar(
             modifier = Modifier.weight(1f)
         )
 
+        RoyalDateTime(
+            language = "ar",
+            style = androidx.compose.ui.text.TextStyle(
+                color = AdminGold,
+                fontSize = 11.sp
+            )
+        )
+
         TextButton(onClick = onLogout) {
             Text("خروج", color = AdminGold)
         }
     }
 }
-
 @Composable
 fun AdminHorizontalMenu(
     section: AdminSection,
