@@ -96,7 +96,9 @@ var loadingDashboard by remember { mutableStateOf(false) }
 var loadingArchive by remember { mutableStateOf(false) }
 var accountEmail by remember { mutableStateOf("") }
 var loadingAccount by remember { mutableStateOf(false) }
-
+var orderAlertVisible by remember { mutableStateOf(false) }
+var orderAlertInitialized by remember { mutableStateOf(false) }
+var lastKnownOrderIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 LaunchedEffect(message) {
     if (message.isNotEmpty()) {
         kotlinx.coroutines.delay(4000)
@@ -198,11 +200,41 @@ fun refreshDashboard() {
         } finally { loadingDashboard = false }
     }.start()
 }
-
 LaunchedEffect(Unit) {
     refreshDashboard()
     refreshArchive()
     refreshAccount()
+}
+
+LaunchedEffect(accessToken) {
+    while (true) {
+        try {
+            val currentOrders = loadAdminOrders(accessToken)
+            val currentIds = currentOrders.map { it.id }.toSet()
+
+            if (!orderAlertInitialized) {
+                lastKnownOrderIds = currentIds
+                orderAlertInitialized = true
+            } else {
+                val newOrders = currentOrders.filter { order ->
+                    order.id !in lastKnownOrderIds &&
+                        order.status.equals("new", ignoreCase = true)
+                }
+
+                if (newOrders.isNotEmpty()) {
+                    orderAlertVisible = true
+                    startRoyalOrderAlert(context)
+                }
+
+                lastKnownOrderIds = currentIds
+            }
+
+            orders = currentOrders
+        } catch (_: Exception) {
+        }
+
+        kotlinx.coroutines.delay(5000L)
+    }
 }
 
 fun openSection(target: AdminSection) {
