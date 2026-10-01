@@ -58,6 +58,7 @@ fun RoyalProfessionalInvoice(
     totalAmount: Double,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(
@@ -335,39 +336,10 @@ RoyalDateTime(
     modifier = Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp)
 ) {
-    TextButton(
-        onClick = onClose,
-        modifier = Modifier.weight(1f)
-    ) {
-        Text(
-            text = "إغلاق",
-            color = InvoiceGold,
-            fontSize = 14.sp
-        )
-    }
-
-    Button(
-        onClick = onClose,
-        modifier = Modifier.weight(1.4f),
-        shape = RoundedCornerShape(13.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = InvoiceGold,
-            contentColor = InvoiceBlack
-        )
-    ) {
-        Text(
-            text = "تم",
-            fontWeight = FontWeight.Bold
-        )
-    }
-                }
-
-                    TextButton(
+                        TextButton(
                         onClick = onClose,
-                        modifier =
-                            Modifier.weight(1f)
+                        modifier = Modifier.weight(1f)
                     ) {
-
                         Text(
                             text = "إغلاق",
                             color = InvoiceGold,
@@ -376,33 +348,75 @@ RoyalDateTime(
                     }
 
                     Button(
-                        onClick = onClose,
-                        modifier =
-                            Modifier.weight(1.4f),
+                        onClick = {
+                            val shareText = buildString {
+                                appendLine("👑 ROYAL COFFEE")
+                                appendLine("🧾 فاتورة الطلب")
+                                appendLine("رقم الطلب: $orderNumber")
+                                appendLine("العميل: $customerName")
 
-                        shape =
-                            RoundedCornerShape(13.dp),
+                                if (customerPhone.isNotBlank()) {
+                                    appendLine("الهاتف: $customerPhone")
+                                }
 
-                        colors =
-                            ButtonDefaults
-                                .buttonColors(
-                                    containerColor =
-                                        InvoiceGold,
-                                    contentColor =
-                                        InvoiceBlack
+                                appendLine("النوع: $fulfillmentType")
+
+                                if (deliveryAddress.isNotBlank()) {
+                                    appendLine("العنوان: $deliveryAddress")
+                                }
+
+                                appendLine()
+                                appendLine("المنتجات:")
+
+                                items.forEach { item ->
+                                    appendLine(
+                                        "${item.name} × ${item.quantity} = ${formatPrice(item.total)}"
+                                    )
+                                }
+
+                                appendLine()
+                                appendLine("💰 الإجمالي: ${formatPrice(totalAmount)}")
+                            }
+
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+
+                            context.startActivity(
+                                Intent.createChooser(
+                                    intent,
+                                    "مشاركة الفاتورة"
                                 )
+                            )
+                        },
+                        modifier = Modifier.weight(1.3f),
+                        shape = RoundedCornerShape(13.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = InvoiceBronze,
+                            contentColor = Color.White
+                        )
                     ) {
-
                         Text(
-                            text = "تم",
-                            fontWeight =
-                                FontWeight.Bold
+                            text = "📤 مشاركة",
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                }
-            }
-        }
-    }
+
+                    Button(
+                        onClick = onClose,
+                        modifier = Modifier.weight(1.1f),
+                        shape = RoundedCornerShape(13.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = InvoiceGold,
+                            contentColor = InvoiceBlack
+                        )
+                    ) {
+                        Text(
+                            text = "تم",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
 
 // =====================================================
