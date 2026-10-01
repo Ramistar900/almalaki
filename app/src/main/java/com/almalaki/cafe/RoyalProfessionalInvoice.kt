@@ -120,6 +120,15 @@ fun RoyalProfessionalInvoice(
                                 ),
                             fontSize = 12.sp
                         )
+                        Spacer(Modifier.height(4.dp))
+
+RoyalDateTime(
+    language = "ar",
+    style = androidx.compose.ui.text.TextStyle(
+        color = InvoiceGoldLight.copy(alpha = 0.70f),
+        fontSize = 10.sp
+    )
+)
                     }
 
                     Column(
