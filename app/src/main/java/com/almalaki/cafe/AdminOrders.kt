@@ -4,6 +4,8 @@ import android.os.Handler
 import android.os.Looper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,9 +36,18 @@ var loadingItems by remember(order.id) { mutableStateOf(false) }
     var detailsError by remember(order.id) { mutableStateOf("") }
 var showInvoice by remember(order.id) { mutableStateOf(false) }
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AdminPanel)
-    ) {
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 6.dp),
+    shape = RoundedCornerShape(18.dp),
+    colors = CardDefaults.cardColors(
+        containerColor = Color(0xFF111111)
+    ),
+    border = BorderStroke(
+        width = 1.dp,
+        color = Color(0xFFD4AF37).copy(alpha = 0.35f)
+    )
+) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text("طلب ${order.orderNumber}", color = AdminGold, fontSize = 18.sp)
             Text("العميل: ${order.customerName}", color = AdminCream)
