@@ -65,9 +65,9 @@ var showInvoice by remember(order.id) { mutableStateOf(false) }
         containerColor = Color(0xFF111111)
     ),
     border = BorderStroke(
-        width = 1.dp,
-        color = Color(0xFFD4AF37).copy(alpha = 0.35f)
-    )
+    width = 1.dp,
+    color = Color(0xFFD4AF37).copy(alpha = 0.65f)
+)
 ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
