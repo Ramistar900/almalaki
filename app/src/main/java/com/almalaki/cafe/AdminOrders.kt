@@ -88,7 +88,7 @@ var showInvoice by remember(order.id) { mutableStateOf(false) }
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(if (expanded) "إخفاء" else "التفاصيل")
+                    Text("فتح")
                 }
 
                 OutlinedButton(
