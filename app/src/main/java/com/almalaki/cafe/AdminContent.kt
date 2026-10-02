@@ -46,7 +46,8 @@ fun AdminContent(
     onRefresh: () -> Unit,
     onRefreshArchive: () -> Unit,
     onOrderStatus: (Long, String) -> Unit,
-    onDeleteOrder: (Long) -> Unit
+    onDeleteOrder: (Long) -> Unit,
+    highlightedOrderId: Long? = null
 ) {
     LazyColumn(
         modifier = Modifier
@@ -141,11 +142,12 @@ fun AdminContent(
                         key = { it.id }
                     ) { order ->
                         AdminOrderCard(
-                            order = order,
-                            accessToken = accessToken,
-                            onStatus = onOrderStatus,
-                            onDelete = onDeleteOrder
-                        )
+    order = order,
+    accessToken = accessToken,
+    onStatus = onOrderStatus,
+    onDelete = onDeleteOrder,
+    openDetails = order.id == highlightedOrderId
+)
                     }
                 }
             }
