@@ -98,6 +98,7 @@ var accountEmail by remember { mutableStateOf("") }
 var loadingAccount by remember { mutableStateOf(false) }
 var orderAlertVisible by remember { mutableStateOf(false) }
 var highlightedOrderId by remember { mutableStateOf<Long?>(null) }
+var orderAlertMessage by remember { mutableStateOf("🔔 يوجد طلب جديد") }
 var orderAlertInitialized by remember { mutableStateOf(false) }
 var lastKnownOrderIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 LaunchedEffect(message) {
@@ -237,12 +238,52 @@ LaunchedEffect(accessToken) {
                 }
 
                 if (newOrders.isNotEmpty()) {
-                    highlightedOrderId = newOrders.first().id
-                    orderAlertVisible = true
-                    startRoyalOrderAlert(context)
-                }
+    val alertOrder = newOrders.first()
 
-                lastKnownOrderIds = currentIds
+    val alertItems = kotlinx.coroutines.withContext(
+        kotlinx.coroutines.Dispatchers.IO
+    ) {
+        loadOrderItems(
+            accessToken = accessToken,
+            orderId = alertOrder.id
+        )
+    }
+
+    val isDelivery =
+        alertOrder.fulfillmentType.contains("توصيل", ignoreCase = true)
+
+    val itemsText = alertItems.joinToString("\n") { item ->
+        "${item.productName} × ${item.quantity}"
+    }
+
+    orderAlertMessage = buildString {
+        appendLine(
+            if (isDelivery) {
+                "🔔 طلب توصيل جديد"
+            } else {
+                "🔔 طلب جديد"
+            }
+        )
+
+        appendLine(alertOrder.customerName)
+
+        if (itemsText.isNotBlank()) {
+            appendLine(itemsText)
+        }
+
+        if (isDelivery && alertOrder.deliveryAddress.isNotBlank()) {
+            appendLine("🚚 ملاحظة توصيل:")
+            appendLine(alertOrder.deliveryAddress)
+        }
+
+        append("💰 المجموع: ${alertOrder.totalAmount} ل.س")
+    }
+
+    highlightedOrderId = alertOrder.id
+    orderAlertVisible = true
+    startRoyalOrderAlert(context)
+                }
+                                lastKnownOrderIds = currentIds
             }
 
             orders = currentOrders
@@ -262,7 +303,7 @@ DisposableEffect(accessToken) {
         orderAlertVisible = true
         startRoyalOrderAlert(context)
     }
-
+    
     onDispose {
         stopRoyalOrderRealtime()
     }
@@ -286,6 +327,7 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
         if (orderAlertVisible) {
     RoyalOrderAlertBanner(
         visible = true,
+        message = orderAlertMessage,
         onStop = {
             stopRoyalOrderAlert()
             orderAlertVisible = false
@@ -349,6 +391,7 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
             if (orderAlertVisible) {
     RoyalOrderAlertBanner(
         visible = true,
+        message = orderAlertMessage,
         onStop = {
             stopRoyalOrderAlert()
             orderAlertVisible = false
