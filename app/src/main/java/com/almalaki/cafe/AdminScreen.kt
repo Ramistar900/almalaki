@@ -251,7 +251,23 @@ fun openSection(target: AdminSection) {
 
 Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
     if (isLandscape) {
-        Row(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        if (orderAlertVisible) {
+            RoyalOrderAlertBanner(
+                visible = true,
+                onStop = {
+                    stopRoyalOrderAlert()
+                    orderAlertVisible = false
+                }
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
             AdminSidebar(section = section, onSectionSelected = ::openSection, onLogout = onLogout,
                 modifier = Modifier.fillMaxHeight().width(220.dp))
             VerticalDivider(color = AdminGold.copy(alpha = 0.35f))
@@ -289,11 +305,21 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
                 }.start() }
             )
         }
+    }
     } else {
         Column(modifier = Modifier.fillMaxSize()) {
             AdminTopBar(title = adminSectionTitle(section), menuOpen = menuOpen,
                 onMenuClick = { menuOpen = !menuOpen }, onLogout = onLogout)
             if (menuOpen) AdminHorizontalMenu(section = section, onSectionSelected = ::openSection)
+            if (orderAlertVisible) {
+    RoyalOrderAlertBanner(
+        visible = true,
+        onStop = {
+            stopRoyalOrderAlert()
+            orderAlertVisible = false
+        }
+    )
+            }
             AdminContent(
                 section = section, products = products, orders = orders, archivedOrders = archivedOrders,
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
@@ -331,4 +357,4 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
     }
 }
 
-}
+
