@@ -74,7 +74,7 @@ fun RoyalOrderAlertBanner(
         modifier = Modifier
             .fillMaxWidth()
 .background(RoyalAlertBlack)
-.clickable { onOpen() }
+
             .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
