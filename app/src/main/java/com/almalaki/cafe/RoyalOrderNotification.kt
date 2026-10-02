@@ -95,14 +95,6 @@ fun RoyalOrderAlertBanner(
             fontSize = 14.sp
         )
     }
-
-    TextButton(onClick = onStop) {
-        Text(
-            text = "إيقاف الصوت",
-            color = RoyalAlertGold,
-            fontSize = 14.sp
-        )
-    }
         }
     }
 }
