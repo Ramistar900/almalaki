@@ -57,7 +57,7 @@ fun startRoyalOrderRealtime(
                     table = "orders"
                 }
 
-            channel.subscribe()
+            channel.subscribe(blockUntilSubscribed = true)
 
             changeFlow.collect {
                 withContext(Dispatchers.Main) {
