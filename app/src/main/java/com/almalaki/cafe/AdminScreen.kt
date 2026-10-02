@@ -218,7 +218,10 @@ LaunchedEffect(Unit) {
 LaunchedEffect(accessToken) {
     while (true) {
         try {
-            val currentOrders = loadAdminOrders(accessToken)
+            val currentOrders = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                loadAdminOrders(accessToken)
+            }
+
             val currentIds = currentOrders.map { it.id }.toSet()
 
             if (!orderAlertInitialized) {
@@ -239,9 +242,11 @@ LaunchedEffect(accessToken) {
             }
 
             orders = currentOrders
+
         } catch (e: Exception) {
-    message = e.message ?: "تعذر فحص الطلبات الجديدة."
+            message = e.message ?: "تعذر فحص الطلبات الجديدة."
         }
+
         kotlinx.coroutines.delay(5000L)
     }
 }
