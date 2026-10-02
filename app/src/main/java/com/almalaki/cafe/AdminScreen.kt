@@ -122,8 +122,17 @@ fun refreshProducts() {
 
 fun refreshOrders() {
     Thread {
-        try { orders = loadAdminOrders(accessToken) }
-        catch (e: Exception) { message = e.message ?: "تعذر تحميل الطلبات." }
+        try {
+            val loadedOrders = loadAdminOrders(accessToken)
+
+            Handler(Looper.getMainLooper()).post {
+                orders = loadedOrders
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                message = e.message ?: "تعذر تحميل الطلبات."
+            }
+        }
     }.start()
 }
 
