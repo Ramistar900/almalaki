@@ -97,6 +97,7 @@ var loadingArchive by remember { mutableStateOf(false) }
 var accountEmail by remember { mutableStateOf("") }
 var loadingAccount by remember { mutableStateOf(false) }
 var orderAlertVisible by remember { mutableStateOf(false) }
+var highlightedOrderId by remember { mutableStateOf<Long?>(null) }
 var orderAlertInitialized by remember { mutableStateOf(false) }
 var lastKnownOrderIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 LaunchedEffect(message) {
@@ -236,6 +237,7 @@ LaunchedEffect(accessToken) {
                 }
 
                 if (newOrders.isNotEmpty()) {
+                    highlightedOrderId = newOrders.first().id
                     orderAlertVisible = true
                     startRoyalOrderAlert(context)
                 }
@@ -282,13 +284,18 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
     Column(modifier = Modifier.fillMaxSize()) {
 
         if (orderAlertVisible) {
-            RoyalOrderAlertBanner(
-                visible = true,
-                onStop = {
-                    stopRoyalOrderAlert()
-                    orderAlertVisible = false
-                }
-            )
+    RoyalOrderAlertBanner(
+        visible = true,
+        onStop = {
+            stopRoyalOrderAlert()
+            orderAlertVisible = false
+        },
+        onOpen = {
+            section = AdminSection.ORDERS
+            stopRoyalOrderAlert()
+            orderAlertVisible = false
+        }
+    )
         }
 
         Row(
@@ -345,6 +352,11 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
         onStop = {
             stopRoyalOrderAlert()
             orderAlertVisible = false
+        },
+        onOpen = {
+            section = AdminSection.ORDERS
+            stopRoyalOrderAlert()
+            orderAlertVisible = false
         }
     )
             }
@@ -379,7 +391,8 @@ Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
                 onDeleteOrder = { orderId -> Thread {
                     try { deleteCancelledOrder(accessToken, orderId); orders = loadAdminOrders(accessToken); message = "تم حذف الطلب الملغى ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف الطلب." }
-                }.start() }
+                }.start() },
+                highlightedOrderId = highlightedOrderId
             )
         }
     }
