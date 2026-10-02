@@ -218,9 +218,7 @@ LaunchedEffect(Unit) {
 LaunchedEffect(accessToken) {
     while (true) {
         try {
-            val currentOrders = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                loadAdminOrders(accessToken)
-            }
+            val currentOrders = loadAdminOrders(accessToken)
 
             val currentIds = currentOrders.map { it.id }.toSet()
 
