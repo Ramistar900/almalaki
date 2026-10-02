@@ -238,7 +238,8 @@ LaunchedEffect(accessToken) {
 }
 DisposableEffect(accessToken) {
     startRoyalOrderRealtime(
-        accessToken = accessToken
+        accessToken = accessToken,
+        context = context
     ) {
         orderAlertVisible = true
         startRoyalOrderAlert(context)
