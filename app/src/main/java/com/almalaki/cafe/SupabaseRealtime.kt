@@ -57,7 +57,21 @@ fun startRoyalOrderRealtime(
                     table = "orders"
                 }
 
-            channel.subscribe(blockUntilSubscribed = true)
+            try {
+    channel.subscribe(blockUntilSubscribed = true)
+
+    android.os.Handler(
+        android.os.Looper.getMainLooper()
+    ).post {
+        android.widget.Toast.makeText(
+            context,
+            "Realtime: تم الاتصال بنجاح",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
+    }
+} catch (e: Exception) {
+    throw e
+            }
 
             changeFlow.collect {
                 withContext(Dispatchers.Main) {
