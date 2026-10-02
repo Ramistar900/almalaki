@@ -26,6 +26,7 @@ private var royalRealtimeScope: CoroutineScope? = null
 
 fun startRoyalOrderRealtime(
     accessToken: String,
+    context: android.content.Context,
     onNewOrder: () -> Unit
 ) {
     stopRoyalOrderRealtime()
@@ -70,6 +71,16 @@ fun startRoyalOrderRealtime(
         "Realtime error: ${e.message}",
         e
     )
+
+    android.os.Handler(
+        android.os.Looper.getMainLooper()
+    ).post {
+        android.widget.Toast.makeText(
+            context,
+            "Realtime: ${e.message ?: "خطأ غير معروف"}",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
+    }
         }
     }
 }
