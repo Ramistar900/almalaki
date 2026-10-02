@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -64,14 +65,16 @@ fun stopRoyalOrderAlert() {
 fun RoyalOrderAlertBanner(
     visible: Boolean,
     message: String = "🔔 يوجد طلب جديد",
-    onStop: () -> Unit
+    onStop: () -> Unit,
+    onOpen: () -> Unit = {}
 ) {
     if (!visible) return
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(RoyalAlertBlack)
+.background(RoyalAlertBlack)
+.clickable { onOpen() }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
