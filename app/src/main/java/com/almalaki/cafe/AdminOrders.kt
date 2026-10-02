@@ -15,13 +15,22 @@ fun AdminOrderCard(
     order: AdminOrder,
     accessToken: String,
     onStatus: (Long, String) -> Unit,
-    onDelete: (Long) -> Unit
+    onDelete: (Long) -> Unit,
+    openDetails: Boolean = false
 ) {
     var expanded by remember(order.id) { mutableStateOf(false) }
-    var orderItems by remember(order.id) {
-        mutableStateOf<List<AdminOrderItem>>(emptyList())
+
+LaunchedEffect(openDetails) {
+    if (openDetails) {
+        expanded = true
     }
-    var loadingItems by remember(order.id) { mutableStateOf(false) }
+}
+
+var orderItems by remember(order.id) {
+    mutableStateOf<List<AdminOrderItem>>(emptyList())
+}
+
+var loadingItems by remember(order.id) { mutableStateOf(false) }
     var detailsError by remember(order.id) { mutableStateOf("") }
 var showInvoice by remember(order.id) { mutableStateOf(false) }
     Card(
