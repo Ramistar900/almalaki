@@ -7,10 +7,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private const val ROYAL_REALTIME_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
@@ -40,12 +38,12 @@ fun startRoyalOrderRealtime(
                 supabaseUrl = ROYAL_REALTIME_URL,
                 supabaseKey = ROYAL_REALTIME_KEY
             ) {
-                install(Realtime)
+                install(Realtime) {
+                    jwtToken = accessToken
+                }
             }
 
-            supabase.realtime.setAuth(accessToken)
-
-            val channel = supabase.channel("royal-orders")
+            val channel = supabase.realtime.channel("royal-orders")
 
             val changeFlow =
                 channel.postgresChangeFlow<PostgresAction.Insert>(
@@ -54,20 +52,24 @@ fun startRoyalOrderRealtime(
                     table = "orders"
                 }
 
-            changeFlow
-                .onEach {
-                    withContext(Dispatchers.Main) {
-                        onNewOrder()
-                    }
+            changeFlow.collect {
+                withContextMain {
+                    onNewOrder()
                 }
-                .launchIn(this)
-
-            channel.subscribe()
+            }
 
         } catch (_: Exception) {
-            // يبقى الفحص الدوري الموجود في AdminScreen
-            // كخطة احتياطية إذا تعذر اتصال Realtime.
+            // الفحص الدوري الموجود في AdminScreen
+            // يبقى كخطة احتياطية.
         }
+    }
+}
+
+private suspend fun withContextMain(
+    block: () -> Unit
+) {
+    kotlinx.coroutines.withContext(Dispatchers.Main) {
+        block()
     }
 }
 
