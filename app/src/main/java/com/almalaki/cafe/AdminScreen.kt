@@ -218,7 +218,11 @@ LaunchedEffect(Unit) {
 LaunchedEffect(accessToken) {
     while (true) {
         try {
-            val currentOrders = loadAdminOrders(accessToken)
+            val currentOrders = kotlinx.coroutines.withContext(
+    kotlinx.coroutines.Dispatchers.IO
+) {
+    loadAdminOrders(accessToken)
+            }
 
             val currentIds = currentOrders.map { it.id }.toSet()
 
