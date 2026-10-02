@@ -1,5 +1,10 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -96,7 +101,14 @@ Row(
     modifier = Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp)
 ) {
-    OutlinedButton(
+
+    RoyalActionButton(
+    text = if (expanded) "إغلاق" else "فتح",
+    backgroundColor = if (expanded) {
+        Color(0xFFB3261E)
+    } else {
+        Color(0xFF168A3A)
+    },
         onClick = {
             RoyalSoundManager.playClick()
             expanded = !expanded
@@ -127,23 +139,18 @@ Row(
             }
         },
         modifier = Modifier.weight(1f)
-    ) {
-        Text(if (expanded) "إغلاق" else "فتح")
-    }
+    )
 
     if (order.status.lowercase() == "cancelled") {
-        OutlinedButton(
+        RoyalActionButton(
+            text = "حذف",
+            backgroundColor = Color(0xFFB3261E),
             onClick = {
                 RoyalSoundManager.playClick()
                 onDelete(order.id)
             },
             modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                "حذف",
-                color = Color.Red
-            )
-        }
+        )
     }
 }
 
@@ -208,17 +215,6 @@ Row(
                         }
                     }
 
-                    if (order.status.lowercase() == "cancelled") {
-                        OutlinedButton(
-                            onClick = {
-                                RoyalSoundManager.playClick()
-                                onDelete(order.id)
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("حذف الطلب", color = Color.Red)
-                        }
-                    }
                 }
             }
 
@@ -457,6 +453,136 @@ fun RoyalCustomerStarIcon(
         drawPath(
             path = bodyPath,
             color = Color(0xFFD4AF37)
+        )
+    }
+}
+@Composable
+fun RoyalActionButton(
+    text: String,
+    backgroundColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember {
+        MutableInteractionSource()
+    }
+
+    val pressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = tween(180),
+        label = "royal_button_press"
+    )
+
+    val transition = rememberInfiniteTransition(
+        label = "royal_button_shine"
+    )
+
+    val shineProgress by transition.animateFloat(
+        initialValue = 1.2f,
+        targetValue = -0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1800,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "royal_button_shine_progress"
+    )
+
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .height(50.dp),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val radius = 12.dp.toPx()
+
+            drawRoundRect(
+                color = Color.Black,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                    radius,
+                    radius
+                )
+            )
+
+            drawRoundRect(
+                color = Color(0xFFD4AF37),
+                topLeft = Offset(2.dp.toPx(), 2.dp.toPx()),
+                size = androidx.compose.ui.geometry.Size(
+                    size.width - 4.dp.toPx(),
+                    size.height - 4.dp.toPx()
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                    radius,
+                    radius
+                )
+            )
+
+            drawRoundRect(
+                color = backgroundColor,
+                topLeft = Offset(5.dp.toPx(), 5.dp.toPx()),
+                size = androidx.compose.ui.geometry.Size(
+                    size.width - 10.dp.toPx(),
+                    size.height - 10.dp.toPx()
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                    radius,
+                    radius
+                )
+            )
+
+            val shineX = size.width * shineProgress
+
+            drawRoundRect(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Color.Transparent,
+                        Color.White.copy(alpha = 0.85f),
+                        Color.White,
+                        Color.Transparent,
+                        Color.Transparent
+                    ),
+                    start = Offset(
+                        shineX - size.width * 0.25f,
+                        0f
+                    ),
+                    end = Offset(
+                        shineX + size.width * 0.25f,
+                        size.height
+                    )
+                ),
+                topLeft = Offset(5.dp.toPx(), 5.dp.toPx()),
+                size = androidx.compose.ui.geometry.Size(
+                    size.width - 10.dp.toPx(),
+                    size.height - 10.dp.toPx()
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                    radius,
+                    radius
+                )
+            )
+        }
+
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 16.sp
         )
     }
 }
