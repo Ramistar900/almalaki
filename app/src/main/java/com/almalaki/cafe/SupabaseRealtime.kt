@@ -64,9 +64,12 @@ fun startRoyalOrderRealtime(
                 }
             }
 
-        } catch (_: Exception) {
-            // يبقى الفحص الدوري الموجود في AdminScreen
-            // كخطة احتياطية إذا تعذر اتصال Realtime.
+        } catch (e: Exception) {
+    android.util.Log.e(
+        "RoyalRealtime",
+        "Realtime error: ${e.message}",
+        e
+    )
         }
     }
 }
