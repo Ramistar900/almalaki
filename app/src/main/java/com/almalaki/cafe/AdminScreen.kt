@@ -277,7 +277,7 @@ LaunchedEffect(accessToken) {
         }
 
         append("💰 المجموع: ${alertOrder.totalAmount} ل.س")
-        append("عرض الطلب")
+        
     }
 
     highlightedOrderId = alertOrder.id
