@@ -236,7 +236,18 @@ LaunchedEffect(accessToken) {
         kotlinx.coroutines.delay(5000L)
     }
 }
+DisposableEffect(accessToken) {
+    startRoyalOrderRealtime(
+        accessToken = accessToken
+    ) {
+        orderAlertVisible = true
+        startRoyalOrderAlert(context)
+    }
 
+    onDispose {
+        stopRoyalOrderRealtime()
+    }
+}
 fun openSection(target: AdminSection) {
     section = target
     menuOpen = false
