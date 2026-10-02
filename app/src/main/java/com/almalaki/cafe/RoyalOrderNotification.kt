@@ -85,12 +85,24 @@ fun RoyalOrderAlertBanner(
             fontSize = 16.sp
         )
 
-        TextButton(onClick = onStop) {
-            Text(
-                text = "إيقاف الصوت",
-                color = RoyalAlertGold,
-                fontSize = 14.sp
-            )
+        Row(
+    verticalAlignment = Alignment.CenterVertically
+) {
+    TextButton(onClick = onOpen) {
+        Text(
+            text = "عرض الطلب",
+            color = RoyalAlertGold,
+            fontSize = 14.sp
+        )
+    }
+
+    TextButton(onClick = onStop) {
+        Text(
+            text = "إيقاف الصوت",
+            color = RoyalAlertGold,
+            fontSize = 14.sp
+        )
+    }
         }
     }
 }
