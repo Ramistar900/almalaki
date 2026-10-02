@@ -230,9 +230,9 @@ LaunchedEffect(accessToken) {
             }
 
             orders = currentOrders
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+    message = e.message ?: "تعذر فحص الطلبات الجديدة."
         }
-
         kotlinx.coroutines.delay(5000L)
     }
 }
