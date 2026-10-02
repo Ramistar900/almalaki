@@ -92,41 +92,60 @@ var showInvoice by remember(order.id) { mutableStateOf(false) }
             }
 
             Spacer(modifier = Modifier.height(7.dp))
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+) {
+    OutlinedButton(
+        onClick = {
+            RoyalSoundManager.playClick()
+            expanded = !expanded
 
-            OutlinedButton(
-                onClick = {
-                    RoyalSoundManager.playClick()
-                    expanded = !expanded
+            if (expanded && orderItems.isEmpty()) {
+                loadingItems = true
+                detailsError = ""
 
-                    if (expanded && orderItems.isEmpty()) {
-                        loadingItems = true
-                        detailsError = ""
+                Thread {
+                    try {
+                        val loadedItems = loadOrderItems(
+                            accessToken = accessToken,
+                            orderId = order.id
+                        )
 
-                        Thread {
-                            try {
-                                val loadedItems = loadOrderItems(
-                                    accessToken = accessToken,
-                                    orderId = order.id
-                                )
-
-                                Handler(Looper.getMainLooper()).post {
-                                    orderItems = loadedItems
-                                    loadingItems = false
-                                }
-                            } catch (e: Exception) {
-                                Handler(Looper.getMainLooper()).post {
-                                    detailsError = e.message
-                                        ?: "تعذر تحميل تفاصيل الطلب."
-                                    loadingItems = false
-                                }
-                            }
-                        }.start()
+                        Handler(Looper.getMainLooper()).post {
+                            orderItems = loadedItems
+                            loadingItems = false
+                        }
+                    } catch (e: Exception) {
+                        Handler(Looper.getMainLooper()).post {
+                            detailsError = e.message
+                                ?: "تعذر تحميل تفاصيل الطلب."
+                            loadingItems = false
+                        }
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (expanded) "إغلاق" else "فتح")
+                }.start()
             }
+        },
+        modifier = Modifier.weight(1f)
+    ) {
+        Text(if (expanded) "إغلاق" else "فتح")
+    }
+
+    if (order.status.lowercase() == "cancelled") {
+        OutlinedButton(
+            onClick = {
+                RoyalSoundManager.playClick()
+                onDelete(order.id)
+            },
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                "حذف",
+                color = Color.Red
+            )
+        }
+    }
+}
 
             if (expanded) {
 
