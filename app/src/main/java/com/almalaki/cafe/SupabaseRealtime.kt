@@ -42,12 +42,10 @@ fun startRoyalOrderRealtime(
                 supabaseUrl = ROYAL_REALTIME_URL,
                 supabaseKey = ROYAL_REALTIME_KEY
             ) {
-                install(Realtime) {
-                    accessToken = {
-                        accessToken
-                    }
-                }
+                install(Realtime)
             }
+
+            supabase.realtime.setAuth(accessToken)
 
             val channel = supabase.channel("royal-orders")
 
@@ -58,17 +56,17 @@ fun startRoyalOrderRealtime(
                     table = "orders"
                 }
 
+            channel.subscribe()
+
             changeFlow.collect {
                 withContext(Dispatchers.Main) {
                     onNewOrder()
                 }
             }
 
-            channel.subscribe()
-
         } catch (_: Exception) {
-            // الفحص الدوري الموجود في AdminScreen
-            // يبقى كخطة احتياطية إذا تعذر Realtime.
+            // يبقى الفحص الدوري الموجود في AdminScreen
+            // كخطة احتياطية إذا تعذر اتصال Realtime.
         }
     }
 }
