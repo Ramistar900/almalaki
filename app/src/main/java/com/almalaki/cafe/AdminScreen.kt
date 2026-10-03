@@ -339,7 +339,11 @@ Column(
         RoyalShinyLogo()
     }
     if (isLandscape) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .weight(1f)
+) {
 
         if (orderAlertVisible) {
     RoyalOrderAlertBanner(
