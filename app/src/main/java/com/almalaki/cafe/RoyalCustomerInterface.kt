@@ -326,15 +326,6 @@ private fun RoyalTopBar(
             RoyalShinyLogo()
         }
 
-        Text(
-            text = "R 👑",
-            color = RoyalGold,
-            fontSize = 21.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 8.dp)
-        )
     }
 }
 
