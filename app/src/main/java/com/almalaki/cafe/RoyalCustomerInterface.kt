@@ -1,4 +1,4 @@
-package com.almalaki.cafe
+٧package com.almalaki.cafe
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -711,7 +711,7 @@ fun RoyalBottomBar(
         RoyalShinyInfoBox(
             modifier = Modifier
                 .width(92.dp)
-                .height(32.dp)
+                .height(40.dp)
         ) {
             RoyalLiveDateTime()
         }
