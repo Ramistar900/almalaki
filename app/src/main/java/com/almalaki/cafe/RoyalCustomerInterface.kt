@@ -505,20 +505,21 @@ fun RoyalLiveDateTime() {
     }
 
     Column(
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.Center
-    ) {
+    horizontalAlignment = Alignment.Start,
+    verticalArrangement = Arrangement.Top,
+    modifier = Modifier.offset(y = (-2).dp)
+) {
         Text(
             text = time,
             color = Color.White,
-            fontSize = 10.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.Bold
         )
 
         Text(
             text = date,
             color = Color.White,
-            fontSize = 8.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Medium
         )
     }
