@@ -403,8 +403,8 @@ private fun RoyalDrawerItem(
     }
 }
 
-@Composable
-private fun RoyalLiveDateTime(isDarkMode: Boolean) {
+    @Composable
+private fun RoyalLiveDateTime() {
     var now by remember { mutableStateOf(Date()) }
 
     LaunchedEffect(Unit) {
@@ -425,14 +425,14 @@ private fun RoyalLiveDateTime(isDarkMode: Boolean) {
     Column(horizontalAlignment = Alignment.Start) {
         Text(
             text = time,
-            color = if (isDarkMode) RoyalGoldLight else RoyalDarkText,
+            color = RoyalDarkText,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
 
         Text(
             text = date,
-            color = if (isDarkMode) RoyalGray else Color.DarkGray,
+            color = RoyalDarkText,
             fontSize = 10.sp
         )
     }
@@ -487,39 +487,94 @@ private fun RoyalNewsTicker(
 }
 
 @Composable
+private fun RoyalShinyInfoBox(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "info_shine")
+
+    val shinePosition by infiniteTransition.animateFloat(
+        initialValue = -1.5f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 2200,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shine_position"
+    )
+
+    val brush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFFF9F295),
+            Color(0xFFFFFBD0),
+            Color(0xFFF9F295),
+            Color(0xFFE6D45A)
+        ),
+        start = Offset(shinePosition * 180f, 0f),
+        end = Offset(shinePosition * 180f + 180f, 0f)
+    )
+
+    Box(
+        modifier = modifier
+            .height(34.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(brush)
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        content()
+    }
+}
+@Composable
 private fun RoyalBottomBar(
-    isDarkMode: Boolean,
     newsText: String
 ) {
-    val background = if (isDarkMode) RoyalCard else Color.White
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .background(background)
+            .background(Color.White)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
+
+        // الشعار المتحرك فوق صندوق الوقت والتاريخ
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(1.dp)
-                .background(RoyalGold)
-        )
+                .height(46.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Royal3DAnimatedLogo(size = 42.dp)
+        }
 
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // صندوق الوقت والتاريخ بجانب صندوق الأخبار
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp)
-                .padding(horizontal = 10.dp),
+                .height(34.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RoyalLiveDateTime(isDarkMode = isDarkMode)
 
-            RoyalNewsTicker(
-                newsText = newsText,
-                modifier = Modifier.weight(1f)
-            )
+            RoyalShinyInfoBox(
+                modifier = Modifier.weight(0.38f)
+            ) {
+                RoyalLiveDateTime()
+            }
 
+            Spacer(modifier = Modifier.width(6.dp))
+
+            RoyalShinyInfoBox(
+                modifier = Modifier.weight(0.62f)
+            ) {
+                RoyalNewsTicker(
+                    newsText = newsText
+                )
+            }
         }
     }
 }
