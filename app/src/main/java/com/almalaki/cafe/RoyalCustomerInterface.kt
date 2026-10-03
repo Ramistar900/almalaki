@@ -1,4 +1,4 @@
-٧package com.almalaki.cafe
+package com.almalaki.cafe
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
