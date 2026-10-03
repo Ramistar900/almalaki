@@ -321,7 +321,23 @@ fun openSection(target: AdminSection) {
     }
 }
 
-Column(modifier = Modifier.fillMaxSize().background(AdminBlack)) {
+Column(
+    modifier = Modifier
+        .fillMaxSize()
+        .background(AdminBlack)
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Royal3DAnimatedLogo(size = 38.dp)
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        RoyalShinyLogo()
+    }
     if (isLandscape) {
     Column(modifier = Modifier.fillMaxSize()) {
 
