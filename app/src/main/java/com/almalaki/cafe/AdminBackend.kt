@@ -35,6 +35,7 @@ fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.ACCOUNT_SETTINGS -> "إعدادات الحساب"
     AdminSection.SALES -> "المبيعات"
     AdminSection.TOP_PRODUCTS -> "الأكثر طلبًا"
+    AdminSection.INTERFACE_SETTINGS -> "تحرير الواجهة"
 }
 
 fun saveProduct(
