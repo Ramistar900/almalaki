@@ -430,6 +430,11 @@ Column(
         }
     )
             }
+                        Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
             AdminContent(
                 section = section, products = products, orders = orders, archivedOrders = archivedOrders,
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
@@ -464,6 +469,7 @@ Column(
                 }.start() },
                 highlightedOrderId = highlightedOrderId
             )
+                        }
             RoyalBottomBar(newsText = "أهلاً بكم في Royal Coffee ☕")
         }
     }
