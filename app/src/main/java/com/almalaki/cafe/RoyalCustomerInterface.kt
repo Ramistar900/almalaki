@@ -517,7 +517,7 @@ private fun RoyalLiveDateTime() {
 
         Text(
             text = date,
-            color = RoyalDarkText,
+            color = RoyalGold,
             fontSize = 10.sp
         )
     }
@@ -595,59 +595,85 @@ private fun RoyalNewsTicker(
         )
     }
 }
-
 @Composable
 private fun RoyalShinyInfoBox(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val infiniteTransition =
-        rememberInfiniteTransition(
-            label = "info_shine"
-        )
+    val infiniteTransition = rememberInfiniteTransition(
+        label = "info_shine"
+    )
 
-    val shinePosition by
-        infiniteTransition.animateFloat(
-            initialValue = -1.5f,
-            targetValue = 1.5f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 2200,
-                    easing = LinearEasing
-                ),
-                repeatMode = RepeatMode.Restart
+    val shinePosition by infiniteTransition.animateFloat(
+        initialValue = -1.5f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 2400,
+                easing = LinearEasing
             ),
-            label = "shine_position"
-        )
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shine_position"
+    )
 
-    val brush = Brush.linearGradient(
+    val backgroundBrush = Brush.linearGradient(
         colors = listOf(
-            Color(0xFFF9F295),
-            Color(0xFFFFFBD0),
-            Color(0xFFF9F295),
-            Color(0xFFE6D45A)
+            Color(0xFF050505),
+            Color(0xFF16091F),
+            Color(0xFF321044),
+            Color(0xFF12071A),
+            Color(0xFF050505)
+        ),
+        start = Offset(0f, 0f),
+        end = Offset(500f, 100f)
+    )
+
+    val shineBrush = Brush.linearGradient(
+        colors = listOf(
+            Color.Transparent,
+            Color(0x66FFFFFF),
+            Color.Transparent
         ),
         start = Offset(
-            shinePosition * 180f,
+            shinePosition * 220f,
             0f
         ),
         end = Offset(
-            shinePosition * 180f + 180f,
+            shinePosition * 220f + 90f,
             0f
         )
     )
 
     Box(
         modifier = modifier
-            .height(34.dp)
+            .height(32.dp)
             .clip(
-                RoundedCornerShape(8.dp)
+                RoundedCornerShape(7.dp)
             )
-            .background(brush)
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.Center
+            .border(
+                width = 1.dp,
+                color = Color(0xFFD4AF37),
+                shape = RoundedCornerShape(7.dp)
+            )
+            .background(backgroundBrush)
     ) {
-        content()
+
+        // لمعة متحركة داخل المستطيل
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(shineBrush)
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 7.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            content()
+        }
     }
 }
 
@@ -655,58 +681,54 @@ private fun RoyalShinyInfoBox(
 private fun RoyalBottomBar(
     newsText: String
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .background(Color.White)
             .padding(
-                horizontal = 10.dp,
-                vertical = 6.dp
-            )
+                horizontal = 8.dp,
+                vertical = 5.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
-        // الشعار المتحرك فوق صندوق الوقت والتاريخ
+        // اللوجو المتحرك بجانب صندوق الوقت والتاريخ
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(46.dp),
+                .size(34.dp),
             contentAlignment = Alignment.Center
         ) {
             Royal3DAnimatedLogo(
-                size = 42.dp
+                size = 32.dp
             )
         }
 
         Spacer(
-            modifier = Modifier.height(4.dp)
+            modifier = Modifier.width(5.dp)
         )
 
-        // صندوق الوقت والتاريخ بجانب صندوق الأخبار
-        Row(
+        // الوقت والتاريخ
+        RoyalShinyInfoBox(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(34.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .width(92.dp)
+                .height(32.dp)
         ) {
+            RoyalLiveDateTime()
+        }
 
-            RoyalShinyInfoBox(
-                modifier = Modifier.weight(0.38f)
-            ) {
-                RoyalLiveDateTime()
-            }
+        Spacer(
+            modifier = Modifier.width(6.dp)
+        )
 
-            Spacer(
-                modifier = Modifier.width(6.dp)
+        // الشريط الإخباري
+        RoyalShinyInfoBox(
+            modifier = Modifier
+                .weight(1f)
+                .height(32.dp)
+        ) {
+            RoyalNewsTicker(
+                newsText = newsText
             )
-
-            RoyalShinyInfoBox(
-                modifier = Modifier.weight(0.62f)
-            ) {
-                RoyalNewsTicker(
-                    newsText = newsText
-                )
-            }
         }
     }
 }
