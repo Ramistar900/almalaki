@@ -407,7 +407,11 @@ Column(
         RoyalBottomBar(newsText = "أهلاً بكم في Royal Coffee ☕")
     }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .weight(1f)
+) {
             AdminTopBar(title = adminSectionTitle(section), menuOpen = menuOpen,
                 onMenuClick = { menuOpen = !menuOpen }, onLogout = onLogout)
             if (menuOpen) AdminHorizontalMenu(section = section, onSectionSelected = ::openSection)
