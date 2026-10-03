@@ -20,5 +20,6 @@ enum class AdminSection {
     ARCHIVE,
     ACCOUNT_SETTINGS,
     SALES,
-    TOP_PRODUCTS
+    TOP_PRODUCTS,
+    INTERFACE_SETTINGS
 }
