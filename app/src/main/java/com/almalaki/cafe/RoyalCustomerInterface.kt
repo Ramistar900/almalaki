@@ -476,9 +476,7 @@ private fun RoyalDrawerItem(
             fontWeight = FontWeight.Medium
         )
     }
-}
-
-@Composable
+}@Composable
 private fun RoyalLiveDateTime() {
     var now by remember {
         mutableStateOf(Date())
@@ -506,19 +504,21 @@ private fun RoyalLiveDateTime() {
     }
 
     Column(
-        horizontalAlignment = Alignment.Start
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = time,
-            color = RoyalDarkText,
-            fontSize = 12.sp,
+            color = Color.White,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
 
         Text(
             text = date,
-            color = RoyalGold,
-            fontSize = 10.sp
+            color = Color.White,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Medium
         )
     }
 }
@@ -545,17 +545,14 @@ private fun RoyalNewsTicker(
         textWidth,
         newsText
     ) {
-        if (
-            containerWidth > 0 &&
-            textWidth > 0
-        ) {
+        if (containerWidth > 0 && textWidth > 0) {
             while (true) {
-                // يبدأ من الجهة اليسرى
+                // يبدأ من خارج الجهة اليسرى
                 offsetX.snapTo(
                     -textWidth.toFloat()
                 )
 
-                // يتحرك من اليسار إلى اليمين
+                // يتحرك من اليسار ➡️ إلى اليمين
                 offsetX.animateTo(
                     containerWidth.toFloat(),
                     animationSpec = tween(
@@ -595,6 +592,7 @@ private fun RoyalNewsTicker(
         )
     }
 }
+
 @Composable
 private fun RoyalShinyInfoBox(
     modifier: Modifier = Modifier,
@@ -694,13 +692,14 @@ private fun RoyalBottomBar(
 
         // اللوجو المتحرك بجانب صندوق الوقت والتاريخ
         Box(
-            modifier = Modifier
-                .size(34.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Royal3DAnimatedLogo(
-                size = 32.dp
-            )
+    modifier = Modifier
+        .size(34.dp)
+        .offset(y = (-2).dp),
+    contentAlignment = Alignment.Center
+) {
+    Royal3DAnimatedLogo(
+        size = 32.dp
+    )
         }
 
         Spacer(
