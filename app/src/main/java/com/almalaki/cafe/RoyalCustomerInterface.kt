@@ -1,5 +1,11 @@
 package com.almalaki.cafe
 
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -477,7 +483,8 @@ private fun RoyalDrawerItem(
             fontWeight = FontWeight.Medium
         )
     }
-}@Composable
+}
+@Composable
 fun RoyalLiveDateTime() {
     var now by remember {
         mutableStateOf(Date())
@@ -530,11 +537,19 @@ fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    val settings = remember {
+        loadRoyalInterfaceSettings(context)
+    }
+
+    val logoPath = settings.bottomLogoPath
+
     var containerWidth by remember {
         mutableStateOf(0)
     }
 
-    var textWidth by remember {
+    var contentWidth by remember {
         mutableStateOf(0)
     }
 
@@ -543,28 +558,194 @@ fun RoyalNewsTicker(
     }
 
     LaunchedEffect(
-    containerWidth,
-    textWidth,
-    newsText
-) {
-    if (containerWidth > 0 && textWidth > 0) {
-        while (true) {
+        containerWidth,
+        contentWidth,
+        newsText,
+        logoPath
+    ) {
+        if (containerWidth > 0 && contentWidth > 0) {
 
-            // يبدأ من خارج الجهة اليمنى
-            offsetX.snapTo(
-                containerWidth.toFloat()
-            )
+            while (true) {
 
-            // يتحرك من اليمين إلى اليسار
-            offsetX.animateTo(
-                -textWidth.toFloat(),
-                animationSpec = tween(
-                    durationMillis = 8000,
-                    easing = LinearEasing
+                offsetX.snapTo(
+                    containerWidth.toFloat()
                 )
-            )
-   
+
+                offsetX.animateTo(
+                    -contentWidth.toFloat(),
+                    animationSpec = tween(
+                        durationMillis = 12000,
+                        easing = LinearEasing
+                    )
+                )
+            }
         }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clipToBounds()
+            .onSizeChanged {
+                containerWidth = it.width
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+
+        Row(
+            modifier = Modifier
+                .onSizeChanged {
+                    contentWidth = it.width
+                }
+                .offset {
+                    IntOffset(
+                        offsetX.value.roundToInt(),
+                        0
+                    )
+                },
+
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            val parts = newsText.split("&")
+
+            parts.forEachIndexed { index, part ->
+
+                Text(
+                    text = part.trim(),
+                    color = RoyalGold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+
+                if (index < parts.lastIndex) {
+
+                    Spacer(
+                        modifier = Modifier.width(10.dp)
+                    )
+
+                    RoyalTickerLogoSeparator(
+                        logoPath = logoPath
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(10.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoyalTickerLogoSeparator(
+    logoPath: String
+) {
+    val infiniteTransition =
+        rememberInfiniteTransition(
+            label = "ticker_logo_3d"
+        )
+
+    val rotationY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 4500
+
+                0f at 0
+
+                360f at 1500
+
+                360f at 4500
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ticker_logo_rotation"
+    )
+
+    val shinePosition by infiniteTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 3000,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ticker_logo_shine"
+    )
+
+    val bitmap = remember(logoPath) {
+
+        if (logoPath.isNotEmpty()) {
+
+            try {
+                BitmapFactory.decodeFile(
+                    logoPath
+                )?.asImageBitmap()
+
+            } catch (e: Exception) {
+                null
+            }
+
+        } else {
+            null
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(24.dp)
+            .graphicsLayer {
+
+                this.rotationY = rotationY
+
+                cameraDistance =
+                    12f * density
+            },
+
+        contentAlignment = Alignment.Center
+    ) {
+
+        if (bitmap != null) {
+
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Royal Coffee",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = 0.35f
+                        translationX =
+                            shinePosition * 28f
+                    }
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.White,
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+        } else {
+
+            Royal3DAnimatedLogo(
+                size = 24.dp
+            )
+        }
+    }
+
     } 
     }  
     Box(
