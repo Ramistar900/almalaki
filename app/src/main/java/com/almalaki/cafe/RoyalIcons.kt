@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -188,14 +187,10 @@ fun RoyalIconButton(
 
         Canvas(
             modifier = Modifier
-                .size(size * 0.72f)
-                .graphicsLayer {
-                    scaleX = scale.value
-                    scaleY = scale.value
-                }
+    .size(size * 0.72f)
         ) {
 
-            val s = this.size.minDimension
+            val s = minOf(this.size.width, this.size.height)
             val stroke = s * 0.085f
             val c = iconColor(icon)
 
@@ -204,7 +199,7 @@ fun RoyalIconButton(
                 this.size.height / 2f
             )
 
-            val r = this.size.minDimension * 0.34f
+            val r = minOf(this.size.width, this.size.height) * 0.34f
 
             when (icon) {
 
