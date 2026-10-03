@@ -265,7 +265,7 @@ fun Royal3DAnimatedLogo(
 }
 
 @Composable
-private fun RoyalShinyLogo(
+fun RoyalShinyLogo(
     modifier: Modifier = Modifier
 ) {
     val transition = rememberInfiniteTransition(
@@ -477,7 +477,7 @@ private fun RoyalDrawerItem(
         )
     }
 }@Composable
-private fun RoyalLiveDateTime() {
+fun RoyalLiveDateTime() {
     var now by remember {
         mutableStateOf(Date())
     }
@@ -524,7 +524,7 @@ private fun RoyalLiveDateTime() {
 }
 
 @Composable
-private fun RoyalNewsTicker(
+fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
 ) {
@@ -594,7 +594,7 @@ private fun RoyalNewsTicker(
 }
 
 @Composable
-private fun RoyalShinyInfoBox(
+fun RoyalShinyInfoBox(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -676,7 +676,7 @@ private fun RoyalShinyInfoBox(
 }
 
 @Composable
-private fun RoyalBottomBar(
+fun RoyalBottomBar(
     newsText: String
 ) {
     Row(
