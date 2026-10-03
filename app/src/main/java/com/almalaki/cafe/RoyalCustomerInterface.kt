@@ -543,29 +543,30 @@ fun RoyalNewsTicker(
     }
 
     LaunchedEffect(
-        containerWidth,
-        textWidth,
-        newsText
-    ) {
-        if (containerWidth > 0 && textWidth > 0) {
-    while (true) {
-        // يبدأ من خارج الجهة اليسرى
-        offsetX.snapTo(
-            -textWidth.toFloat()
-        )
+    containerWidth,
+    textWidth,
+    newsText
+) {
+    if (containerWidth > 0 && textWidth > 0) {
+        while (true) {
 
-        // يتحرك من اليسار ➡️ إلى اليمين
-        offsetX.animateTo(
-            containerWidth.toFloat(),
-            animationSpec = tween(
-                durationMillis = 8000,
-                easing = LinearEasing
+            // يبدأ من خارج الجهة اليمنى
+            offsetX.snapTo(
+                containerWidth.toFloat()
             )
-        )
-    }
-        }
-    }
 
+            // يتحرك من اليمين إلى اليسار
+            offsetX.animateTo(
+                -textWidth.toFloat(),
+                animationSpec = tween(
+                    durationMillis = 8000,
+                    easing = LinearEasing
+                )
+            )
+   
+        }
+    } 
+    }  
     Box(
         modifier = modifier
             .fillMaxWidth()
