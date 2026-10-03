@@ -25,15 +25,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,7 +60,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -84,17 +83,22 @@ fun RoyalCustomerInterface(
     onMenuClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val drawerState = rememberDrawerState(
+        initialValue = DrawerValue.Closed
+    )
+
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-    val backgroundColor = if (isDarkMode) RoyalBlack else RoyalCream
+    val backgroundColor =
+        if (isDarkMode) RoyalBlack else RoyalCream
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(300.dp),
-                drawerContainerColor = if (isDarkMode) RoyalCard else Color.White
+                drawerContainerColor =
+                    if (isDarkMode) RoyalCard else Color.White
             ) {
                 Spacer(modifier = Modifier.height(28.dp))
 
@@ -134,7 +138,10 @@ fun RoyalCustomerInterface(
                     text = "Royal Coffee",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                        .padding(
+                            horizontal = 20.dp,
+                            vertical = 20.dp
+                        ),
                     color = RoyalGray,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center
@@ -157,7 +164,9 @@ fun RoyalCustomerInterface(
                 }
             )
 
-            RoyalTitleFrame(isDarkMode = isDarkMode)
+            RoyalTitleFrame(
+                isDarkMode = isDarkMode
+            )
 
             Box(
                 modifier = Modifier
@@ -168,13 +177,11 @@ fun RoyalCustomerInterface(
             }
 
             RoyalBottomBar(
-                isDarkMode = isDarkMode,
                 newsText = newsText
             )
         }
     }
 }
-
 
 @Composable
 private fun Royal3DAnimatedLogo(
@@ -183,8 +190,6 @@ private fun Royal3DAnimatedLogo(
 ) {
     val context = LocalContext.current
 
-    // لا نحتاج إلى الصورة أثناء البناء. إذا لم تكن موجودة الآن، يظهر R 👑 مؤقتًا.
-    // عند إضافة royal_logo.png إلى drawable سيستخدم التطبيق الصورة تلقائيًا.
     val logoResId = remember {
         context.resources.getIdentifier(
             "royal_logo",
@@ -193,9 +198,10 @@ private fun Royal3DAnimatedLogo(
         )
     }
 
-    val transition = rememberInfiniteTransition(label = "royal_3d_logo_transition")
+    val transition = rememberInfiniteTransition(
+        label = "royal_3d_logo_transition"
+    )
 
-    // 1.5 ثانية دوران كامل حول المحور Y + 3 ثوانٍ توقف، ثم تتكرر الحركة.
     val rotationY by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -216,7 +222,6 @@ private fun Royal3DAnimatedLogo(
             .size(size)
             .graphicsLayer {
                 this.rotationY = rotationY
-                // زيادة المسافة تمنع تشوه المنظور أثناء الدوران.
                 cameraDistance = 12f * density
             },
         contentAlignment = Alignment.Center
@@ -241,14 +246,21 @@ private fun Royal3DAnimatedLogo(
 }
 
 @Composable
-private fun RoyalShinyLogo(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "royal_logo_shine")
+private fun RoyalShinyLogo(
+    modifier: Modifier = Modifier
+) {
+    val transition = rememberInfiniteTransition(
+        label = "royal_logo_shine"
+    )
 
     val shinePosition by transition.animateFloat(
         initialValue = -1f,
         targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(
+                3000,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "royal_logo_shine_position"
@@ -264,8 +276,14 @@ private fun RoyalShinyLogo(modifier: Modifier = Modifier) {
             RoyalGold,
             RoyalGoldDark
         ),
-        start = Offset(shinePosition * 500f, 0f),
-        end = Offset(shinePosition * 500f + 260f, 0f)
+        start = Offset(
+            shinePosition * 500f,
+            0f
+        ),
+        end = Offset(
+            shinePosition * 500f + 260f,
+            0f
+        )
     )
 
     Column(
@@ -289,13 +307,17 @@ private fun RoyalTopBar(
     isDarkMode: Boolean,
     onMenuClick: () -> Unit
 ) {
-    val background = if (isDarkMode) RoyalCard else Color.White
+    val background =
+        if (isDarkMode) RoyalCard else Color.White
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(background)
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(
+                horizontal = 8.dp,
+                vertical = 8.dp
+            )
     ) {
         IconButton(
             onClick = onMenuClick,
@@ -317,37 +339,51 @@ private fun RoyalTopBar(
                 .padding(horizontal = 55.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // يوضع الشعار PNG مباشرةً إلى يسار شعار Royal Coffee اللامع.
-            // عند إضافة الملف لاحقًا استخدم الاسم: app/src/main/res/drawable/royal_logo.png
-            Royal3DAnimatedLogo(size = 42.dp)
+            Royal3DAnimatedLogo(
+                size = 42.dp
+            )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(
+                modifier = Modifier.width(8.dp)
+            )
 
             RoyalShinyLogo()
         }
-
     }
 }
 
 @Composable
-private fun RoyalTitleFrame(isDarkMode: Boolean) {
-    val background = if (isDarkMode) RoyalBlack else RoyalCream
+private fun RoyalTitleFrame(
+    isDarkMode: Boolean
+) {
+    val background =
+        if (isDarkMode) RoyalBlack else RoyalCream
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            )
+            .clip(
+                RoundedCornerShape(18.dp)
+            )
             .border(
                 width = 1.5.dp,
                 color = RoyalGold,
                 shape = RoundedCornerShape(18.dp)
             )
             .background(background)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
+            .padding(
+                horizontal = 16.dp,
+                vertical = 13.dp
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
                 text = "قائمة Royal",
                 color = RoyalGold,
@@ -356,11 +392,18 @@ private fun RoyalTitleFrame(isDarkMode: Boolean) {
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
 
             Text(
                 text = "طعمٌ يستحق التجربة",
-                color = if (isDarkMode) RoyalGoldLight else RoyalDarkText,
+                color =
+                    if (isDarkMode) {
+                        RoyalGoldLight
+                    } else {
+                        RoyalDarkText
+                    },
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
@@ -375,15 +418,26 @@ private fun RoyalDrawerItem(
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
-    val textColor = if (isDarkMode) Color.White else RoyalDarkText
+    val textColor =
+        if (isDarkMode) Color.White else RoyalDarkText
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(
+                horizontal = 12.dp,
+                vertical = 4.dp
+            )
+            .clip(
+                RoundedCornerShape(14.dp)
+            )
+            .clickable {
+                onClick()
+            }
+            .padding(
+                horizontal = 12.dp,
+                vertical = 12.dp
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RoyalIconButton(
@@ -392,7 +446,9 @@ private fun RoyalDrawerItem(
             onClick = onClick
         )
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(
+            modifier = Modifier.width(12.dp)
+        )
 
         Text(
             text = title,
@@ -403,9 +459,11 @@ private fun RoyalDrawerItem(
     }
 }
 
-    @Composable
+@Composable
 private fun RoyalLiveDateTime() {
-    var now by remember { mutableStateOf(Date()) }
+    var now by remember {
+        mutableStateOf(Date())
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -415,14 +473,22 @@ private fun RoyalLiveDateTime() {
     }
 
     val time = remember(now) {
-        SimpleDateFormat("h:mm a", Locale("ar")).format(now)
+        SimpleDateFormat(
+            "h:mm a",
+            Locale("ar")
+        ).format(now)
     }
 
     val date = remember(now) {
-        SimpleDateFormat("EEEE d/M/yyyy", Locale("ar")).format(now)
+        SimpleDateFormat(
+            "EEEE d/M/yyyy",
+            Locale("ar")
+        ).format(now)
     }
 
-    Column(horizontalAlignment = Alignment.Start) {
+    Column(
+        horizontalAlignment = Alignment.Start
+    ) {
         Text(
             text = time,
             color = RoyalDarkText,
@@ -443,15 +509,31 @@ private fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
 ) {
-    var containerWidth by remember { mutableStateOf(0) }
-    var textWidth by remember { mutableStateOf(0) }
+    var containerWidth by remember {
+        mutableStateOf(0)
+    }
 
-    val offsetX = remember { Animatable(0f) }
+    var textWidth by remember {
+        mutableStateOf(0)
+    }
 
-    LaunchedEffect(containerWidth, textWidth, newsText) {
-        if (containerWidth > 0 && textWidth > 0) {
+    val offsetX = remember {
+        Animatable(0f)
+    }
+
+    LaunchedEffect(
+        containerWidth,
+        textWidth,
+        newsText
+    ) {
+        if (
+            containerWidth > 0 &&
+            textWidth > 0
+        ) {
             while (true) {
-                offsetX.snapTo(-textWidth.toFloat())
+                offsetX.snapTo(
+                    -textWidth.toFloat()
+                )
 
                 offsetX.animateTo(
                     containerWidth.toFloat(),
@@ -468,7 +550,9 @@ private fun RoyalNewsTicker(
         modifier = modifier
             .fillMaxWidth()
             .clipToBounds()
-            .onSizeChanged { containerWidth = it.width },
+            .onSizeChanged {
+                containerWidth = it.width
+            },
         contentAlignment = Alignment.CenterStart
     ) {
         Text(
@@ -478,9 +562,14 @@ private fun RoyalNewsTicker(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             modifier = Modifier
-                .onSizeChanged { textWidth = it.width }
+                .onSizeChanged {
+                    textWidth = it.width
+                }
                 .offset {
-                    IntOffset(offsetX.value.roundToInt(), 0)
+                    IntOffset(
+                        offsetX.value.roundToInt(),
+                        0
+                    )
                 }
         )
     }
@@ -491,20 +580,24 @@ private fun RoyalShinyInfoBox(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "info_shine")
+    val infiniteTransition =
+        rememberInfiniteTransition(
+            label = "info_shine"
+        )
 
-    val shinePosition by infiniteTransition.animateFloat(
-        initialValue = -1.5f,
-        targetValue = 1.5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 2200,
-                easing = LinearEasing
+    val shinePosition by
+        infiniteTransition.animateFloat(
+            initialValue = -1.5f,
+            targetValue = 1.5f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 2200,
+                    easing = LinearEasing
+                ),
+                repeatMode = RepeatMode.Restart
             ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shine_position"
-    )
+            label = "shine_position"
+        )
 
     val brush = Brush.linearGradient(
         colors = listOf(
@@ -513,14 +606,22 @@ private fun RoyalShinyInfoBox(
             Color(0xFFF9F295),
             Color(0xFFE6D45A)
         ),
-        start = Offset(shinePosition * 180f, 0f),
-        end = Offset(shinePosition * 180f + 180f, 0f)
+        start = Offset(
+            shinePosition * 180f,
+            0f
+        ),
+        end = Offset(
+            shinePosition * 180f + 180f,
+            0f
+        )
     )
 
     Box(
         modifier = modifier
             .height(34.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(
+                RoundedCornerShape(8.dp)
+            )
             .background(brush)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center
@@ -528,6 +629,7 @@ private fun RoyalShinyInfoBox(
         content()
     }
 }
+
 @Composable
 private fun RoyalBottomBar(
     newsText: String
@@ -537,7 +639,10 @@ private fun RoyalBottomBar(
             .fillMaxWidth()
             .navigationBarsPadding()
             .background(Color.White)
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(
+                horizontal = 10.dp,
+                vertical = 6.dp
+            )
     ) {
 
         // الشعار المتحرك فوق صندوق الوقت والتاريخ
@@ -547,10 +652,14 @@ private fun RoyalBottomBar(
                 .height(46.dp),
             contentAlignment = Alignment.Center
         ) {
-            Royal3DAnimatedLogo(size = 42.dp)
+            Royal3DAnimatedLogo(
+                size = 42.dp
+            )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(
+            modifier = Modifier.height(4.dp)
+        )
 
         // صندوق الوقت والتاريخ بجانب صندوق الأخبار
         Row(
@@ -566,7 +675,9 @@ private fun RoyalBottomBar(
                 RoyalLiveDateTime()
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(
+                modifier = Modifier.width(6.dp)
+            )
 
             RoyalShinyInfoBox(
                 modifier = Modifier.weight(0.62f)
@@ -578,3 +689,5 @@ private fun RoyalBottomBar(
         }
     }
 }
+
+    
