@@ -5,8 +5,10 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,12 +20,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalDrawerSheet
@@ -41,19 +43,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,16 +87,14 @@ fun RoyalCustomerInterface(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-    val backgroundColor =
-        if (isDarkMode) RoyalBlack else RoyalCream
+    val backgroundColor = if (isDarkMode) RoyalBlack else RoyalCream
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(300.dp),
-                drawerContainerColor =
-                    if (isDarkMode) RoyalCard else Color.White
+                drawerContainerColor = if (isDarkMode) RoyalCard else Color.White
             ) {
                 Spacer(modifier = Modifier.height(28.dp))
 
@@ -142,7 +147,6 @@ fun RoyalCustomerInterface(
                 .fillMaxSize()
                 .background(backgroundColor)
         ) {
-
             RoyalTopBar(
                 isDarkMode = isDarkMode,
                 onMenuClick = {
@@ -153,9 +157,7 @@ fun RoyalCustomerInterface(
                 }
             )
 
-            RoyalTitleFrame(
-                isDarkMode = isDarkMode
-            )
+            RoyalTitleFrame(isDarkMode = isDarkMode)
 
             Box(
                 modifier = Modifier
@@ -173,26 +175,80 @@ fun RoyalCustomerInterface(
     }
 }
 
-/* ---------------------------------------------------------
-   الشعار العلوي اللامع
-   --------------------------------------------------------- */
 
 @Composable
-private fun RoyalShinyLogo(
-    modifier: Modifier = Modifier
+private fun Royal3DAnimatedLogo(
+    modifier: Modifier = Modifier,
+    size: Dp = 42.dp
 ) {
-    val transition = rememberInfiniteTransition(
-        label = "royal_logo_shine"
+    val context = LocalContext.current
+
+    // لا نحتاج إلى الصورة أثناء البناء. إذا لم تكن موجودة الآن، يظهر R 👑 مؤقتًا.
+    // عند إضافة royal_logo.png إلى drawable سيستخدم التطبيق الصورة تلقائيًا.
+    val logoResId = remember {
+        context.resources.getIdentifier(
+            "royal_logo",
+            "drawable",
+            context.packageName
+        )
+    }
+
+    val transition = rememberInfiniteTransition(label = "royal_3d_logo_transition")
+
+    // 1.5 ثانية دوران كامل حول المحور Y + 3 ثوانٍ توقف، ثم تتكرر الحركة.
+    val rotationY by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 4500
+                0f at 0
+                360f at 1500
+                360f at 4500
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "royal_3d_logo_rotation_y"
     )
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .graphicsLayer {
+                this.rotationY = rotationY
+                // زيادة المسافة تمنع تشوه المنظور أثناء الدوران.
+                cameraDistance = 12f * density
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        if (logoResId != 0) {
+            Image(
+                painter = painterResource(id = logoResId),
+                contentDescription = "Royal Coffee",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            Text(
+                text = "R 👑",
+                color = RoyalGold,
+                fontSize = 21.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoyalShinyLogo(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "royal_logo_shine")
 
     val shinePosition by transition.animateFloat(
         initialValue = -1f,
         targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 3000,
-                easing = LinearEasing
-            ),
+            animation = tween(3000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "royal_logo_shine_position"
@@ -208,14 +264,8 @@ private fun RoyalShinyLogo(
             RoyalGold,
             RoyalGoldDark
         ),
-        start = Offset(
-            shinePosition * 500f,
-            0f
-        ),
-        end = Offset(
-            shinePosition * 500f + 260f,
-            0f
-        )
+        start = Offset(shinePosition * 500f, 0f),
+        end = Offset(shinePosition * 500f + 260f, 0f)
     )
 
     Column(
@@ -234,28 +284,19 @@ private fun RoyalShinyLogo(
     }
 }
 
-/* ---------------------------------------------------------
-   الشريط العلوي
-   --------------------------------------------------------- */
-
 @Composable
 private fun RoyalTopBar(
     isDarkMode: Boolean,
     onMenuClick: () -> Unit
 ) {
-    val background =
-        if (isDarkMode) RoyalCard else Color.White
+    val background = if (isDarkMode) RoyalCard else Color.White
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(background)
-            .padding(
-                horizontal = 8.dp,
-                vertical = 8.dp
-            )
+            .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
-
         IconButton(
             onClick = onMenuClick,
             modifier = Modifier
@@ -270,11 +311,20 @@ private fun RoyalTopBar(
             )
         }
 
-        RoyalShinyLogo(
+        Row(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 55.dp)
-        )
+                .padding(horizontal = 55.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // يوضع الشعار PNG مباشرةً إلى يسار شعار Royal Coffee اللامع.
+            // عند إضافة الملف لاحقًا استخدم الاسم: app/src/main/res/drawable/royal_logo.png
+            Royal3DAnimatedLogo(size = 42.dp)
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            RoyalShinyLogo()
+        }
 
         Text(
             text = "R 👑",
@@ -288,43 +338,25 @@ private fun RoyalTopBar(
     }
 }
 
-/* ---------------------------------------------------------
-   إطار قائمة Royal
-   --------------------------------------------------------- */
-
 @Composable
-private fun RoyalTitleFrame(
-    isDarkMode: Boolean
-) {
-    val background =
-        if (isDarkMode) RoyalBlack else RoyalCream
+private fun RoyalTitleFrame(isDarkMode: Boolean) {
+    val background = if (isDarkMode) RoyalBlack else RoyalCream
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = 16.dp,
-                vertical = 8.dp
-            )
-            .clip(
-                RoundedCornerShape(18.dp)
-            )
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(18.dp))
             .border(
                 width = 1.5.dp,
                 color = RoyalGold,
                 shape = RoundedCornerShape(18.dp)
             )
             .background(background)
-            .padding(
-                horizontal = 16.dp,
-                vertical = 13.dp
-            ),
+            .padding(horizontal = 16.dp, vertical = 13.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "قائمة Royal",
                 color = RoyalGold,
@@ -333,27 +365,17 @@ private fun RoyalTitleFrame(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "طعمٌ يستحق التجربة",
-                color =
-                    if (isDarkMode)
-                        RoyalGoldLight
-                    else
-                        RoyalDarkText,
+                color = if (isDarkMode) RoyalGoldLight else RoyalDarkText,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
-
-/* ---------------------------------------------------------
-   عناصر القائمة الجانبية
-   --------------------------------------------------------- */
 
 @Composable
 private fun RoyalDrawerItem(
@@ -362,42 +384,24 @@ private fun RoyalDrawerItem(
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
-    val textColor =
-        if (isDarkMode)
-            Color.White
-        else
-            RoyalDarkText
+    val textColor = if (isDarkMode) Color.White else RoyalDarkText
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = 12.dp,
-                vertical = 4.dp
-            )
-            .clip(
-                RoundedCornerShape(14.dp)
-            )
-            .clickable {
-                onClick()
-            }
-            .padding(
-                horizontal = 12.dp,
-                vertical = 12.dp
-            ),
-        verticalAlignment =
-            Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-
         RoyalIconButton(
             icon = icon,
             size = 42.dp,
             onClick = onClick
         )
 
-        Spacer(
-            modifier = Modifier.width(12.dp)
-        )
+        Spacer(modifier = Modifier.width(12.dp))
 
         Text(
             text = title,
@@ -408,17 +412,9 @@ private fun RoyalDrawerItem(
     }
 }
 
-/* ---------------------------------------------------------
-   التاريخ والساعة الحقيقية
-   --------------------------------------------------------- */
-
 @Composable
-private fun RoyalLiveDateTime(
-    isDarkMode: Boolean
-) {
-    var now by remember {
-        mutableStateOf(Date())
-    }
+private fun RoyalLiveDateTime(isDarkMode: Boolean) {
+    var now by remember { mutableStateOf(Date()) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -428,84 +424,44 @@ private fun RoyalLiveDateTime(
     }
 
     val time = remember(now) {
-        SimpleDateFormat(
-            "h:mm a",
-            Locale("ar")
-        ).format(now)
+        SimpleDateFormat("h:mm a", Locale("ar")).format(now)
     }
 
     val date = remember(now) {
-        SimpleDateFormat(
-            "EEEE d/M/yyyy",
-            Locale("ar")
-        ).format(now)
+        SimpleDateFormat("EEEE d/M/yyyy", Locale("ar")).format(now)
     }
 
-    Column(
-        horizontalAlignment =
-            Alignment.Start
-    ) {
+    Column(horizontalAlignment = Alignment.Start) {
         Text(
             text = time,
-            color =
-                if (isDarkMode)
-                    RoyalGoldLight
-                else
-                    RoyalDarkText,
+            color = if (isDarkMode) RoyalGoldLight else RoyalDarkText,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
 
         Text(
             text = date,
-            color =
-                if (isDarkMode)
-                    RoyalGray
-                else
-                    Color.DarkGray,
+            color = if (isDarkMode) RoyalGray else Color.DarkGray,
             fontSize = 10.sp
         )
     }
 }
 
-/* ---------------------------------------------------------
-   شريط الأخبار المتحرك
-   الاتجاه: من اليسار إلى اليمين
-   --------------------------------------------------------- */
-
 @Composable
 private fun RoyalNewsTicker(
-    newsText: String
+    newsText: String,
+    modifier: Modifier = Modifier
 ) {
-    var containerWidth by remember {
-        mutableStateOf(0)
-    }
+    var containerWidth by remember { mutableStateOf(0) }
+    var textWidth by remember { mutableStateOf(0) }
 
-    var textWidth by remember {
-        mutableStateOf(0)
-    }
+    val offsetX = remember { Animatable(0f) }
 
-    val offsetX = remember {
-        Animatable(0f)
-    }
-
-    LaunchedEffect(
-        containerWidth,
-        textWidth,
-        newsText
-    ) {
-        if (
-            containerWidth > 0 &&
-            textWidth > 0
-        ) {
+    LaunchedEffect(containerWidth, textWidth, newsText) {
+        if (containerWidth > 0 && textWidth > 0) {
             while (true) {
+                offsetX.snapTo(-textWidth.toFloat())
 
-                // يبدأ من خارج الشاشة يساراً
-                offsetX.snapTo(
-                    -textWidth.toFloat()
-                )
-
-                // يتحرك إلى خارج الشاشة يميناً
                 offsetX.animateTo(
                     containerWidth.toFloat(),
                     animationSpec = tween(
@@ -518,13 +474,10 @@ private fun RoyalNewsTicker(
     }
 
     Box(
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
             .fillMaxWidth()
             .clipToBounds()
-            .onSizeChanged {
-                containerWidth = it.width
-            },
+            .onSizeChanged { containerWidth = it.width },
         contentAlignment = Alignment.CenterStart
     ) {
         Text(
@@ -534,33 +487,20 @@ private fun RoyalNewsTicker(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             modifier = Modifier
-                .onSizeChanged {
-                    textWidth = it.width
-                }
+                .onSizeChanged { textWidth = it.width }
                 .offset {
-                    IntOffset(
-                        offsetX.value.roundToInt(),
-                        0
-                    )
+                    IntOffset(offsetX.value.roundToInt(), 0)
                 }
         )
     }
 }
-
-/* ---------------------------------------------------------
-   الشريط السفلي
-   --------------------------------------------------------- */
 
 @Composable
 private fun RoyalBottomBar(
     isDarkMode: Boolean,
     newsText: String
 ) {
-    val background =
-        if (isDarkMode)
-            RoyalCard
-        else
-            Color.White
+    val background = if (isDarkMode) RoyalCard else Color.White
 
     Column(
         modifier = Modifier
@@ -568,7 +508,6 @@ private fun RoyalBottomBar(
             .navigationBarsPadding()
             .background(background)
     ) {
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -581,26 +520,19 @@ private fun RoyalBottomBar(
                 .fillMaxWidth()
                 .height(58.dp)
                 .padding(horizontal = 10.dp),
-            verticalAlignment =
-                Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            RoyalLiveDateTime(
-                isDarkMode = isDarkMode
-            )
+            RoyalLiveDateTime(isDarkMode = isDarkMode)
 
             RoyalNewsTicker(
-                newsText = newsText
+                newsText = newsText,
+                modifier = Modifier.weight(1f)
             )
 
-            Text(
-                text = "R 👑",
-                color = RoyalGold,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .width(58.dp),
-                textAlign = TextAlign.End
+            // الشعار المتحرك بجانب الشريط الإخباري.
+            Royal3DAnimatedLogo(
+                size = 42.dp,
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
     }
