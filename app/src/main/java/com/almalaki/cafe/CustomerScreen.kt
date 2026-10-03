@@ -187,16 +187,21 @@ var invoiceTotalAmount by remember {
             matchesCategory && matchesSearch
         }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(background)
-            .padding(
-                start = 14.dp,
-                end = 14.dp,
-                top = 18.dp
-            )
+        RoyalCustomerInterface(
+        isDarkMode = darkMode,
+        onOwnerLogin = onOwner
     ) {
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(background)
+                .padding(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = 18.dp
+                )
+        ) {
 
         /*
          * الشعار الملكي
@@ -836,5 +841,6 @@ if (showInvoice) {
             showInvoice = false
         }
     )
+}
 }
 }
