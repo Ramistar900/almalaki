@@ -398,7 +398,9 @@ Column(
                     catch (e: Exception) { message = e.message ?: "تعذر حذف الطلب." }
                 }.start() }
             )
-        }
+                }
+
+        RoyalBottomBar(newsText = "أهلاً بكم في Royal Coffee ☕")
     }
     } else {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -454,8 +456,9 @@ Column(
                 }.start() },
                 highlightedOrderId = highlightedOrderId
             )
+            RoyalBottomBar(newsText = "أهلاً بكم في Royal Coffee ☕")
         }
     }
 }
 
-}
+
