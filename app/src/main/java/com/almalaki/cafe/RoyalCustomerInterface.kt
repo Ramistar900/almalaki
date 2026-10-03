@@ -563,6 +563,7 @@ fun RoyalNewsTicker(
         )
     }
         }
+    }
 
     Box(
         modifier = modifier
