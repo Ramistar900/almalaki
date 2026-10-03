@@ -195,7 +195,7 @@ fun RoyalCustomerInterface(
 }
 
 @Composable
-private fun Royal3DAnimatedLogo(
+fun Royal3DAnimatedLogo(
     modifier: Modifier = Modifier,
     size: Dp = 42.dp
 ) {
