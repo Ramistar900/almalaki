@@ -203,77 +203,7 @@ var invoiceTotalAmount by remember {
                 )
         ) {
 
-        /*
-         * الشعار الملكي
-         */
-        RoyalLogo()
-
-        Spacer(
-            modifier = Modifier.height(6.dp)
-        )
-
-        /*
-         * رأس الصفحة الملكي
-         */
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.SpaceBetween,
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "قائمة Royal",
-                    color = Gold,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(
-                    modifier = Modifier.height(2.dp)
-                )
-
-                Text(
-                    text = "طعمٌ يستحق التجربة",
-                    color = textColor.copy(alpha = 0.75f),
-                    fontSize = 13.sp
-                )
-            }
-
-            Row(
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                RoyalDateTime(
-                    language = "ar",
-                    style = androidx.compose.ui.text.TextStyle(
-                        color = Gold,
-                        fontSize = 11.sp
-                    )
-                )
-
-                Text(
-                    text =
-                        if (darkMode) {
-                            "☀"
-                        } else {
-                            "🌙"
-                        },
-                    color = Gold,
-                    fontSize = 23.sp,
-                    modifier =
-                        Modifier.padding(
-                            start = 8.dp,
-                            end = 4.dp
-                        )
-                )
-            }
-        }
+        
 
         Spacer(
             modifier = Modifier.height(10.dp)
@@ -640,28 +570,6 @@ var invoiceTotalAmount by remember {
             }
         }
 
-        /*
-         * دخول المالك
-         */
-        OutlinedButton(
-            onClick = onOwner,
-
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-
-            shape =
-                androidx.compose.foundation.shape
-                    .RoundedCornerShape(14.dp)
-        ) {
-
-            Text(
-                text = "👑 دخول المالك",
-                color = Gold,
-                fontWeight =
-                    FontWeight.Medium
-            )
         }
     }
 
