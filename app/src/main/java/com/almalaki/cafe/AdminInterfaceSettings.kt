@@ -31,10 +31,8 @@ private const val INTERFACE_PREFS = "royal_interface_settings"
 private const val KEY_NEWS_TEXT = "news_text"
 private const val KEY_TOP_LOGO_PATH = "top_logo_path"
 private const val KEY_BOTTOM_LOGO_PATH = "bottom_logo_path"
-
 private const val TOP_LOGO_FILE = "royal_top_logo.png"
 private const val BOTTOM_LOGO_FILE = "royal_bottom_logo.png"
-
 private const val DEFAULT_NEWS_TEXT = "أهلاً بكم في Royal Coffee ☕"
 
 data class RoyalInterfaceSettings(
@@ -43,58 +41,23 @@ data class RoyalInterfaceSettings(
     val bottomLogoPath: String = ""
 )
 
-fun loadRoyalInterfaceSettings(
-    context: Context
-): RoyalInterfaceSettings {
-
-    val prefs = context.getSharedPreferences(
-        INTERFACE_PREFS,
-        Context.MODE_PRIVATE
-    )
-
+fun loadRoyalInterfaceSettings(context: Context): RoyalInterfaceSettings {
+    val prefs = context.getSharedPreferences(INTERFACE_PREFS, Context.MODE_PRIVATE)
     return RoyalInterfaceSettings(
-        newsText = prefs.getString(
-            KEY_NEWS_TEXT,
-            DEFAULT_NEWS_TEXT
-        ) ?: DEFAULT_NEWS_TEXT,
-
-        topLogoPath = prefs.getString(
-            KEY_TOP_LOGO_PATH,
-            ""
-        ) ?: "",
-
-        bottomLogoPath = prefs.getString(
-            KEY_BOTTOM_LOGO_PATH,
-            ""
-        ) ?: ""
+        newsText = prefs.getString(KEY_NEWS_TEXT, DEFAULT_NEWS_TEXT) ?: DEFAULT_NEWS_TEXT,
+        topLogoPath = prefs.getString(KEY_TOP_LOGO_PATH, "") ?: "",
+        bottomLogoPath = prefs.getString(KEY_BOTTOM_LOGO_PATH, "") ?: ""
     )
 }
 
-private fun savePngToInternalStorage(
-    context: Context,
-    uri: Uri,
-    fileName: String
-): String? {
-
+private fun savePngToInternalStorage(context: Context, uri: Uri, fileName: String): String? {
     return try {
-
-        val destination = File(
-            context.filesDir,
-            fileName
-        )
-
+        val destination = File(context.filesDir, fileName)
         context.contentResolver.openInputStream(uri)?.use { input ->
-
-            destination.outputStream().use { output ->
-
-                input.copyTo(output)
-            }
-        }
-
+            destination.outputStream().use { output -> input.copyTo(output) }
+        } ?: return null
         destination.absolutePath
-
-    } catch (e: Exception) {
-
+    } catch (_: Exception) {
         null
     }
 }
@@ -105,237 +68,86 @@ fun saveRoyalInterfaceSettings(
     topLogoPath: String,
     bottomLogoPath: String
 ) {
-
-    context.getSharedPreferences(
-        INTERFACE_PREFS,
-        Context.MODE_PRIVATE
-    )
+    context.getSharedPreferences(INTERFACE_PREFS, Context.MODE_PRIVATE)
         .edit()
-        .putString(
-            KEY_NEWS_TEXT,
-            newsText.trim().ifEmpty {
-                DEFAULT_NEWS_TEXT
-            }
-        )
-        .putString(
-            KEY_TOP_LOGO_PATH,
-            topLogoPath
-        )
-        .putString(
-            KEY_BOTTOM_LOGO_PATH,
-            bottomLogoPath
-        )
+        .putString(KEY_NEWS_TEXT, newsText.trim().ifEmpty { DEFAULT_NEWS_TEXT })
+        .putString(KEY_TOP_LOGO_PATH, topLogoPath)
+        .putString(KEY_BOTTOM_LOGO_PATH, bottomLogoPath)
         .apply()
 }
 
 @Composable
-fun AdminInterfaceSettings(
-    context: Context,
-    modifier: Modifier = Modifier
-) {
+fun AdminInterfaceSettings(context: Context, modifier: Modifier = Modifier) {
+    val saved = remember { loadRoyalInterfaceSettings(context) }
+    var newsText by remember { mutableStateOf(saved.newsText) }
+    var topLogoPath by remember { mutableStateOf(saved.topLogoPath) }
+    var bottomLogoPath by remember { mutableStateOf(saved.bottomLogoPath) }
+    var message by remember { mutableStateOf("") }
 
-    val saved = remember {
-        loadRoyalInterfaceSettings(context)
-    }
-
-    var newsText by remember {
-        mutableStateOf(saved.newsText)
-    }
-
-    var topLogoPath by remember {
-        mutableStateOf(saved.topLogoPath)
-    }
-
-    var bottomLogoPath by remember {
-        mutableStateOf(saved.bottomLogoPath)
-    }
-
-    var message by remember {
-        mutableStateOf("")
-    }
-
-    val topLogoPicker =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
-        ) { uri: Uri? ->
-
-            if (uri != null) {
-
-                val savedPath =
-                    savePngToInternalStorage(
-                        context = context,
-                        uri = uri,
-                        fileName = TOP_LOGO_FILE
-                    )
-
-                if (savedPath != null) {
-
-                    topLogoPath = savedPath
-
-                    message =
-                        "تم اختيار اللوجو العلوي ✓"
-
-                } else {
-
-                    message =
-                        "تعذر حفظ اللوجو العلوي"
-                }
-            }
+    val topLogoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val savedPath = savePngToInternalStorage(context, uri, TOP_LOGO_FILE)
+            message = if (savedPath != null) {
+                topLogoPath = savedPath
+                "تم اختيار اللوجو العلوي ✓"
+            } else "تعذر حفظ اللوجو العلوي"
         }
+    }
 
-    val bottomLogoPicker =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
-        ) { uri: Uri? ->
-
-            if (uri != null) {
-
-                val savedPath =
-                    savePngToInternalStorage(
-                        context = context,
-                        uri = uri,
-                        fileName = BOTTOM_LOGO_FILE
-                    )
-
-                if (savedPath != null) {
-
-                    bottomLogoPath = savedPath
-
-                    message =
-                        "تم اختيار اللوجو السفلي ✓"
-
-                } else {
-
-                    message =
-                        "تعذر حفظ اللوجو السفلي"
-                }
-            }
+    val bottomLogoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val savedPath = savePngToInternalStorage(context, uri, BOTTOM_LOGO_FILE)
+            message = if (savedPath != null) {
+                bottomLogoPath = savedPath
+                "تم اختيار اللوجو السفلي ✓"
+            } else "تعذر حفظ اللوجو السفلي"
         }
+    }
 
-    Card(
-        modifier = modifier.fillMaxWidth()
-    ) {
-
+    Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(
-                    rememberScrollState()
-                )
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-
-            verticalArrangement =
-                Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-
-            Text(
-                text = "إعدادات واجهة الكافيه",
-                color = AdminGold,
-                fontSize = 22.sp
-            )
-
-            Text(
-                text =
-                    "تعديل اللوجوهات ونص الشريط الإخباري",
-                color = AdminCream,
-                fontSize = 14.sp
-            )
-
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
-
+            Text("إعدادات واجهة الكافيه", color = AdminGold, fontSize = 22.sp)
+            Text("تعديل اللوجوهات ونص الشريط الإخباري", color = AdminCream, fontSize = 14.sp)
+            Spacer(Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-
                 Button(
-                    onClick = {
-                        topLogoPicker.launch("image/png")
-                    },
-
-                    modifier =
-                        Modifier.weight(1f)
-                ) {
-
-                    Text(
-                        "🖼️ اللوجو العلوي"
-                    )
-                }
-
+                    onClick = { topLogoPicker.launch("image/png") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("🖼️ اللوجو العلوي") }
                 Button(
-                    onClick = {
-                        bottomLogoPicker.launch("image/png")
-                    },
-
-                    modifier =
-                        Modifier.weight(1f)
-                ) {
-
-                    Text(
-                        "🖼️ اللوجو السفلي"
-                    )
-                }
+                    onClick = { bottomLogoPicker.launch("image/png") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("🖼️ اللوجو السفلي") }
             }
-
             OutlinedTextField(
                 value = newsText,
-
-                onValueChange = {
-                    newsText = it
-                },
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                label = {
-                    Text(
-                        "نص الشريط الإخباري"
-                    )
-                },
-
+                onValueChange = { newsText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("نص الشريط الإخباري") },
                 singleLine = true
             )
-
             Button(
                 onClick = {
-
-                    saveRoyalInterfaceSettings(
-                        context = context,
-
-                        newsText = newsText,
-
-                        topLogoPath = topLogoPath,
-
-                        bottomLogoPath =
-                            bottomLogoPath
-                    )
-
-                    message =
-                        "تم حفظ إعدادات الواجهة بنجاح ✓"
+                    saveRoyalInterfaceSettings(context, newsText, topLogoPath, bottomLogoPath)
+                    message = "تم حفظ إعدادات الواجهة بنجاح ✓"
                 },
-
-                modifier =
-                    Modifier.fillMaxWidth()
-            ) {
-
-                Text(
-                    "💾 حفظ التعديلات"
-                )
-            }
-
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("💾 حفظ التعديلات") }
             if (message.isNotEmpty()) {
-
-                Text(
-                    text = message,
-
-                    color = AdminGold,
-
-                    fontSize = 14.sp
-                )
+                Text(message, color = AdminGold, fontSize = 14.sp)
             }
         }
     }
