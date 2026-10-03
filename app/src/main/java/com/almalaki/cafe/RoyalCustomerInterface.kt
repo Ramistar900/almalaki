@@ -547,23 +547,22 @@ fun RoyalNewsTicker(
         newsText
     ) {
         if (containerWidth > 0 && textWidth > 0) {
-            while (true) {
-                // يبدأ من خارج الجهة اليسرى
-                offsetX.snapTo(
-                    -textWidth.toFloat()
-                )
+    while (true) {
+        // يبدأ من خارج الجهة اليسرى
+        offsetX.snapTo(
+            -textWidth.toFloat()
+        )
 
-                // يتحرك من اليسار ➡️ إلى اليمين
-                offsetX.animateTo(
-                    containerWidth.toFloat(),
-                    animationSpec = tween(
-                        durationMillis = 8000,
-                        easing = LinearEasing
-                    )
-                )
-            }
-        }
+        // يتحرك من اليسار ➡️ إلى اليمين
+        offsetX.animateTo(
+            containerWidth.toFloat(),
+            animationSpec = tween(
+                durationMillis = 8000,
+                easing = LinearEasing
+            )
+        )
     }
+        }
 
     Box(
         modifier = modifier
