@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -87,7 +89,7 @@ fun RoyalCustomerInterface(
         initialValue = DrawerValue.Closed
     )
 
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
     val backgroundColor =
         if (isDarkMode) RoyalBlack else RoyalCream
@@ -100,7 +102,9 @@ fun RoyalCustomerInterface(
                 drawerContainerColor =
                     if (isDarkMode) RoyalCard else Color.White
             ) {
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(
+                    modifier = Modifier.height(28.dp)
+                )
 
                 RoyalShinyLogo(
                     modifier = Modifier
@@ -108,7 +112,9 @@ fun RoyalCustomerInterface(
                         .padding(horizontal = 20.dp)
                 )
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(
+                    modifier = Modifier.height(30.dp)
+                )
 
                 RoyalDrawerItem(
                     icon = RoyalIcon.PROFILE,
@@ -118,6 +124,7 @@ fun RoyalCustomerInterface(
                     scope.launch {
                         drawerState.close()
                     }
+
                     onOwnerLogin()
                 }
 
@@ -129,10 +136,13 @@ fun RoyalCustomerInterface(
                     scope.launch {
                         drawerState.close()
                     }
+
                     onSettings()
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(
+                    modifier = Modifier.weight(1f)
+                )
 
                 Text(
                     text = "Royal Coffee",
@@ -160,6 +170,7 @@ fun RoyalCustomerInterface(
                     scope.launch {
                         drawerState.open()
                     }
+
                     onMenuClick()
                 }
             )
@@ -208,8 +219,12 @@ private fun Royal3DAnimatedLogo(
         animationSpec = infiniteRepeatable(
             animation = keyframes {
                 durationMillis = 4500
+
+                // دوران لمدة 1.5 ثانية
                 0f at 0
                 360f at 1500
+
+                // توقف 3 ثوانٍ
                 360f at 4500
             },
             repeatMode = RepeatMode.Restart
@@ -222,13 +237,17 @@ private fun Royal3DAnimatedLogo(
             .size(size)
             .graphicsLayer {
                 this.rotationY = rotationY
+
+                // يعطي إحساس الدوران ثلاثي الأبعاد
                 cameraDistance = 12f * density
             },
         contentAlignment = Alignment.Center
     ) {
         if (logoResId != 0) {
             Image(
-                painter = painterResource(id = logoResId),
+                painter = painterResource(
+                    id = logoResId
+                ),
                 contentDescription = "Royal Coffee",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
@@ -531,10 +550,12 @@ private fun RoyalNewsTicker(
             textWidth > 0
         ) {
             while (true) {
+                // يبدأ من الجهة اليسرى
                 offsetX.snapTo(
                     -textWidth.toFloat()
                 )
 
+                // يتحرك من اليسار إلى اليمين
                 offsetX.animateTo(
                     containerWidth.toFloat(),
                     animationSpec = tween(
@@ -689,5 +710,3 @@ private fun RoyalBottomBar(
         }
     }
 }
-
-    
