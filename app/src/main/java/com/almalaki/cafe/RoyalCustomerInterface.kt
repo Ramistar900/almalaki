@@ -646,7 +646,7 @@ fun RoyalShinyInfoBox(
 
     Box(
         modifier = modifier
-            .height(32.dp)
+            .height(40.dp)
             .clip(
                 RoundedCornerShape(7.dp)
             )
