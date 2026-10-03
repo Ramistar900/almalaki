@@ -520,11 +520,6 @@ private fun RoyalBottomBar(
                 modifier = Modifier.weight(1f)
             )
 
-            // الشعار المتحرك بجانب الشريط الإخباري.
-            Royal3DAnimatedLogo(
-                size = 42.dp,
-                modifier = Modifier.padding(start = 8.dp)
-            )
         }
     }
 }
