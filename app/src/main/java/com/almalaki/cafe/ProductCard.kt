@@ -1,5 +1,8 @@
 package com.almalaki.cafe
 
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -166,12 +169,28 @@ fun ProductCard(
 
     Card(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .onFocusChanged {
-                    isFocused = it.isFocused
-                }
-                .focusable(),
+    Modifier
+        .fillMaxWidth()
+        .onFocusChanged {
+            isFocused = it.isFocused
+        }
+        .onKeyEvent { event ->
+
+            if (
+                event.type == KeyEventType.KeyUp &&
+                (
+                    event.key == Key.Enter ||
+                    event.key == Key.NumPadEnter
+                )
+            ) {
+                AppSounds.productClick(context)
+                onAdd()
+                true
+            } else {
+                false
+            }
+        }
+        .focusable(),
 
         shape =
             RoundedCornerShape(20.dp),
