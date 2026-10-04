@@ -185,6 +185,7 @@ fun AdminHorizontalMenu(
                 onSectionSelected(AdminSection.SALES)
             }
         }
+        item {
         AdminMenuItem("🎨", "تحرير الواجهة", section == AdminSection.INTERFACE_SETTINGS) {
     onSectionSelected(AdminSection.INTERFACE_SETTINGS)
         }
