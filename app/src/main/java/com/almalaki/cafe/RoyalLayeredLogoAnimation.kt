@@ -241,11 +241,11 @@ fun RoyalCrownShieldShine(
 
                             Color.Transparent,
 
-                            RoyalGold.copy(
+                            Color(0xFFD4AF37).copy(
                                 alpha = 0.12f
                             ),
 
-                            RoyalGoldLight.copy(
+                            Color(0xFFFFE9A3).copy(
                                 alpha = 0.72f
                             ),
 
@@ -253,11 +253,11 @@ fun RoyalCrownShieldShine(
                                 alpha = 0.92f
                             ),
 
-                            RoyalGoldLight.copy(
+                            Color(0xFFFFE9A3).copy(
                                 alpha = 0.72f
                             ),
 
-                            RoyalGold.copy(
+                            Color(0xFFD4AF37).copy(
                                 alpha = 0.12f
                             ),
 
@@ -377,7 +377,7 @@ fun RoyalCrownShieldShine(
             drawLine(
 
                 color =
-                    RoyalGoldLight.copy(
+                    Color(0xFFFFE9A3).copy(
                         alpha =
                             0.98f *
                                 starAlpha
@@ -522,7 +522,7 @@ fun RoyalCrownShieldShine(
 
                             Color.Transparent,
 
-                            RoyalGoldLight.copy(
+                            Color(0xFFFFE9A3).copy(
                                 alpha = 0.08f
                             ),
 
@@ -530,7 +530,7 @@ fun RoyalCrownShieldShine(
                                 alpha = 0.72f
                             ),
 
-                            RoyalGoldLight.copy(
+                            Color(0xFFFFE9A3).copy(
                                 alpha = 0.20f
                             ),
 
