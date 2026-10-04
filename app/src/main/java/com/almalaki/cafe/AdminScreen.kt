@@ -322,6 +322,7 @@ fun openSection(target: AdminSection) {
         AdminSection.ARCHIVE -> refreshArchive()
         AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
         AdminSection.INTERFACE_SETTINGS -> Unit
+        AdminSection.TV_SETTINGS -> Unit
     }
 }
 
