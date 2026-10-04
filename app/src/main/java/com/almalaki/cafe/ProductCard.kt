@@ -1,7 +1,5 @@
 package com.almalaki.cafe
 
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import android.content.Context
 import androidx.compose.foundation.background
@@ -176,19 +174,21 @@ fun ProductCard(
         }
         .onKeyEvent { event ->
 
-            if (
-                event.type == KeyEventType.KeyUp &&
-                (
-                    event.key == Key.Enter ||
-                    event.key == Key.NumPadEnter
-                )
-            ) {
-                AppSounds.productClick(context)
-                onAdd()
-                true
-            } else {
-                false
-            }
+    val nativeEvent = event.nativeKeyEvent
+
+    if (
+        nativeEvent.action == android.view.KeyEvent.ACTION_UP &&
+        (
+            nativeEvent.keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+            nativeEvent.keyCode == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER
+        )
+    ) {
+        AppSounds.productClick(context)
+        onAdd()
+        true
+    } else {
+        false
+    }
         }
         .focusable(),
 
