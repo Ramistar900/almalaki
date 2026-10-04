@@ -40,6 +40,10 @@ fun CustomerScreen(
     onTheme: () -> Unit,
     onOwner: () -> Unit
 ) {
+    val context = LocalContext.current
+val interfaceSettings = remember {
+    loadRoyalInterfaceSettings(context)
+}
     var products by remember {
         mutableStateOf<List<Product>>(emptyList())
     }
@@ -188,9 +192,10 @@ var invoiceTotalAmount by remember {
         }
 
         RoyalCustomerInterface(
-        isDarkMode = darkMode,
-        onOwnerLogin = onOwner
-    ) {
+    isDarkMode = darkMode,
+    newsText = interfaceSettings.newsText,
+    onOwnerLogin = onOwner
+) {
 
         Column(
             Modifier
