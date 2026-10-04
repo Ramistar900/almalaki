@@ -818,89 +818,126 @@ fun RoyalLiveDateTime() {
         /*
          * التاريخ فوق مستطيل الوقت
          */
+@Composable
+fun RoyalLiveDateTime(
+    now: Date
+) {
+
+    val time =
+        remember(now) {
+
+            SimpleDateFormat(
+                "h:mm a",
+                Locale("ar")
+            ).format(now)
+        }
+
+    val timeParts =
+        remember(time) {
+            time.split(":")
+        }
+
+    /*
+     * نبض فاصل الوقت :
+     */
+    val pulseTransition =
+        rememberInfiniteTransition(
+            label = "time_colon_pulse"
+        )
+
+    val colonAlpha by
+        pulseTransition.animateFloat(
+
+            initialValue = 0.30f,
+
+            targetValue = 1f,
+
+            animationSpec =
+                infiniteRepeatable(
+
+                    animation =
+                        tween(
+                            durationMillis = 700,
+                            easing = LinearEasing
+                        ),
+
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+
+            label = "colon_alpha"
+        )
+
+    /*
+     * الوقت فقط
+     */
+    Row(
+
+        verticalAlignment =
+            Alignment.CenterVertically,
+
+        horizontalArrangement =
+            Arrangement.Center,
+
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+
         Text(
 
-            text = date,
+            text =
+                timeParts
+                    .getOrElse(0) {
+                        ""
+                    },
 
             color = Color.White,
 
-            fontSize = 10.sp,
+            fontSize = 17.sp,
 
             fontWeight =
-                FontWeight.Medium,
+                FontWeight.Bold,
 
             maxLines = 1
         )
 
-        Spacer(
-            Modifier.height(2.dp)
+        /*
+         * فاصل الوقت النابض
+         */
+        Text(
+
+            text = ":",
+
+            color =
+                Color.White.copy(
+                    alpha = colonAlpha
+                ),
+
+            fontSize = 17.sp,
+
+            fontWeight =
+                FontWeight.Bold,
+
+            maxLines = 1
         )
 
-        /*
-         * الوقت
-         */
-        Row(
+        Text(
 
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
+            text =
+                timeParts
+                    .getOrElse(1) {
+                        ""
+                    },
 
-            Text(
+            color = Color.White,
 
-                text =
-                    timeParts
-                        .getOrElse(0) {
-                            ""
-                        },
+            fontSize = 17.sp,
 
-                color = Color.White,
+            fontWeight =
+                FontWeight.Bold,
 
-                fontSize = 17.sp,
-
-                fontWeight =
-                    FontWeight.Bold,
-
-                maxLines = 1
-            )
-
-            /*
-             * فاصل الوقت النابض
-             */
-            Text(
-
-                text = ":",
-
-                color =
-                    Color.White.copy(
-                        alpha = colonAlpha
-                    ),
-
-                fontSize = 17.sp,
-
-                fontWeight =
-                    FontWeight.Bold,
-
-                maxLines = 1
-            )
-
-            Text(
-
-                text =
-                    timeParts
-                        .getOrElse(1) {
-                            ""
-                        },
-
-                color = Color.White,
-
-                fontSize = 17.sp,
-
-                fontWeight =
-                    FontWeight.Bold,
-
-                maxLines = 1
-            )
-        }
+            maxLines = 1
+        )
     }
 }
 
@@ -1188,6 +1225,33 @@ fun RoyalBottomBar(
     newsText: String
 ) {
 
+    var now by
+        remember {
+            mutableStateOf(Date())
+        }
+
+    /*
+     * تحديث التاريخ والوقت كل ثانية
+     */
+    LaunchedEffect(Unit) {
+
+        while (true) {
+
+            now = Date()
+
+            delay(1000)
+        }
+    }
+
+    val date =
+        remember(now) {
+
+            SimpleDateFormat(
+                "EEEE d/M/yyyy",
+                Locale("ar")
+            ).format(now)
+        }
+
     Row(
 
         modifier =
@@ -1200,18 +1264,21 @@ fun RoyalBottomBar(
                 ),
 
         verticalAlignment =
-            Alignment.CenterVertically
+            Alignment.Bottom
     ) {
 
         /*
-         * الشعار النشط فوق التاريخ والوقت.
+         * اللوجو بجانب مستطيل الوقت
+         * ومحاذٍ له عموديًا
          */
         Box(
 
             modifier =
                 Modifier
                     .size(34.dp)
-                    .offset(y = (-2).dp),
+                    .offset(
+                        y = 7.dp
+                    ),
 
             contentAlignment =
                 Alignment.Center
@@ -1226,19 +1293,62 @@ fun RoyalBottomBar(
             Modifier.width(5.dp)
         )
 
-        RoyalShinyInfoBox(
-            Modifier
-                .width(92.dp)
-                .height(40.dp)
+        /*
+         * التاريخ فوق مستطيل الوقت
+         */
+        Column(
+
+            modifier =
+                Modifier.width(96.dp),
+
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+
+            verticalArrangement =
+                Arrangement.Bottom
         ) {
 
-            RoyalLiveDateTime()
+            Text(
+
+                text = date,
+
+                color = RoyalGold,
+
+                fontSize = 9.sp,
+
+                fontWeight =
+                    FontWeight.Medium,
+
+                maxLines = 1
+            )
+
+            Spacer(
+                Modifier.height(2.dp)
+            )
+
+            /*
+             * مستطيل الوقت
+             */
+            RoyalShinyInfoBox(
+
+                Modifier
+                    .width(96.dp)
+                    .height(38.dp)
+            ) {
+
+                RoyalLiveDateTime(
+                    now
+                )
+            }
         }
 
         Spacer(
             Modifier.width(6.dp)
         )
 
+        /*
+         * مستطيل الشريط الإخباري
+         */
         RoyalShinyInfoBox(
 
             Modifier
@@ -1252,4 +1362,3 @@ fun RoyalBottomBar(
         }
     }
 }
- 
