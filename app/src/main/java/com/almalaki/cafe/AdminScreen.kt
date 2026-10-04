@@ -75,6 +75,9 @@ onLogout: () -> Unit
 val context = LocalContext.current
 val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val interfaceSettings = remember { 
+    loadRoyalInterfaceSettings(context)
+    }
 
 var section by remember { mutableStateOf(AdminSection.HOME) }
 var menuOpen by remember { mutableStateOf(false) }
@@ -405,7 +408,7 @@ Column(
             )
                 }
 
-        RoyalBottomBar(newsText = "أهلاً بكم في Royal Coffee ☕")
+        RoyalBottomBar(newsText = interfaceSettings.newsText)
     }
     } else {
         Column(
@@ -471,7 +474,7 @@ Column(
                 highlightedOrderId = highlightedOrderId
             )
                         }
-            RoyalBottomBar(newsText = "أهلاً بكم في Royal Coffee ☕")
+            RoyalBottomBar(newsText = interfaceSettings.newsText)
         }
     }
 }
