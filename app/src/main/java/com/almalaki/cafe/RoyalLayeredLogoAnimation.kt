@@ -117,449 +117,128 @@ fun RoyalLayeredLogoAnimation(
  * 3. لمعة مستقلة وناعمة
  *    تمر فوق التاج.
  */
-@Composable
+ 
+ @Composable
 fun RoyalCrownShieldShine(
     @DrawableRes drawableRes: Int,
     contentDescription: String? = "Royal crown and shield",
     modifier: Modifier = Modifier
 ) {
-
     val transition =
         rememberInfiniteTransition(
-            label = "royal_crown_shield_shine"
+            label = "royal_crown_shield_soft_shine"
         )
 
     /*
-     * حركة اللمعة.
-     *
-     * تبدأ خارج اليسار
-     * ثم تمر فوق الشعار
-     * وتنتهي خارج اليمين.
+     * اللمعة تتحرك من اليسار إلى اليمين
+     * ثم تعود من اليمين إلى اليسار.
      */
     val shineProgress by
         transition.animateFloat(
-
-            initialValue = -0.25f,
-
-            targetValue = 1.25f,
-
+            initialValue = -0.35f,
+            targetValue = 1.35f,
             animationSpec =
                 infiniteRepeatable(
-
                     animation =
                         tween(
                             durationMillis = SHINE_MS,
                             easing = LinearEasing
                         ),
-
                     repeatMode =
-                        RepeatMode.Restart
+                        RepeatMode.Reverse
                 ),
-
-            label = "royal_gold_shine_progress"
+            label = "royal_soft_shine_progress"
         )
 
-
     Box(
-
         modifier =
             modifier
                 .clipToBounds()
                 .graphicsLayer {
-
-                    /*
-                     * يجعل تأثير اللمعة
-                     * يعمل بشكل صحيح فوق صورة PNG.
-                     */
                     compositingStrategy =
                         CompositingStrategy.Offscreen
                 }
-
     ) {
 
         /*
-         * ====================================================
-         * PNG الأصلي
-         * ====================================================
-         *
-         * لا يتم تغييره إطلاقًا.
+         * التاج والدرع الأصليان.
+         * ثابتان تمامًا.
          */
         Image(
-
             painter =
                 painterResource(
                     drawableRes
                 ),
-
             contentDescription =
                 contentDescription,
-
             modifier =
                 Modifier.fillMaxSize(),
-
             contentScale =
                 ContentScale.Fit
         )
 
-
         /*
-         * ====================================================
-         * طبقة اللمعان
-         * ====================================================
+         * اللمعة الذهبية الناعمة.
          */
         Canvas(
-
             modifier =
                 Modifier.fillMaxSize()
-
         ) {
-
             val w = size.width
             val h = size.height
 
-
-            /*
-             * =================================================
-             * ✨ اللمعة الرئيسية
-             * =================================================
-             *
-             * شريط ذهبي مائل
-             * يمر فوق كامل الدرع والتاج.
-             */
-            val beamCenterX =
+            val shineCenterX =
                 w * shineProgress
 
-            val beamWidth =
-                w * 0.20f
+            /*
+             * عرض اللمعة كبير حتى يكون
+             * الانتقال ناعمًا وفخمًا.
+             */
+            val shineWidth =
+                w * 0.30f
 
-
-            val beamBrush =
+            val shineBrush =
                 Brush.linearGradient(
-
                     colors =
                         listOf(
-
                             Color.Transparent,
 
                             Color(0xFFD4AF37).copy(
-                                alpha = 0.12f
+                                alpha = 0.04f
                             ),
 
                             Color(0xFFFFE9A3).copy(
-                                alpha = 0.72f
+                                alpha = 0.14f
                             ),
 
                             Color.White.copy(
-                                alpha = 0.92f
+                                alpha = 0.30f
                             ),
 
                             Color(0xFFFFE9A3).copy(
-                                alpha = 0.72f
+                                alpha = 0.14f
                             ),
 
                             Color(0xFFD4AF37).copy(
-                                alpha = 0.12f
+                                alpha = 0.04f
                             ),
 
                             Color.Transparent
                         ),
-
                     start =
                         Offset(
-                            beamCenterX - beamWidth,
+                            shineCenterX - shineWidth,
                             h
                         ),
-
                     end =
                         Offset(
-                            beamCenterX + beamWidth,
+                            shineCenterX + shineWidth,
                             0f
                         )
                 )
 
-
             drawRect(
-
-                brush = beamBrush,
-
-                blendMode =
-                    BlendMode.SrcAtop
-            )
-
-
-            /*
-             * =================================================
-             * ✨ النجمة الذهبية البارقة
-             * =================================================
-             *
-             * ومضة صغيرة تظهر على الدرع
-             * أثناء مرور الضوء.
-             */
-            val starX =
-                w * shineProgress
-
-            /*
-             * موضع النجمة داخل الدرع.
-             */
-            val starY =
-                h * 0.57f
-
-
-            val starRadius =
-                w * 0.055f
-
-            val rayLength =
-                w * 0.105f
-
-
-            /*
-             * نجعل النجمة تخفت
-             * عند بداية ونهاية المسار.
-             */
-            val starAlpha =
-
-                if (
-                    shineProgress in
-                    0.03f..0.97f
-                ) {
-
-                    1f
-
-                } else {
-
-                    0.35f
-                }
-
-
-            val diagonal =
-                rayLength * 0.70f
-
-
-            /*
-             * ─────────────────────────────────
-             * الشعاع الأفقي
-             * ─────────────────────────────────
-             */
-            drawLine(
-
-                color =
-                    Color.White.copy(
-                        alpha =
-                            0.92f *
-                                starAlpha
-                    ),
-
-                start =
-                    Offset(
-                        starX - rayLength,
-                        starY
-                    ),
-
-                end =
-                    Offset(
-                        starX + rayLength,
-                        starY
-                    ),
-
-                strokeWidth =
-                    w * 0.012f,
-
-                blendMode =
-                    BlendMode.SrcAtop
-            )
-
-
-            /*
-             * ─────────────────────────────────
-             * الشعاع العمودي
-             * ─────────────────────────────────
-             */
-            drawLine(
-
-                color =
-                    Color(0xFFFFE9A3).copy(
-                        alpha =
-                            0.98f *
-                                starAlpha
-                    ),
-
-                start =
-                    Offset(
-                        starX,
-                        starY - rayLength
-                    ),
-
-                end =
-                    Offset(
-                        starX,
-                        starY + rayLength
-                    ),
-
-                strokeWidth =
-                    w * 0.012f,
-
-                blendMode =
-                    BlendMode.SrcAtop
-            )
-
-
-            /*
-             * ─────────────────────────────────
-             * الشعاع القطري الأول
-             * ─────────────────────────────────
-             */
-            drawLine(
-
-                color =
-                    Color.White.copy(
-                        alpha =
-                            0.72f *
-                                starAlpha
-                    ),
-
-                start =
-                    Offset(
-                        starX - diagonal,
-                        starY - diagonal
-                    ),
-
-                end =
-                    Offset(
-                        starX + diagonal,
-                        starY + diagonal
-                    ),
-
-                strokeWidth =
-                    w * 0.008f,
-
-                blendMode =
-                    BlendMode.SrcAtop
-            )
-
-
-            /*
-             * ─────────────────────────────────
-             * الشعاع القطري الثاني
-             * ─────────────────────────────────
-             */
-            drawLine(
-
-                color =
-                    Color.White.copy(
-                        alpha =
-                            0.72f *
-                                starAlpha
-                    ),
-
-                start =
-                    Offset(
-                        starX - diagonal,
-                        starY + diagonal
-                    ),
-
-                end =
-                    Offset(
-                        starX + diagonal,
-                        starY - diagonal
-                    ),
-
-                strokeWidth =
-                    w * 0.008f,
-
-                blendMode =
-                    BlendMode.SrcAtop
-            )
-
-
-            /*
-             * ─────────────────────────────────
-             * مركز النجمة
-             * ─────────────────────────────────
-             */
-            drawCircle(
-
-                color =
-                    Color.White.copy(
-                        alpha =
-                            0.98f *
-                                starAlpha
-                    ),
-
-                radius =
-                    starRadius,
-
-                center =
-                    Offset(
-                        starX,
-                        starY
-                    ),
-
-                blendMode =
-                    BlendMode.SrcAtop
-            )
-
-
-            /*
-             * =================================================
-             * 👑 لمعة التاج
-             * =================================================
-             *
-             * أهدأ وأنحف من لمعة الدرع.
-             */
-            val crownX =
-                w *
-                    (
-                        shineProgress -
-                            0.18f
-                    )
-
-
-            val crownBrush =
-                Brush.linearGradient(
-
-                    colors =
-                        listOf(
-
-                            Color.Transparent,
-
-                            Color(0xFFFFE9A3).copy(
-                                alpha = 0.08f
-                            ),
-
-                            Color.White.copy(
-                                alpha = 0.72f
-                            ),
-
-                            Color(0xFFFFE9A3).copy(
-                                alpha = 0.20f
-                            ),
-
-                            Color.Transparent
-                        ),
-
-                    start =
-                        Offset(
-                            crownX -
-                                w * 0.10f,
-
-                            h * 0.38f
-                        ),
-
-                    end =
-                        Offset(
-                            crownX +
-                                w * 0.10f,
-
-                            h * 0.10f
-                        )
-                )
-
-
-            drawRect(
-
-                brush =
-                    crownBrush,
-
+                brush = shineBrush,
                 blendMode =
                     BlendMode.SrcAtop
             )
@@ -568,18 +247,6 @@ fun RoyalCrownShieldShine(
 }
 
 
-/**
- * ============================================================
- * RC 3D
- * ============================================================
- *
- * دوران حول المحور العمودي Y.
- *
- * لا يوجد:
- * - دوران Z
- * - تكبير
- * - تصغير
- */
 @Composable
 fun RoyalRC3D(
     @DrawableRes drawableRes: Int,
