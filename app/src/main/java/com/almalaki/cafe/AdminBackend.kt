@@ -26,7 +26,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
 fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.HOME -> "الرئيسية"
     AdminSection.PRODUCTS -> "تعديل المنتجات"
@@ -36,6 +35,7 @@ fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.SALES -> "المبيعات"
     AdminSection.TOP_PRODUCTS -> "الأكثر طلبًا"
     AdminSection.INTERFACE_SETTINGS -> "تحرير الواجهة"
+    AdminSection.TV_SETTINGS -> "إعدادات التلفزيون"
 }
 
 fun saveProduct(
