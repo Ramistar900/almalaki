@@ -396,10 +396,10 @@ fun RoyalNewsTicker(newsText: String, modifier: Modifier = Modifier) {
         }
     }
 }
-
 @Composable
 private fun RoyalTickerLogoSeparator(logoPath: String) {
     val transition = rememberInfiniteTransition(label = "ticker_logo")
+
     val rotationY by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -414,20 +414,17 @@ private fun RoyalTickerLogoSeparator(logoPath: String) {
         ),
         label = "ticker_logo_rotation"
     )
-    val shinePosition by transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ticker_logo_shine"
-    )
+
     val bitmap = remember(logoPath) {
         if (logoPath.isNotEmpty()) {
-            try { BitmapFactory.decodeFile(logoPath)?.asImageBitmap() } catch (_: Exception) { null }
+            try {
+                BitmapFactory.decodeFile(logoPath)?.asImageBitmap()
+            } catch (_: Exception) {
+                null
+            }
         } else null
     }
+
     Box(
         modifier = Modifier
             .size(24.dp)
@@ -438,17 +435,11 @@ private fun RoyalTickerLogoSeparator(logoPath: String) {
         contentAlignment = Alignment.Center
     ) {
         if (bitmap != null) {
-            Image(bitmap, "Royal Coffee", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = 0.22f
-                        translationX = shinePosition * 28f
-                    }
-                    .background(
-                        Brush.linearGradient(listOf(Color.Transparent, Color.White, Color.Transparent))
-                    )
+            Image(
+                bitmap,
+                "Royal Coffee",
+                Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
             )
         } else {
             Royal3DAnimatedLogo(size = 24.dp)
