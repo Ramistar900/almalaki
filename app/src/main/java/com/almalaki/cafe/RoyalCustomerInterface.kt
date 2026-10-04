@@ -72,6 +72,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalLayoutDirection
 
 private val RoyalGold = Color(0xFFD4AF37)
 private val RoyalGoldLight = Color(0xFFFFE9A3)
