@@ -218,11 +218,8 @@ fun AdminContent(
             }
             AdminSection.TV_SETTINGS -> {
     item {
-        Text(
-            text = "📺 إعدادات التلفزيون",
-            color = AdminGold,
-            fontSize = 24.sp,
-            modifier = Modifier.padding(16.dp)
+        AdminTVSettingsScreen(
+            modifier = Modifier.fillMaxWidth()
         )
     }
             }
