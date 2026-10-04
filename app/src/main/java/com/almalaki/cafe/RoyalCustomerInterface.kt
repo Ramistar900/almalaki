@@ -2,7 +2,6 @@ package com.almalaki.cafe
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Stroke
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.LayoutDirection
 import android.graphics.BitmapFactory
@@ -1074,48 +1073,47 @@ fun RoyalNewsTicker(
                 }
 
             /*
-             * إطار ذهبي أساسي.
-             */
-            drawPath(
-                path = leftPath,
-                color = gold,
-                style =
-                    Stroke(
-                        width = stroke
-                    )
-            )
+ * إطار ذهبي أساسي.
+ */
+drawPath(
+    path = leftPath,
+    color = gold,
+    style =
+        androidx.compose.ui.graphics.drawscope.Stroke(
+            width = stroke
+        )
+)
 
-            drawPath(
-                path = rightPath,
-                color = gold,
-                style =
-                    Stroke(
-                        width = stroke
-                    )
-            )
+drawPath(
+    path = rightPath,
+    color = gold,
+    style =
+        androidx.compose.ui.graphics.drawscope.Stroke(
+            width = stroke
+        )
+)
 
-            drawPath(
-                path = topPath,
-                color = gold,
-                style =
-                    Stroke(
-                        width = stroke
-                    )
-            )
+drawPath(
+    path = topPath,
+    color = gold,
+    style =
+        androidx.compose.ui.graphics.drawscope.Stroke(
+            width = stroke
+        )
+)
 
-            drawPath(
-                path = bottomPath,
-                color = gold,
-                style =
-                    Stroke(
-                        width = stroke
-                    )
-            )
+drawPath(
+    path = bottomPath,
+    color = gold,
+    style =
+        androidx.compose.ui.graphics.drawscope.Stroke(
+            width = stroke
+        )
+)
 
-            /*
-             * خط داخلي ذهبي خفيف يعطي إحساس
-             * الإطار المزدوج الفاخر.
-             */
+/*
+ * خط داخلي ذهبي خفيف يعطي
+ */
             val innerLeft =
                 Path().apply {
 
@@ -1174,18 +1172,18 @@ fun RoyalNewsTicker(
                 path = innerLeft,
                 color = goldDark.copy(alpha = 0.85f),
                 style =
-                    Stroke(
-                        width = innerStroke
-                    )
+    androidx.compose.ui.graphics.drawscope.Stroke(
+        width = innerStroke
+    )
             )
 
             drawPath(
                 path = innerRight,
                 color = goldDark.copy(alpha = 0.85f),
                 style =
-                    Stroke(
-                        width = innerStroke
-                    )
+    androidx.compose.ui.graphics.drawscope.Stroke(
+        width = innerStroke
+    )
             )
 
             /*
