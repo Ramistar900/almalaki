@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -18,6 +19,9 @@ fun AdminSidebar(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val isTV = isRoyalTV(context)
+
     Column(
         modifier = modifier
             .background(AdminPanel)
@@ -39,32 +43,79 @@ fun AdminSidebar(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        AdminMenuItem("⌂", "الرئيسية", section == AdminSection.HOME) {
+        AdminMenuItem(
+            "⌂",
+            "الرئيسية",
+            section == AdminSection.HOME
+        ) {
             onSectionSelected(AdminSection.HOME)
         }
 
-        AdminMenuItem("▣", "تعديل المنتجات", section == AdminSection.PRODUCTS) {
+        AdminMenuItem(
+            "▣",
+            "تعديل المنتجات",
+            section == AdminSection.PRODUCTS
+        ) {
             onSectionSelected(AdminSection.PRODUCTS)
         }
 
-        AdminMenuItem("▤", "الطلبات", section == AdminSection.ORDERS) {
+        AdminMenuItem(
+            "▤",
+            "الطلبات",
+            section == AdminSection.ORDERS
+        ) {
             onSectionSelected(AdminSection.ORDERS)
         }
 
-        AdminMenuItem("📦", "الأرشيف", section == AdminSection.ARCHIVE) {
+        AdminMenuItem(
+            "📦",
+            "الأرشيف",
+            section == AdminSection.ARCHIVE
+        ) {
             onSectionSelected(AdminSection.ARCHIVE)
         }
 
-        AdminMenuItem("◈", "المبيعات", section == AdminSection.SALES) {
+        AdminMenuItem(
+            "◈",
+            "المبيعات",
+            section == AdminSection.SALES
+        ) {
             onSectionSelected(AdminSection.SALES)
         }
 
-        AdminMenuItem("★", "الأكثر طلبًا", section == AdminSection.TOP_PRODUCTS) {
+        AdminMenuItem(
+            "★",
+            "الأكثر طلبًا",
+            section == AdminSection.TOP_PRODUCTS
+        ) {
             onSectionSelected(AdminSection.TOP_PRODUCTS)
         }
 
-        AdminMenuItem("⚙", "إعدادات الحساب", section == AdminSection.ACCOUNT_SETTINGS) {
+        AdminMenuItem(
+            "⚙",
+            "إعدادات الحساب",
+            section == AdminSection.ACCOUNT_SETTINGS
+        ) {
             onSectionSelected(AdminSection.ACCOUNT_SETTINGS)
+        }
+
+        /*
+         * إعدادات التلفزيون تظهر فقط على:
+         * Android TV / Google TV / TV Box / الرسيفرات
+         * التي يتعرف عليها التطبيق كجهاز تلفزيون.
+         *
+         * الهاتف والتابلت لن يظهر فيهما هذا الخيار.
+         */
+        if (isTV) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AdminMenuItem(
+                "📺",
+                "إعدادات التلفزيون",
+                section == AdminSection.TV_SETTINGS
+            ) {
+                onSectionSelected(AdminSection.TV_SETTINGS)
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -85,8 +136,11 @@ fun AdminMenuItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val container = if (selected) AdminGold else Color.Transparent
-    val textColor = if (selected) AdminBlack else AdminCream
+    val container =
+        if (selected) AdminGold else Color.Transparent
+
+    val textColor =
+        if (selected) AdminBlack else AdminCream
 
     Button(
         onClick = onClick,
@@ -101,6 +155,7 @@ fun AdminMenuItem(
         Text("$icon  $title")
     }
 }
+
 @Composable
 fun AdminTopBar(
     title: String,
@@ -112,7 +167,10 @@ fun AdminTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(AdminPanel)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(
+                horizontal = 10.dp,
+                vertical = 8.dp
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -140,10 +198,14 @@ fun AdminTopBar(
         )
 
         TextButton(onClick = onLogout) {
-            Text("خروج", color = AdminGold)
+            Text(
+                "خروج",
+                color = AdminGold
+            )
         }
     }
 }
+
 @Composable
 fun AdminHorizontalMenu(
     section: AdminSection,
@@ -157,42 +219,73 @@ fun AdminHorizontalMenu(
             .padding(horizontal = 8.dp)
     ) {
         item {
-            AdminMenuItem("⌂", "الرئيسية", section == AdminSection.HOME) {
+            AdminMenuItem(
+                "⌂",
+                "الرئيسية",
+                section == AdminSection.HOME
+            ) {
                 onSectionSelected(AdminSection.HOME)
             }
         }
 
         item {
-            AdminMenuItem("▣", "تعديل المنتجات", section == AdminSection.PRODUCTS) {
+            AdminMenuItem(
+                "▣",
+                "تعديل المنتجات",
+                section == AdminSection.PRODUCTS
+            ) {
                 onSectionSelected(AdminSection.PRODUCTS)
             }
         }
 
         item {
-            AdminMenuItem("▤", "الطلبات", section == AdminSection.ORDERS) {
+            AdminMenuItem(
+                "▤",
+                "الطلبات",
+                section == AdminSection.ORDERS
+            ) {
                 onSectionSelected(AdminSection.ORDERS)
             }
         }
 
         item {
-            AdminMenuItem("📦", "الأرشيف", section == AdminSection.ARCHIVE) {
+            AdminMenuItem(
+                "📦",
+                "الأرشيف",
+                section == AdminSection.ARCHIVE
+            ) {
                 onSectionSelected(AdminSection.ARCHIVE)
             }
         }
 
         item {
-            AdminMenuItem("◈", "المبيعات", section == AdminSection.SALES) {
+            AdminMenuItem(
+                "◈",
+                "المبيعات",
+                section == AdminSection.SALES
+            ) {
                 onSectionSelected(AdminSection.SALES)
             }
         }
-        item {
-        AdminMenuItem("🎨", "تحرير الواجهة", section == AdminSection.INTERFACE_SETTINGS) {
-    onSectionSelected(AdminSection.INTERFACE_SETTINGS)
-        }
-    }
 
         item {
-            AdminMenuItem("★", "الأكثر طلبًا", section == AdminSection.TOP_PRODUCTS) {
+            AdminMenuItem(
+                "🎨",
+                "تحرير الواجهة",
+                section == AdminSection.INTERFACE_SETTINGS
+            ) {
+                onSectionSelected(
+                    AdminSection.INTERFACE_SETTINGS
+                )
+            }
+        }
+
+        item {
+            AdminMenuItem(
+                "★",
+                "الأكثر طلبًا",
+                section == AdminSection.TOP_PRODUCTS
+            ) {
                 onSectionSelected(AdminSection.TOP_PRODUCTS)
             }
         }
@@ -203,7 +296,9 @@ fun AdminHorizontalMenu(
                 "إعدادات الحساب",
                 section == AdminSection.ACCOUNT_SETTINGS
             ) {
-                onSectionSelected(AdminSection.ACCOUNT_SETTINGS)
+                onSectionSelected(
+                    AdminSection.ACCOUNT_SETTINGS
+                )
             }
         }
     }
