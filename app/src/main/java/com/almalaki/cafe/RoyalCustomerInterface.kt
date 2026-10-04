@@ -730,95 +730,6 @@ private fun RoyalDrawerItem(
  * ============================================================
  */
 @Composable
-fun RoyalLiveDateTime() {
-
-    var now by
-        remember {
-            mutableStateOf(Date())
-        }
-
-    LaunchedEffect(Unit) {
-
-        while (true) {
-
-            now = Date()
-
-            delay(1000)
-        }
-    }
-
-    val time =
-        remember(now) {
-
-            SimpleDateFormat(
-                "h:mm a",
-                Locale("ar")
-            ).format(now)
-        }
-
-    val date =
-        remember(now) {
-
-            SimpleDateFormat(
-                "EEEE d/M/yyyy",
-                Locale("ar")
-            ).format(now)
-        }
-
-    val timeParts =
-        remember(time) {
-            time.split(":")
-        }
-
-    /*
-     * نبض فاصل الوقت :
-     */
-    val pulseTransition =
-        rememberInfiniteTransition(
-            label = "time_colon_pulse"
-        )
-
-    val colonAlpha by
-        pulseTransition.animateFloat(
-
-            initialValue = 0.30f,
-
-            targetValue = 1f,
-
-            animationSpec =
-                infiniteRepeatable(
-
-                    animation =
-                        tween(
-                            durationMillis = 700,
-                            easing = LinearEasing
-                        ),
-
-                    repeatMode =
-                        RepeatMode.Reverse
-                ),
-
-            label = "colon_alpha"
-        )
-
-    Column(
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Top,
-
-        modifier =
-            Modifier.offset(
-                y = (-2).dp
-            )
-    ) {
-
-        /*
-         * التاريخ فوق مستطيل الوقت
-         */
-@Composable
 fun RoyalLiveDateTime(
     now: Date
 ) {
@@ -838,7 +749,7 @@ fun RoyalLiveDateTime(
         }
 
     /*
-     * نبض فاصل الوقت :
+     * نبض فاصل الوقت
      */
     val pulseTransition =
         rememberInfiniteTransition(
@@ -901,9 +812,6 @@ fun RoyalLiveDateTime(
             maxLines = 1
         )
 
-        /*
-         * فاصل الوقت النابض
-         */
         Text(
 
             text = ":",
