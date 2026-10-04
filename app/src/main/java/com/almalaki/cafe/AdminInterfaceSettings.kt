@@ -36,26 +36,34 @@ private const val KEY_BOTTOM_LOGO_PATH = "bottom_logo_path"
 
 private const val KEY_LOGO_LIBRARY = "logo_library"
 
+/*
+ * الشعار النشط حاليًا.
+ *
+ * هذا المعرّف سيحدد لاحقًا أي شعار
+ * سيتم عرضه في واجهة التطبيق.
+ */
+private const val KEY_ACTIVE_LOGO_ID = "active_logo_id"
+
 private const val DEFAULT_NEWS_TEXT =
     "أهلاً بكم في Royal Coffee ☕"
 
 /*
- * الشعار الأساسي للتطبيق.
+ * المعرّف الثابت للشعار الأساسي.
  *
- * هذا المعرّف ثابت ولن يتم حذفه.
+ * هذا الشعار لا يتم حذفه أبدًا.
  */
 const val ROYAL_DEFAULT_LOGO_ID = "default_royal"
 
 /*
- * نوع حركة الشعار.
+ * أنواع حركة الشعارات.
  *
  * layered:
- * الشعار الأساسي المكوّن من:
+ * الشعار الأساسي المكوّن من طبقتين:
  * - التاج والدرع
  * - RC
  *
  * generic_3d:
- * أي شعار PNG إضافي يرفع من المالك.
+ * أي شعار PNG إضافي.
  */
 const val ROYAL_ANIMATION_LAYERED = "layered"
 const val ROYAL_ANIMATION_GENERIC_3D = "generic_3d"
@@ -73,9 +81,8 @@ data class RoyalLogoEntry(
 /*
  * إعدادات واجهة التطبيق الحالية.
  *
- * topLogoPath و bottomLogoPath محفوظان كما هما
- * حتى لا نكسر الربط الحالي قبل الانتقال إلى
- * نظام الشعار النشط في الخطوة التالية.
+ * أبقينا topLogoPath و bottomLogoPath
+ * للتوافق مع النظام الحالي.
  */
 data class RoyalInterfaceSettings(
     val newsText: String = DEFAULT_NEWS_TEXT,
@@ -86,9 +93,8 @@ data class RoyalInterfaceSettings(
 /*
  * إنشاء تعريف الشعار الأساسي.
  *
- * مهم:
- * filePath فارغ لأن الشعار الأساسي ليس صورة PNG واحدة.
- * هو مكوّن من:
+ * filePath فارغ لأن الشعار الأساسي
+ * يتكون من طبقتين داخل drawable:
  *
  * royal_crest_layer.png
  * royal_rc_layer.png
@@ -145,12 +151,19 @@ private fun logoLibraryFromJson(
 
         for (index in 0 until array.length()) {
 
-            val item = array.optJSONObject(index)
-                ?: continue
+            val item =
+                array.optJSONObject(index)
+                    ?: continue
 
-            val id = item.optString("id")
-            val name = item.optString("name")
-            val filePath = item.optString("filePath")
+            val id =
+                item.optString("id")
+
+            val name =
+                item.optString("name")
+
+            val filePath =
+                item.optString("filePath")
+
             val animationType =
                 item.optString(
                     "animationType",
@@ -205,10 +218,6 @@ private fun saveRoyalLogoLibrary(
  * تحميل مكتبة الشعارات.
  *
  * يضمن وجود الشعار الأساسي دائمًا.
- *
- * كما يقوم بترحيل الشعار القديم الموجود في
- * topLogoPath / bottomLogoPath إلى المكتبة
- * إذا كان موجودًا ولم يكن مسجلًا فيها.
  */
 fun loadRoyalLogoLibrary(
     context: Context
@@ -229,7 +238,7 @@ fun loadRoyalLogoLibrary(
         )
 
     /*
-     * التأكد من وجود الشعار الأساسي دائمًا.
+     * التأكد من وجود الشعار الأساسي.
      */
     if (
         logos.none {
@@ -262,10 +271,12 @@ fun loadRoyalLogoLibrary(
 
         logos.add(
             RoyalLogoEntry(
-                id = "legacy_top_${UUID.randomUUID()}",
+                id =
+                    "legacy_top_${UUID.randomUUID()}",
                 name = "الشعار السابق - علوي",
                 filePath = oldTopPath,
-                animationType = ROYAL_ANIMATION_GENERIC_3D
+                animationType =
+                    ROYAL_ANIMATION_GENERIC_3D
             )
         )
     }
@@ -289,10 +300,12 @@ fun loadRoyalLogoLibrary(
 
         logos.add(
             RoyalLogoEntry(
-                id = "legacy_bottom_${UUID.randomUUID()}",
+                id =
+                    "legacy_bottom_${UUID.randomUUID()}",
                 name = "الشعار السابق - سفلي",
                 filePath = oldBottomPath,
-                animationType = ROYAL_ANIMATION_GENERIC_3D
+                animationType =
+                    ROYAL_ANIMATION_GENERIC_3D
             )
         )
     }
@@ -309,11 +322,107 @@ fun loadRoyalLogoLibrary(
 }
 
 /*
+ * تحميل معرّف الشعار النشط.
+ *
+ * إذا لم يوجد اختيار محفوظ،
+ * يكون الشعار الأساسي هو النشط.
+ */
+fun loadActiveRoyalLogoId(
+    context: Context
+): String {
+
+    val prefs =
+        context.getSharedPreferences(
+            INTERFACE_PREFS,
+            Context.MODE_PRIVATE
+        )
+
+    val savedId =
+        prefs.getString(
+            KEY_ACTIVE_LOGO_ID,
+            ROYAL_DEFAULT_LOGO_ID
+        ) ?: ROYAL_DEFAULT_LOGO_ID
+
+    /*
+     * نتأكد أن المعرّف المحفوظ
+     * ما زال موجودًا داخل المكتبة.
+     *
+     * إذا لم يعد موجودًا نرجع
+     * للشعار الأساسي.
+     */
+    val library =
+        loadRoyalLogoLibrary(context)
+
+    return if (
+        library.any {
+            it.id == savedId
+        }
+    ) {
+        savedId
+    } else {
+        ROYAL_DEFAULT_LOGO_ID
+    }
+}
+
+/*
+ * حفظ الشعار النشط.
+ */
+fun saveActiveRoyalLogoId(
+    context: Context,
+    logoId: String
+) {
+
+    val library =
+        loadRoyalLogoLibrary(context)
+
+    /*
+     * لا نسمح بحفظ معرّف غير موجود.
+     */
+    if (
+        library.none {
+            it.id == logoId
+        }
+    ) {
+        return
+    }
+
+    context
+        .getSharedPreferences(
+            INTERFACE_PREFS,
+            Context.MODE_PRIVATE
+        )
+        .edit()
+        .putString(
+            KEY_ACTIVE_LOGO_ID,
+            logoId
+        )
+        .apply()
+}
+
+/*
+ * الحصول على الشعار النشط بالكامل.
+ */
+fun loadActiveRoyalLogo(
+    context: Context
+): RoyalLogoEntry {
+
+    val library =
+        loadRoyalLogoLibrary(context)
+
+    val activeId =
+        loadActiveRoyalLogoId(context)
+
+    return library.firstOrNull {
+        it.id == activeId
+    } ?: royalDefaultLogoEntry()
+}
+
+/*
  * إضافة شعار PNG جديد إلى مكتبة الشعارات.
  *
  * كل شعار يحصل على ملف مستقل.
  *
- * لن يتم استبدال شعار سابق.
+ * لا يتم استبدال أي شعار سابق.
  */
 private fun addLogoToLibrary(
     context: Context,
@@ -353,8 +462,10 @@ private fun addLogoToLibrary(
                 name = displayName.ifBlank {
                     "شعار إضافي"
                 },
-                filePath = destination.absolutePath,
-                animationType = ROYAL_ANIMATION_GENERIC_3D
+                filePath =
+                    destination.absolutePath,
+                animationType =
+                    ROYAL_ANIMATION_GENERIC_3D
             )
 
         val library =
@@ -394,6 +505,11 @@ fun loadRoyalInterfaceSettings(
      * التأكد من إنشاء مكتبة الشعارات.
      */
     loadRoyalLogoLibrary(context)
+
+    /*
+     * التأكد من وجود شعار نشط صحيح.
+     */
+    loadActiveRoyalLogoId(context)
 
     return RoyalInterfaceSettings(
 
@@ -456,10 +572,14 @@ fun saveRoyalInterfaceSettings(
         .apply()
 
     /*
-     * التأكد من أن الشعار الأساسي
-     * ما زال موجودًا في المكتبة.
+     * التأكد من بقاء الشعار الأساسي.
      */
     loadRoyalLogoLibrary(context)
+
+    /*
+     * التأكد من وجود شعار نشط صالح.
+     */
+    loadActiveRoyalLogoId(context)
 }
 
 @Composable
@@ -497,15 +617,20 @@ fun AdminInterfaceSettings(
         )
     }
 
+    var activeLogoId by remember {
+        mutableStateOf(
+            loadActiveRoyalLogoId(context)
+        )
+    }
+
     var message by remember {
         mutableStateOf("")
     }
 
     /*
-     * اختيار شعار علوي جديد.
+     * اختيار شعار PNG جديد.
      *
-     * لا يستبدل الشعار القديم داخل المكتبة.
-     * ينشئ ملفًا جديدًا مستقلًا.
+     * لا يستبدل شعارًا قديمًا.
      */
     val topLogoPicker =
         rememberLauncherForActivityResult(
@@ -518,7 +643,8 @@ fun AdminInterfaceSettings(
                     addLogoToLibrary(
                         context = context,
                         uri = uri,
-                        displayName = "شعار إضافي ${logoLibrary.size}"
+                        displayName =
+                            "شعار إضافي ${logoLibrary.size}"
                     )
 
                 message =
@@ -532,19 +658,23 @@ fun AdminInterfaceSettings(
                                 context
                             )
 
-                        "تمت إضافة الشعار العلوي إلى مكتبة الشعارات ✓"
+                        /*
+                         * لا نجعل الشعار الجديد
+                         * نشطًا تلقائيًا.
+                         *
+                         * المالك هو من يختاره.
+                         */
+                        "تمت إضافة الشعار إلى المكتبة ✓"
 
                     } else {
 
-                        "تعذر حفظ الشعار العلوي"
+                        "تعذر حفظ الشعار"
                     }
             }
         }
 
     /*
-     * اختيار شعار سفلي جديد.
-     *
-     * أيضًا يحفظ نسخة مستقلة.
+     * إضافة شعار إضافي من الزر الثاني.
      */
     val bottomLogoPicker =
         rememberLauncherForActivityResult(
@@ -557,7 +687,8 @@ fun AdminInterfaceSettings(
                     addLogoToLibrary(
                         context = context,
                         uri = uri,
-                        displayName = "شعار إضافي ${logoLibrary.size}"
+                        displayName =
+                            "شعار إضافي ${logoLibrary.size}"
                     )
 
                 message =
@@ -571,11 +702,11 @@ fun AdminInterfaceSettings(
                                 context
                             )
 
-                        "تمت إضافة الشعار السفلي إلى مكتبة الشعارات ✓"
+                        "تمت إضافة الشعار إلى المكتبة ✓"
 
                     } else {
 
-                        "تعذر حفظ الشعار السفلي"
+                        "تعذر حفظ الشعار"
                     }
             }
         }
@@ -596,7 +727,8 @@ fun AdminInterfaceSettings(
         ) {
 
             Text(
-                text = "إعدادات واجهة الكافيه",
+                text =
+                    "إعدادات واجهة الكافيه",
                 color = AdminGold,
                 fontSize = 22.sp
             )
@@ -624,6 +756,20 @@ fun AdminInterfaceSettings(
                     "عدد الشعارات المحفوظة: ${logoLibrary.size}",
                 color = AdminCream,
                 fontSize = 13.sp
+            )
+
+            Text(
+                text =
+                    "⭐ الشعار النشط: ${
+                        logoLibrary
+                            .firstOrNull {
+                                it.id == activeLogoId
+                            }
+                            ?.name
+                            ?: "الشعار الأساسي"
+                    }",
+                color = AdminGold,
+                fontSize = 15.sp
             )
 
             Row(
@@ -668,18 +814,19 @@ fun AdminInterfaceSettings(
             }
 
             /*
-             * عرض مكتبة الشعارات الحالية.
-             *
-             * لا يوجد حذف هنا في هذه المرحلة.
-             * خصوصًا أن الشعار الأساسي يجب أن يبقى دائمًا.
+             * مكتبة الشعارات.
              */
             Text(
-                text = "📚 مكتبة الشعارات",
+                text =
+                    "📚 مكتبة الشعارات",
                 color = AdminGold,
                 fontSize = 17.sp
             )
 
             logoLibrary.forEach { logo ->
+
+                val isActive =
+                    logo.id == activeLogoId
 
                 val animationText =
                     if (
@@ -691,20 +838,73 @@ fun AdminInterfaceSettings(
                         "3D + توقف 5 ثوانٍ"
                     }
 
-                Text(
-                    text =
-                        if (
-                            logo.id ==
-                            ROYAL_DEFAULT_LOGO_ID
-                        ) {
-                            "👑 ${logo.name} — $animationText"
-                        } else {
-                            "🖼️ ${logo.name} — $animationText"
-                        },
+                Column(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                ) {
 
-                    color = AdminCream,
-                    fontSize = 13.sp
-                )
+                    Text(
+                        text =
+                            if (
+                                logo.id ==
+                                ROYAL_DEFAULT_LOGO_ID
+                            ) {
+                                "👑 ${logo.name} — $animationText"
+                            } else {
+                                "🖼️ ${logo.name} — $animationText"
+                            },
+
+                        color =
+                            if (isActive) {
+                                AdminGold
+                            } else {
+                                AdminCream
+                            },
+
+                        fontSize = 13.sp
+                    )
+
+                    Button(
+                        onClick = {
+
+                            saveActiveRoyalLogoId(
+                                context = context,
+                                logoId = logo.id
+                            )
+
+                            activeLogoId =
+                                loadActiveRoyalLogoId(
+                                    context
+                                )
+
+                            message =
+                                if (
+                                    logo.id ==
+                                    ROYAL_DEFAULT_LOGO_ID
+                                ) {
+                                    "تم اختيار الشعار الأساسي ⭐"
+                                } else {
+                                    "تم اختيار ${logo.name} كشعار نشط ⭐"
+                                }
+                          },
+
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+
+                        Text(
+                            if (isActive) {
+                                "⭐ الشعار النشط حاليًا"
+                            } else {
+                                "اختيار هذا الشعار"
+                            }
+                        )
+                    }
+
+                    Spacer(
+                        Modifier.height(4.dp)
+                    )
+                }
             }
 
             OutlinedTextField(
@@ -738,6 +938,11 @@ fun AdminInterfaceSettings(
 
                     logoLibrary =
                         loadRoyalLogoLibrary(
+                            context
+                        )
+
+                    activeLogoId =
+                        loadActiveRoyalLogoId(
                             context
                         )
 
