@@ -91,7 +91,7 @@ private val RoyalGray = Color(0xFFBDBDBD)
 private const val GENERIC_LOGO_FRONT_PAUSE_MS = 5_000
 private const val GENERIC_LOGO_TURN_MS = 2_400
 
-@Composable
+  @Composable
 fun RoyalCustomerInterface(
     isDarkMode: Boolean = true,
     newsText: String = "أهلاً بكم في Royal Coffee — طعمٌ يستحق التجربة",
@@ -100,6 +100,7 @@ fun RoyalCustomerInterface(
     onMenuClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
+
     val drawerState =
         rememberDrawerState(DrawerValue.Closed)
 
@@ -114,12 +115,16 @@ fun RoyalCustomerInterface(
         }
 
     ModalNavigationDrawer(
+
         drawerState = drawerState,
 
         drawerContent = {
 
             ModalDrawerSheet(
-                modifier = Modifier.width(300.dp),
+
+                modifier =
+                    Modifier.width(300.dp),
+
                 drawerContainerColor =
                     if (isDarkMode) {
                         RoyalCard
@@ -136,7 +141,9 @@ fun RoyalCustomerInterface(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
+                            .padding(
+                                horizontal = 20.dp
+                            )
                 )
 
                 Spacer(
@@ -148,6 +155,7 @@ fun RoyalCustomerInterface(
                     "دخول المالك",
                     isDarkMode
                 ) {
+
                     scope.launch {
                         drawerState.close()
                     }
@@ -160,6 +168,7 @@ fun RoyalCustomerInterface(
                     "الإعدادات",
                     isDarkMode
                 ) {
+
                     scope.launch {
                         drawerState.close()
                     }
@@ -183,41 +192,86 @@ fun RoyalCustomerInterface(
                             ),
 
                     color = RoyalGray,
+
                     fontSize = 12.sp,
-                    textAlign = TextAlign.Center
+
+                    textAlign =
+                        TextAlign.Center
                 )
             }
         }
     ) {
 
-        Column(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(backgroundColor)
+                    .background(
+                        backgroundColor
+                    )
         ) {
 
-            RoyalTopBar(isDarkMode) {
+            /*
+             * =================================================
+             * المحتوى الرئيسي
+             * =================================================
+             *
+             * الشريط السفلي أصبح طبقة فوق المنتجات.
+             *
+             * لذلك المنتجات تستمر خلفه ولا توجد
+             * مساحة سوداء منفصلة أسفله.
+             */
+            Column(
+                modifier =
+                    Modifier.fillMaxSize()
+            ) {
 
-                scope.launch {
-                    drawerState.open()
+                RoyalTopBar(
+                    isDarkMode
+                ) {
+
+                    scope.launch {
+                        drawerState.open()
+                    }
+
+                    onMenuClick()
                 }
 
-                onMenuClick()
+                RoyalTitleFrame(
+                    isDarkMode
+                )
+
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                ) {
+
+                    content()
+                }
             }
 
-            RoyalTitleFrame(isDarkMode)
-
+            /*
+             * =================================================
+             * الشريط السفلي
+             * =================================================
+             *
+             * موضوع فوق المحتوى بدل أن يأخذ مساحة مستقلة.
+             *
+             * لا توجد خلفية هنا.
+             */
             Box(
                 modifier =
                     Modifier
-                        .weight(1f)
                         .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
             ) {
-                content()
-            }
 
-            RoyalBottomBar(newsText)
+                RoyalBottomBar(
+                    newsText
+                )
+            }
         }
     }
 }
