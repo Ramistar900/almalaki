@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
 import androidx.compose.runtime.CompositionLocalProvider
@@ -572,11 +574,14 @@ fun RoyalShinyLogo(
  * الشريط العلوي
  * ============================================================
  */
-@Composable
+ @Composable
 private fun RoyalTopBar(
     isDarkMode: Boolean,
     onMenuClick: () -> Unit
 ) {
+    var isFocused by remember {
+        mutableStateOf(false)
+    }
 
     val background =
         if (isDarkMode) {
@@ -586,7 +591,6 @@ private fun RoyalTopBar(
         }
 
     Box(
-
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -598,22 +602,40 @@ private fun RoyalTopBar(
     ) {
 
         IconButton(
-
             onClick = onMenuClick,
 
             modifier =
                 Modifier
                     .align(Alignment.CenterStart)
                     .size(48.dp)
+                    .onFocusChanged {
+                        isFocused = it.isFocused
+                    }
+                    .focusable()
+                    .then(
+                        if (isFocused) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = RoyalGold,
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
         ) {
 
             Icon(
-
                 Icons.Default.Menu,
 
                 "القائمة",
 
-                tint = RoyalGold,
+                tint =
+                    if (isFocused) {
+                        RoyalGoldLight
+                    } else {
+                        RoyalGold
+                    },
 
                 modifier =
                     Modifier.size(32.dp)
@@ -621,7 +643,6 @@ private fun RoyalTopBar(
         }
 
         Row(
-
             modifier =
                 Modifier
                     .align(Alignment.Center)
@@ -631,9 +652,6 @@ private fun RoyalTopBar(
                 Alignment.CenterVertically
         ) {
 
-            /*
-             * الشعار النشط.
-             */
             RoyalActiveLogo(
                 size = 42.dp
             )
@@ -733,6 +751,9 @@ private fun RoyalDrawerItem(
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
+  var isFocused by remember {
+    mutableStateOf(false)
+  }
 
     val textColor =
         if (isDarkMode) {
@@ -744,22 +765,44 @@ private fun RoyalDrawerItem(
     Row(
 
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 12.dp,
-                    vertical = 4.dp
-                )
-                .clip(
-                    RoundedCornerShape(14.dp)
-                )
-                .clickable(
-                    onClick = onClick
-                )
-                .padding(
-                    horizontal = 12.dp,
-                    vertical = 12.dp
-                ),
+    Modifier
+        .fillMaxWidth()
+        .padding(
+            horizontal = 12.dp,
+            vertical = 4.dp
+        )
+        .clip(
+            RoundedCornerShape(14.dp)
+        )
+        .onFocusChanged {
+            isFocused = it.isFocused
+        }
+        .focusable()
+        .background(
+            if (isFocused) {
+                RoyalGold.copy(alpha = 0.14f)
+            } else {
+                Color.Transparent
+            },
+            RoundedCornerShape(14.dp)
+        )
+        .border(
+            width = if (isFocused) 2.dp else 0.dp,
+            color =
+                if (isFocused) {
+                    RoyalGold
+                } else {
+                    Color.Transparent
+                },
+            shape = RoundedCornerShape(14.dp)
+        )
+        .clickable(
+            onClick = onClick
+        )
+        .padding(
+            horizontal = 12.dp,
+            vertical = 12.dp
+        ),
 
         verticalAlignment =
             Alignment.CenterVertically
