@@ -884,20 +884,21 @@ fun RoyalLiveDateTime(
  * الشريط الإخباري
  * ============================================================
  */
-              
-  @Composable
+ @Composable
 fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
 ) {
-
-    val parts =
-        remember(newsText) {
-            newsText
-                .split("&")
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-        }
+    /*
+     * شريط أخبار Royal:
+     * - مستطيل رفيع بحواف نصف دائرية بالكامل.
+     * - بدون أي زخارف جانبية.
+     * - النص يتحرك من اليمين إلى اليسار.
+     * - مدة الدورة الواحدة: 25 ثانية.
+     * - يبدأ النص من خارج الطرف الأيمن.
+     * - ينتهي بعد خروج النص بالكامل من الطرف الأيسر.
+     * - يستخدم rememberInfiniteTransition بدل while / isRunning.
+     */
 
     var containerWidth by remember {
         mutableStateOf(0)
@@ -907,599 +908,132 @@ fun RoyalNewsTicker(
         mutableStateOf(0)
     }
 
-    val offsetX =
-        remember {
-            Animatable(0f)
-        }
+    val tickerReady =
+        containerWidth > 0 && contentWidth > 0
 
     /*
-     * كثافة الشاشة لتحويل dp إلى px
-     * داخل LaunchedEffect بشكل صحيح.
+     * عند تغيّر النص أو اكتمال قياس الشريط،
+     * تبدأ دورة حركة جديدة من البداية.
      */
-    val density = LocalDensity.current
-
-    /*
-     * مساحة آمنة ثابتة على الطرفين
-     * حتى لا تدخل الأخبار فوق الزخرفة.
-     */
-    val horizontalSafePadding = 20.dp
-
-    LaunchedEffect(
-        containerWidth,
-        contentWidth,
-        newsText
+    androidx.compose.runtime.key(
+        newsText,
+        tickerReady
     ) {
 
-        offsetX.stop()
+        val infiniteTransition =
+            rememberInfiniteTransition(
+                label = "RoyalNewsTickerTransition"
+            )
 
-        if (
-            containerWidth > 0 &&
-            contentWidth > 0
-        ) {
-
-            /*
-             * تحويل 20.dp إلى px
-             * بطريقة صحيحة خارج DrawScope.
-             */
-            val safePaddingPx =
-                with(density) {
-                    horizontalSafePadding.toPx()
-                }
-
-            /*
-             * بداية الخبر:
-             * من خارج المنطقة الآمنة جهة اليمين.
-             */
-            val startX =
-                containerWidth.toFloat() -
-                    safePaddingPx
-
-            /*
-             * نهاية الخبر:
-             * يترك مساحة آمنة جهة اليسار.
-             */
-            val endX =
-                -contentWidth.toFloat() +
-                    safePaddingPx
-
-            while (true) {
-
-                /*
-                 * يبدأ من اليمين.
-                 */
-                offsetX.snapTo(
-                    startX
-                )
-
-                /*
-                 * يتحرك باستمرار من اليمين
-                 * إلى اليسار بسرعة ثابتة.
-                 */
-                offsetX.animateTo(
-                    targetValue = endX,
-                    animationSpec =
-                        tween(
-                            durationMillis = 30000,
+        val progress by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec =
+                if (tickerReady) {
+                    infiniteRepeatable(
+                        animation = tween(
+                            durationMillis = 25_000,
                             easing = LinearEasing
-                        )
-                )
-            }
-        }
-    }
-
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(22.dp)
-                .clipToBounds()
-                .onSizeChanged {
-                    containerWidth = it.width
-                }
-    ) {
+                        ),
+                        repeatMode = RepeatMode.Restart
+                    )
+                } else {
+                    androidx.compose.animation.core.snap(0f)
+                },
+            label = "RoyalNewsTickerProgress"
+        )
 
         /*
-         * طبقة الأخبار.
+         * المسافة الكاملة التي يجب أن يقطعها النص:
+         *
+         * عرض الشريط
+         * +
+         * عرض النص بالكامل
+         *
+         * البداية:
+         * النص خارج الطرف الأيمن.
+         *
+         * النهاية:
+         * النص خارج الطرف الأيسر بالكامل.
          */
+        val currentOffset =
+            if (tickerReady) {
+                val travelDistance =
+                    containerWidth.toFloat() +
+                        contentWidth.toFloat()
+
+                containerWidth.toFloat() -
+                    (travelDistance * progress)
+            } else {
+                0f
+            }
+
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clipToBounds()
+            modifier = modifier
+                .height(22.dp)
+                .clip(
+                    RoundedCornerShape(50)
+                )
+                .background(
+                    Color(0xFF111111)
+                )
+                .border(
+                    width = 1.dp,
+                    color = RoyalGold,
+                    shape = RoundedCornerShape(50)
+                )
+                .clipToBounds()
+                .onSizeChanged { size ->
+                    containerWidth = size.width
+                }
         ) {
 
             Row(
-                modifier =
-                    Modifier
-                        .wrapContentWidth(
-                            unbounded = true
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .onSizeChanged { size ->
+                        contentWidth = size.width
+                    }
+                    .offset {
+                        IntOffset(
+                            x = currentOffset.roundToInt(),
+                            y = 0
                         )
-                        .onSizeChanged {
-                            contentWidth = it.width
-                        }
-                        .offset {
-                            IntOffset(
-                                offsetX.value.roundToInt(),
-                                0
-                            )
-                        },
-
-                verticalAlignment =
-                    Alignment.CenterVertically
+                    },
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                parts.forEachIndexed { index, part ->
+                newsText
+                    .split("&")
+                    .forEachIndexed { index, text ->
 
-                    Text(
-                        text = part,
-                        color = RoyalGoldLight,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-
-                    if (
-                        index < parts.lastIndex
-                    ) {
-
-                        Spacer(
-                            modifier =
-                                Modifier.width(7.dp)
+                        Text(
+                            text = text.trim(),
+                            color = Color(0xFFF9F295),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false,
+                            textAlign = TextAlign.Center
                         )
 
-                        RoyalTickerLogoSeparator()
-
-                        Spacer(
-                            modifier =
-                                Modifier.width(7.dp)
-                        )
+                        /*
+                         * الفاصل الملكي الموجود لديك مسبقاً.
+                         * لا نغيّر تصميمه.
+                         */
+                        if (
+                            index <
+                                newsText.split("&").lastIndex
+                        ) {
+                            RoyalTickerLogoSeparator()
+                        }
                     }
-                }
             }
-        }
-
-        /*
-         * طبقة الزخرفة فوق الأخبار،
-         * حتى تبقى الأطراف واضحة ونظيفة.
-         */
-        Canvas(
-            modifier =
-                Modifier.matchParentSize()
-        ) {
-
-            val w = size.width
-            val h = size.height
-
-            val gold =
-                Color(0xFFD4AF37)
-
-            val goldLight =
-                Color(0xFFFFE9A3)
-
-            val goldDark =
-                Color(0xFF8C6B16)
-
-            val y =
-                h / 2f
-
-            val top =
-                2.5.dp.toPx()
-
-            val bottom =
-                h - 2.5.dp.toPx()
-
-            val stroke =
-                1.1.dp.toPx()
-
-            val leftEdge =
-                17.dp.toPx()
-
-            val rightEdge =
-                w - 17.dp.toPx()
-
-            /*
-             * الخط العلوي.
-             */
-            val topLine =
-                Path().apply {
-
-                    moveTo(
-                        leftEdge,
-                        top
-                    )
-
-                    lineTo(
-                        rightEdge,
-                        top
-                    )
-                }
-
-            /*
-             * الخط السفلي.
-             */
-            val bottomLine =
-                Path().apply {
-
-                    moveTo(
-                        leftEdge,
-                        bottom
-                    )
-
-                    lineTo(
-                        rightEdge,
-                        bottom
-                    )
-                }
-
-            drawPath(
-                path = topLine,
-                color = gold,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = stroke
-                    )
-            )
-
-            drawPath(
-                path = bottomLine,
-                color = gold,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = stroke
-                    )
-            )
-
-            /*
-             * الزخرفة الملكية اليسرى.
-             */
-            val leftOrnament =
-                Path().apply {
-
-                    moveTo(
-                        leftEdge,
-                        top
-                    )
-
-                    cubicTo(
-                        13.dp.toPx(),
-                        top,
-                        12.dp.toPx(),
-                        4.dp.toPx(),
-                        9.dp.toPx(),
-                        5.dp.toPx()
-                    )
-
-                    cubicTo(
-                        5.dp.toPx(),
-                        6.dp.toPx(),
-                        5.dp.toPx(),
-                        8.dp.toPx(),
-                        8.dp.toPx(),
-                        9.dp.toPx()
-                    )
-
-                    cubicTo(
-                        11.dp.toPx(),
-                        10.dp.toPx(),
-                        13.dp.toPx(),
-                        9.dp.toPx(),
-                        13.dp.toPx(),
-                        y
-                    )
-
-                    cubicTo(
-                        13.dp.toPx(),
-                        13.dp.toPx(),
-                        11.dp.toPx(),
-                        12.dp.toPx(),
-                        8.dp.toPx(),
-                        13.dp.toPx()
-                    )
-
-                    cubicTo(
-                        5.dp.toPx(),
-                        14.dp.toPx(),
-                        5.dp.toPx(),
-                        16.dp.toPx(),
-                        9.dp.toPx(),
-                        17.dp.toPx()
-                    )
-
-                    cubicTo(
-                        12.dp.toPx(),
-                        18.dp.toPx(),
-                        13.dp.toPx(),
-                        bottom,
-                        leftEdge,
-                        bottom
-                    )
-                }
-
-            /*
-             * اللفة الداخلية اليسرى.
-             */
-            val leftCurl =
-                Path().apply {
-
-                    moveTo(
-                        9.dp.toPx(),
-                        6.dp.toPx()
-                    )
-
-                    cubicTo(
-                        4.dp.toPx(),
-                        5.dp.toPx(),
-                        3.dp.toPx(),
-                        8.dp.toPx(),
-                        7.dp.toPx(),
-                        10.dp.toPx()
-                    )
-
-                    cubicTo(
-                        9.dp.toPx(),
-                        11.dp.toPx(),
-                        10.dp.toPx(),
-                        11.dp.toPx(),
-                        11.dp.toPx(),
-                        y
-                    )
-
-                    cubicTo(
-                        10.dp.toPx(),
-                        11.dp.toPx(),
-                        9.dp.toPx(),
-                        11.dp.toPx(),
-                        7.dp.toPx(),
-                        12.dp.toPx()
-                    )
-
-                    cubicTo(
-                        3.dp.toPx(),
-                        14.dp.toPx(),
-                        4.dp.toPx(),
-                        17.dp.toPx(),
-                        9.dp.toPx(),
-                        16.dp.toPx()
-                    )
-                }
-
-            /*
-             * الزخرفة الملكية اليمنى.
-             */
-            val rightOrnament =
-                Path().apply {
-
-                    moveTo(
-                        rightEdge,
-                        top
-                    )
-
-                    cubicTo(
-                        w - 13.dp.toPx(),
-                        top,
-                        w - 12.dp.toPx(),
-                        4.dp.toPx(),
-                        w - 9.dp.toPx(),
-                        5.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 5.dp.toPx(),
-                        6.dp.toPx(),
-                        w - 5.dp.toPx(),
-                        8.dp.toPx(),
-                        w - 8.dp.toPx(),
-                        9.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 11.dp.toPx(),
-                        10.dp.toPx(),
-                        w - 13.dp.toPx(),
-                        9.dp.toPx(),
-                        w - 13.dp.toPx(),
-                        y
-                    )
-
-                    cubicTo(
-                        w - 13.dp.toPx(),
-                        13.dp.toPx(),
-                        w - 11.dp.toPx(),
-                        12.dp.toPx(),
-                        w - 8.dp.toPx(),
-                        13.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 5.dp.toPx(),
-                        14.dp.toPx(),
-                        w - 5.dp.toPx(),
-                        16.dp.toPx(),
-                        w - 9.dp.toPx(),
-                        17.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 12.dp.toPx(),
-                        18.dp.toPx(),
-                        w - 13.dp.toPx(),
-                        bottom,
-                        rightEdge,
-                        bottom
-                    )
-                }
-
-            /*
-             * اللفة الداخلية اليمنى.
-             */
-            val rightCurl =
-                Path().apply {
-
-                    moveTo(
-                        w - 9.dp.toPx(),
-                        6.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 4.dp.toPx(),
-                        5.dp.toPx(),
-                        w - 3.dp.toPx(),
-                        8.dp.toPx(),
-                        w - 7.dp.toPx(),
-                        10.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 9.dp.toPx(),
-                        11.dp.toPx(),
-                        w - 10.dp.toPx(),
-                        11.dp.toPx(),
-                        w - 11.dp.toPx(),
-                        y
-                    )
-
-                    cubicTo(
-                        w - 10.dp.toPx(),
-                        11.dp.toPx(),
-                        w - 9.dp.toPx(),
-                        11.dp.toPx(),
-                        w - 7.dp.toPx(),
-                        12.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 3.dp.toPx(),
-                        14.dp.toPx(),
-                        w - 4.dp.toPx(),
-                        17.dp.toPx(),
-                        w - 9.dp.toPx(),
-                        16.dp.toPx()
-                    )
-                }
-
-            /*
-             * رسم الزخرفة الرئيسية.
-             */
-            drawPath(
-                path = leftOrnament,
-                color = gold,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = stroke
-                    )
-            )
-
-            drawPath(
-                path = rightOrnament,
-                color = gold,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = stroke
-                    )
-            )
-
-            /*
-             * اللمعة الداخلية.
-             */
-            drawPath(
-                path = leftCurl,
-                color = goldLight,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 0.65.dp.toPx()
-                    )
-            )
-
-            drawPath(
-                path = rightCurl,
-                color = goldLight,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 0.65.dp.toPx()
-                    )
-            )
-
-            /*
-             * لمعة ذهبية رفيعة أعلى الشريط.
-             */
-            drawLine(
-                color =
-                    goldLight.copy(
-                        alpha = 0.75f
-                    ),
-                start =
-                    Offset(
-                        20.dp.toPx(),
-                        top
-                    ),
-                end =
-                    Offset(
-                        w - 20.dp.toPx(),
-                        top
-                    ),
-                strokeWidth =
-                    0.45.dp.toPx()
-            )
-
-            /*
-             * النقطة الوسطية اليسرى.
-             */
-            drawCircle(
-                color = goldLight,
-                radius = 0.75.dp.toPx(),
-                center =
-                    Offset(
-                        12.dp.toPx(),
-                        y
-                    )
-            )
-
-            /*
-             * النقطة الوسطية اليمنى.
-             */
-            drawCircle(
-                color = goldLight,
-                radius = 0.75.dp.toPx(),
-                center =
-                    Offset(
-                        w - 12.dp.toPx(),
-                        y
-                    )
-            )
-
-            /*
-             * النقاط الذهبية الصغيرة العلوية.
-             */
-            drawCircle(
-                color = goldDark,
-                radius = 0.65.dp.toPx(),
-                center =
-                    Offset(
-                        10.dp.toPx(),
-                        5.dp.toPx()
-                    )
-            )
-
-            drawCircle(
-                color = goldDark,
-                radius = 0.65.dp.toPx(),
-                center =
-                    Offset(
-                        w - 10.dp.toPx(),
-                        5.dp.toPx()
-                    )
-            )
         }
     }
 }
 
-@Composable
-private fun RoyalTickerLogoSeparator() {
-    RoyalActiveLogo(
-        size = 18.dp
-    )
-}
+
 
 /*
  * ============================================================
