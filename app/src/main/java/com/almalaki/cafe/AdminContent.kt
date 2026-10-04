@@ -49,6 +49,12 @@ fun AdminContent(
     onDeleteOrder: (Long) -> Unit,
     highlightedOrderId: Long? = null
 ) {
+        if (section == AdminSection.TV_SETTINGS) {
+        AdminTVSettingsScreen(
+            modifier = Modifier.fillMaxSize()
+        )
+        return
+        }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -216,13 +222,7 @@ fun AdminContent(
         )
     }
             }
-            AdminSection.TV_SETTINGS -> {
-    item {
-        AdminTVSettingsScreen(
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-            }
+            
 AdminSection.SALES -> {
     item {
         RoyalSalesRecordsScreen(
