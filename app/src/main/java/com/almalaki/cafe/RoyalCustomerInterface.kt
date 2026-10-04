@@ -888,6 +888,7 @@ fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
 ) {
+
     val parts =
         remember(newsText) {
             newsText
@@ -914,12 +915,14 @@ fun RoyalNewsTicker(
         contentWidth,
         newsText
     ) {
+
         offsetX.stop()
 
         if (
             containerWidth > 0 &&
             contentWidth > 0
         ) {
+
             while (true) {
 
                 offsetX.snapTo(
@@ -948,288 +951,437 @@ fun RoyalNewsTicker(
                 .clipToBounds()
                 .onSizeChanged {
                     containerWidth = it.width
-                },
-        contentAlignment = Alignment.Center
+                }
     ) {
 
-        /*
-         * الإطار الملكي
-         *
-         * يتم رسمه خلف الأخبار فقط،
-         * والنص يبقى حرًا ويتحرك فوقه.
-         */
         Canvas(
             modifier =
-                Modifier
-                    .matchParentSize()
+                Modifier.matchParentSize()
         ) {
 
             val w = size.width
             val h = size.height
 
-            val centerY = h / 2f
+            val gold =
+                Color(0xFFD4AF37)
 
-            val gold = Color(0xFFD4AF37)
-            val goldLight = Color(0xFFFFE9A3)
-            val goldDark = Color(0xFF8C6B16)
+            val goldLight =
+                Color(0xFFFFE9A3)
 
-            val stroke = 1.2.dp.toPx()
-            val innerStroke = 0.55.dp.toPx()
+            val goldDark =
+                Color(0xFF8C6B16)
+
+            val y =
+                h / 2f
+
+            val left =
+                3.dp.toPx()
+
+            val right =
+                w - 3.dp.toPx()
+
+            val top =
+                2.5.dp.toPx()
+
+            val bottom =
+                h - 2.5.dp.toPx()
+
+            val stroke =
+                1.1.dp.toPx()
 
             /*
-             * الطرف الأيسر الملكي
-             *
-             * يشبه القوس {
-             * لكن مرسوم هندسيًا وليس كنص.
+             * الخط العلوي الرئيسي.
+             * يبدأ بعد الزخرفة اليسرى
+             * وينتهي قبل الزخرفة اليمنى.
              */
-            val leftPath =
+            val topLine =
                 Path().apply {
 
                     moveTo(
-                        10.dp.toPx(),
-                        2.dp.toPx()
-                    )
-
-                    cubicTo(
-                        4.dp.toPx(),
-                        2.dp.toPx(),
-                        3.dp.toPx(),
-                        centerY - 4.dp.toPx(),
-                        3.dp.toPx(),
-                        centerY
-                    )
-
-                    cubicTo(
-                        3.dp.toPx(),
-                        centerY + 4.dp.toPx(),
-                        4.dp.toPx(),
-                        h - 2.dp.toPx(),
-                        10.dp.toPx(),
-                        h - 2.dp.toPx()
-                    )
-                }
-
-            /*
-             * الطرف الأيمن الملكي
-             *
-             * عكس الطرف الأيسر تمامًا.
-             */
-            val rightPath =
-                Path().apply {
-
-                    moveTo(
-                        w - 10.dp.toPx(),
-                        2.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 4.dp.toPx(),
-                        2.dp.toPx(),
-                        w - 3.dp.toPx(),
-                        centerY - 4.dp.toPx(),
-                        w - 3.dp.toPx(),
-                        centerY
-                    )
-
-                    cubicTo(
-                        w - 3.dp.toPx(),
-                        centerY + 4.dp.toPx(),
-                        w - 4.dp.toPx(),
-                        h - 2.dp.toPx(),
-                        w - 10.dp.toPx(),
-                        h - 2.dp.toPx()
-                    )
-                }
-
-            /*
-             * الخط العلوي والسفلي.
-             */
-            val topPath =
-                Path().apply {
-
-                    moveTo(
-                        10.dp.toPx(),
-                        2.dp.toPx()
+                        17.dp.toPx(),
+                        top
                     )
 
                     lineTo(
-                        w - 10.dp.toPx(),
-                        2.dp.toPx()
-                    )
-                }
-
-            val bottomPath =
-                Path().apply {
-
-                    moveTo(
-                        10.dp.toPx(),
-                        h - 2.dp.toPx()
-                    )
-
-                    lineTo(
-                        w - 10.dp.toPx(),
-                        h - 2.dp.toPx()
+                        w - 17.dp.toPx(),
+                        top
                     )
                 }
 
             /*
- * إطار ذهبي أساسي.
- */
-drawPath(
-    path = leftPath,
-    color = gold,
-    style =
-        androidx.compose.ui.graphics.drawscope.Stroke(
-            width = stroke
-        )
-)
-
-drawPath(
-    path = rightPath,
-    color = gold,
-    style =
-        androidx.compose.ui.graphics.drawscope.Stroke(
-            width = stroke
-        )
-)
-
-drawPath(
-    path = topPath,
-    color = gold,
-    style =
-        androidx.compose.ui.graphics.drawscope.Stroke(
-            width = stroke
-        )
-)
-
-drawPath(
-    path = bottomPath,
-    color = gold,
-    style =
-        androidx.compose.ui.graphics.drawscope.Stroke(
-            width = stroke
-        )
-)
-
-/*
- * خط داخلي ذهبي خفيف يعطي
- */
-            val innerLeft =
+             * الخط السفلي الرئيسي.
+             */
+            val bottomLine =
                 Path().apply {
 
                     moveTo(
-                        11.dp.toPx(),
-                        4.dp.toPx()
+                        17.dp.toPx(),
+                        bottom
                     )
 
-                    cubicTo(
-                        7.dp.toPx(),
-                        4.dp.toPx(),
-                        6.dp.toPx(),
-                        centerY - 3.dp.toPx(),
-                        6.dp.toPx(),
-                        centerY
-                    )
-
-                    cubicTo(
-                        6.dp.toPx(),
-                        centerY + 3.dp.toPx(),
-                        7.dp.toPx(),
-                        h - 4.dp.toPx(),
-                        11.dp.toPx(),
-                        h - 4.dp.toPx()
-                    )
-                }
-
-            val innerRight =
-                Path().apply {
-
-                    moveTo(
-                        w - 11.dp.toPx(),
-                        4.dp.toPx()
-                    )
-
-                    cubicTo(
-                        w - 7.dp.toPx(),
-                        4.dp.toPx(),
-                        w - 6.dp.toPx(),
-                        centerY - 3.dp.toPx(),
-                        w - 6.dp.toPx(),
-                        centerY
-                    )
-
-                    cubicTo(
-                        w - 6.dp.toPx(),
-                        centerY + 3.dp.toPx(),
-                        w - 7.dp.toPx(),
-                        h - 4.dp.toPx(),
-                        w - 11.dp.toPx(),
-                        h - 4.dp.toPx()
+                    lineTo(
+                        w - 17.dp.toPx(),
+                        bottom
                     )
                 }
 
             drawPath(
-                path = innerLeft,
-                color = goldDark.copy(alpha = 0.85f),
+                path = topLine,
+                color = gold,
                 style =
-    androidx.compose.ui.graphics.drawscope.Stroke(
-        width = innerStroke
-    )
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = stroke
+                    )
             )
 
             drawPath(
-                path = innerRight,
-                color = goldDark.copy(alpha = 0.85f),
+                path = bottomLine,
+                color = gold,
                 style =
-    androidx.compose.ui.graphics.drawscope.Stroke(
-        width = innerStroke
-    )
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = stroke
+                    )
             )
 
             /*
-             * لمعة ذهبية صغيرة في أعلى الإطار.
+             * الزخرفة الملكية اليسرى.
+             *
+             * تبدأ من الخط العلوي،
+             * تلتف إلى الداخل،
+             * تمر حول المنتصف،
+             * ثم تعود إلى الخط السفلي.
+             */
+            val leftOrnament =
+                Path().apply {
+
+                    moveTo(
+                        17.dp.toPx(),
+                        top
+                    )
+
+                    cubicTo(
+                        13.dp.toPx(),
+                        top,
+                        12.dp.toPx(),
+                        4.dp.toPx(),
+                        9.dp.toPx(),
+                        5.dp.toPx()
+                    )
+
+                    cubicTo(
+                        5.dp.toPx(),
+                        6.dp.toPx(),
+                        5.dp.toPx(),
+                        8.dp.toPx(),
+                        8.dp.toPx(),
+                        9.dp.toPx()
+                    )
+
+                    cubicTo(
+                        11.dp.toPx(),
+                        10.dp.toPx(),
+                        13.dp.toPx(),
+                        9.dp.toPx(),
+                        13.dp.toPx(),
+                        y
+                    )
+
+                    cubicTo(
+                        13.dp.toPx(),
+                        13.dp.toPx(),
+                        11.dp.toPx(),
+                        12.dp.toPx(),
+                        8.dp.toPx(),
+                        13.dp.toPx()
+                    )
+
+                    cubicTo(
+                        5.dp.toPx(),
+                        14.dp.toPx(),
+                        5.dp.toPx(),
+                        16.dp.toPx(),
+                        9.dp.toPx(),
+                        17.dp.toPx()
+                    )
+
+                    cubicTo(
+                        12.dp.toPx(),
+                        18.dp.toPx(),
+                        13.dp.toPx(),
+                        bottom,
+                        17.dp.toPx(),
+                        bottom
+                    )
+                }
+
+            /*
+             * التفافة داخلية صغيرة لليسار.
+             */
+            val leftCurl =
+                Path().apply {
+
+                    moveTo(
+                        9.dp.toPx(),
+                        6.dp.toPx()
+                    )
+
+                    cubicTo(
+                        4.dp.toPx(),
+                        5.dp.toPx(),
+                        3.dp.toPx(),
+                        8.dp.toPx(),
+                        7.dp.toPx(),
+                        10.dp.toPx()
+                    )
+
+                    cubicTo(
+                        9.dp.toPx(),
+                        11.dp.toPx(),
+                        10.dp.toPx(),
+                        11.dp.toPx(),
+                        11.dp.toPx(),
+                        y
+                    )
+
+                    cubicTo(
+                        10.dp.toPx(),
+                        11.dp.toPx(),
+                        9.dp.toPx(),
+                        11.dp.toPx(),
+                        7.dp.toPx(),
+                        12.dp.toPx()
+                    )
+
+                    cubicTo(
+                        3.dp.toPx(),
+                        14.dp.toPx(),
+                        4.dp.toPx(),
+                        17.dp.toPx(),
+                        9.dp.toPx(),
+                        16.dp.toPx()
+                    )
+                }
+
+            /*
+             * الزخرفة الملكية اليمنى.
+             * نسخة معكوسة من اليسار.
+             */
+            val rightOrnament =
+                Path().apply {
+
+                    moveTo(
+                        w - 17.dp.toPx(),
+                        top
+                    )
+
+                    cubicTo(
+                        w - 13.dp.toPx(),
+                        top,
+                        w - 12.dp.toPx(),
+                        4.dp.toPx(),
+                        w - 9.dp.toPx(),
+                        5.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 5.dp.toPx(),
+                        6.dp.toPx(),
+                        w - 5.dp.toPx(),
+                        8.dp.toPx(),
+                        w - 8.dp.toPx(),
+                        9.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 11.dp.toPx(),
+                        10.dp.toPx(),
+                        w - 13.dp.toPx(),
+                        9.dp.toPx(),
+                        w - 13.dp.toPx(),
+                        y
+                    )
+
+                    cubicTo(
+                        w - 13.dp.toPx(),
+                        13.dp.toPx(),
+                        w - 11.dp.toPx(),
+                        12.dp.toPx(),
+                        w - 8.dp.toPx(),
+                        13.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 5.dp.toPx(),
+                        14.dp.toPx(),
+                        w - 5.dp.toPx(),
+                        16.dp.toPx(),
+                        w - 9.dp.toPx(),
+                        17.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 12.dp.toPx(),
+                        18.dp.toPx(),
+                        w - 13.dp.toPx(),
+                        bottom,
+                        w - 17.dp.toPx(),
+                        bottom
+                    )
+                }
+
+            /*
+             * التفافة داخلية صغيرة لليمين.
+             */
+            val rightCurl =
+                Path().apply {
+
+                    moveTo(
+                        w - 9.dp.toPx(),
+                        6.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 4.dp.toPx(),
+                        5.dp.toPx(),
+                        w - 3.dp.toPx(),
+                        8.dp.toPx(),
+                        w - 7.dp.toPx(),
+                        10.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 9.dp.toPx(),
+                        11.dp.toPx(),
+                        w - 10.dp.toPx(),
+                        11.dp.toPx(),
+                        w - 11.dp.toPx(),
+                        y
+                    )
+
+                    cubicTo(
+                        w - 10.dp.toPx(),
+                        11.dp.toPx(),
+                        w - 9.dp.toPx(),
+                        11.dp.toPx(),
+                        w - 7.dp.toPx(),
+                        12.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 3.dp.toPx(),
+                        14.dp.toPx(),
+                        w - 4.dp.toPx(),
+                        17.dp.toPx(),
+                        w - 9.dp.toPx(),
+                        16.dp.toPx()
+                    )
+                }
+
+            drawPath(
+                path = leftOrnament,
+                color = gold,
+                style =
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = stroke
+                    )
+            )
+
+            drawPath(
+                path = leftCurl,
+                color = goldLight,
+                style =
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 0.65.dp.toPx()
+                    )
+            )
+
+            drawPath(
+                path = rightOrnament,
+                color = gold,
+                style =
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = stroke
+                    )
+            )
+
+            drawPath(
+                path = rightCurl,
+                color = goldLight,
+                style =
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 0.65.dp.toPx()
+                    )
+            )
+
+            /*
+             * لمعة ذهبية رفيعة أعلى الشريط.
              */
             drawLine(
                 color = goldLight.copy(alpha = 0.75f),
                 start =
                     Offset(
-                        18.dp.toPx(),
-                        2.dp.toPx()
+                        20.dp.toPx(),
+                        top
                     ),
                 end =
                     Offset(
-                        w - 18.dp.toPx(),
-                        2.dp.toPx()
+                        w - 20.dp.toPx(),
+                        top
                     ),
-                strokeWidth = 0.5.dp.toPx()
+                strokeWidth =
+                    0.45.dp.toPx()
             )
 
             /*
-             * نقاط زخرفية صغيرة قرب القوسين.
+             * نقاط ملكية صغيرة عند بداية ونهاية الزخرفة.
              */
             drawCircle(
                 color = goldLight,
-                radius = 0.8.dp.toPx(),
+                radius = 0.75.dp.toPx(),
                 center =
                     Offset(
-                        13.dp.toPx(),
-                        centerY
+                        12.dp.toPx(),
+                        y
                     )
             )
 
             drawCircle(
                 color = goldLight,
-                radius = 0.8.dp.toPx(),
+                radius = 0.75.dp.toPx(),
                 center =
                     Offset(
-                        w - 13.dp.toPx(),
-                        centerY
+                        w - 12.dp.toPx(),
+                        y
+                    )
+            )
+
+            /*
+             * لمسة ذهبية صغيرة في أعلى كل طرف.
+             */
+            drawCircle(
+                color = goldDark,
+                radius = 0.65.dp.toPx(),
+                center =
+                    Offset(
+                        10.dp.toPx(),
+                        5.dp.toPx()
+                    )
+            )
+
+            drawCircle(
+                color = goldDark,
+                radius = 0.65.dp.toPx(),
+                center =
+                    Offset(
+                        w - 10.dp.toPx(),
+                        5.dp.toPx()
                     )
             )
         }
 
         /*
          * الأخبار المتحركة.
+         * لا نغيّر سرعة الحركة أو نظام &.
          */
         Row(
             modifier =
@@ -1255,16 +1407,10 @@ drawPath(
 
                 Text(
                     text = part,
-
                     color = RoyalGoldLight,
-
                     fontSize = 9.sp,
-
-                    fontWeight =
-                        FontWeight.Medium,
-
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
-
                     softWrap = false
                 )
 
@@ -1287,6 +1433,8 @@ drawPath(
         }
     }
 }
+
+              
 @Composable
 private fun RoyalTickerLogoSeparator() {
     RoyalActiveLogo(
