@@ -60,6 +60,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -883,7 +884,8 @@ fun RoyalLiveDateTime(
  * الشريط الإخباري
  * ============================================================
  */
-              @Composable
+              
+  @Composable
 fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
@@ -911,8 +913,14 @@ fun RoyalNewsTicker(
         }
 
     /*
-     * المساحة الداخلية الآمنة للأخبار.
-     * نترك مكانًا ثابتًا للزخرفة الذهبية على الطرفين.
+     * كثافة الشاشة لتحويل dp إلى px
+     * داخل LaunchedEffect بشكل صحيح.
+     */
+    val density = LocalDensity.current
+
+    /*
+     * مساحة آمنة ثابتة على الطرفين
+     * حتى لا تدخل الأخبار فوق الزخرفة.
      */
     val horizontalSafePadding = 20.dp
 
@@ -929,28 +937,43 @@ fun RoyalNewsTicker(
             contentWidth > 0
         ) {
 
-            val safePadding =
-                horizontalSafePadding.toPx()
+            /*
+             * تحويل 20.dp إلى px
+             * بطريقة صحيحة خارج DrawScope.
+             */
+            val safePaddingPx =
+                with(density) {
+                    horizontalSafePadding.toPx()
+                }
 
+            /*
+             * بداية الخبر:
+             * من خارج المنطقة الآمنة جهة اليمين.
+             */
             val startX =
-                containerWidth.toFloat() - safePadding
+                containerWidth.toFloat() -
+                    safePaddingPx
 
+            /*
+             * نهاية الخبر:
+             * يترك مساحة آمنة جهة اليسار.
+             */
             val endX =
-                -(contentWidth.toFloat() - safePadding)
+                -contentWidth.toFloat() +
+                    safePaddingPx
 
             while (true) {
 
                 /*
-                 * يبدأ الخبر من خارج المنطقة
-                 * الداخلية جهة اليمين.
+                 * يبدأ من اليمين.
                  */
                 offsetX.snapTo(
                     startX
                 )
 
                 /*
-                 * يتحرك الخبر ببطء وثبات
-                 * من اليمين إلى اليسار.
+                 * يتحرك باستمرار من اليمين
+                 * إلى اليسار بسرعة ثابتة.
                  */
                 offsetX.animateTo(
                     targetValue = endX,
@@ -977,9 +1000,6 @@ fun RoyalNewsTicker(
 
         /*
          * طبقة الأخبار.
-         *
-         * الأخبار تتحرك خلف الزخرفة،
-         * لذلك لن تغطي الخطوط الذهبية.
          */
         Box(
             modifier =
@@ -1020,18 +1040,19 @@ fun RoyalNewsTicker(
                     )
 
                     if (
-                        index <
-                        parts.lastIndex
+                        index < parts.lastIndex
                     ) {
 
                         Spacer(
-                            Modifier.width(7.dp)
+                            modifier =
+                                Modifier.width(7.dp)
                         )
 
                         RoyalTickerLogoSeparator()
 
                         Spacer(
-                            Modifier.width(7.dp)
+                            modifier =
+                                Modifier.width(7.dp)
                         )
                     }
                 }
@@ -1039,10 +1060,8 @@ fun RoyalNewsTicker(
         }
 
         /*
-         * طبقة الزخرفة الذهبية.
-         *
-         * توضع فوق الأخبار حتى تبقى
-         * الأطراف نظيفة دائمًا.
+         * طبقة الزخرفة فوق الأخبار،
+         * حتى تبقى الأطراف واضحة ونظيفة.
          */
         Canvas(
             modifier =
@@ -1132,7 +1151,7 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * الزخرفة اليسرى الرئيسية.
+             * الزخرفة الملكية اليسرى.
              */
             val leftOrnament =
                 Path().apply {
@@ -1246,7 +1265,7 @@ fun RoyalNewsTicker(
                 }
 
             /*
-             * الزخرفة اليمنى الرئيسية.
+             * الزخرفة الملكية اليمنى.
              */
             val rightOrnament =
                 Path().apply {
@@ -1360,7 +1379,7 @@ fun RoyalNewsTicker(
                 }
 
             /*
-             * رسم الزخارف الرئيسية.
+             * رسم الزخرفة الرئيسية.
              */
             drawPath(
                 path = leftOrnament,
@@ -1402,7 +1421,7 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * لمعة ذهبية رفيعة في الأعلى.
+             * لمعة ذهبية رفيعة أعلى الشريط.
              */
             drawLine(
                 color =
@@ -1424,7 +1443,7 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * النقطة الملكية الوسطية يسارًا.
+             * النقطة الوسطية اليسرى.
              */
             drawCircle(
                 color = goldLight,
@@ -1437,7 +1456,7 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * النقطة الملكية الوسطية يمينًا.
+             * النقطة الوسطية اليمنى.
              */
             drawCircle(
                 color = goldLight,
@@ -1475,7 +1494,6 @@ fun RoyalNewsTicker(
     }
 }
 
-              
 @Composable
 private fun RoyalTickerLogoSeparator() {
     RoyalActiveLogo(
