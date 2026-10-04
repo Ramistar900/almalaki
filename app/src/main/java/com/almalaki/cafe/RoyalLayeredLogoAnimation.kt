@@ -31,7 +31,7 @@ private const val RC_TURN_MS = 2_400
 /*
  * مدة مرور اللمعة على الدرع والتاج.
  */
-private const val SHINE_MS = 3_600
+private const val SHINE_MS = 4_800
 
 
 /**
