@@ -890,14 +890,21 @@ fun RoyalNewsTicker(
     modifier: Modifier = Modifier
 ) {
     /*
-     * شريط أخبار Royal:
-     * - مستطيل رفيع بحواف نصف دائرية بالكامل.
-     * - بدون أي زخارف جانبية.
-     * - النص يتحرك من اليمين إلى اليسار.
-     * - مدة الدورة الواحدة: 25 ثانية.
+     * ============================================================
+     * شريط أخبار Royal
+     * ============================================================
+     *
+     * - مستطيل رفيع.
+     * - حواف دائرية بالكامل.
+     * - بدون زخارف جانبية.
+     * - حركة من اليمين إلى اليسار.
+     * - مدة الدورة الكاملة: 25 ثانية.
      * - يبدأ النص من خارج الطرف الأيمن.
      * - ينتهي بعد خروج النص بالكامل من الطرف الأيسر.
-     * - يستخدم rememberInfiniteTransition بدل while / isRunning.
+     * - لا يستخدم while.
+     * - لا يستخدم delay.
+     * - لا يستخدم isRunning.
+     * - لا يستخدم toPx().
      */
 
     var containerWidth by remember {
@@ -908,12 +915,16 @@ fun RoyalNewsTicker(
         mutableStateOf(0)
     }
 
+    /*
+     * يصبح الشريط جاهزًا للحركة فقط بعد معرفة
+     * عرض الشريط وعرض النص الحقيقي.
+     */
     val tickerReady =
         containerWidth > 0 && contentWidth > 0
 
     /*
-     * عند تغيّر النص أو اكتمال قياس الشريط،
-     * تبدأ دورة حركة جديدة من البداية.
+     * عند تغيير الخبر أو اكتمال القياسات،
+     * تبدأ دورة جديدة من البداية.
      */
     androidx.compose.runtime.key(
         newsText,
@@ -925,30 +936,33 @@ fun RoyalNewsTicker(
                 label = "RoyalNewsTickerTransition"
             )
 
+        /*
+         * قيمة الحركة:
+         *
+         * 0.0 = بداية الحركة من اليمين.
+         * 1.0 = نهاية الحركة عند خروج النص بالكامل من اليسار.
+         */
         val progress by infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
-            animationSpec =
-                if (tickerReady) {
-                    infiniteRepeatable(
-                        animation = tween(
-                            durationMillis = 25_000,
-                            easing = LinearEasing
-                        ),
-                        repeatMode = RepeatMode.Restart
-                    )
-                } else {
-                    androidx.compose.animation.core.snap(0f)
-                },
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 25_000,
+                    easing = LinearEasing
+                ),
+                repeatMode = RepeatMode.Restart
+            ),
             label = "RoyalNewsTickerProgress"
         )
 
         /*
-         * المسافة الكاملة التي يجب أن يقطعها النص:
+         * حساب المسافة الكاملة للحركة.
          *
          * عرض الشريط
          * +
-         * عرض النص بالكامل
+         * عرض النص
+         *
+         * بهذه الطريقة:
          *
          * البداية:
          * النص خارج الطرف الأيمن.
@@ -956,18 +970,25 @@ fun RoyalNewsTicker(
          * النهاية:
          * النص خارج الطرف الأيسر بالكامل.
          */
-        val currentOffset =
+        val currentOffset: Int =
             if (tickerReady) {
+
                 val travelDistance =
                     containerWidth.toFloat() +
                         contentWidth.toFloat()
 
-                containerWidth.toFloat() -
-                    (travelDistance * progress)
+                (
+                    containerWidth.toFloat() -
+                        (travelDistance * progress)
+                    ).roundToInt()
+
             } else {
-                0f
+                0
             }
 
+        /*
+         * الشريط نفسه.
+         */
         Box(
             modifier = modifier
                 .height(22.dp)
@@ -988,6 +1009,9 @@ fun RoyalNewsTicker(
                 }
         ) {
 
+            /*
+             * محتوى الأخبار.
+             */
             Row(
                 modifier = Modifier
                     .wrapContentWidth()
@@ -996,41 +1020,73 @@ fun RoyalNewsTicker(
                     }
                     .offset {
                         IntOffset(
-                            x = currentOffset.roundToInt(),
+                            x = currentOffset,
                             y = 0
                         )
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                newsText
-                    .split("&")
-                    .forEachIndexed { index, text ->
+                /*
+                 * تقسيم الأخبار باستخدام &
+                 *
+                 * مثال:
+                 *
+                 * "خبر الأول&خبر الثاني&خبر الثالث"
+                 *
+                 * تصبح:
+                 *
+                 * خبر الأول
+                 * الشعار
+                 * خبر الثاني
+                 * الشعار
+                 * خبر الثالث
+                 */
+                val newsItems =
+                    newsText.split("&")
 
-                        Text(
-                            text = text.trim(),
-                            color = Color(0xFFF9F295),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            softWrap = false,
-                            textAlign = TextAlign.Center
-                        )
+                newsItems.forEachIndexed { index, text ->
 
-                        /*
-                         * الفاصل الملكي الموجود لديك مسبقاً.
-                         * لا نغيّر تصميمه.
-                         */
-                        if (
-                            index <
-                                newsText.split("&").lastIndex
-                        ) {
-                            RoyalTickerLogoSeparator()
-                        }
+                    Text(
+                        text = text.trim(),
+                        color = Color(0xFFF9F295),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false,
+                        textAlign = TextAlign.Center
+                    )
+
+                    /*
+                     * وضع الشعار بين الأخبار فقط،
+                     * وليس بعد آخر خبر.
+                     */
+                    if (index < newsItems.lastIndex) {
+                        RoyalTickerLogoSeparator()
                     }
+                }
             }
         }
     }
+}
+
+
+/*
+ * ============================================================
+ * الفاصل الملكي بين أخبار الشريط
+ * ============================================================
+ *
+ * يستخدم الشعار الملكي الموجود أصلًا في التطبيق.
+ *
+ * لا يتم إنشاء شعار جديد.
+ * لا يتم تغيير تصميم الشعار.
+ */
+@Composable
+private fun RoyalTickerLogoSeparator() {
+
+    RoyalActiveLogo(
+        size = 18.dp
+    )
 }
 
 
