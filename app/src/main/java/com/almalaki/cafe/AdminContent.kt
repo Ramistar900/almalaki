@@ -208,6 +208,14 @@ fun AdminContent(
                     )
                 }
             }
+            AdminSection.INTERFACE_SETTINGS -> {
+    item {
+        AdminInterfaceSettings(
+            context = context,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+            }
 AdminSection.SALES -> {
     item {
         RoyalSalesRecordsScreen(
