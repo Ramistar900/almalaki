@@ -1123,13 +1123,16 @@ fun RoyalShinyInfoBox(
                     RoyalGold,
                     RoundedCornerShape(7.dp)
                 )
-                .background(
-    if (transparentBackground) {
-        Color.Transparent
-    } else {
-        backgroundBrush
-    }
-)
+                .then(
+                    if (transparentBackground) {
+                        Modifier
+                    } else {
+                        Modifier.background(
+                            backgroundBrush
+                        )
+                    }
+                )
+
     ) {
 
         Box(
