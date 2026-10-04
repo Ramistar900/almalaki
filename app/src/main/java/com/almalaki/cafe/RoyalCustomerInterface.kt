@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.LayoutDirection
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -742,13 +744,31 @@ fun RoyalLiveDateTime(
                 Locale("ar")
             )
                 .format(now)
-                .replace("ص", " ص")
-                .replace("م", " م")
         }
 
     val timeParts =
         remember(time) {
-            time.split(":")
+
+            val clock =
+                time.substringBefore(" ")
+
+            val period =
+                time.substringAfter(
+                    " ",
+                    ""
+                )
+
+            val hour =
+                clock.substringBefore(":")
+
+            val minute =
+                clock.substringAfter(":")
+
+            Triple(
+                hour,
+                minute,
+                period
+            )
         }
 
     val pulseTransition =
@@ -768,7 +788,7 @@ fun RoyalLiveDateTime(
 
                     animation =
                         tween(
-                            durationMillis = 700,
+                            700,
                             easing = LinearEasing
                         ),
 
@@ -779,67 +799,73 @@ fun RoyalLiveDateTime(
             label = "colon_alpha"
         )
 
-    Row(
-
-        verticalAlignment =
-            Alignment.CenterVertically,
-
-        horizontalArrangement =
-            Arrangement.Center,
-
-        modifier =
-            Modifier.fillMaxWidth()
+    CompositionLocalProvider(
+        LocalLayoutDirection provides
+            LayoutDirection.Ltr
     ) {
 
-        Text(
-            text =
-                timeParts
-                    .getOrElse(0) {
-                        ""
-                    },
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
 
-            color = Color.White,
+            horizontalArrangement =
+                Arrangement.Center,
 
-            fontSize = 15.sp,
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
 
-            fontWeight =
-                FontWeight.Bold,
+            Text(
+                text = timeParts.first,
 
-            maxLines = 1
-        )
+                color = Color.White,
 
-        Text(
-            text = ":",
+                fontSize = 15.sp,
 
-            color =
-                Color.White.copy(
-                    alpha = colonAlpha
-                ),
+                fontWeight =
+                    FontWeight.Bold
+            )
 
-            fontSize = 15.sp,
+            Text(
+                text = ":",
 
-            fontWeight =
-                FontWeight.Bold,
+                color =
+                    Color.White.copy(
+                        alpha = colonAlpha
+                    ),
 
-            maxLines = 1
-        )
+                fontSize = 15.sp,
 
-        Text(
-            text =
-                timeParts
-                    .getOrElse(1) {
-                        ""
-                    },
+                fontWeight =
+                    FontWeight.Bold
+            )
 
-            color = Color.White,
+            Text(
+                text = timeParts.second,
 
-            fontSize = 15.sp,
+                color = Color.White,
 
-            fontWeight =
-                FontWeight.Bold,
+                fontSize = 15.sp,
 
-            maxLines = 1
-        )
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.width(4.dp)
+            )
+
+            Text(
+                text = timeParts.third,
+
+                color = Color.White,
+
+                fontSize = 14.sp,
+
+                fontWeight =
+                    FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -1177,9 +1203,9 @@ fun RoyalBottomBar(
 
             modifier =
                 Modifier
-                    .size(34.dp)
+                    .size(40.dp)
                     .offset(
-                        y = 3.dp
+                        y = 1.dp
                     ),
 
             contentAlignment =
@@ -1187,7 +1213,7 @@ fun RoyalBottomBar(
         ) {
 
             RoyalActiveLogo(
-                size = 32.dp
+                size = 40.dp
             )
         }
 
