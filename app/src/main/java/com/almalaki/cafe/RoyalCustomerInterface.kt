@@ -881,6 +881,7 @@ fun RoyalLiveDateTime(
  * الشريط الإخباري
  * ============================================================
  */
+ 
 @Composable
 fun RoyalNewsTicker(
     newsText: String,
@@ -944,7 +945,7 @@ fun RoyalNewsTicker(
     Box(
         modifier =
             modifier
-                .fillMaxWidth(0.82f)
+                .fillMaxWidth()
                 .clipToBounds()
                 .onSizeChanged {
 
@@ -991,7 +992,7 @@ fun RoyalNewsTicker(
 
                         color = RoyalGold,
 
-                        fontSize = 12.sp,
+                        fontSize = 10.sp,
 
                         fontWeight =
                             FontWeight.Medium,
@@ -1008,24 +1009,25 @@ fun RoyalNewsTicker(
                 ) {
 
                     Spacer(
-                        Modifier.width(10.dp)
+                        Modifier.width(7.dp)
                     )
 
                     RoyalTickerLogoSeparator()
 
                     Spacer(
-                        Modifier.width(10.dp)
+                        Modifier.width(7.dp)
                     )
                 }
             }
         }
     }
 }
+
 @Composable
 private fun RoyalTickerLogoSeparator() {
 
     RoyalActiveLogo(
-        size = 24.dp
+        size = 18.dp
     )
 }
 
@@ -1287,7 +1289,7 @@ fun RoyalBottomBar(
         RoyalShinyInfoBox(
             Modifier
                 .weight(1f)
-                .height(32.dp)
+                .height(22.dp)
         ) {
 
             RoyalNewsTicker(
