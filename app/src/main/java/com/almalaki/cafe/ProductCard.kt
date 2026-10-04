@@ -3,6 +3,7 @@ package com.almalaki.cafe
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +22,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -31,6 +34,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +51,13 @@ fun ProductCard(
     onRemove: () -> Unit
 ) {
     val context = LocalContext.current
+
+    /*
+     * حالة تركيز Android TV
+     */
+    var isFocused by remember {
+        mutableStateOf(false)
+    }
 
     /*
      * حركة اللمعة الملكية
@@ -155,7 +166,12 @@ fun ProductCard(
 
     Card(
         modifier =
-            Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged {
+                    isFocused = it.isFocused
+                }
+                .focusable(),
 
         shape =
             RoundedCornerShape(20.dp),
@@ -175,9 +191,30 @@ fun ProductCard(
                         shape = RoundedCornerShape(20.dp)
                     )
                     .border(
-                        width = 2.dp,
-                        brush = animatedBorder,
-                        shape = RoundedCornerShape(20.dp)
+                        width =
+                            if (isFocused) {
+                                3.dp
+                            } else {
+                                2.dp
+                            },
+                        brush =
+                            if (isFocused) {
+                                Brush.linearGradient(
+                                    colors =
+                                        listOf(
+                                            goldLight,
+                                            gold,
+                                            Color.White.copy(
+                                                alpha = 0.95f
+                                            ),
+                                            goldLight
+                                        )
+                                )
+                            } else {
+                                animatedBorder
+                            },
+                        shape =
+                            RoundedCornerShape(20.dp)
                     )
                     .padding(7.dp)
         ) {
@@ -223,9 +260,6 @@ fun ProductCard(
                         Alignment.Center
                 ) {
 
-                    /*
-                     * خط زخرفي يسار التاج
-                     */
                     Row(
                         modifier =
                             Modifier.fillMaxWidth(),
