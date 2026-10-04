@@ -765,10 +765,46 @@ fun RoyalLiveDateTime() {
             ).format(now)
         }
 
+    val timeParts =
+        remember(time) {
+            time.split(":")
+        }
+
+    /*
+     * نبض فاصل الوقت :
+     */
+    val pulseTransition =
+        rememberInfiniteTransition(
+            label = "time_colon_pulse"
+        )
+
+    val colonAlpha by
+        pulseTransition.animateFloat(
+
+            initialValue = 0.30f,
+
+            targetValue = 1f,
+
+            animationSpec =
+                infiniteRepeatable(
+
+                    animation =
+                        tween(
+                            durationMillis = 700,
+                            easing = LinearEasing
+                        ),
+
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+
+            label = "colon_alpha"
+        )
+
     Column(
 
         horizontalAlignment =
-            Alignment.Start,
+            Alignment.CenterHorizontally,
 
         verticalArrangement =
             Arrangement.Top,
@@ -779,19 +815,92 @@ fun RoyalLiveDateTime() {
             )
     ) {
 
+        /*
+         * التاريخ فوق مستطيل الوقت
+         */
         Text(
-            time,
+
+            text = date,
+
             color = Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
+
+            fontSize = 10.sp,
+
+            fontWeight =
+                FontWeight.Medium,
+
+            maxLines = 1
         )
 
-        Text(
-            date,
-            color = Color.White,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Medium
+        Spacer(
+            Modifier.height(2.dp)
         )
+
+        /*
+         * الوقت
+         */
+        Row(
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Text(
+
+                text =
+                    timeParts
+                        .getOrElse(0) {
+                            ""
+                        },
+
+                color = Color.White,
+
+                fontSize = 17.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                maxLines = 1
+            )
+
+            /*
+             * فاصل الوقت النابض
+             */
+            Text(
+
+                text = ":",
+
+                color =
+                    Color.White.copy(
+                        alpha = colonAlpha
+                    ),
+
+                fontSize = 17.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                maxLines = 1
+            )
+
+            Text(
+
+                text =
+                    timeParts
+                        .getOrElse(1) {
+                            ""
+                        },
+
+                color = Color.White,
+
+                fontSize = 17.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                maxLines = 1
+            )
+        }
     }
 }
 
@@ -800,7 +909,7 @@ fun RoyalLiveDateTime() {
  * الشريط الإخباري
  * ============================================================
  */
- @Composable
+@Composable
 fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
@@ -808,15 +917,7 @@ fun RoyalNewsTicker(
 
     val parts =
         remember(newsText) {
-
-            newsText
-                .split("&")
-                .map {
-                    it.trim()
-                }
-                .filter {
-                    it.isNotEmpty()
-                }
+            newsText.split("&")
         }
 
     var containerWidth by
@@ -860,7 +961,7 @@ fun RoyalNewsTicker(
 
                     animationSpec =
                         tween(
-                            durationMillis = 18000,
+                            durationMillis = 30000,
                             easing = LinearEasing
                         )
                 )
@@ -869,10 +970,9 @@ fun RoyalNewsTicker(
     }
 
     Box(
-
         modifier =
             modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.82f)
                 .clipToBounds()
                 .onSizeChanged {
 
@@ -885,7 +985,6 @@ fun RoyalNewsTicker(
     ) {
 
         Row(
-
             modifier =
                 Modifier
                     .wrapContentWidth(
@@ -899,10 +998,8 @@ fun RoyalNewsTicker(
                     .offset {
 
                         IntOffset(
-
                             offsetX.value
                                 .roundToInt(),
-
                             0
                         )
                     },
@@ -915,21 +1012,23 @@ fun RoyalNewsTicker(
                     index,
                     part ->
 
-                Text(
+                if (part.isNotBlank()) {
 
-                    text = part,
+                    Text(
+                        text = part.trim(),
 
-                    color = RoyalGold,
+                        color = RoyalGold,
 
-                    fontSize = 12.sp,
+                        fontSize = 12.sp,
 
-                    fontWeight =
-                        FontWeight.Medium,
+                        fontWeight =
+                            FontWeight.Medium,
 
-                    maxLines = 1,
+                        maxLines = 1,
 
-                    softWrap = false
-                )
+                        softWrap = false
+                    )
+                }
 
                 if (
                     index <
@@ -950,14 +1049,6 @@ fun RoyalNewsTicker(
         }
     }
 }
-
-/*
- * ============================================================
- * فاصل الشعار داخل الشريط الإخباري
- * ============================================================
- *
- * يستخدم الشعار النشط نفسه.
- */
 @Composable
 private fun RoyalTickerLogoSeparator() {
 
