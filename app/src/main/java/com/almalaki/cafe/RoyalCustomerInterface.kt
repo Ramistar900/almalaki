@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -314,27 +315,37 @@ fun RoyalLiveDateTime() {
         Text(date, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Medium)
     }
 }
-
 @Composable
 fun RoyalNewsTicker(newsText: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val settings = remember(context) { loadRoyalInterfaceSettings(context) }
     val logoPath = settings.bottomLogoPath
+
     val parts = remember(newsText) {
-        newsText.split("&").map { it.trim() }.filter { it.isNotEmpty() }
+        newsText
+            .split("&")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
     }
+
     var containerWidth by remember { mutableStateOf(0) }
     var contentWidth by remember { mutableStateOf(0) }
+
     val offsetX = remember { Animatable(0f) }
 
     LaunchedEffect(containerWidth, contentWidth, newsText, logoPath) {
         offsetX.stop()
+
         if (containerWidth > 0 && contentWidth > 0) {
             while (true) {
                 offsetX.snapTo(containerWidth.toFloat())
+
                 offsetX.animateTo(
-                    -contentWidth.toFloat(),
-                    animationSpec = tween(12000, easing = LinearEasing)
+                    targetValue = -contentWidth.toFloat(),
+                    animationSpec = tween(
+                        durationMillis = 18000,
+                        easing = LinearEasing
+                    )
                 )
             }
         }
@@ -344,20 +355,41 @@ fun RoyalNewsTicker(newsText: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .clipToBounds()
-            .onSizeChanged { containerWidth = it.width },
+            .onSizeChanged {
+                containerWidth = it.width
+            },
         contentAlignment = Alignment.CenterStart
     ) {
         Row(
             modifier = Modifier
-                .onSizeChanged { contentWidth = it.width }
-                .offset { IntOffset(offsetX.value.roundToInt(), 0) },
+                .wrapContentWidth(unbounded = true)
+                .onSizeChanged {
+                    contentWidth = it.width
+                }
+                .offset {
+                    IntOffset(
+                        offsetX.value.roundToInt(),
+                        0
+                    )
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             parts.forEachIndexed { index, part ->
-                Text(part, color = RoyalGold, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+
+                Text(
+                    text = part,
+                    color = RoyalGold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    softWrap = false
+                )
+
                 if (index < parts.lastIndex) {
                     Spacer(Modifier.width(10.dp))
+
                     RoyalTickerLogoSeparator(logoPath)
+
                     Spacer(Modifier.width(10.dp))
                 }
             }
