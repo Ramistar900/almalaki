@@ -117,7 +117,6 @@ fun RoyalLayeredLogoAnimation(
  * 3. لمعة مستقلة وناعمة
  *    تمر فوق التاج.
  */
- 
  @Composable
 fun RoyalCrownShieldShine(
     @DrawableRes drawableRes: Int,
@@ -178,7 +177,7 @@ fun RoyalCrownShieldShine(
         )
 
         /*
-         * اللمعة الذهبية الناعمة.
+         * لمعان ذهبي واضح لكن ناعم.
          */
         Canvas(
             modifier =
@@ -191,11 +190,11 @@ fun RoyalCrownShieldShine(
                 w * shineProgress
 
             /*
-             * عرض اللمعة كبير حتى يكون
-             * الانتقال ناعمًا وفخمًا.
+             * اللمعة أعرض قليلًا
+             * حتى لا تبدو كخط حاد.
              */
             val shineWidth =
-                w * 0.30f
+                w * 0.26f
 
             val shineBrush =
                 Brush.linearGradient(
@@ -204,23 +203,23 @@ fun RoyalCrownShieldShine(
                             Color.Transparent,
 
                             Color(0xFFD4AF37).copy(
-                                alpha = 0.04f
+                                alpha = 0.08f
                             ),
 
                             Color(0xFFFFE9A3).copy(
-                                alpha = 0.14f
+                                alpha = 0.28f
                             ),
 
                             Color.White.copy(
-                                alpha = 0.30f
+                                alpha = 0.68f
                             ),
 
                             Color(0xFFFFE9A3).copy(
-                                alpha = 0.14f
+                                alpha = 0.28f
                             ),
 
                             Color(0xFFD4AF37).copy(
-                                alpha = 0.04f
+                                alpha = 0.08f
                             ),
 
                             Color.Transparent
