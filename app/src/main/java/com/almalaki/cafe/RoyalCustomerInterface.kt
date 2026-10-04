@@ -883,7 +883,7 @@ fun RoyalLiveDateTime(
  * الشريط الإخباري
  * ============================================================
  */
- @Composable
+              @Composable
 fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
@@ -910,6 +910,12 @@ fun RoyalNewsTicker(
             Animatable(0f)
         }
 
+    /*
+     * المساحة الداخلية الآمنة للأخبار.
+     * نترك مكانًا ثابتًا للزخرفة الذهبية على الطرفين.
+     */
+    val horizontalSafePadding = 20.dp
+
     LaunchedEffect(
         containerWidth,
         contentWidth,
@@ -923,16 +929,31 @@ fun RoyalNewsTicker(
             contentWidth > 0
         ) {
 
+            val safePadding =
+                horizontalSafePadding.toPx()
+
+            val startX =
+                containerWidth.toFloat() - safePadding
+
+            val endX =
+                -(contentWidth.toFloat() - safePadding)
+
             while (true) {
 
+                /*
+                 * يبدأ الخبر من خارج المنطقة
+                 * الداخلية جهة اليمين.
+                 */
                 offsetX.snapTo(
-                    containerWidth.toFloat()
+                    startX
                 )
 
+                /*
+                 * يتحرك الخبر ببطء وثبات
+                 * من اليمين إلى اليسار.
+                 */
                 offsetX.animateTo(
-                    targetValue =
-                        -contentWidth.toFloat(),
-
+                    targetValue = endX,
                     animationSpec =
                         tween(
                             durationMillis = 30000,
@@ -954,6 +975,75 @@ fun RoyalNewsTicker(
                 }
     ) {
 
+        /*
+         * طبقة الأخبار.
+         *
+         * الأخبار تتحرك خلف الزخرفة،
+         * لذلك لن تغطي الخطوط الذهبية.
+         */
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clipToBounds()
+        ) {
+
+            Row(
+                modifier =
+                    Modifier
+                        .wrapContentWidth(
+                            unbounded = true
+                        )
+                        .onSizeChanged {
+                            contentWidth = it.width
+                        }
+                        .offset {
+                            IntOffset(
+                                offsetX.value.roundToInt(),
+                                0
+                            )
+                        },
+
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                parts.forEachIndexed { index, part ->
+
+                    Text(
+                        text = part,
+                        color = RoyalGoldLight,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+
+                    if (
+                        index <
+                        parts.lastIndex
+                    ) {
+
+                        Spacer(
+                            Modifier.width(7.dp)
+                        )
+
+                        RoyalTickerLogoSeparator()
+
+                        Spacer(
+                            Modifier.width(7.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        /*
+         * طبقة الزخرفة الذهبية.
+         *
+         * توضع فوق الأخبار حتى تبقى
+         * الأطراف نظيفة دائمًا.
+         */
         Canvas(
             modifier =
                 Modifier.matchParentSize()
@@ -974,12 +1064,6 @@ fun RoyalNewsTicker(
             val y =
                 h / 2f
 
-            val left =
-                3.dp.toPx()
-
-            val right =
-                w - 3.dp.toPx()
-
             val top =
                 2.5.dp.toPx()
 
@@ -989,38 +1073,42 @@ fun RoyalNewsTicker(
             val stroke =
                 1.1.dp.toPx()
 
+            val leftEdge =
+                17.dp.toPx()
+
+            val rightEdge =
+                w - 17.dp.toPx()
+
             /*
-             * الخط العلوي الرئيسي.
-             * يبدأ بعد الزخرفة اليسرى
-             * وينتهي قبل الزخرفة اليمنى.
+             * الخط العلوي.
              */
             val topLine =
                 Path().apply {
 
                     moveTo(
-                        17.dp.toPx(),
+                        leftEdge,
                         top
                     )
 
                     lineTo(
-                        w - 17.dp.toPx(),
+                        rightEdge,
                         top
                     )
                 }
 
             /*
-             * الخط السفلي الرئيسي.
+             * الخط السفلي.
              */
             val bottomLine =
                 Path().apply {
 
                     moveTo(
-                        17.dp.toPx(),
+                        leftEdge,
                         bottom
                     )
 
                     lineTo(
-                        w - 17.dp.toPx(),
+                        rightEdge,
                         bottom
                     )
                 }
@@ -1044,18 +1132,13 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * الزخرفة الملكية اليسرى.
-             *
-             * تبدأ من الخط العلوي،
-             * تلتف إلى الداخل،
-             * تمر حول المنتصف،
-             * ثم تعود إلى الخط السفلي.
+             * الزخرفة اليسرى الرئيسية.
              */
             val leftOrnament =
                 Path().apply {
 
                     moveTo(
-                        17.dp.toPx(),
+                        leftEdge,
                         top
                     )
 
@@ -1109,13 +1192,13 @@ fun RoyalNewsTicker(
                         18.dp.toPx(),
                         13.dp.toPx(),
                         bottom,
-                        17.dp.toPx(),
+                        leftEdge,
                         bottom
                     )
                 }
 
             /*
-             * التفافة داخلية صغيرة لليسار.
+             * اللفة الداخلية اليسرى.
              */
             val leftCurl =
                 Path().apply {
@@ -1163,14 +1246,13 @@ fun RoyalNewsTicker(
                 }
 
             /*
-             * الزخرفة الملكية اليمنى.
-             * نسخة معكوسة من اليسار.
+             * الزخرفة اليمنى الرئيسية.
              */
             val rightOrnament =
                 Path().apply {
 
                     moveTo(
-                        w - 17.dp.toPx(),
+                        rightEdge,
                         top
                     )
 
@@ -1224,13 +1306,13 @@ fun RoyalNewsTicker(
                         18.dp.toPx(),
                         w - 13.dp.toPx(),
                         bottom,
-                        w - 17.dp.toPx(),
+                        rightEdge,
                         bottom
                     )
                 }
 
             /*
-             * التفافة داخلية صغيرة لليمين.
+             * اللفة الداخلية اليمنى.
              */
             val rightCurl =
                 Path().apply {
@@ -1277,6 +1359,9 @@ fun RoyalNewsTicker(
                     )
                 }
 
+            /*
+             * رسم الزخارف الرئيسية.
+             */
             drawPath(
                 path = leftOrnament,
                 color = gold,
@@ -1287,20 +1372,23 @@ fun RoyalNewsTicker(
             )
 
             drawPath(
-                path = leftCurl,
-                color = goldLight,
-                style =
-                    androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 0.65.dp.toPx()
-                    )
-            )
-
-            drawPath(
                 path = rightOrnament,
                 color = gold,
                 style =
                     androidx.compose.ui.graphics.drawscope.Stroke(
                         width = stroke
+                    )
+            )
+
+            /*
+             * اللمعة الداخلية.
+             */
+            drawPath(
+                path = leftCurl,
+                color = goldLight,
+                style =
+                    androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 0.65.dp.toPx()
                     )
             )
 
@@ -1314,10 +1402,13 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * لمعة ذهبية رفيعة أعلى الشريط.
+             * لمعة ذهبية رفيعة في الأعلى.
              */
             drawLine(
-                color = goldLight.copy(alpha = 0.75f),
+                color =
+                    goldLight.copy(
+                        alpha = 0.75f
+                    ),
                 start =
                     Offset(
                         20.dp.toPx(),
@@ -1333,7 +1424,7 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * نقاط ملكية صغيرة عند بداية ونهاية الزخرفة.
+             * النقطة الملكية الوسطية يسارًا.
              */
             drawCircle(
                 color = goldLight,
@@ -1345,6 +1436,9 @@ fun RoyalNewsTicker(
                     )
             )
 
+            /*
+             * النقطة الملكية الوسطية يمينًا.
+             */
             drawCircle(
                 color = goldLight,
                 radius = 0.75.dp.toPx(),
@@ -1356,7 +1450,7 @@ fun RoyalNewsTicker(
             )
 
             /*
-             * لمسة ذهبية صغيرة في أعلى كل طرف.
+             * النقاط الذهبية الصغيرة العلوية.
              */
             drawCircle(
                 color = goldDark,
@@ -1377,59 +1471,6 @@ fun RoyalNewsTicker(
                         5.dp.toPx()
                     )
             )
-        }
-
-        /*
-         * الأخبار المتحركة.
-         * لا نغيّر سرعة الحركة أو نظام &.
-         */
-        Row(
-            modifier =
-                Modifier
-                    .wrapContentWidth(
-                        unbounded = true
-                    )
-                    .onSizeChanged {
-                        contentWidth = it.width
-                    }
-                    .offset {
-                        IntOffset(
-                            offsetX.value.roundToInt(),
-                            0
-                        )
-                    },
-
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-
-            parts.forEachIndexed { index, part ->
-
-                Text(
-                    text = part,
-                    color = RoyalGoldLight,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    softWrap = false
-                )
-
-                if (
-                    index <
-                    parts.lastIndex
-                ) {
-
-                    Spacer(
-                        Modifier.width(7.dp)
-                    )
-
-                    RoyalTickerLogoSeparator()
-
-                    Spacer(
-                        Modifier.width(7.dp)
-                    )
-                }
-            }
         }
     }
 }
