@@ -700,43 +700,41 @@ fun AdminTVSettingsScreen(
         // =====================================================
         // زر الحفظ
         // =====================================================
+Button(
+    onClick = {
+        prefs.edit()
+            .putString(KEY_TITLE, title)
+            .putString(KEY_SUBTITLE, subtitle)
+            .putString(KEY_NEWS, newsText)
+            .putString(KEY_TIME_NOTE, timeNote)
+            .putString(KEY_LOGO_URI, logoUri)
+            .putFloat(KEY_TIME_SCALE, timeScale)
+            .putFloat(KEY_DATE_SCALE, dateScale)
+            .putFloat(KEY_TIME_BOX_SCALE, timeBoxScale)
+            .putFloat(KEY_NOTE_SCALE, noteScale)
+            .putFloat(KEY_NOTE_BOX_SCALE, noteBoxScale)
+            .putFloat(KEY_TICKER_SCALE, tickerScale)
+            .putFloat(KEY_TICKER_BOX_SCALE, tickerBoxScale)
+            .putFloat(KEY_LOGO_SCALE, logoScale)
+            .putString(KEY_TICKER_SPEED, tickerSpeed)
+            .putString(KEY_SHINE_LEVEL, shineLevel)
+            .putString(KEY_FOCUS_LEVEL, focusLevel)
+            .putBoolean(KEY_FOCUS_ENABLED, focusEnabled)
+            .putBoolean(KEY_NAV_HINTS, navigationHints)
+            .putString(KEY_PERFORMANCE, performanceMode)
+            .apply()
 
-        Button(
-            onClick = {
-                prefs.edit()
-                    .putString(KEY_TITLE, title)
-                    .putString(KEY_SUBTITLE, subtitle)
-                    .putString(KEY_NEWS, newsText)
-                    .putString(KEY_TIME_NOTE, timeNote)
-                    .putString(KEY_LOGO_URI, logoUri)
-                    .putFloat(KEY_TIME_SCALE, timeScale)
-                    .putFloat(KEY_DATE_SCALE, dateScale)
-                    .putFloat(KEY_TIME_BOX_SCALE, timeBoxScale)
-                    .putFloat(KEY_NOTE_SCALE, noteScale)
-                    .putFloat(KEY_NOTE_BOX_SCALE, noteBoxScale)
-                    .putFloat(KEY_TICKER_SCALE, tickerScale)
-                    .putFloat(KEY_TICKER_BOX_SCALE, tickerBoxScale)
-                    .putFloat(KEY_LOGO_SCALE, logoScale)
-                    .putString(KEY_TICKER_SPEED, tickerSpeed)
-                    .putString(KEY_SHINE_LEVEL, shineLevel)
-                    .putString(KEY_FOCUS_LEVEL, focusLevel)
-                    .putBoolean(KEY_FOCUS_ENABLED, focusEnabled)
-                    .putBoolean(KEY_NAV_HINTS, navigationHints)
-                    .putString(KEY_PERFORMANCE, performanceMode)
-                    .apply()
-
-                savedMessage = true
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(58.dp)
-        ) {
-            Text(
-                text = "🔗 حفظ جميع
-              التعديلات",
-                fontSize = 19.sp
-            )
-        }
+        savedMessage = true
+    },
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(58.dp)
+) {
+    Text(
+        text = "حفظ جميع التعديلات",
+        fontSize = 19.sp
+    )
+}
 
         if (savedMessage) {
             Card(
