@@ -740,7 +740,10 @@ fun RoyalLiveDateTime(
             SimpleDateFormat(
                 "h:mm a",
                 Locale("ar")
-            ).format(now)
+            )
+                .format(now)
+                .replace("ص", " ص")
+                .replace("م", " م")
         }
 
     val timeParts =
@@ -748,9 +751,6 @@ fun RoyalLiveDateTime(
             time.split(":")
         }
 
-    /*
-     * نبض فاصل الوقت
-     */
     val pulseTransition =
         rememberInfiniteTransition(
             label = "time_colon_pulse"
@@ -779,9 +779,6 @@ fun RoyalLiveDateTime(
             label = "colon_alpha"
         )
 
-    /*
-     * الوقت فقط
-     */
     Row(
 
         verticalAlignment =
@@ -795,7 +792,6 @@ fun RoyalLiveDateTime(
     ) {
 
         Text(
-
             text =
                 timeParts
                     .getOrElse(0) {
@@ -804,7 +800,7 @@ fun RoyalLiveDateTime(
 
             color = Color.White,
 
-            fontSize = 17.sp,
+            fontSize = 15.sp,
 
             fontWeight =
                 FontWeight.Bold,
@@ -813,7 +809,6 @@ fun RoyalLiveDateTime(
         )
 
         Text(
-
             text = ":",
 
             color =
@@ -821,7 +816,7 @@ fun RoyalLiveDateTime(
                     alpha = colonAlpha
                 ),
 
-            fontSize = 17.sp,
+            fontSize = 15.sp,
 
             fontWeight =
                 FontWeight.Bold,
@@ -830,7 +825,6 @@ fun RoyalLiveDateTime(
         )
 
         Text(
-
             text =
                 timeParts
                     .getOrElse(1) {
@@ -839,7 +833,7 @@ fun RoyalLiveDateTime(
 
             color = Color.White,
 
-            fontSize = 17.sp,
+            fontSize = 15.sp,
 
             fontWeight =
                 FontWeight.Bold,
@@ -1185,7 +1179,7 @@ fun RoyalBottomBar(
                 Modifier
                     .size(34.dp)
                     .offset(
-                        y = 7.dp
+                        y = 3.dp
                     ),
 
             contentAlignment =
@@ -1240,8 +1234,8 @@ fun RoyalBottomBar(
             RoyalShinyInfoBox(
 
                 Modifier
-                    .width(96.dp)
-                    .height(38.dp)
+                    .width(78.dp)
+                    .height(30.dp)
             ) {
 
                 RoyalLiveDateTime(
