@@ -2,234 +2,222 @@ package com.almalaki.cafe
 
 import android.content.Context
 import android.content.res.Configuration
+import android.content.pm.PackageManager
+import android.view.WindowManager
 
 /*
+ * ============================================================
+ * إعدادات أجهزة التلفزيون والرسيفرات Android
+ * ============================================================
+ *
+ * هذا الملف مخصص للأجهزة الكبيرة التي تعمل كواجهة تلفزيون:
+ *
+ * - Android TV
+ * - Google TV
+ * - Android TV Box
+ * - Android Receiver
+ * - الشاشات الذكية التي تعمل بنظام Android
+ *
+ * ولا يجب أن تظهر هذه الإعدادات على:
+ *
+ * - الهاتف
+ * - التابلت
+ *
+ * ============================================================
+ */
 
-* ============================================================
-* إعدادات Android TV
-* ============================================================
-* 
-* هذا الملف خاص بالتلفزيون فقط.
-* 
-* الهاتف والتابلت لا يستخدمان هذه الإعدادات.
-* 
-* لاحقًا سيتم ربط:
-* - حجم الوقت والتاريخ
-* - حجم مستطيل الوقت
-* - حجم الشريط الإخباري
-* - حجم مستطيل الشريط
-* - حجم اللوجو السفلي
-* - شدة اللمعان
-* - سرعة الشريط الإخباري
-* - أزرار الريموت واختصاراتها
-* - Focus
-* - تلميحات التنقل
-* 
-* ============================================================
-  */
+/**
+ * تحديد ما إذا كان الجهاز مناسبًا لواجهة التلفزيون.
+ *
+ * نستخدم أكثر من طريقة لأن بعض TV Box والرسيفرات
+ * لا تعرّف نفسها رسميًا كـ Android TV.
+ */
+fun isRoyalTV(context: Context): Boolean {
 
-/*
+    val configuration = context.resources.configuration
 
-* هل الجهاز يعمل بنمط Android TV؟
-* 
-* يعتمد الكشف على نوع واجهة الجهاز وليس على اسم الجهاز.
-  */
-  fun isRoyalTV(context: Context): Boolean {
-  return (
-  context.resources.configuration.uiMode and
-  Configuration.UI_MODE_TYPE_MASK
-  ) == Configuration.UI_MODE_TYPE_TELEVISION
-  }
+    val uiModeType =
+        configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
 
-/*
+    // Android TV الرسمي.
+    if (uiModeType == Configuration.UI_MODE_TYPE_TELEVISION) {
+        return true
+    }
 
-* ============================================================
+    // أجهزة التلفزيون أو الأجهزة المخصصة للتلفزيون
+    // غالبًا تحتوي على هذه الميزات.
+    val packageManager = context.packageManager
 
-* أحجام عناصر التلفزيون
+    val hasLeanback =
+        packageManager.hasSystemFeature(
+            PackageManager.FEATURE_LEANBACK
+        )
 
-* ============================================================
-  */
-  data class RoyalTVDisplaySettings(
-  
-  // الوقت
-  val timeScale: Float = 1.35f,
-  
-  // مستطيل الوقت
-  val timeBoxScale: Float = 1.30f,
-  
-  // التاريخ
-  val dateScale: Float = 1.30f,
-  
-  // الشريط الإخباري
-  val tickerScale: Float = 1.35f,
-  
-  // مستطيل الشريط الإخباري
-  val tickerBoxScale: Float = 1.25f,
-  
-  // اللوجو السفلي
-  val bottomLogoScale: Float = 1.35f
-  )
+    val hasTelevision =
+        packageManager.hasSystemFeature(
+            "android.software.leanback"
+        )
 
-/*
+    if (hasLeanback || hasTelevision) {
+        return true
+    }
 
-* ============================================================
+    /*
+     * بعض TV Box والرسيفرات لا تسجل Leanback بشكل صحيح.
+     *
+     * في هذه الحالة نتحقق من وجود WindowManager
+     * وطريقة تشغيل الجهاز، مع تجنب اعتبار الأجهزة
+     * المحمولة تلفزيونًا تلقائيًا.
+     */
+    val isLargeScreen =
+        configuration.screenWidthDp >= 720 ||
+            configuration.screenHeightDp >= 720
 
-* شدة المؤثرات
+    val isNotPhoneSized =
+        configuration.smallestScreenWidthDp >= 600
 
-* ============================================================
-  */
-  enum class RoyalTVEffectLevel {
-  
-  STRONG,
-  MEDIUM,
-  WEAK,
-  OFF
-  }
+    /*
+     * الأجهزة ذات الشاشة الكبيرة جدًا قد تكون TV Box
+     * أو شاشة Android.
+     *
+     * لا نستخدم هذا الشرط وحده للأجهزة الصغيرة.
+     */
+    if (isLargeScreen && isNotPhoneSized) {
+        return true
+    }
 
-/*
-
-* ============================================================
-
-* سرعة الشريط الإخباري
-
-* ============================================================
-  */
-  enum class RoyalTVTickerSpeed {
-  
-  SLOW,
-  FAST,
-  FASTER
-  }
+    return false
+}
 
 /*
+ * ============================================================
+ * إعدادات العرض الخاصة بالتلفزيون
+ * ============================================================
+ */
 
-* ============================================================
-
-* إعدادات المؤثرات
-
-* ============================================================
-  */
-  data class RoyalTVEffectSettings(
-  
-  // اللمعان العام
-  val shineLevel: RoyalTVEffectLevel =
-  RoyalTVEffectLevel.WEAK,
-  
-  // لمعة التركيز Focus
-  val focusLevel: RoyalTVEffectLevel =
-  RoyalTVEffectLevel.MEDIUM,
-  
-  // تفعيل لمعة التركيز
-  val focusEnabled: Boolean = true
-  )
+data class RoyalTVDisplaySettings(
+    val timeScale: Float = 1.35f,
+    val timeBoxScale: Float = 1.30f,
+    val dateScale: Float = 1.30f,
+    val tickerScale: Float = 1.35f,
+    val tickerBoxScale: Float = 1.25f,
+    val bottomLogoScale: Float = 1.35f
+)
 
 /*
+ * ============================================================
+ * مستوى المؤثرات
+ * ============================================================
+ */
 
-* ============================================================
+enum class RoyalTVEffectLevel {
+    STRONG,
+    MEDIUM,
+    WEAK,
+    OFF
+}
 
-* إعدادات الشريط الإخباري
+data class RoyalTVEffectSettings(
+    val shineLevel: RoyalTVEffectLevel =
+        RoyalTVEffectLevel.WEAK,
 
-* ============================================================
-  */
-  data class RoyalTVTickerSettings(
-  
-  val speed: RoyalTVTickerSpeed =
-  RoyalTVTickerSpeed.FAST
-  )
+    val focusLevel: RoyalTVEffectLevel =
+        RoyalTVEffectLevel.MEDIUM,
 
-/*
-
-* ============================================================
-
-* وظائف أزرار الريموت
-
-* ============================================================
-  */
-  enum class RoyalTVRemoteAction {
-  
-  MOVE_UP,
-  MOVE_DOWN,
-  MOVE_LEFT,
-  MOVE_RIGHT,
-  SELECT,
-  BACK
-  }
+    val focusEnabled: Boolean = true
+)
 
 /*
+ * ============================================================
+ * سرعة الشريط الإخباري
+ * ============================================================
+ */
 
-* ============================================================
+enum class RoyalTVTickerSpeed {
+    SLOW,
+    FAST,
+    FASTER
+}
 
-* إعدادات الريموت
-
-* ============================================================
-  */
-  data class RoyalTVRemoteSettings(
-  
-  val upAction: RoyalTVRemoteAction =
-  RoyalTVRemoteAction.MOVE_UP,
-  
-  val downAction: RoyalTVRemoteAction =
-  RoyalTVRemoteAction.MOVE_DOWN,
-  
-  val leftAction: RoyalTVRemoteAction =
-  RoyalTVRemoteAction.MOVE_LEFT,
-  
-  val rightAction: RoyalTVRemoteAction =
-  RoyalTVRemoteAction.MOVE_RIGHT,
-  
-  val okAction: RoyalTVRemoteAction =
-  RoyalTVRemoteAction.SELECT,
-  
-  val exitAction: RoyalTVRemoteAction =
-  RoyalTVRemoteAction.BACK
-  )
+data class RoyalTVTickerSettings(
+    val speed: RoyalTVTickerSpeed =
+        RoyalTVTickerSpeed.FAST
+)
 
 /*
+ * ============================================================
+ * أزرار الريموت
+ * ============================================================
+ */
 
-* ============================================================
+enum class RoyalTVRemoteAction {
+    MOVE_UP,
+    MOVE_DOWN,
+    MOVE_LEFT,
+    MOVE_RIGHT,
+    SELECT,
+    BACK
+}
 
-* تلميحات التنقل
+data class RoyalTVRemoteSettings(
+    val upAction: RoyalTVRemoteAction =
+        RoyalTVRemoteAction.MOVE_UP,
 
-* ============================================================
-  */
-  data class RoyalTVNavigationSettings(
-  
-  // تظهر للمستخدم أول مرة فقط
-  val showNavigationHintsFirstTime: Boolean = true
-  )
+    val downAction: RoyalTVRemoteAction =
+        RoyalTVRemoteAction.MOVE_DOWN,
 
-/*
+    val leftAction: RoyalTVRemoteAction =
+        RoyalTVRemoteAction.MOVE_LEFT,
 
-* ============================================================
+    val rightAction: RoyalTVRemoteAction =
+        RoyalTVRemoteAction.MOVE_RIGHT,
 
-* الإعدادات الكاملة للتلفزيون
+    val okAction: RoyalTVRemoteAction =
+        RoyalTVRemoteAction.SELECT,
 
-* ============================================================
-  */
-  data class RoyalTVSettings(
-  
-  val display: RoyalTVDisplaySettings =
-  RoyalTVDisplaySettings(),
-  
-  val effects: RoyalTVEffectSettings =
-  RoyalTVEffectSettings(),
-  
-  val ticker: RoyalTVTickerSettings =
-  RoyalTVTickerSettings(),
-  
-  val remote: RoyalTVRemoteSettings =
-  RoyalTVRemoteSettings(),
-  
-  val navigation: RoyalTVNavigationSettings =
-  RoyalTVNavigationSettings()
-  )
+    val exitAction: RoyalTVRemoteAction =
+        RoyalTVRemoteAction.BACK
+)
 
 /*
+ * ============================================================
+ * تلميحات التنقل
+ * ============================================================
+ */
 
-* ============================================================
-* الإعدادات الافتراضية
-* ============================================================
-  */
-  fun defaultRoyalTVSettings(): RoyalTVSettings {
-  return RoyalTVSettings()
-  }
+data class RoyalTVNavigationSettings(
+    val showNavigationHintsFirstTime: Boolean = true
+)
+
+/*
+ * ============================================================
+ * جميع إعدادات التلفزيون
+ * ============================================================
+ */
+
+data class RoyalTVSettings(
+    val display: RoyalTVDisplaySettings =
+        RoyalTVDisplaySettings(),
+
+    val effects: RoyalTVEffectSettings =
+        RoyalTVEffectSettings(),
+
+    val ticker: RoyalTVTickerSettings =
+        RoyalTVTickerSettings(),
+
+    val remote: RoyalTVRemoteSettings =
+        RoyalTVRemoteSettings(),
+
+    val navigation: RoyalTVNavigationSettings =
+        RoyalTVNavigationSettings()
+)
+
+/*
+ * ============================================================
+ * الإعدادات الافتراضية
+ * ============================================================
+ */
+
+fun defaultRoyalTVSettings(): RoyalTVSettings {
+    return RoyalTVSettings()
+}
