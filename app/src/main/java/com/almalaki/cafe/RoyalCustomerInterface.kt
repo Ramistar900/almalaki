@@ -1275,8 +1275,7 @@ fun RoyalBottomBar(
         Box(
             modifier =
                 Modifier
-                    .size(48.dp)
-                    .offset(y = 0.dp),
+                    .size(48.dp),
 
             contentAlignment =
                 Alignment.Center
@@ -1345,16 +1344,20 @@ fun RoyalBottomBar(
         // ─────────────────────────
         // الشريط الإخباري
         // ─────────────────────────
+        //
+        // مهم:
+        // لا يوجد RoyalShinyInfoBox هنا.
+        //
+        // RoyalNewsTicker هو المستطيل نفسه.
+        // weight(1f) يجعله يتمدد تلقائيًا
+        // حسب المساحة المتبقية في الشاشة.
+        // ─────────────────────────
 
-        RoyalShinyInfoBox(
-            Modifier
-                .weight(1f)
-                .height(22.dp)
-        ) {
-
-            RoyalNewsTicker(
-                newsText
-            )
-        }
+        RoyalNewsTicker(
+            newsText = newsText,
+            modifier =
+                Modifier
+                    .weight(1f)
+        )
     }
 }
