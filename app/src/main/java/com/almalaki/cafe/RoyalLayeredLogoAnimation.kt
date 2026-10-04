@@ -24,18 +24,22 @@ private const val RC_TURN_MS = 2_400
 private const val SHINE_MS = 3_200
 
 /**
- * Independent layered Royal logo animation.
+ * Royal Coffee layered logo.
  *
- * Crown + shield: stationary; a moving shine will be added/adjusted when
- * the real transparent PNG is installed.
+ * Layer 1:
+ * Crown + shield.
+ * ثابت بدون دوران أو تكبير.
  *
- * RC: vertical-axis 3D rotation (rotationY), no scaling, with a 5-second
- * front-facing pause after each turn.
+ * Layer 2:
+ * RC.
+ * دوران 3D حول المحور العمودي rotationY
+ * بدون دوران مسطح وبدون تكبير.
  *
- * Expected future assets:
- *   res/drawable/royal_crown_shield.png
- *   res/drawable/royal_rc.png
+ * أسماء ملفات PNG:
+ * royal_crest_layer.png
+ * royal_rc_layer.png
  */
+
 @Composable
 fun RoyalLayeredLogoAnimation(
     @DrawableRes crownShieldRes: Int,
@@ -43,7 +47,10 @@ fun RoyalLayeredLogoAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = "Royal Coffee logo"
 ) {
-    Box(modifier = modifier.clipToBounds()) {
+    Box(
+        modifier = modifier.clipToBounds()
+    ) {
+
         RoyalCrownShieldShine(
             drawableRes = crownShieldRes,
             contentDescription = contentDescription,
@@ -58,10 +65,16 @@ fun RoyalLayeredLogoAnimation(
     }
 }
 
+
 /**
- * Crown + shield layer.
- * The PNG itself never rotates or scales.
- * A moving highlight is overlaid independently.
+ * Crown + Shield
+ *
+ * الصورة نفسها ثابتة.
+ * لا دوران.
+ * لا تكبير.
+ *
+ * الحركة الحالية محفوظة بشكل مستقل
+ * حتى نضيف لمعان الذهب الحقيقي لاحقًا.
  */
 @Composable
 fun RoyalCrownShieldShine(
@@ -69,19 +82,27 @@ fun RoyalCrownShieldShine(
     contentDescription: String? = "Royal crown and shield",
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "royal_crown_shield_shine")
+    val transition = rememberInfiniteTransition(
+        label = "royal_crown_shield_shine"
+    )
 
     val shineX by transition.animateFloat(
         initialValue = -1.2f,
         targetValue = 1.2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(SHINE_MS, easing = LinearEasing),
+            animation = tween(
+                durationMillis = SHINE_MS,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "gold_shine_position"
     )
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier
+    ) {
+
         Image(
             painter = painterResource(drawableRes),
             contentDescription = contentDescription,
@@ -89,8 +110,12 @@ fun RoyalCrownShieldShine(
             contentScale = ContentScale.Fit
         )
 
-        // Reserved independent shine layer.
-        // It is intentionally kept subtle until the actual PNG is installed.
+        /*
+         * طبقة الحركة محفوظة بشكل مستقل.
+         *
+         * سنستبدلها لاحقًا بلمعة ذهبية حقيقية
+         * تمر فوق التاج والدرع فقط.
+         */
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -102,9 +127,21 @@ fun RoyalCrownShieldShine(
     }
 }
 
+
 /**
- * RC rotates around the vertical axis using rotationY.
- * It does not perform a flat Z rotation and does not scale.
+ * RC 3D
+ *
+ * دوران حول المحور العمودي Y.
+ *
+ * لا يوجد:
+ * - دوران Z
+ * - تكبير
+ * - تصغير
+ *
+ * يبدأ أماميًا،
+ * يتوقف 5 ثوانٍ،
+ * ثم يدور 360 درجة،
+ * ثم يتوقف 5 ثوانٍ مرة أخرى.
  */
 @Composable
 fun RoyalRC3D(
@@ -112,7 +149,9 @@ fun RoyalRC3D(
     contentDescription: String? = "RC logo",
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "royal_rc_3d")
+    val transition = rememberInfiniteTransition(
+        label = "royal_rc_3d"
+    )
 
     val rotationY by transition.animateFloat(
         initialValue = 0f,
@@ -120,8 +159,13 @@ fun RoyalRC3D(
         animationSpec = infiniteRepeatable(
             animation = keyframes {
                 durationMillis = RC_FRONT_PAUSE_MS + RC_TURN_MS
+
                 0f at 0
+
+                // توقف أمامي 5 ثوانٍ
                 0f at RC_FRONT_PAUSE_MS
+
+                // دوران 3D كامل
                 360f at RC_FRONT_PAUSE_MS + RC_TURN_MS
             },
             repeatMode = RepeatMode.Restart
@@ -133,24 +177,31 @@ fun RoyalRC3D(
         painter = painterResource(drawableRes),
         contentDescription = contentDescription,
         modifier = modifier.graphicsLayer {
+
+            // دوران حول المحور العمودي فقط
             this.rotationY = rotationY
+
+            // منظور 3D
             cameraDistance = 24f * density
         },
         contentScale = ContentScale.Fit
     )
 }
 
+
 /**
- * Future convenience wrapper.
- * Activate only after the two PNG files exist in res/drawable.
+ * الاستخدام النهائي للشعار.
+ *
+ * يعتمد على طبقتي PNG الحقيقيتين الموجودتين
+ * داخل res/drawable.
  */
-/*
 @Composable
-fun RoyalAppLogo(modifier: Modifier = Modifier) {
+fun RoyalAppLogo(
+    modifier: Modifier = Modifier
+) {
     RoyalLayeredLogoAnimation(
-        crownShieldRes = R.drawable.royal_crown_shield,
-        rcRes = R.drawable.royal_rc,
+        crownShieldRes = R.drawable.royal_crest_layer,
+        rcRes = R.drawable.royal_rc_layer,
         modifier = modifier
     )
 }
-*/
