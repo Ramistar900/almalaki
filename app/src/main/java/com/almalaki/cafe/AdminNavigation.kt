@@ -185,6 +185,10 @@ fun AdminHorizontalMenu(
                 onSectionSelected(AdminSection.SALES)
             }
         }
+        AdminMenuItem("🎨", "تحرير الواجهة", section == AdminSection.INTERFACE_SETTINGS) {
+    onSectionSelected(AdminSection.INTERFACE_SETTINGS)
+        }
+    }
 
         item {
             AdminMenuItem("★", "الأكثر طلبًا", section == AdminSection.TOP_PRODUCTS) {
