@@ -318,6 +318,7 @@ fun openSection(target: AdminSection) {
         AdminSection.ORDERS -> refreshOrders()
         AdminSection.ARCHIVE -> refreshArchive()
         AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
+        AdminSection.INTERFACE_SETTINGS -> Unit
     }
 }
 
