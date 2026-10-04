@@ -881,27 +881,26 @@ fun RoyalLiveDateTime(
  * الشريط الإخباري
  * ============================================================
  */
- 
-@Composable
+ @Composable
 fun RoyalNewsTicker(
     newsText: String,
     modifier: Modifier = Modifier
 ) {
-
     val parts =
         remember(newsText) {
-            newsText.split("&")
+            newsText
+                .split("&")
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
         }
 
-    var containerWidth by
-        remember {
-            mutableStateOf(0)
-        }
+    var containerWidth by remember {
+        mutableStateOf(0)
+    }
 
-    var contentWidth by
-        remember {
-            mutableStateOf(0)
-        }
+    var contentWidth by remember {
+        mutableStateOf(0)
+    }
 
     val offsetX =
         remember {
@@ -913,14 +912,12 @@ fun RoyalNewsTicker(
         contentWidth,
         newsText
     ) {
-
         offsetX.stop()
 
         if (
             containerWidth > 0 &&
             contentWidth > 0
         ) {
-
             while (true) {
 
                 offsetX.snapTo(
@@ -928,7 +925,6 @@ fun RoyalNewsTicker(
                 )
 
                 offsetX.animateTo(
-
                     targetValue =
                         -contentWidth.toFloat(),
 
@@ -946,17 +942,294 @@ fun RoyalNewsTicker(
         modifier =
             modifier
                 .fillMaxWidth()
+                .height(22.dp)
                 .clipToBounds()
                 .onSizeChanged {
-
-                    containerWidth =
-                        it.width
+                    containerWidth = it.width
                 },
-
-        contentAlignment =
-            Alignment.CenterStart
+        contentAlignment = Alignment.Center
     ) {
 
+        /*
+         * الإطار الملكي
+         *
+         * يتم رسمه خلف الأخبار فقط،
+         * والنص يبقى حرًا ويتحرك فوقه.
+         */
+        Canvas(
+            modifier =
+                Modifier
+                    .matchParentSize()
+        ) {
+
+            val w = size.width
+            val h = size.height
+
+            val centerY = h / 2f
+
+            val gold = Color(0xFFD4AF37)
+            val goldLight = Color(0xFFFFE9A3)
+            val goldDark = Color(0xFF8C6B16)
+
+            val stroke = 1.2.dp.toPx()
+            val innerStroke = 0.55.dp.toPx()
+
+            /*
+             * الطرف الأيسر الملكي
+             *
+             * يشبه القوس {
+             * لكن مرسوم هندسيًا وليس كنص.
+             */
+            val leftPath =
+                Path().apply {
+
+                    moveTo(
+                        10.dp.toPx(),
+                        2.dp.toPx()
+                    )
+
+                    cubicTo(
+                        4.dp.toPx(),
+                        2.dp.toPx(),
+                        3.dp.toPx(),
+                        centerY - 4.dp.toPx(),
+                        3.dp.toPx(),
+                        centerY
+                    )
+
+                    cubicTo(
+                        3.dp.toPx(),
+                        centerY + 4.dp.toPx(),
+                        4.dp.toPx(),
+                        h - 2.dp.toPx(),
+                        10.dp.toPx(),
+                        h - 2.dp.toPx()
+                    )
+                }
+
+            /*
+             * الطرف الأيمن الملكي
+             *
+             * عكس الطرف الأيسر تمامًا.
+             */
+            val rightPath =
+                Path().apply {
+
+                    moveTo(
+                        w - 10.dp.toPx(),
+                        2.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 4.dp.toPx(),
+                        2.dp.toPx(),
+                        w - 3.dp.toPx(),
+                        centerY - 4.dp.toPx(),
+                        w - 3.dp.toPx(),
+                        centerY
+                    )
+
+                    cubicTo(
+                        w - 3.dp.toPx(),
+                        centerY + 4.dp.toPx(),
+                        w - 4.dp.toPx(),
+                        h - 2.dp.toPx(),
+                        w - 10.dp.toPx(),
+                        h - 2.dp.toPx()
+                    )
+                }
+
+            /*
+             * الخط العلوي والسفلي.
+             */
+            val topPath =
+                Path().apply {
+
+                    moveTo(
+                        10.dp.toPx(),
+                        2.dp.toPx()
+                    )
+
+                    lineTo(
+                        w - 10.dp.toPx(),
+                        2.dp.toPx()
+                    )
+                }
+
+            val bottomPath =
+                Path().apply {
+
+                    moveTo(
+                        10.dp.toPx(),
+                        h - 2.dp.toPx()
+                    )
+
+                    lineTo(
+                        w - 10.dp.toPx(),
+                        h - 2.dp.toPx()
+                    )
+                }
+
+            /*
+             * إطار ذهبي أساسي.
+             */
+            drawPath(
+                path = leftPath,
+                color = gold,
+                style =
+                    Stroke(
+                        width = stroke
+                    )
+            )
+
+            drawPath(
+                path = rightPath,
+                color = gold,
+                style =
+                    Stroke(
+                        width = stroke
+                    )
+            )
+
+            drawPath(
+                path = topPath,
+                color = gold,
+                style =
+                    Stroke(
+                        width = stroke
+                    )
+            )
+
+            drawPath(
+                path = bottomPath,
+                color = gold,
+                style =
+                    Stroke(
+                        width = stroke
+                    )
+            )
+
+            /*
+             * خط داخلي ذهبي خفيف يعطي إحساس
+             * الإطار المزدوج الفاخر.
+             */
+            val innerLeft =
+                Path().apply {
+
+                    moveTo(
+                        11.dp.toPx(),
+                        4.dp.toPx()
+                    )
+
+                    cubicTo(
+                        7.dp.toPx(),
+                        4.dp.toPx(),
+                        6.dp.toPx(),
+                        centerY - 3.dp.toPx(),
+                        6.dp.toPx(),
+                        centerY
+                    )
+
+                    cubicTo(
+                        6.dp.toPx(),
+                        centerY + 3.dp.toPx(),
+                        7.dp.toPx(),
+                        h - 4.dp.toPx(),
+                        11.dp.toPx(),
+                        h - 4.dp.toPx()
+                    )
+                }
+
+            val innerRight =
+                Path().apply {
+
+                    moveTo(
+                        w - 11.dp.toPx(),
+                        4.dp.toPx()
+                    )
+
+                    cubicTo(
+                        w - 7.dp.toPx(),
+                        4.dp.toPx(),
+                        w - 6.dp.toPx(),
+                        centerY - 3.dp.toPx(),
+                        w - 6.dp.toPx(),
+                        centerY
+                    )
+
+                    cubicTo(
+                        w - 6.dp.toPx(),
+                        centerY + 3.dp.toPx(),
+                        w - 7.dp.toPx(),
+                        h - 4.dp.toPx(),
+                        w - 11.dp.toPx(),
+                        h - 4.dp.toPx()
+                    )
+                }
+
+            drawPath(
+                path = innerLeft,
+                color = goldDark.copy(alpha = 0.85f),
+                style =
+                    Stroke(
+                        width = innerStroke
+                    )
+            )
+
+            drawPath(
+                path = innerRight,
+                color = goldDark.copy(alpha = 0.85f),
+                style =
+                    Stroke(
+                        width = innerStroke
+                    )
+            )
+
+            /*
+             * لمعة ذهبية صغيرة في أعلى الإطار.
+             */
+            drawLine(
+                color = goldLight.copy(alpha = 0.75f),
+                start =
+                    Offset(
+                        18.dp.toPx(),
+                        2.dp.toPx()
+                    ),
+                end =
+                    Offset(
+                        w - 18.dp.toPx(),
+                        2.dp.toPx()
+                    ),
+                strokeWidth = 0.5.dp.toPx()
+            )
+
+            /*
+             * نقاط زخرفية صغيرة قرب القوسين.
+             */
+            drawCircle(
+                color = goldLight,
+                radius = 0.8.dp.toPx(),
+                center =
+                    Offset(
+                        13.dp.toPx(),
+                        centerY
+                    )
+            )
+
+            drawCircle(
+                color = goldLight,
+                radius = 0.8.dp.toPx(),
+                center =
+                    Offset(
+                        w - 13.dp.toPx(),
+                        centerY
+                    )
+            )
+        }
+
+        /*
+         * الأخبار المتحركة.
+         */
         Row(
             modifier =
                 Modifier
@@ -964,15 +1237,11 @@ fun RoyalNewsTicker(
                         unbounded = true
                     )
                     .onSizeChanged {
-
-                        contentWidth =
-                            it.width
+                        contentWidth = it.width
                     }
                     .offset {
-
                         IntOffset(
-                            offsetX.value
-                                .roundToInt(),
+                            offsetX.value.roundToInt(),
                             0
                         )
                     },
@@ -981,27 +1250,22 @@ fun RoyalNewsTicker(
                 Alignment.CenterVertically
         ) {
 
-            parts.forEachIndexed {
-                    index,
-                    part ->
+            parts.forEachIndexed { index, part ->
 
-                if (part.isNotBlank()) {
+                Text(
+                    text = part,
 
-                    Text(
-                        text = part.trim(),
+                    color = RoyalGoldLight,
 
-                        color = RoyalGold,
+                    fontSize = 9.sp,
 
-                        fontSize = 10.sp,
+                    fontWeight =
+                        FontWeight.Medium,
 
-                        fontWeight =
-                            FontWeight.Medium,
+                    maxLines = 1,
 
-                        maxLines = 1,
-
-                        softWrap = false
-                    )
-                }
+                    softWrap = false
+                )
 
                 if (
                     index <
@@ -1022,10 +1286,8 @@ fun RoyalNewsTicker(
         }
     }
 }
-
 @Composable
 private fun RoyalTickerLogoSeparator() {
-
     RoyalActiveLogo(
         size = 18.dp
     )
