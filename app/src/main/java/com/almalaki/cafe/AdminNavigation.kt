@@ -1,5 +1,10 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.border
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -136,17 +141,33 @@ fun AdminMenuItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    var focused = remember { mutableStateOf(false) }
+
     val container =
-        if (selected) AdminGold else Color.Transparent
+        if (selected) AdminGold
+        else Color.Transparent
 
     val textColor =
-        if (selected) AdminBlack else AdminCream
+        if (selected) AdminBlack
+        else AdminCream
+
+    val focusBorder =
+        if (focused.value) AdminGold
+        else Color.Transparent
 
     Button(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(vertical = 3.dp)
+            .onFocusChanged {
+                focused.value = it.isFocused
+            }
+            .border(
+                width = if (focused.value) 2.dp else 0.dp,
+                color = focusBorder,
+                shape = MaterialTheme.shapes.medium
+            ),
         colors = ButtonDefaults.buttonColors(
             containerColor = container,
             contentColor = textColor
