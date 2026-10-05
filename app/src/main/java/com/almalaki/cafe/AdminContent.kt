@@ -231,13 +231,23 @@ if (section == AdminSection.ROYAL_TV) {
             }
             
             AdminSection.TV_SETTINGS -> Unit
-            AdminSection.ROYAL_TV -> {
+
+AdminSection.ROYAL_TV -> {
     item {
         RoyalTVScreen(
             modifier = Modifier.fillMaxWidth()
         )
     }
-            }
+}
+
+AdminSection.ROYAL_TV_IDENTITY -> {
+    item {
+        RoyalTVIdentitySettingsScreen(
+            modifier = Modifier.fillMaxWidth(),
+            context = context
+        )
+    }
+}
             
 AdminSection.SALES -> {
     item {
