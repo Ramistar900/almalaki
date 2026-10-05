@@ -22,5 +22,6 @@ enum class AdminSection {
     TOP_PRODUCTS,
     INTERFACE_SETTINGS,
     TV_SETTINGS,
-    ROYAL_TV
+    ROYAL_TV,
+    ROYAL_TV_IDENTITY
 }
