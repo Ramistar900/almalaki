@@ -223,6 +223,8 @@ fun AdminContent(
     }
             }
             
+            AdminSection.TV_SETTINGS -> Unit
+            
 AdminSection.SALES -> {
     item {
         RoyalSalesRecordsScreen(
