@@ -744,16 +744,16 @@ private fun RoyalTitleFrame(
  * عناصر القائمة الجانبية
  * ============================================================
  */
-@Composable
+ @Composable
 private fun RoyalDrawerItem(
     icon: RoyalIcon,
     title: String,
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
-  var isFocused by remember {
-    mutableStateOf(false)
-  }
+    var isFocused by remember {
+        mutableStateOf(false)
+    }
 
     val textColor =
         if (isDarkMode) {
@@ -763,49 +763,52 @@ private fun RoyalDrawerItem(
         }
 
     Row(
-
         modifier =
-    Modifier
-        .fillMaxWidth()
-        .padding(
-            horizontal = 12.dp,
-            vertical = 4.dp
-        )
-        .clip(
-            RoundedCornerShape(14.dp)
-        )
-        .onFocusChanged {
-            isFocused = it.isFocused
-        }
-        .focusable()
-        .background(
-            if (isFocused) {
-                RoyalGold.copy(alpha = 0.14f)
-            } else {
-                Color.Transparent
-            },
-            RoundedCornerShape(14.dp)
-        )
-        .border(
-            width = if (isFocused) 2.dp else 0.dp,
-            color =
-                if (isFocused) {
-                    RoyalGold
-                } else {
-                    Color.Transparent
-                },
-            shape = RoundedCornerShape(14.dp)
-        )
-        .clickable(
-            onClick = onClick
-        )
-        .padding(
-            horizontal = 12.dp,
-            vertical = 12.dp
-        ),
-
-        verticalAlignment =
-            Alignment.CenterVertically
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 12.dp,
+                    vertical = 5.dp
+                )
+                .clip(
+                    RoundedCornerShape(14.dp)
+                )
+                .focusable()
+                .onFocusChanged {
+                    isFocused = it.isFocused
+                }
+                .background(
+                    color =
+                        if (isFocused) {
+                            RoyalGold.copy(alpha = 0.16f)
+                        } else {
+                            Color.Transparent
+                        },
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .border(
+                    width =
+                        if (isFocused) {
+                            2.dp
+                        } else {
+                            0.dp
+                        },
+                    color =
+                        if (isFocused) {
+                            RoyalGold
+                        } else {
+                            Color.Transparent
+                        },
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .clickable(
+                    onClick = onClick
+                )
+                .padding(
+                    horizontal = 14.dp,
+                    vertical = 14.dp
+                ),
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
         RoyalIconButton(
@@ -815,13 +818,13 @@ private fun RoyalDrawerItem(
         )
 
         Spacer(
-            Modifier.width(12.dp)
+            modifier = Modifier.width(14.dp)
         )
 
         Text(
-            title,
+            text = title,
             color = textColor,
-            fontSize = 16.sp,
+            fontSize = 17.sp,
             fontWeight = FontWeight.Medium
         )
     }
