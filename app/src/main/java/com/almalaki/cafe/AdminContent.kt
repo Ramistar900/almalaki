@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import com.almalaki.cafe.royaltv.RoyalTVControlScreen
 import com.almalaki.cafe.royaltv.identity.RoyalTVIdentitySettingsScreen
 import android.net.Uri
 import androidx.compose.foundation.layout.*
@@ -233,9 +234,17 @@ if (section == AdminSection.ROYAL_TV) {
             
             AdminSection.TV_SETTINGS -> Unit
 
-AdminSection.ROYAL_TV -> {
+            AdminSection.ROYAL_TV -> {
     item {
         RoyalTVScreen(
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+AdminSection.ROYAL_TV_CONTROL -> {
+    item {
+        RoyalTVControlScreen(
             modifier = Modifier.fillMaxWidth()
         )
     }
