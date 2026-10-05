@@ -323,6 +323,7 @@ fun openSection(target: AdminSection) {
         AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
         AdminSection.INTERFACE_SETTINGS -> Unit
         AdminSection.TV_SETTINGS -> Unit
+        AdminSection.ROYAL_TV -> Unit
     }
 }
 
