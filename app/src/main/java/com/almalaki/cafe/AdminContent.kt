@@ -231,6 +231,13 @@ if (section == AdminSection.ROYAL_TV) {
             }
             
             AdminSection.TV_SETTINGS -> Unit
+            AdminSection.ROYAL_TV -> {
+    item {
+        RoyalTVScreen(
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+            }
             
 AdminSection.SALES -> {
     item {
