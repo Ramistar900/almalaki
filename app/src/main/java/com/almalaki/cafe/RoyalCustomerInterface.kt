@@ -806,7 +806,7 @@ private fun RoyalDrawerItem(
         RoyalIconButton(
             icon = icon,
             size = 42.dp,
-            onClick = onClick
+            onClick = {}
         )
 
         Spacer(
