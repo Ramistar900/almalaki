@@ -121,7 +121,9 @@ fun RoyalIconButton(
     modifier: Modifier = Modifier,
     size: Dp = 54.dp,
     onClick: () -> Unit
-) {
+    ) {
+    val context = LocalContext.current
+    val isTV = isRoyalTV(context)
     val scope = rememberCoroutineScope()
 
     val scale = remember {
