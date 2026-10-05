@@ -50,11 +50,18 @@ fun AdminContent(
     highlightedOrderId: Long? = null
 ) {
         if (section == AdminSection.TV_SETTINGS) {
-        AdminTVSettingsScreen(
-            modifier = Modifier.fillMaxSize()
-        )
-        return
-        }
+    AdminTVSettingsScreen(
+        modifier = Modifier.fillMaxSize()
+    )
+    return
+}
+
+if (section == AdminSection.ROYAL_TV) {
+    RoyalTVScreen(
+        modifier = Modifier.fillMaxSize()
+    )
+    return
+}
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
