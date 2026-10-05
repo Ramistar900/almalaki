@@ -37,6 +37,7 @@ fun adminSectionTitle(section: AdminSection): String = when (section) {
     AdminSection.INTERFACE_SETTINGS -> "تحرير الواجهة"
     AdminSection.TV_SETTINGS -> "إعدادات التلفزيون"
     AdminSection.ROYAL_TV -> "Royal TV"
+    AdminSection.ROYAL_TV_CONTROL -> "مركز تحكم ROYAL TV"
     AdminSection.ROYAL_TV_IDENTITY -> "هوية ROYAL TV"
 }
 
