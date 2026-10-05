@@ -795,7 +795,7 @@ private fun RoyalDrawerItem(
                         },
                     color =
                         if (isFocused) {
-                            RoyalGold
+                            Color(0xFF6A3D8F)
                         } else {
                             Color.Transparent
                         },
