@@ -324,6 +324,7 @@ fun openSection(target: AdminSection) {
         AdminSection.INTERFACE_SETTINGS -> Unit
         AdminSection.TV_SETTINGS -> Unit
         AdminSection.ROYAL_TV -> Unit
+        AdminSection.ROYAL_TV_IDENTITY -> Unit
     }
 }
 
