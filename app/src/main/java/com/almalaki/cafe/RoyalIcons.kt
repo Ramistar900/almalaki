@@ -162,9 +162,8 @@ fun RoyalIconButton(
                             )
                         }
                     }
-
-                    /* ترس الإعدادات يدور */
-                    if (icon == RoyalIcon.SETTINGS) {
+                    /* ترس الإعدادات يدور على الهاتف والتابلت فقط */
+                    if (icon == RoyalIcon.SETTINGS && !isTV) {
 
                         scope.launch {
                             rotation.snapTo(0f)
