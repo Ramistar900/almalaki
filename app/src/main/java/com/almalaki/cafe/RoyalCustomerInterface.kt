@@ -777,15 +777,7 @@ private fun RoyalDrawerItem(
                 .onFocusChanged {
                     isFocused = it.isFocused
                 }
-                .background(
-                    color =
-                        if (isFocused) {
-                            RoyalGold.copy(alpha = 0.16f)
-                        } else {
-                            Color.Transparent
-                        },
-                    shape = RoundedCornerShape(14.dp)
-                )
+                
                 .border(
                     width =
                         if (isFocused) {
