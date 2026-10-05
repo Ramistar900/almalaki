@@ -1,9 +1,9 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -105,15 +106,23 @@ fun AdminSidebar(
         }
 
         /*
-         * إعدادات التلفزيون تظهر فقط على:
-         * Android TV / Google TV / TV Box / الرسيفرات
-         * التي يتعرف عليها التطبيق كجهاز تلفزيون.
+         * Royal TV
          *
-         * الهاتف والتابلت لن يظهر فيهما هذا الخيار.
+         * يظهر فقط على أجهزة التلفزيون التي يتعرف عليها التطبيق.
+         * يستخدم شعار Royal TV الحقيقي بدل أيقونة 📺.
          */
         if (isTV) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            AdminRoyalTVMenuItem(
+                selected = section == AdminSection.ROYAL_TV
+            ) {
+                onSectionSelected(AdminSection.ROYAL_TV)
+            }
+
+            /*
+             * إعدادات التلفزيون
+             */
             AdminMenuItem(
                 "📺",
                 "إعدادات التلفزيون",
@@ -130,6 +139,66 @@ fun AdminSidebar(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("تسجيل الخروج")
+        }
+    }
+}
+
+@Composable
+fun AdminRoyalTVMenuItem(
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    var focused = remember { mutableStateOf(false) }
+
+    val container =
+        if (selected) AdminGold
+        else Color.Transparent
+
+    val textColor =
+        if (selected) AdminBlack
+        else AdminCream
+
+    val focusBorder =
+        if (focused.value) AdminGold
+        else Color.Transparent
+
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .onFocusChanged {
+                focused.value = it.isFocused
+            }
+            .border(
+                width = if (focused.value) 2.dp else 0.dp,
+                color = focusBorder,
+                shape = MaterialTheme.shapes.medium
+            ),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = container,
+            contentColor = textColor
+        )
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Image(
+                painter = painterResource(
+                    id = R.drawable.royaltv
+                ),
+                contentDescription = "Royal TV",
+                modifier = Modifier
+                    .height(42.dp)
+                    .fillMaxWidth()
+            )
+
+            Text(
+                text = "TV",
+                color = textColor,
+                fontSize = 13.sp
+            )
         }
     }
 }
