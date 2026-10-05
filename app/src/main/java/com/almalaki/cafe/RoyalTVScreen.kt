@@ -43,49 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
-/*
- * ============================================================
- * Royal TV
- * المرحلة الأولى — واجهة العرض الأساسية
- * ============================================================
- *
- * هذه الشاشة مصممة كواجهة DISPLAY حقيقية للتلفزيون.
- *
- * الطبقات مستقلة:
- *
- * 1. Content Layer
- * 2. Logo Layer
- * 3. Live Layer
- * 4. Clock Layer
- * 5. Ticker Layer
- *
- * لاحقًا سنضيف داخل Content Layer:
- * - فيديو
- * - YouTube
- * - صور
- * - بوسترات
- * - عرض شرائح
- * - إعلانات
- * - الطلبات الجاهزة
- *
- * مهم:
- * لا يتم هنا إنشاء نظام طلبات أو YouTube جديد.
- * سنربط الأنظمة الموجودة في مراحل لاحقة.
- */
-
-/* ============================================================
- * الألوان
- * ============================================================ */
-
 private val RoyalTVBlack = Color(0xFF030303)
 private val RoyalTVGold = Color(0xFFD4AF37)
 private val RoyalTVGoldLight = Color(0xFFFFE9A3)
 private val RoyalTVCream = Color(0xFFF5F0E5)
 private val RoyalTVRed = Color(0xFFE53935)
-
-/* ============================================================
- * الشاشة الرئيسية
- * ============================================================ */
 
 @Composable
 fun RoyalTVScreen(
@@ -103,35 +65,11 @@ fun RoyalTVScreen(
             .fillMaxSize()
             .background(RoyalTVBlack)
     ) {
-
-        /*
-         * ====================================================
-         * Responsive Scale
-         * ====================================================
-         *
-         * المرجع:
-         * 1280px
-         *
-         * الهدف:
-         * نفس التصميم يعمل على:
-         * - TV
-         * - Google TV
-         * - Android TV Box
-         * - رسيفر Android
-         * - شاشات كبيرة
-         */
-
         val widthDp = maxWidth.value
 
         val tvScale =
             (widthDp / 1280f)
                 .coerceIn(0.72f, 2.40f)
-
-        /*
-         * ====================================================
-         * المقاسات
-         * ====================================================
-         */
 
         val logoSize =
             (118f * tvScale).dp
@@ -143,46 +81,20 @@ fun RoyalTVScreen(
             (25f * tvScale).sp
 
         /*
-         * ====================================================
          * CONTENT LAYER
-         * ====================================================
          *
-         * هذه المساحة محجوزة للمحتوى الحقيقي.
-         *
-         * لاحقًا يمكن وضع:
-         *
-         * VideoPlayer
-         * YouTube
-         * Image
-         * Poster
-         * Slideshow
-         * Advertisement
-         *
-         * بدون إعادة بناء باقي الشاشة.
+         * هذه المساحة محجوزة للمحتوى الحقيقي لاحقًا:
+         * فيديو / YouTube / صور / بوسترات / إعلانات / طلبات جاهزة.
          */
-
         Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-
-            /*
-             * خلفية محتوى بسيطة.
-             *
-             * لا نضع أي عناصر داخلها الآن.
-             */
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(RoyalTVBlack)
-            )
-        }
+            modifier = Modifier
+                .fillMaxSize()
+                .background(RoyalTVBlack)
+        )
 
         /*
-         * ====================================================
          * LOGO LAYER
-         * ====================================================
          */
-
         if (showLogo) {
             RoyalTVAnimatedLogo(
                 size = logoSize,
@@ -196,11 +108,8 @@ fun RoyalTVScreen(
         }
 
         /*
-         * ====================================================
          * LIVE LAYER
-         * ====================================================
          */
-
         if (showLive) {
             RoyalTVLiveIndicator(
                 text = liveText,
@@ -216,16 +125,8 @@ fun RoyalTVScreen(
         }
 
         /*
-         * ====================================================
          * CLOCK LAYER
-         * ====================================================
-         *
-         * نستخدم RoyalDateTime.kt الموجود فعليًا
-         * في المشروع.
-         *
-         * لا نكرر منطق الساعة هنا.
          */
-
         if (showClock) {
             RoyalTVClock(
                 scale = tvScale,
@@ -239,13 +140,8 @@ fun RoyalTVScreen(
         }
 
         /*
-         * ====================================================
          * TICKER LAYER
-         * ====================================================
-         *
-         * مستقل عن Content Layer.
          */
-
         if (showTicker) {
             RoyalTVTicker(
                 text = tickerText,
@@ -264,29 +160,26 @@ fun RoyalTVScreen(
     }
 }
 
-/* ============================================================
- * شعار Royal TV
+/*
+ * ============================================================
+ * Royal TV Animated Logo
  * ============================================================
  *
- * دوران 3D حول المحور العمودي.
+ * مؤقتًا نستخدم RC.
  *
- * ملاحظة:
- * نستخدم مؤقتًا RC لأن ملف PNG الخاص بـ Royal TV
- * لم يتم تثبيته في drawable حتى الآن.
- *
- * عندما يصبح:
+ * لاحقًا عند توفر:
  *
  * res/drawable/royaltv.png
  *
- * متوفرًا، سنستبدل محتوى الشعار فقط.
- * ============================================================ */
+ * نستبدل محتوى الشعار فقط بدون تغيير نظام الحركة.
+ * ============================================================
+ */
 
 @Composable
 private fun RoyalTVAnimatedLogo(
     size: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
-
     val transition =
         rememberInfiniteTransition(
             label = "royal_tv_logo_rotation"
@@ -299,23 +192,22 @@ private fun RoyalTVAnimatedLogo(
             infiniteRepeatable(
                 animation =
                     keyframes {
-
-                        /*
-                         * أمامي — 3 ثوانٍ.
-                         */
                         durationMillis = 9000
 
+                        /*
+                         * واجهة أمامية ثابتة 3 ثوانٍ
+                         */
                         0f at 0
                         0f at 3000
 
                         /*
-                         * دوران.
+                         * دوران حول المحور العمودي
                          */
                         180f at 5000
                         360f at 6000
 
                         /*
-                         * أمامي — 3 ثوانٍ.
+                         * واجهة أمامية ثابتة 3 ثوانٍ
                          */
                         360f at 9000
                     },
@@ -329,13 +221,17 @@ private fun RoyalTVAnimatedLogo(
             .size(size)
             .graphicsLayer {
 
-                rotationY = rotationY
+                /*
+                 * مهم:
+                 * this يمنع تعارض اسم خاصية graphicsLayer
+                 * مع المتغير rotationY.
+                 */
+                this.rotationY = rotationY
 
                 /*
-                 * cameraDistance ثابت حتى لا يتغير
-                 * حجم الشعار أثناء الحركة.
+                 * المسافة الخاصة بمنظور 3D.
                  */
-                cameraDistance = 16f * 100f
+                this.cameraDistance = 16f * 100f
             }
             .clip(
                 RoundedCornerShape(
@@ -359,11 +255,6 @@ private fun RoyalTVAnimatedLogo(
             ),
         contentAlignment = Alignment.Center
     ) {
-
-        /*
-         * لمعان بسيط على الشعار المؤقت.
-         */
-
         Text(
             text = "RC",
             color = RoyalTVGoldLight,
@@ -375,9 +266,11 @@ private fun RoyalTVAnimatedLogo(
     }
 }
 
-/* ============================================================
+/*
+ * ============================================================
  * LIVE INDICATOR
- * ============================================================ */
+ * ============================================================
+ */
 
 @Composable
 private fun RoyalTVLiveIndicator(
@@ -386,7 +279,6 @@ private fun RoyalTVLiveIndicator(
     scale: Float,
     modifier: Modifier = Modifier
 ) {
-
     val transition =
         rememberInfiniteTransition(
             label = "royal_tv_live"
@@ -411,9 +303,8 @@ private fun RoyalTVLiveIndicator(
         modifier = modifier
             .border(
                 width = (1.6f * scale).dp,
-                color = RoyalTVGold.copy(
-                    alpha = 0.9f
-                ),
+                color =
+                    RoyalTVGold.copy(alpha = 0.9f),
                 shape =
                     RoundedCornerShape(
                         (15f * scale).dp
@@ -434,7 +325,6 @@ private fun RoyalTVLiveIndicator(
         horizontalArrangement =
             Arrangement.Center
     ) {
-
         Box(
             modifier = Modifier
                 .size(
@@ -462,31 +352,28 @@ private fun RoyalTVLiveIndicator(
     }
 }
 
-/* ============================================================
+/*
+ * ============================================================
  * CLOCK
  * ============================================================
  *
- * مرتبط مباشرة بـ RoyalDateTime.kt
+ * يعتمد على RoyalDateTime.kt الموجود في المشروع.
  *
- * الشكل:
- *
- * 6:56 ص
- * الأربعاء 6/6/2025
- *
- * ويتم التحديث كل ثانية بواسطة الملف الموجود.
- * ============================================================ */
+ * لا نكرر منطق التاريخ والوقت هنا.
+ * ============================================================
+ */
 
 @Composable
 private fun RoyalTVClock(
     scale: Float,
     modifier: Modifier = Modifier
 ) {
-
     Box(
         modifier = modifier
             .border(
                 width = (1.5f * scale).dp,
-                color = RoyalTVGold.copy(alpha = 0.85f),
+                color =
+                    RoyalTVGold.copy(alpha = 0.85f),
                 shape =
                     RoundedCornerShape(
                         (14f * scale).dp
@@ -503,7 +390,6 @@ private fun RoyalTVClock(
                 vertical = (9f * scale).dp
             )
     ) {
-
         RoyalDateTime(
             language = "ar",
             style = TextStyle(
@@ -516,9 +402,16 @@ private fun RoyalTVClock(
     }
 }
 
-/* ============================================================
+/*
+ * ============================================================
  * TICKER
- * ============================================================ */
+ * ============================================================
+ *
+ * شريط أخبار مستقل عن المحتوى.
+ *
+ * يتحرك من اليمين إلى اليسار.
+ * ============================================================
+ */
 
 @Composable
 private fun RoyalTVTicker(
@@ -527,7 +420,6 @@ private fun RoyalTVTicker(
     scale: Float,
     modifier: Modifier = Modifier
 ) {
-
     var textWidthPx by remember(text) {
         mutableIntStateOf(0)
     }
@@ -536,10 +428,6 @@ private fun RoyalTVTicker(
         rememberInfiniteTransition(
             label = "royal_tv_ticker"
         )
-
-    /*
-     * الحركة من اليمين إلى اليسار.
-     */
 
     val tickerX by transition.animateFloat(
         initialValue = 0f,
@@ -593,7 +481,6 @@ private fun RoyalTVTicker(
         contentAlignment =
             Alignment.CenterStart
     ) {
-
         Row(
             modifier = Modifier
                 .offset {
@@ -608,7 +495,6 @@ private fun RoyalTVTicker(
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-
             Text(
                 text = text,
                 color = RoyalTVCream,
