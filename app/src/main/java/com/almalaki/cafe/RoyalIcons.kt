@@ -139,26 +139,28 @@ fun RoyalIconButton(
             .size(size)
             .pointerInput(icon) {
                 detectTapGestures {
+                    
+             /* حركة التكبير للهاتف والتابلت فقط */
+                    if (!isTV) {
+                        scope.launch {
+                            scale.snapTo(1f)
 
-                    /* حركة التكبير الصغيرة عند الضغط */
-                    scope.launch {
-                        scale.snapTo(1f)
-
-                        scale.animateTo(
-                            targetValue = 1.18f,
-                            animationSpec = tween(
-                                durationMillis = 110,
-                                easing = FastOutSlowInEasing
+                            scale.animateTo(
+                                targetValue = 1.18f,
+                                animationSpec = tween(
+                                    durationMillis = 110,
+                                    easing = FastOutSlowInEasing
+                                )
                             )
-                        )
 
-                        scale.animateTo(
-                            targetValue = 1f,
-                            animationSpec = tween(
-                                durationMillis = 170,
-                                easing = FastOutSlowInEasing
+                            scale.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(
+                                    durationMillis = 170,
+                                    easing = FastOutSlowInEasing
+                                )
                             )
-                        )
+                        }
                     }
 
                     /* ترس الإعدادات يدور */
