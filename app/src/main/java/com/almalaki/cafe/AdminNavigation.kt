@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -108,21 +109,24 @@ fun AdminSidebar(
         /*
          * Royal TV
          *
-         * يظهر فقط على أجهزة التلفزيون التي يتعرف عليها التطبيق.
-         * يستخدم شعار Royal TV الحقيقي بدل أيقونة 📺.
+         * يظهر على جميع الأجهزة:
+         * الهاتف + التابلت + Android TV + Google TV + TV Box
+         *
+         * يستخدم شعار Royal TV الحقيقي من:
+         * res/drawable/royaltv.png
+         */
+        Spacer(modifier = Modifier.height(8.dp))
+
+        AdminRoyalTVMenuItem(
+            selected = section == AdminSection.ROYAL_TV
+        ) {
+            onSectionSelected(AdminSection.ROYAL_TV)
+        }
+
+        /*
+         * إعدادات التلفزيون تبقى خاصة بأجهزة التلفزيون فقط.
          */
         if (isTV) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            AdminRoyalTVMenuItem(
-                selected = section == AdminSection.ROYAL_TV
-            ) {
-                onSectionSelected(AdminSection.ROYAL_TV)
-            }
-
-            /*
-             * إعدادات التلفزيون
-             */
             AdminMenuItem(
                 "📺",
                 "إعدادات التلفزيون",
@@ -181,8 +185,8 @@ fun AdminRoyalTVMenuItem(
         )
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = painterResource(
