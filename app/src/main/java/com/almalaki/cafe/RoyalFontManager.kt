@@ -45,30 +45,31 @@ object RoyalFontManager {
         "text_font_"
 
     private val _arabicFont =
-        MutableStateFlow(RoyalFontId.NOTO_NASKH_ARABIC)
+        MutableStateFlow(
+            RoyalFontId.NOTO_NASKH_ARABIC
+        )
 
     val arabicFont: StateFlow<RoyalFontId> =
         _arabicFont
 
     private val _englishFont =
-        MutableStateFlow(RoyalFontId.NOTO_SANS)
+        MutableStateFlow(
+            RoyalFontId.NOTO_SANS
+        )
 
     val englishFont: StateFlow<RoyalFontId> =
         _englishFont
 
     private val _textFonts =
-        MutableStateFlow<Map<String, RoyalFontId>>(emptyMap())
+        MutableStateFlow<Map<String, RoyalFontId>>(
+            emptyMap()
+        )
 
     val textFonts: StateFlow<Map<String, RoyalFontId>> =
         _textFonts
 
     private var appContext: Context? = null
 
-    /**
-     * الخطوط المسجلة في النظام.
-     *
-     * ملفات الخطوط الفعلية ستُربط من res/font.
-     */
     val fonts: List<RoyalFontDefinition>
         get() = listOf(
 
@@ -146,10 +147,7 @@ object RoyalFontManager {
         )
 
     fun initialize(context: Context) {
-
-        appContext =
-            context.applicationContext
-
+        appContext = context.applicationContext
         loadSavedSettings()
     }
 
@@ -235,8 +233,7 @@ object RoyalFontManager {
         }
 
         _textFonts.value =
-            _textFonts.value -
-                textId
+            _textFonts.value - textId
 
         remove(
             key = KEY_TEXT_PREFIX + textId
@@ -248,7 +245,6 @@ object RoyalFontManager {
     fun getFont(
         fontId: RoyalFontId
     ): RoyalFontDefinition? {
-
         return fonts.firstOrNull {
             it.id == fontId
         }
@@ -256,7 +252,6 @@ object RoyalFontManager {
 
     fun getArabicFonts():
         List<RoyalFontDefinition> {
-
         return fonts.filter {
             it.language ==
                 RoyalFontLanguage.ARABIC
@@ -265,7 +260,6 @@ object RoyalFontManager {
 
     fun getEnglishFonts():
         List<RoyalFontDefinition> {
-
         return fonts.filter {
             it.language ==
                 RoyalFontLanguage.ENGLISH
@@ -274,24 +268,19 @@ object RoyalFontManager {
 
     fun getRoyalPreferredFonts():
         List<RoyalFontDefinition> {
-
         return fonts.filter {
             it.isRoyalPreferred
         }
     }
 
-    fun getArabicFontFamily():
-        FontFamily {
-
+    fun getArabicFontFamily(): FontFamily {
         return getFont(
             _arabicFont.value
         )?.family
             ?: RoyalFontFamilies.notoNaskhArabic
     }
 
-    fun getEnglishFontFamily():
-        FontFamily {
-
+    fun getEnglishFontFamily(): FontFamily {
         return getFont(
             _englishFont.value
         )?.family
@@ -305,7 +294,6 @@ object RoyalFontManager {
 
         return _textFonts.value[textId]
             ?: when (language) {
-
                 RoyalFontLanguage.ARABIC ->
                     _arabicFont.value
 
@@ -327,7 +315,6 @@ object RoyalFontManager {
 
         return getFont(fontId)?.family
             ?: when (language) {
-
                 RoyalFontLanguage.ARABIC ->
                     RoyalFontFamilies.notoNaskhArabic
 
@@ -426,15 +413,19 @@ object RoyalFontManager {
     private fun parseFont(
         value: String?,
         fallback: RoyalFontId?
-    ): RoyalFontId? {
+    ): RoyalFontId {
 
         if (value.isNullOrBlank()) {
             return fallback
+                ?: RoyalFontId.NOTO_NASKH_ARABIC
         }
 
         return runCatching {
             RoyalFontId.valueOf(value)
-        }.getOrDefault(fallback)
+        }.getOrDefault(
+            fallback
+                ?: RoyalFontId.NOTO_NASKH_ARABIC
+        )
     }
 
     private fun save(
