@@ -1,13 +1,38 @@
 NotoNaskhArabic-VariableFont_wght.ttf
+→ noto_naskh_arabic.ttf
+
 NotoKufiArabic-VariableFont_wght.ttf
+→ noto_kufi_arabic.ttf
+
 NotoSansArabic-VariableFont_wdth,wght.ttf
+→ noto_sans_arabic.ttf
+
 Cairo-VariableFont_slnt,wght.ttf
+→ cairo.ttf
+
 Tajawal-Black.ttf
+→ tajawal_black.ttf
+
 Tajawal-Light.ttf
+→ tajawal_light.ttf
+
 Tajawal-ExtraLight.ttf
-NotoSerif-Italic-VariableFont_wdth,wght.ttf
+→ tajawal_extra_light.ttf
+
 NotoSerif-VariableFont_wdth,wght.ttf
-PlayfairDisplay-Italic-VariableFont_wght.ttf
+→ noto_serif.ttf
+
+NotoSerif-Italic-VariableFont_wdth,wght.ttf
+→ noto_serif_italic.ttf
+
 PlayfairDisplay-VariableFont_wght.ttf
-LibreBodoni-Italic-VariableFont_wght.ttf
+→ playfair_display.ttf
+
+PlayfairDisplay-Italic-VariableFont_wght.ttf
+→ playfair_display_italic.ttf
+
 LibreBodoni-VariableFont_wght.ttf
+→ libre_bodoni.ttf
+
+LibreBodoni-Italic-VariableFont_wght.ttf
+→ libre_bodoni_italic.ttf
