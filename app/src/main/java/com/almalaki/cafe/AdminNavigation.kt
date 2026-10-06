@@ -356,4 +356,11 @@ fun AdminHorizontalMenu(
             }
         }
     }
+    AdminMenuItem(
+    "🎛️",
+    "مركز تحكم ROYAL TV",
+    section == AdminSection.ROYAL_TV_CONTROL
+) {
+    onSectionSelected(AdminSection.ROYAL_TV_CONTROL)
+    }
 }
