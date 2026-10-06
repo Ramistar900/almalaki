@@ -6,17 +6,12 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 
 /**
- * RoyalFontFamilies
+ * الخطوط الرسمية لتطبيق ROYAL.
  *
- * الربط الرسمي بين ملفات الخطوط الموجودة داخل:
- *
+ * جميع ملفات الخطوط الموجودة حاليًا داخل:
  * app/src/main/res/font/
  *
- * وبين Jetpack Compose.
- *
- * هذا الملف لا يحدد الخط الافتراضي للتطبيق.
- * اختيار الخط وحفظه وتطبيقه على كامل النظام
- * يتم لاحقًا من خلال RoyalFontManager.
+ * يمكن إضافة خطوط جديدة لاحقًا دون تغيير بنية النظام.
  */
 object RoyalFontFamilies {
 
@@ -24,9 +19,6 @@ object RoyalFontFamilies {
     // Arabic Fonts
     // =========================================================
 
-    /**
-     * Noto Naskh Arabic
-     */
     val notoNaskhArabic: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_naskh_arabic,
@@ -35,9 +27,6 @@ object RoyalFontFamilies {
         )
     )
 
-    /**
-     * Noto Kufi Arabic
-     */
     val notoKufiArabic: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_kufi_arabic,
@@ -46,9 +35,6 @@ object RoyalFontFamilies {
         )
     )
 
-    /**
-     * Noto Sans Arabic
-     */
     val notoSansArabic: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_sans_arabic,
@@ -57,9 +43,6 @@ object RoyalFontFamilies {
         )
     )
 
-    /**
-     * Cairo
-     */
     val cairo: FontFamily = FontFamily(
         Font(
             resId = R.font.cairo,
@@ -69,8 +52,6 @@ object RoyalFontFamilies {
     )
 
     /**
-     * Tajawal
-     *
      * جميع أوزان Tajawal الموجودة حاليًا.
      */
     val tajawal: FontFamily = FontFamily(
@@ -105,12 +86,9 @@ object RoyalFontFamilies {
     )
 
     // =========================================================
-    // English / Latin Fonts
+    // English Fonts
     // =========================================================
 
-    /**
-     * Noto Serif
-     */
     val notoSerif: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_serif,
@@ -119,22 +97,6 @@ object RoyalFontFamilies {
         ),
         Font(
             resId = R.font.noto_serif_italic,
-            weight = FontWeight.Normal,
-            style = FontStyle.Italic
-        )
-    )
-
-    /**
-     * Playfair Display
-     */
-    val playfairDisplay: FontFamily = FontFamily(
-        Font(
-            resId = R.font.playfair_display,
-            weight = FontWeight.Normal,
-            style = FontStyle.Normal
-        ),
-        Font(
-            resId = R.font.playfair_display_italic,
             weight = FontWeight.Normal,
             style = FontStyle.Italic
         )
