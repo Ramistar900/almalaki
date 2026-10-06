@@ -2,16 +2,19 @@ package com.almalaki.cafe.royaltv
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.focusable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.flow.collectLatest
@@ -19,13 +22,14 @@ import kotlinx.coroutines.flow.collectLatest
 /**
  * طبقة YouTube داخل ROYAL TV.
  *
- * المسؤوليات الحالية:
+ * المسؤوليات:
  *
  * 1. عرض YouTube داخل ROYAL TV.
  * 2. استقبال أوامر RoyalTVManager.
  * 3. استقبال بحث YouTube من ROYAL Remote.
- * 4. استقبال Enter من ROYAL Keyboard وتنفيذ البحث.
- * 5. تجهيز WebView لاستقبال D-Pad / Remote لاحقًا.
+ * 4. استقبال Enter من ROYAL Keyboard.
+ * 5. استقبال D-Pad الحقيقي من Android TV / TV Box / Receiver.
+ * 6. تمرير أوامر D-Pad القادمة من ROYAL Remote إلى WebView.
  *
  * لا يفتح تطبيق YouTube الخارجي.
  */
@@ -39,6 +43,7 @@ fun RoyalTVYouTubeWebView(
     val context = LocalContext.current
 
     val webView = remember(context) {
+
         WebView(context).apply {
 
             layoutParams = ViewGroup.LayoutParams(
@@ -47,12 +52,18 @@ fun RoyalTVYouTubeWebView(
             )
 
             /*
-             * تجهيز WebView للتحكم من ريموت التلفزيون.
+             * =====================================================
+             * Focus
+             * =====================================================
+             *
+             * WebView يجب أن يمتلك التركيز حتى يستقبل
+             * D-Pad / Enter من جهاز Android TV.
              */
             isFocusable = true
             isFocusableInTouchMode = true
 
             settings.apply {
+
                 javaScriptEnabled = true
                 domStorageEnabled = true
                 databaseEnabled = true
@@ -84,8 +95,8 @@ fun RoyalTVYouTubeWebView(
                     super.onPageFinished(view, url)
 
                     /*
-                     * إعطاء WebView التركيز بعد تحميل الصفحة.
-                     * هذا مهم لاحقًا للتعامل مع D-Pad وريموت الجهاز.
+                     * بعد كل تحميل:
+                     * نعيد التركيز إلى WebView.
                      */
                     view?.requestFocus()
 
@@ -95,13 +106,16 @@ fun RoyalTVYouTubeWebView(
                 }
             }
 
+            /*
+             * الصفحة الأولى.
+             */
             loadUrl(initialUrl)
         }
     }
 
     /*
      * ============================================================
-     * 1) أوامر RoyalTVManager
+     * 1) RoyalTVManager → YouTube
      * ============================================================
      */
     LaunchedEffect(webView) {
@@ -163,8 +177,8 @@ fun RoyalTVYouTubeWebView(
      * 2) ROYAL Remote → YouTube
      * ============================================================
      *
-     * إذا وصل أمر YOUTUBE_SEARCH من الريموت،
-     * يتم فتح نتائج البحث داخل WebView.
+     * أوامر الريموت القادمة من الهاتف / التابلت
+     * تتحول إلى KeyEvent حقيقي داخل WebView.
      */
     LaunchedEffect(webView) {
 
@@ -175,6 +189,58 @@ fun RoyalTVYouTubeWebView(
             }
 
             when (command.action) {
+
+                RoyalTVRemoteAction.NAVIGATE_UP -> {
+
+                    dispatchDpadKey(
+                        webView,
+                        KeyEvent.KEYCODE_DPAD_UP
+                    )
+                }
+
+                RoyalTVRemoteAction.NAVIGATE_DOWN -> {
+
+                    dispatchDpadKey(
+                        webView,
+                        KeyEvent.KEYCODE_DPAD_DOWN
+                    )
+                }
+
+                RoyalTVRemoteAction.NAVIGATE_LEFT -> {
+
+                    dispatchDpadKey(
+                        webView,
+                        KeyEvent.KEYCODE_DPAD_LEFT
+                    )
+                }
+
+                RoyalTVRemoteAction.NAVIGATE_RIGHT -> {
+
+                    dispatchDpadKey(
+                        webView,
+                        KeyEvent.KEYCODE_DPAD_RIGHT
+                    )
+                }
+
+                RoyalTVRemoteAction.SELECT -> {
+
+                    dispatchDpadKey(
+                        webView,
+                        KeyEvent.KEYCODE_DPAD_CENTER
+                    )
+                }
+
+                RoyalTVRemoteAction.BACK -> {
+
+                    if (webView.canGoBack()) {
+
+                        webView.goBack()
+
+                    } else {
+
+                        webView.requestFocus()
+                    }
+                }
 
                 RoyalTVRemoteAction.YOUTUBE_SEARCH -> {
 
@@ -192,28 +258,10 @@ fun RoyalTVYouTubeWebView(
                     }
                 }
 
-                RoyalTVRemoteAction.SELECT -> {
-
-                    /*
-                     * إبقاء WebView في حالة تركيز.
-                     *
-                     * النقر الفعلي داخل الصفحة سيبقى
-                     * مسؤولية WebView / جهاز الإدخال.
-                     */
-                    webView.requestFocus()
-                }
-
-                RoyalTVRemoteAction.BACK -> {
-
-                    if (webView.canGoBack()) {
-                        webView.goBack()
-                    }
-                }
-
                 else -> {
                     /*
-                     * بقية الأوامر ستُربط مع طبقة التحكم
-                     * الخاصة بالشاشة في الخطوات القادمة.
+                     * بقية أوامر الريموت لا تخص
+                     * التنقل داخل YouTube حاليًا.
                      */
                 }
             }
@@ -222,13 +270,8 @@ fun RoyalTVYouTubeWebView(
 
     /*
      * ============================================================
-     * 3) ROYAL Keyboard → YouTube
+     * 3) Royal Keyboard → YouTube
      * ============================================================
-     *
-     * الحروف نفسها تُدار بواسطة RoyalTVKeyboardManager.
-     *
-     * عند الضغط على ENTER:
-     * النص الحالي يتحول إلى بحث YouTube.
      */
     LaunchedEffect(webView) {
 
@@ -253,40 +296,120 @@ fun RoyalTVYouTubeWebView(
                             )
 
                         webView.loadUrl(searchUrl)
+
+                        webView.requestFocus()
                     }
                 }
 
                 else -> {
                     /*
                      * CHARACTER / DELETE / CLEAR
-                     * تُدار حالياً داخل KeyboardManager.
+                     * تتم إدارتها بواسطة KeyboardManager.
                      */
                 }
             }
         }
     }
 
+    /*
+     * ============================================================
+     * 4) Android TV / TV Box / Receiver
+     *    Physical Remote → WebView
+     * ============================================================
+     *
+     * هذه هي الطبقة المهمة الجديدة.
+     *
+     * Android TV يرسل أزرار D-Pad كـ KeyEvent.
+     * Compose يلتقط الحدث ثم نمرره إلى WebView.
+     */
     AndroidView(
+
         factory = {
             webView
         },
-        modifier = modifier,
+
+        modifier =
+            modifier
+                .focusable()
+                .onKeyEvent { keyEvent ->
+
+                    /*
+                     * تمرير KeyEvent الأصلي إلى WebView.
+                     *
+                     * هذا يسمح لـ YouTube/WebView
+                     * بمعالجة:
+                     *
+                     * ↑ ↓ ← →
+                     * OK / Enter
+                     * وغيرها من أحداث لوحة التحكم.
+                     */
+                    webView.dispatchKeyEvent(
+                        keyEvent.nativeKeyEvent
+                    )
+                },
+
         update = {
+
             /*
-             * WebView يبقى داخل مساحة ROYAL TV.
+             * التأكد من بقاء WebView جاهزًا للريموت.
              */
+            if (!webView.hasFocus()) {
+                webView.requestFocus()
+            }
         }
     )
 
+    /*
+     * ============================================================
+     * 5) تنظيف WebView
+     * ============================================================
+     */
     DisposableEffect(webView) {
 
         onDispose {
 
             webView.stopLoading()
-            webView.loadUrl("about:blank")
+
+            webView.loadUrl(
+                "about:blank"
+            )
+
             webView.clearHistory()
             webView.removeAllViews()
             webView.destroy()
         }
     }
+}
+
+/**
+ * إرسال D-Pad صناعي إلى WebView.
+ *
+ * يستخدم عندما يأتي الأمر من ROYAL Remote
+ * الموجود في الهاتف / التابلت.
+ */
+private fun dispatchDpadKey(
+    webView: WebView,
+    keyCode: Int
+) {
+    webView.requestFocus()
+
+    val downEvent =
+        KeyEvent(
+            KeyEvent.ACTION_DOWN,
+            keyCode
+        )
+
+    val upEvent =
+        KeyEvent(
+            KeyEvent.ACTION_UP,
+            keyCode
+        )
+
+    webView.dispatchKeyEvent(
+        downEvent
+    )
+
+    webView.dispatchKeyEvent(
+        upEvent
+    )
 }
