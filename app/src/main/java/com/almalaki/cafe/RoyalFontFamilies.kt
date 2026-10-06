@@ -4,6 +4,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import com.almalaki.cafe.R
 
 object RoyalFontFamilies {
 
@@ -85,13 +86,4 @@ object RoyalFontFamilies {
             style = FontStyle.Italic
         )
     )
-
-    /*
-     * لا نضيف هنا:
-     * Noto Sans
-     * Roboto
-     * Montserrat
-     *
-     * لأنها ليست ضمن قائمة الخطوط الـ13 التي اخترناها.
-     */
 }
