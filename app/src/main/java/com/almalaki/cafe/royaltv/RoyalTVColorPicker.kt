@@ -1,5 +1,6 @@
 package com.almalaki.cafe.royaltv
 
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,7 +43,7 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun RoyalTVColorPicker(
-    initialColor: Long = 0xFFFFFFFF,
+    initialColor: Long = -1L,
     onColorSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -51,8 +52,10 @@ fun RoyalTVColorPicker(
         remember(initialColor) {
             val hsv = FloatArray(3)
 
-            Color(initialColor)
-                .getHsv(hsv)
+            AndroidColor.colorToHSV(
+                initialColor.toInt(),
+                hsv
+            )
 
             hsv
         }
@@ -92,10 +95,18 @@ fun RoyalTVColorPicker(
     ) {
 
         hue = newHue.coerceIn(0f, 360f)
+
         saturation =
-            newSaturation.coerceIn(0f, 1f)
+            newSaturation.coerceIn(
+                0f,
+                1f
+            )
+
         brightness =
-            newBrightness.coerceIn(0f, 1f)
+            newBrightness.coerceIn(
+                0f,
+                1f
+            )
 
         selectedColor =
             Color.hsv(
@@ -259,8 +270,13 @@ fun RoyalTVColorPicker(
 
         Button(
             onClick = {
+                /*
+                 * Color.value في Compose هو ULong.
+                 * نحوله إلى Long لأن نظام النصوص لدينا
+                 * يخزن اللون كـ Long.
+                 */
                 onColorSelected(
-                    selectedColor.value
+                    selectedColor.value.toLong()
                 )
             },
             modifier = Modifier.fillMaxWidth()
