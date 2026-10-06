@@ -45,6 +45,19 @@ fun CustomerScreen(
 val interfaceSettings = remember {
     loadRoyalInterfaceSettings(context)
 }
+var showCustomerSettings by remember {
+    mutableStateOf(false)
+}
+
+if (showCustomerSettings) {
+    RoyalCustomerSettings(
+        isDarkMode = darkMode,
+        onBack = {
+            showCustomerSettings = false
+        }
+    )
+    return
+}
     var products by remember {
         mutableStateOf<List<Product>>(emptyList())
     }
@@ -195,18 +208,20 @@ var invoiceTotalAmount by remember {
         RoyalCustomerInterface(
     isDarkMode = darkMode,
     newsText = interfaceSettings.newsText,
-    onOwnerLogin = onOwner
+    onOwnerLogin = onOwner,
+    onSettings = {
+        showCustomerSettings = true
+    }
 ) {
-
-        Column(
-            Modifier
-                .fillMaxSize()
-                .background(background)
-                .padding(
-                    start = 14.dp,
-                    end = 14.dp,
-                    top = 18.dp
-                )
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(background)
+            .padding(
+                start = 14.dp,
+                end = 14.dp,
+                top = 18.dp
+            )
         ) {
 
         
