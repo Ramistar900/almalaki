@@ -44,6 +44,7 @@ object RoyalTVRemoteManager {
     }
 
     fun isReady(): Boolean {
+
         return commandHandler != null ||
             RoyalTVCommandQueue.isProcessing() ||
             !RoyalTVCommandQueue.isEmpty()
@@ -141,7 +142,7 @@ object RoyalTVRemoteManager {
         )
     }
 
-    fun stop() {
+    fun stopPlayback() {
 
         sendAction(
             RoyalTVRemoteAction.STOP
