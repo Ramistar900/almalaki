@@ -9,229 +9,345 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancel
 
-/**
+class RoyalTVConnectionManager(
+    context: Context
+) {
 
-* مدير اتصال ROYAL TV.
+    private val appContext =
+        context.applicationContext
 
-* 
+    private val scope =
+        CoroutineScope(
+            SupervisorJob() +
+                Dispatchers.IO
+        )
 
-* يجمع بين:
+    private val networkMonitor =
+        RoyalTVNetworkMonitor(
+            appContext
+        )
 
-* 
+    private var reconnectJob:
+        Job? = null
 
-* - مراقبة الشبكة.
+    private var syncJob:
+        Job? = null
 
-* - RoyalTVRealtime.
+    private var deviceId:
+        String = ""
 
-* - Auto Reconnect.
+    private var started =
+        false
 
-* 
+    private var lastNetworkState =
+        RoyalTVNetworkState.OFFLINE
 
-* مهم:
+    init {
 
-* 
+        RoyalTVOfflineCommandStore
+            .initialize(
+                appContext
+            )
+    }
 
-* هذا المدير لا يتحكم في تشغيل شاشة العرض المحلية.
-
-* 
-
-* عند انقطاع الإنترنت:
-
-* الشاشة تستمر بالعمل من
-
-* RoyalTVLocalDisplayEngine.
-  */
-  class RoyalTVConnectionManager(
-  context: Context
-  ) {
-  
-  private val appContext =
-  context.applicationContext
-  
-  private val scope =
-  CoroutineScope(
-  SupervisorJob() +
-  Dispatchers.IO
-  )
-  
-  private val networkMonitor =
-  RoyalTVNetworkMonitor(
-  appContext
-  )
-  
-  private var reconnectJob:
-  Job? = null
-  
-  private var deviceId:
-  String = ""
-  
-  private var started =
-  false
-  
-  private var lastNetworkState =
-  RoyalTVNetworkState.OFFLINE
-  
-  /**
-  
-  * بدء مدير الاتصال.
-  
-  * 
-  
-  * يتم الحصول على Device ID محليًا،
-  
-  * ثم مراقبة الشبكة.
-    */
+    /**
+     * بدء مراقبة الاتصال وربط جهاز ROYAL TV.
+     */
     fun start(
-    onCommand:
-    (RoyalTVCommand) -> Unit,
-    onConnectionStateChanged:
-    (RoyalTVNetworkState) -> Unit = {}
+        onCommand:
+            (RoyalTVCommand) -> Unit,
+        onConnectionStateChanged:
+            (RoyalTVNetworkState) -> Unit = {}
     ) {
-    
-    if (started) {
-    return
+
+        if (started) {
+            return
+        }
+
+        started = true
+
+        deviceId =
+            RoyalTVDeviceIdentity
+                .getDeviceId(
+                    appContext
+                )
+
+        networkMonitor.start { state ->
+
+            lastNetworkState =
+                state
+
+            onConnectionStateChanged(
+                state
+            )
+
+            when (state) {
+
+                RoyalTVNetworkState.ONLINE -> {
+
+                    scheduleReconnect(
+                        onCommand
+                    )
+                }
+
+                RoyalTVNetworkState.OFFLINE -> {
+
+                    cancelReconnect()
+                    cancelSync()
+
+                    RoyalTVRealtime.stop()
+                }
+            }
+        }
     }
-    
-    started = true
-    
-    deviceId =
-    RoyalTVDeviceIdentity.getDeviceId(
-    appContext
-    )
-    
-    networkMonitor.start { state ->
-    
-     lastNetworkState = state
 
- onConnectionStateChanged(state)
-
- when (state) {
-
-     RoyalTVNetworkState.ONLINE -> {
-         scheduleReconnect(
-             onCommand
-         )
-     }
-
-     RoyalTVNetworkState.OFFLINE -> {
-         cancelReconnect()
-
-         /*
-          * إيقاف قناة الإنترنت فقط.
-          *
-          * لا نوقف:
-          * RoyalTVLocalDisplayEngine
-          *
-          * ولا نغير حالة المحتوى المحلي.
-          */
-         RoyalTVRealtime.stop()
-     }
- }
-    
-    }
-    }
-  
-  /**
-  
-  * إعادة الاتصال تلقائيًا.
-  
-  * 
-  
-  * ننتظر قليلًا بعد عودة الشبكة
-  
-  * حتى لا نبدأ الاتصال أثناء تقلب
-  
-  * الشبكة بين Online / Offline.
-    */
+    /**
+     * تجهيز اتصال ROYAL TV بعد عودة الشبكة.
+     */
     private fun scheduleReconnect(
-    onCommand:
-    (RoyalTVCommand) -> Unit
+        onCommand:
+            (RoyalTVCommand) -> Unit
     ) {
-    
-    reconnectJob?.cancel()
-    
-    reconnectJob =
-    scope.launch {
-    
-         delay(2000L)
 
-     if (
-         !started ||
-         lastNetworkState !=
-         RoyalTVNetworkState.ONLINE
-     ) {
-         return@launch
-     }
+        reconnectJob?.cancel()
 
-     try {
+        reconnectJob =
+            scope.launch {
 
-         RoyalTVRealtime.start(
-             deviceId = deviceId,
-             onCommand = onCommand
-         )
+                delay(2000L)
 
-     } catch (e: Exception) {
+                if (
+                    !started ||
+                    lastNetworkState !=
+                    RoyalTVNetworkState.ONLINE
+                ) {
+                    return@launch
+                }
 
-         android.util.Log.e(
-             "RoyalTVConnection",
-             "Reconnect error: ${e.message}",
-             e
-         )
-     }
- }
-  
-  }
-  
-  /**
-  
-  * إلغاء محاولة إعادة الاتصال الحالية.
-    */
+                try {
+
+                    RoyalTVRealtime.start(
+                        deviceId =
+                            deviceId,
+                        onCommand =
+                            onCommand
+                    )
+
+                    /*
+                     * بعد نجاح تشغيل قناة Realtime
+                     * نحاول إرسال جميع الأوامر
+                     * التي تم حفظها أثناء Offline.
+                     */
+                    syncOfflineCommands()
+
+                } catch (e: Exception) {
+
+                    android.util.Log.e(
+                        "RoyalTVConnection",
+                        "Reconnect error: " +
+                            "${e.message}",
+                        e
+                    )
+                }
+            }
+    }
+
+    /**
+     * إرسال أمر جديد.
+     *
+     * إذا كان الجهاز Online:
+     * يحاول الإرسال مباشرة.
+     *
+     * إذا فشل الإرسال:
+     * يتم حفظ الأمر محليًا.
+     *
+     * إذا كان Offline:
+     * يتم حفظ الأمر مباشرة.
+     *
+     * true  = تم الإرسال.
+     * false = تم الحفظ للـ Offline.
+     */
+    suspend fun sendCommand(
+        targetDeviceId: String,
+        command: RoyalTVCommand
+    ): Boolean {
+
+        if (
+            !started ||
+            lastNetworkState !=
+                RoyalTVNetworkState.ONLINE
+        ) {
+
+            RoyalTVOfflineCommandStore
+                .enqueue(
+                    targetDeviceId =
+                        targetDeviceId,
+                    command =
+                        command
+                )
+
+            return false
+        }
+
+        val sent =
+            RoyalTVRealtime.sendCommand(
+                targetDeviceId =
+                    targetDeviceId,
+                command =
+                    command
+            )
+
+        if (!sent) {
+
+            RoyalTVOfflineCommandStore
+                .enqueue(
+                    targetDeviceId =
+                        targetDeviceId,
+                    command =
+                        command
+                )
+        }
+
+        return sent
+    }
+
+    /**
+     * إرسال جميع الأوامر التي تم حفظها
+     * أثناء انقطاع الاتصال.
+     *
+     * الأمر لا يُحذف إلا بعد نجاح الإرسال.
+     */
+    private fun syncOfflineCommands() {
+
+        syncJob?.cancel()
+
+        syncJob =
+            scope.launch {
+
+                val pendingCommands =
+                    RoyalTVOfflineCommandStore
+                        .getPendingCommands()
+
+                if (
+                    pendingCommands.isEmpty()
+                ) {
+                    return@launch
+                }
+
+                for (
+                    pendingCommand
+                    in pendingCommands
+                ) {
+
+                    if (
+                        !started ||
+                        lastNetworkState !=
+                            RoyalTVNetworkState.ONLINE
+                    ) {
+                        return@launch
+                    }
+
+                    val sent =
+                        RoyalTVRealtime.sendCommand(
+                            targetDeviceId =
+                                pendingCommand
+                                    .targetDeviceId,
+                            command =
+                                pendingCommand.command
+                        )
+
+                    if (sent) {
+
+                        RoyalTVOfflineCommandStore
+                            .remove(
+                                pendingCommand
+                            )
+
+                    } else {
+
+                        /*
+                         * إذا فشل أمر واحد،
+                         * لا نحذف أي أمر فاشل.
+                         *
+                         * نوقف المزامنة الحالية
+                         * وننتظر عودة الاتصال.
+                         */
+                        return@launch
+                    }
+                }
+            }
+    }
+
+    /**
+     * مزامنة يدوية عند الحاجة.
+     */
+    fun syncNow() {
+
+        if (
+            !started ||
+            lastNetworkState !=
+                RoyalTVNetworkState.ONLINE
+        ) {
+            return
+        }
+
+        syncOfflineCommands()
+    }
+
     private fun cancelReconnect() {
-    
-    reconnectJob?.cancel()
-    reconnectJob = null
+
+        reconnectJob?.cancel()
+
+        reconnectJob =
+            null
     }
-  
-  /**
-  
-  * حالة الشبكة الحالية.
-    */
+
+    private fun cancelSync() {
+
+        syncJob?.cancel()
+
+        syncJob =
+            null
+    }
+
     fun getNetworkState():
-    RoyalTVNetworkState {
-    
-    return lastNetworkState
+        RoyalTVNetworkState {
+
+        return lastNetworkState
     }
-  
-  /**
-  
-  * هل مدير الاتصال يعمل؟
-    */
+
     fun isStarted(): Boolean {
-    return started
+
+        return started
     }
-  
-  /**
-  
-  * إيقاف مدير الاتصال.
-  
-  * 
-  
-  * هذا لا يمسح حالة شاشة العرض المحلية.
-    */
+
+    fun getDeviceId(): String {
+
+        return deviceId
+    }
+
+    /**
+     * إيقاف مدير الاتصال.
+     *
+     * لا يمسح الأوامر Offline.
+     * ولا يمسح حالة الشاشة.
+     */
     fun stop() {
-    
-    if (!started) {
-    return
+
+        if (!started) {
+            return
+        }
+
+        started =
+            false
+
+        cancelReconnect()
+        cancelSync()
+
+        networkMonitor.stop()
+
+        RoyalTVRealtime.stop()
+
+        scope.cancel()
     }
-    
-    started = false
-    
-    cancelReconnect()
-    
-    networkMonitor.stop()
-    
-    RoyalTVRealtime.stop()
-    
-    scope.cancel()
-    }
-  }
+}
