@@ -15,8 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,8 +50,67 @@ fun RoyalTVKeyboardScreen(
         RoyalTVKeyboardManager.state
             .collectAsState()
 
+    val focus by
+        RoyalTVKeyboardNavigation.focus
+            .collectAsState()
+
     if (!state.visible) {
         return
+    }
+
+    val characterKeys =
+        RoyalTVKeyboardManager
+            .getCurrentKeys()
+
+    val characterRows =
+        splitKeys(
+            characterKeys
+        )
+
+    val functionKeys =
+        listOf(
+            "🌐",
+            "مسافة",
+            "⌫",
+            "مسح",
+            "بحث"
+        )
+
+    val keyboardRows =
+        buildList {
+
+            add(
+                RoyalTVKeyboardManager
+                    .numberKeys
+            )
+
+            addAll(
+                characterRows
+            )
+
+            add(
+                functionKeys
+            )
+        }
+
+    /*
+     * ربط الصفوف الحالية بمحرك D-Pad.
+     *
+     * لا يوجد هنا أي InputMethod أو EditText.
+     * لذلك لا يتم طلب كيبورد Android.
+     */
+    LaunchedEffect(
+        state.language,
+        state.visible
+    ) {
+
+        if (state.visible) {
+
+            RoyalTVKeyboardNavigation
+                .setRows(
+                    keyboardRows
+                )
+        }
     }
 
     Column(
@@ -69,7 +129,10 @@ fun RoyalTVKeyboardScreen(
     ) {
 
         /*
-         * مربع البحث.
+         * صندوق النص.
+         *
+         * Text فقط، وليس TextField.
+         * لذلك لا يظهر كيبورد Android.
          */
         Box(
             modifier =
@@ -131,102 +194,33 @@ fun RoyalTVKeyboardScreen(
         )
 
         /*
-         * صف الأرقام.
+         * صفوف الكيبورد.
          */
-        KeyboardRow(
-            keys =
-                RoyalTVKeyboardManager
-                    .numberKeys
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(
-                    10.dp
-                )
-        )
-
-        /*
-         * صفوف الحروف.
-         */
-        val keys =
-            RoyalTVKeyboardManager
-                .getCurrentKeys()
-
-        val rows =
-            splitKeys(
-                keys
-            )
-
-        rows.forEach { rowKeys ->
+        keyboardRows.forEachIndexed {
+            rowIndex,
+            rowKeys ->
 
             KeyboardRow(
-                keys = rowKeys
+                keys = rowKeys,
+                focusedRow =
+                    focus.row,
+                focusedColumn =
+                    focus.column,
+                rowIndex =
+                    rowIndex
             )
 
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        10.dp
-                    )
-            )
-        }
+            if (
+                rowIndex <
+                    keyboardRows.lastIndex
+            ) {
 
-        /*
-         * أزرار الوظائف.
-         */
-        Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(
-                    10.dp
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            10.dp
+                        )
                 )
-        ) {
-
-            KeyboardActionKey(
-                text = "🌐",
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                RoyalTVKeyboardManager
-                    .switchLanguage()
-            }
-
-            KeyboardActionKey(
-                text = "مسافة",
-                modifier =
-                    Modifier.weight(2.2f)
-            ) {
-                RoyalTVKeyboardManager
-                    .space()
-            }
-
-            KeyboardActionKey(
-                text = "⌫",
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                RoyalTVKeyboardManager
-                    .delete()
-            }
-
-            KeyboardActionKey(
-                text = "مسح",
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                RoyalTVKeyboardManager
-                    .clear()
-            }
-
-            KeyboardActionKey(
-                text = "بحث",
-                modifier =
-                    Modifier.weight(1.2f)
-            ) {
-                RoyalTVKeyboardManager
-                    .enter()
             }
         }
     }
@@ -234,7 +228,10 @@ fun RoyalTVKeyboardScreen(
 
 @Composable
 private fun KeyboardRow(
-    keys: List<String>
+    keys: List<String>,
+    focusedRow: Int,
+    focusedColumn: Int,
+    rowIndex: Int
 ) {
 
     Row(
@@ -244,56 +241,97 @@ private fun KeyboardRow(
             Arrangement.Center
     ) {
 
-        keys.forEach { key ->
+        keys.forEachIndexed {
+            columnIndex,
+            key ->
 
-            KeyboardCharacterKey(
-                text = key
+            val isFocused =
+                focusedRow ==
+                    rowIndex &&
+                    focusedColumn ==
+                    columnIndex
+
+            KeyboardKey(
+                text = key,
+                focused = isFocused
             ) {
-                RoyalTVKeyboardManager
-                    .typeCharacter(
-                        key
-                    )
+                selectKey(
+                    key
+                )
             }
 
-            Spacer(
-                modifier =
-                    Modifier.width(
-                        7.dp
-                    )
-            )
+            if (
+                columnIndex <
+                    keys.lastIndex
+            ) {
+
+                Spacer(
+                    modifier =
+                        Modifier.width(
+                            7.dp
+                        )
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun KeyboardCharacterKey(
+private fun KeyboardKey(
     text: String,
+    focused: Boolean,
     onClick: () -> Unit
 ) {
+
+    val focusStyle =
+        if (focused) {
+            RoyalTVKeyboardFocusStyleProvider
+                .focused()
+        } else {
+            RoyalTVKeyboardFocusStyleProvider
+                .normal()
+        }
 
     Box(
         modifier =
             Modifier
                 .width(
-                    58.dp
+                    if (
+                        text == "مسافة"
+                    ) {
+                        150.dp
+                    } else if (
+                        text == "بحث"
+                    ) {
+                        86.dp
+                    } else {
+                        58.dp
+                    }
                 )
                 .height(
                     54.dp
                 )
                 .border(
-                    width = 1.dp,
+                    width =
+                        focusStyle
+                            .borderWidth
+                            .dp,
                     color =
-                        RoyalKeyboardGold,
+                        focusStyle
+                            .borderColor,
                     shape =
                         RoundedCornerShape(
                             10.dp
                         )
                 )
                 .background(
-                    RoyalKeyboardCard,
-                    RoundedCornerShape(
-                        10.dp
-                    )
+                    color =
+                        focusStyle
+                            .backgroundColor,
+                    shape =
+                        RoundedCornerShape(
+                            10.dp
+                        )
                 )
                 .clickable(
                     onClick = onClick
@@ -305,8 +343,19 @@ private fun KeyboardCharacterKey(
         Text(
             text = text,
             color =
-                RoyalKeyboardCream,
-            fontSize = 22.sp,
+                focusStyle.textColor,
+            fontSize =
+                when {
+
+                    text == "مسافة" ->
+                        17.sp
+
+                    text == "بحث" ->
+                        18.sp
+
+                    else ->
+                        22.sp
+                },
             fontWeight =
                 FontWeight.Bold,
             textAlign =
@@ -315,51 +364,49 @@ private fun KeyboardCharacterKey(
     }
 }
 
-@Composable
-private fun KeyboardActionKey(
-    text: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+private fun selectKey(
+    key: String
 ) {
 
-    Box(
-        modifier =
-            modifier
-                .height(
-                    54.dp
-                )
-                .border(
-                    width = 1.5.dp,
-                    color =
-                        RoyalKeyboardGold,
-                    shape =
-                        RoundedCornerShape(
-                            10.dp
-                        )
-                )
-                .background(
-                    RoyalKeyboardBlack,
-                    RoundedCornerShape(
-                        10.dp
-                    )
-                )
-                .clickable(
-                    onClick = onClick
-                ),
-        contentAlignment =
-            Alignment.Center
-    ) {
+    when (key) {
 
-        Text(
-            text = text,
-            color =
-                RoyalKeyboardGoldLight,
-            fontSize = 18.sp,
-            fontWeight =
-                FontWeight.Bold,
-            textAlign =
-                TextAlign.Center
-        )
+        "🌐" -> {
+
+            RoyalTVKeyboardManager
+                .switchLanguage()
+        }
+
+        "مسافة" -> {
+
+            RoyalTVKeyboardManager
+                .space()
+        }
+
+        "⌫" -> {
+
+            RoyalTVKeyboardManager
+                .delete()
+        }
+
+        "مسح" -> {
+
+            RoyalTVKeyboardManager
+                .clear()
+        }
+
+        "بحث" -> {
+
+            RoyalTVKeyboardManager
+                .enter()
+        }
+
+        else -> {
+
+            RoyalTVKeyboardManager
+                .typeCharacter(
+                    key
+                )
+        }
     }
 }
 
@@ -386,15 +433,19 @@ private fun splitKeys(
 
     rowSizes.forEach { size ->
 
-        if (index >= keys.size) {
+        if (
+            index >=
+                keys.size
+        ) {
             return@forEach
         }
 
         val end =
-            (index + size)
-                .coerceAtMost(
-                    keys.size
-                )
+            (
+                index + size
+            ).coerceAtMost(
+                keys.size
+            )
 
         rows.add(
             keys.subList(
@@ -406,7 +457,10 @@ private fun splitKeys(
         index = end
     }
 
-    if (index < keys.size) {
+    if (
+        index <
+            keys.size
+    ) {
 
         rows.add(
             keys.subList(
