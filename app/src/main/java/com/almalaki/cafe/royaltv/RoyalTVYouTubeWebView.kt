@@ -1,25 +1,26 @@
 package com.almalaki.cafe.royaltv
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
  * WebView الخاص بـ ROYAL TV.
  *
- * مهم:
- * - لا يفتح تطبيق YouTube الخارجي.
- * - يعرض YouTube داخل مساحة ROYAL TV نفسها.
- * - يمكن لاحقًا التحكم به بواسطة Royal Keyboard و Remote.
- * - لا يحتوي على شريط ROYAL TV السفلي؛
- *   الشريط سيبقى مسؤولية شاشة ROYAL TV الرئيسية.
+ * يعرض YouTube داخل مساحة محتوى ROYAL TV
+ * ولا يفتح تطبيق YouTube الخارجي.
+ *
+ * شريط ROYAL TV السفلي يبقى مسؤولية شاشة ROYAL TV الرئيسية.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -28,8 +29,10 @@ fun RoyalTVYouTubeWebView(
     initialUrl: String = "https://www.youtube.com/",
     onPageChanged: ((String) -> Unit)? = null
 ) {
-    val webView = remember {
-        WebView(androidx.compose.ui.platform.LocalContext.current).apply {
+    val context = LocalContext.current
+
+    val webView = remember(context) {
+        WebView(context).apply {
 
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -55,24 +58,23 @@ fun RoyalTVYouTubeWebView(
                 allowContentAccess = true
             }
 
+            setBackgroundColor(Color.BLACK)
+
             webChromeClient = WebChromeClient()
 
-            setBackgroundColor(android.graphics.Color.BLACK)
+            webViewClient = object : WebViewClient() {
 
-            webViewClient =
-                object : android.webkit.WebViewClient() {
+                override fun onPageFinished(
+                    view: WebView?,
+                    url: String?
+                ) {
+                    super.onPageFinished(view, url)
 
-                    override fun onPageFinished(
-                        view: WebView?,
-                        url: String?
-                    ) {
-                        super.onPageFinished(view, url)
-
-                        if (!url.isNullOrBlank()) {
-                            onPageChanged?.invoke(url)
-                        }
+                    if (!url.isNullOrBlank()) {
+                        onPageChanged?.invoke(url)
                     }
                 }
+            }
 
             loadUrl(initialUrl)
         }
@@ -84,11 +86,13 @@ fun RoyalTVYouTubeWebView(
         },
         modifier = modifier,
         update = {
-            // تحديث WebView يتم لاحقًا عبر أوامر ROYAL TV.
+            // سيتم التحكم بالتنقل لاحقًا
+            // بواسطة RoyalTVYouTubeManager
+            // وRoyal Keyboard وRoyal Remote.
         }
     )
 
-    DisposableEffect(Unit) {
+    DisposableEffect(webView) {
         onDispose {
             webView.stopLoading()
             webView.loadUrl("about:blank")
