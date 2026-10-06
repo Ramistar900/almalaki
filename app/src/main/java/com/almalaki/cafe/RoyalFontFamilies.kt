@@ -4,86 +4,129 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import com.almalaki.cafe.R
 
+/**
+ * Royal Font Families
+ *
+ * المجموعة النهائية المعتمدة للخطوط داخل تطبيق ROYAL.
+ *
+ * عدد الخطوط = 13 فقط:
+ * 7 عربية + 6 إنجليزية.
+ */
 object RoyalFontFamilies {
 
-    val notoNaskhArabic = FontFamily(
-        Font(
-            resId = R.font.noto_naskh_arabic,
-            weight = FontWeight.Normal
-        )
-    )
+    // =========================================================
+    // 🇸🇦 ARABIC — 7
+    // =========================================================
 
-    val notoKufiArabic = FontFamily(
-        Font(
-            resId = R.font.noto_kufi_arabic,
-            weight = FontWeight.Normal
+    val notoNaskhArabic =
+        FontFamily(
+            Font(
+                resId = R.font.noto_naskh_arabic,
+                weight = FontWeight.Normal
+            )
         )
-    )
 
-    val notoSansArabic = FontFamily(
-        Font(
-            resId = R.font.noto_sans_arabic,
-            weight = FontWeight.Normal
+    val notoKufiArabic =
+        FontFamily(
+            Font(
+                resId = R.font.noto_kufi_arabic,
+                weight = FontWeight.Normal
+            )
         )
-    )
 
-    val cairo = FontFamily(
-        Font(
-            resId = R.font.cairo,
-            weight = FontWeight.Normal
+    val notoSansArabic =
+        FontFamily(
+            Font(
+                resId = R.font.noto_sans_arabic,
+                weight = FontWeight.Normal
+            )
         )
-    )
 
-    val tajawal = FontFamily(
-        Font(
-            resId = R.font.tajawal_extra_light,
-            weight = FontWeight.ExtraLight
-        ),
-        Font(
-            resId = R.font.tajawal_light,
-            weight = FontWeight.Light
-        ),
-        Font(
-            resId = R.font.tajawal_black,
-            weight = FontWeight.Black
+    val cairo =
+        FontFamily(
+            Font(
+                resId = R.font.cairo,
+                weight = FontWeight.Normal
+            )
         )
-    )
 
-    val notoSerif = FontFamily(
-        Font(
-            resId = R.font.noto_serif,
-            weight = FontWeight.Normal
-        ),
-        Font(
-            resId = R.font.noto_serif_italic,
-            weight = FontWeight.Normal,
-            style = FontStyle.Italic
+    val tajawalBlack =
+        FontFamily(
+            Font(
+                resId = R.font.tajawal_black,
+                weight = FontWeight.Black
+            )
         )
-    )
 
-    val playfairDisplay = FontFamily(
-        Font(
-            resId = R.font.playfair_display,
-            weight = FontWeight.Normal
-        ),
-        Font(
-            resId = R.font.playfair_display_italic,
-            weight = FontWeight.Normal,
-            style = FontStyle.Italic
+    val tajawalLight =
+        FontFamily(
+            Font(
+                resId = R.font.tajawal_light,
+                weight = FontWeight.Light
+            )
         )
-    )
 
-    val libreBodoni = FontFamily(
-        Font(
-            resId = R.font.libre_bodoni,
-            weight = FontWeight.Normal
-        ),
-        Font(
-            resId = R.font.libre_bodoni_italic,
-            weight = FontWeight.Normal,
-            style = FontStyle.Italic
+    val tajawalExtraLight =
+        FontFamily(
+            Font(
+                resId = R.font.tajawal_extra_light,
+                weight = FontWeight.ExtraLight
+            )
         )
-    )
+
+    // =========================================================
+    // 🇬🇧 ENGLISH — 6
+    // =========================================================
+
+    val notoSerif =
+        FontFamily(
+            Font(
+                resId = R.font.noto_serif,
+                weight = FontWeight.Normal
+            )
+        )
+
+    val notoSerifItalic =
+        FontFamily(
+            Font(
+                resId = R.font.noto_serif_italic,
+                weight = FontWeight.Normal,
+                style = FontStyle.Italic
+            )
+        )
+
+    val playfairDisplay =
+        FontFamily(
+            Font(
+                resId = R.font.playfair_display,
+                weight = FontWeight.Normal
+            )
+        )
+
+    val playfairDisplayItalic =
+        FontFamily(
+            Font(
+                resId = R.font.playfair_display_italic,
+                weight = FontWeight.Normal,
+                style = FontStyle.Italic
+            )
+        )
+
+    val libreBodoni =
+        FontFamily(
+            Font(
+                resId = R.font.libre_bodoni,
+                weight = FontWeight.Normal
+            )
+        )
+
+    val libreBodoniItalic =
+        FontFamily(
+            Font(
+                resId = R.font.libre_bodoni_italic,
+                weight = FontWeight.Normal,
+                style = FontStyle.Italic
+            )
+        )
 }
