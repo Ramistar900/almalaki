@@ -19,14 +19,15 @@ import kotlinx.coroutines.flow.collectLatest
 /**
  * طبقة YouTube داخل ROYAL TV.
  *
- * تستقبل أوامر RoyalTVManager:
+ * المسؤوليات الحالية:
  *
- * OPEN_HOME
- * OPEN_SEARCH
- * OPEN_VIDEO
- * CLOSE
+ * 1. عرض YouTube داخل ROYAL TV.
+ * 2. استقبال أوامر RoyalTVManager.
+ * 3. استقبال بحث YouTube من ROYAL Remote.
+ * 4. استقبال Enter من ROYAL Keyboard وتنفيذ البحث.
+ * 5. تجهيز WebView لاستقبال D-Pad / Remote لاحقًا.
  *
- * ولا تفتح تطبيق YouTube الخارجي.
+ * لا يفتح تطبيق YouTube الخارجي.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -44,6 +45,12 @@ fun RoyalTVYouTubeWebView(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+
+            /*
+             * تجهيز WebView للتحكم من ريموت التلفزيون.
+             */
+            isFocusable = true
+            isFocusableInTouchMode = true
 
             settings.apply {
                 javaScriptEnabled = true
@@ -76,6 +83,12 @@ fun RoyalTVYouTubeWebView(
                 ) {
                     super.onPageFinished(view, url)
 
+                    /*
+                     * إعطاء WebView التركيز بعد تحميل الصفحة.
+                     * هذا مهم لاحقًا للتعامل مع D-Pad وريموت الجهاز.
+                     */
+                    view?.requestFocus()
+
                     if (!url.isNullOrBlank()) {
                         onPageChanged?.invoke(url)
                     }
@@ -87,12 +100,12 @@ fun RoyalTVYouTubeWebView(
     }
 
     /*
-     * مراقبة حالة ROYAL TV.
-     *
-     * عندما يصل أمر SHOW_YOUTUBE،
-     * يتم تحويله إلى إجراء داخل WebView.
+     * ============================================================
+     * 1) أوامر RoyalTVManager
+     * ============================================================
      */
-    LaunchedEffect(Unit) {
+    LaunchedEffect(webView) {
+
         RoyalTVManager.state.collectLatest { state ->
 
             if (state.source != RoyalTVSource.YOUTUBE) {
@@ -100,18 +113,21 @@ fun RoyalTVYouTubeWebView(
             }
 
             val request =
-                RoyalTVYouTubeManager.decode(state.payload)
-                    ?: return@collectLatest
+                RoyalTVYouTubeManager.decode(
+                    state.payload
+                ) ?: return@collectLatest
 
             when (request.action) {
 
                 RoyalTVYouTubeManager.Action.OPEN_HOME -> {
+
                     webView.loadUrl(
                         "https://www.youtube.com/"
                     )
                 }
 
                 RoyalTVYouTubeManager.Action.OPEN_SEARCH -> {
+
                     val searchUrl =
                         RoyalTVYouTubeManager.buildSearchUrl(
                             request.query
@@ -121,6 +137,7 @@ fun RoyalTVYouTubeWebView(
                 }
 
                 RoyalTVYouTubeManager.Action.OPEN_VIDEO -> {
+
                     val videoUrl =
                         RoyalTVYouTubeManager.normalizeVideoUrl(
                             request.url
@@ -132,9 +149,118 @@ fun RoyalTVYouTubeWebView(
                 }
 
                 RoyalTVYouTubeManager.Action.CLOSE -> {
+
                     webView.loadUrl(
                         "about:blank"
                     )
+                }
+            }
+        }
+    }
+
+    /*
+     * ============================================================
+     * 2) ROYAL Remote → YouTube
+     * ============================================================
+     *
+     * إذا وصل أمر YOUTUBE_SEARCH من الريموت،
+     * يتم فتح نتائج البحث داخل WebView.
+     */
+    LaunchedEffect(webView) {
+
+        RoyalTVRemoteManager.lastCommand.collectLatest { command ->
+
+            if (command == null) {
+                return@collectLatest
+            }
+
+            when (command.action) {
+
+                RoyalTVRemoteAction.YOUTUBE_SEARCH -> {
+
+                    val query =
+                        command.value.trim()
+
+                    if (query.isNotBlank()) {
+
+                        val searchUrl =
+                            RoyalTVYouTubeManager.buildSearchUrl(
+                                query
+                            )
+
+                        webView.loadUrl(searchUrl)
+                    }
+                }
+
+                RoyalTVRemoteAction.SELECT -> {
+
+                    /*
+                     * إبقاء WebView في حالة تركيز.
+                     *
+                     * النقر الفعلي داخل الصفحة سيبقى
+                     * مسؤولية WebView / جهاز الإدخال.
+                     */
+                    webView.requestFocus()
+                }
+
+                RoyalTVRemoteAction.BACK -> {
+
+                    if (webView.canGoBack()) {
+                        webView.goBack()
+                    }
+                }
+
+                else -> {
+                    /*
+                     * بقية الأوامر ستُربط مع طبقة التحكم
+                     * الخاصة بالشاشة في الخطوات القادمة.
+                     */
+                }
+            }
+        }
+    }
+
+    /*
+     * ============================================================
+     * 3) ROYAL Keyboard → YouTube
+     * ============================================================
+     *
+     * الحروف نفسها تُدار بواسطة RoyalTVKeyboardManager.
+     *
+     * عند الضغط على ENTER:
+     * النص الحالي يتحول إلى بحث YouTube.
+     */
+    LaunchedEffect(webView) {
+
+        RoyalTVKeyboardManager.lastEvent.collectLatest { event ->
+
+            if (event == null) {
+                return@collectLatest
+            }
+
+            when (event.action) {
+
+                RoyalTVKeyboardAction.ENTER -> {
+
+                    val query =
+                        event.text.trim()
+
+                    if (query.isNotBlank()) {
+
+                        val searchUrl =
+                            RoyalTVYouTubeManager.buildSearchUrl(
+                                query
+                            )
+
+                        webView.loadUrl(searchUrl)
+                    }
+                }
+
+                else -> {
+                    /*
+                     * CHARACTER / DELETE / CLEAR
+                     * تُدار حالياً داخل KeyboardManager.
+                     */
                 }
             }
         }
@@ -146,12 +272,16 @@ fun RoyalTVYouTubeWebView(
         },
         modifier = modifier,
         update = {
-            // أوامر التنقل تتم عبر RoyalTVManager.
+            /*
+             * WebView يبقى داخل مساحة ROYAL TV.
+             */
         }
     )
 
     DisposableEffect(webView) {
+
         onDispose {
+
             webView.stopLoading()
             webView.loadUrl("about:blank")
             webView.clearHistory()
