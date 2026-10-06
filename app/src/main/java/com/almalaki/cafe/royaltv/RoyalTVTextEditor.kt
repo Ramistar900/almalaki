@@ -21,19 +21,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /**
  * محرر نصوص ROYAL TV.
  *
  * مسؤول عن:
  *
- * - إضافة نص جديد.
- * - تعديل النص الموجود.
+ * - إضافة نص.
+ * - تعديل النص.
  * - حذف النص.
  * - إظهار / إخفاء النص.
+ * - تكبير النص.
+ * - تصغير النص.
+ * - عرض الحجم الحالي لكل نص.
  *
- * لا يتحكم مباشرة في طريقة رسم النص على الشاشة.
- * العرض مسؤول عنه RoyalTVTextOverlay.
+ * حجم كل نص مستقل عن النصوص الأخرى.
  */
 @Composable
 fun RoyalTVTextEditor(
@@ -147,9 +150,62 @@ private fun RoyalTVTextEditorItem(
             }
         )
 
+        /*
+         * التحكم بحجم النص.
+         *
+         * كل ضغطة تغير حجم هذا النص فقط.
+         */
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+
+            Button(
+                onClick = {
+
+                    val newSize =
+                        (item.fontSize - 2f)
+                            .coerceAtLeast(8f)
+
+                    RoyalTVTextManager.setFontSize(
+                        id = item.id,
+                        fontSize = newSize
+                    )
+                }
+            ) {
+                Text("−")
+            }
+
+            Text(
+                text =
+                    "الحجم: ${
+                        item.fontSize
+                            .roundToInt()
+                    } sp"
+            )
+
+            Button(
+                onClick = {
+
+                    val newSize =
+                        (item.fontSize + 2f)
+                            .coerceAtMost(200f)
+
+                    RoyalTVTextManager.setFontSize(
+                        id = item.id,
+                        fontSize = newSize
+                    )
+                }
+            ) {
+                Text("+")
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
 
             Button(
