@@ -1,5 +1,6 @@
 package com.almalaki.cafe.royaltv
 
+import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,31 @@ object RoyalTVManager {
      */
     val state: StateFlow<RoyalTVState> =
         _state.asStateFlow()
+
+    /**
+     * Context الخاص بالتطبيق عند تهيئة Core.
+     *
+     * نستخدم applicationContext فقط حتى لا
+     * نربط عمر Core بعمر شاشة Compose أو Activity.
+     */
+    private var appContext: Context? = null
+
+    /**
+     * تهيئة Core.
+     *
+     * يجب استدعاؤها من طبقة تشغيل ROYAL TV
+     * قبل استقبال أوامر الشاشة.
+     */
+    fun initialize(
+        context: Context
+    ) {
+        appContext =
+            context.applicationContext
+
+        RoyalTVTickerManager.initialize(
+            context = appContext!!
+        )
+    }
 
     /**
      * تحديث الحالة كاملة.
@@ -87,6 +113,23 @@ object RoyalTVManager {
                 }
 
                 RoyalTVCommandType.SHOW_CONTENT -> {
+                    /*
+                     * إذا كان الأمر خاصًا بشريط الأخبار،
+                     * يستقبله Ticker Receiver أولًا.
+                     *
+                     * أما بقية أوامر المحتوى فتستمر
+                     * بالمرور كـ CONTENT بشكل طبيعي.
+                     */
+                    val context =
+                        appContext
+
+                    if (context != null) {
+                        RoyalTVTickerReceiver.receive(
+                            context = context,
+                            command = command
+                        )
+                    }
+
                     _state.value.copy(
                         source = RoyalTVSource.CONTENT,
                         commandType = command.type,
