@@ -1,5 +1,6 @@
 package com.almalaki.cafe.royaltv
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,8 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -20,23 +23,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
 /**
  * محرر نصوص ROYAL TV.
  *
- * مسؤول عن:
+ * المسؤول عن:
  *
- * - إضافة نص.
- * - تعديل النص.
- * - حذف النص.
- * - إظهار / إخفاء النص.
- * - تكبير النص.
- * - تصغير النص.
- * - عرض الحجم الحالي لكل نص.
+ * - إضافة النصوص.
+ * - تعديل النصوص.
+ * - حذف النصوص.
+ * - إظهار / إخفاء النصوص.
+ * - تكبير / تصغير كل نص بشكل مستقل.
+ * - اختيار لون مستقل لكل نص.
  *
- * حجم كل نص مستقل عن النصوص الأخرى.
+ * الحفظ يتم بواسطة RoyalTVTextManager.
  */
 @Composable
 fun RoyalTVTextEditor(
@@ -53,7 +56,8 @@ fun RoyalTVTextEditor(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement =
+            Arrangement.spacedBy(12.dp)
     ) {
 
         Text(
@@ -62,7 +66,8 @@ fun RoyalTVTextEditor(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
 
             OutlinedTextField(
@@ -103,7 +108,8 @@ fun RoyalTVTextEditor(
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(14.dp)
         ) {
 
             items(
@@ -120,7 +126,7 @@ fun RoyalTVTextEditor(
 }
 
 /**
- * عنصر مستقل لتحرير نص واحد.
+ * عنصر تحرير مستقل لكل نص.
  */
 @Composable
 private fun RoyalTVTextEditorItem(
@@ -134,9 +140,16 @@ private fun RoyalTVTextEditorItem(
         mutableStateOf(item.text)
     }
 
+    var showColorPicker by remember(
+        item.id
+    ) {
+        mutableStateOf(false)
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement =
+            Arrangement.spacedBy(8.dp)
     ) {
 
         OutlinedTextField(
@@ -152,8 +165,6 @@ private fun RoyalTVTextEditorItem(
 
         /*
          * التحكم بحجم النص.
-         *
-         * كل ضغطة تغير حجم هذا النص فقط.
          */
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -202,6 +213,63 @@ private fun RoyalTVTextEditorItem(
             }
         }
 
+        /*
+         * اللون الحالي.
+         */
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(10.dp)
+        ) {
+
+            Spacer(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        color = Color(item.color),
+                        shape = CircleShape
+                    )
+            )
+
+            Button(
+                onClick = {
+                    showColorPicker =
+                        !showColorPicker
+                }
+            ) {
+                Text(
+                    text =
+                        if (showColorPicker)
+                            "إخفاء اللون"
+                        else
+                            "اختيار اللون"
+                )
+            }
+        }
+
+        /*
+         * Color Picker لهذا النص فقط.
+         */
+        if (showColorPicker) {
+
+            RoyalTVColorPicker(
+                initialColor = item.color,
+                onColorSelected = { color ->
+
+                    RoyalTVTextManager.setColor(
+                        id = item.id,
+                        color = color
+                    )
+
+                    showColorPicker = false
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        /*
+         * حفظ / حذف / إظهار.
+         */
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement =
