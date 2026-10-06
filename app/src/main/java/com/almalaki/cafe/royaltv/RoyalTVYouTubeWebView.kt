@@ -9,18 +9,24 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.flow.collectLatest
 
 /**
- * WebView الخاص بـ ROYAL TV.
+ * طبقة YouTube داخل ROYAL TV.
  *
- * يعرض YouTube داخل مساحة محتوى ROYAL TV
- * ولا يفتح تطبيق YouTube الخارجي.
+ * تستقبل أوامر RoyalTVManager:
  *
- * شريط ROYAL TV السفلي يبقى مسؤولية شاشة ROYAL TV الرئيسية.
+ * OPEN_HOME
+ * OPEN_SEARCH
+ * OPEN_VIDEO
+ * CLOSE
+ *
+ * ولا تفتح تطبيق YouTube الخارجي.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -80,15 +86,67 @@ fun RoyalTVYouTubeWebView(
         }
     }
 
+    /*
+     * مراقبة حالة ROYAL TV.
+     *
+     * عندما يصل أمر SHOW_YOUTUBE،
+     * يتم تحويله إلى إجراء داخل WebView.
+     */
+    LaunchedEffect(Unit) {
+        RoyalTVManager.state.collectLatest { state ->
+
+            if (state.source != RoyalTVSource.YOUTUBE) {
+                return@collectLatest
+            }
+
+            val request =
+                RoyalTVYouTubeManager.decode(state.payload)
+                    ?: return@collectLatest
+
+            when (request.action) {
+
+                RoyalTVYouTubeManager.Action.OPEN_HOME -> {
+                    webView.loadUrl(
+                        "https://www.youtube.com/"
+                    )
+                }
+
+                RoyalTVYouTubeManager.Action.OPEN_SEARCH -> {
+                    val searchUrl =
+                        RoyalTVYouTubeManager.buildSearchUrl(
+                            request.query
+                        )
+
+                    webView.loadUrl(searchUrl)
+                }
+
+                RoyalTVYouTubeManager.Action.OPEN_VIDEO -> {
+                    val videoUrl =
+                        RoyalTVYouTubeManager.normalizeVideoUrl(
+                            request.url
+                        )
+
+                    if (videoUrl.isNotBlank()) {
+                        webView.loadUrl(videoUrl)
+                    }
+                }
+
+                RoyalTVYouTubeManager.Action.CLOSE -> {
+                    webView.loadUrl(
+                        "about:blank"
+                    )
+                }
+            }
+        }
+    }
+
     AndroidView(
         factory = {
             webView
         },
         modifier = modifier,
         update = {
-            // سيتم التحكم بالتنقل لاحقًا
-            // بواسطة RoyalTVYouTubeManager
-            // وRoyal Keyboard وRoyal Remote.
+            // أوامر التنقل تتم عبر RoyalTVManager.
         }
     )
 
