@@ -2,7 +2,9 @@ package com.almalaki.cafe.royaltv
 
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.broadcastFlow
+import io.github.jan.supabase.realtime.channel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,17 +27,18 @@ private const val ROYAL_TV_EVENT =
 /**
  * قناة الاتصال المشتركة لنظام ROYAL TV.
  *
- * هذه الطبقة مستقلة عن SupabaseRealtime.kt الحالي
+ * مستقلة عن SupabaseRealtime.kt الحالي
  * الخاص بإشعارات الطلبات.
  */
 object RoyalTVRealtime {
 
     private var scope: CoroutineScope? = null
-    private var channel: io.github.jan.supabase.realtime.RealtimeChannel? = null
+    private var channel: RealtimeChannel? = null
     private var listenJob: Job? = null
 
     /**
-     * الاتصال بقناة جهاز ROYAL TV والاستماع للأوامر.
+     * الاتصال بقناة جهاز ROYAL TV
+     * والاستماع للأوامر.
      */
     fun start(
         deviceId: String,
@@ -44,7 +47,9 @@ object RoyalTVRealtime {
         stop()
 
         val newScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            CoroutineScope(
+                SupervisorJob() + Dispatchers.IO
+            )
 
         scope = newScope
 
@@ -58,32 +63,38 @@ object RoyalTVRealtime {
                 }
 
                 val deviceChannel =
-                    supabase.channel("royal-tv-$deviceId")
+                    supabase.channel(
+                        "royal-tv-$deviceId"
+                    )
 
                 channel = deviceChannel
 
-                val broadcastFlow =
+                val commandFlow =
                     deviceChannel.broadcastFlow<JsonObject>(
                         event = ROYAL_TV_EVENT
                     )
 
                 listenJob = launch {
-                    broadcastFlow.collect { payload ->
+                    commandFlow.collect { payload ->
 
                         val typeName =
-                            payload["type"]?.toString()
+                            payload["type"]
+                                ?.toString()
                                 ?.trim('"')
                                 ?: return@collect
 
                         val commandType =
                             try {
-                                RoyalTVCommandType.valueOf(typeName)
+                                RoyalTVCommandType.valueOf(
+                                    typeName
+                                )
                             } catch (_: Exception) {
                                 return@collect
                             }
 
                         val commandPayload =
-                            payload["payload"]?.toString()
+                            payload["payload"]
+                                ?.toString()
                                 ?.trim('"')
                                 ?: ""
 
@@ -119,7 +130,7 @@ object RoyalTVRealtime {
     }
 
     /**
-     * إرسال أمر إلى قناة جهاز ROYAL TV محدد.
+     * إرسال أمر إلى جهاز ROYAL TV محدد.
      */
     suspend fun sendCommand(
         targetDeviceId: String,
@@ -134,7 +145,9 @@ object RoyalTVRealtime {
             }
 
             val targetChannel =
-                supabase.channel("royal-tv-$targetDeviceId")
+                supabase.channel(
+                    "royal-tv-$targetDeviceId"
+                )
 
             targetChannel.subscribe(
                 blockUntilSubscribed = true
@@ -143,9 +156,18 @@ object RoyalTVRealtime {
             targetChannel.broadcast(
                 event = ROYAL_TV_EVENT,
                 message = buildJsonObject {
-                    put("type", command.type.name)
-                    put("payload", command.payload)
-                    put("createdAt", command.createdAt)
+                    put(
+                        "type",
+                        command.type.name
+                    )
+                    put(
+                        "payload",
+                        command.payload
+                    )
+                    put(
+                        "createdAt",
+                        command.createdAt
+                    )
                 }
             )
 
@@ -167,14 +189,31 @@ object RoyalTVRealtime {
         listenJob?.cancel()
         listenJob = null
 
-        try {
-            channel?.unsubscribe()
-        } catch (_: Exception) {
-        }
+        val currentScope = scope
+        val currentChannel = channel
 
         channel = null
-
-        scope?.cancel()
         scope = null
+
+        if (
+            currentScope != null &&
+            currentChannel != null
+        ) {
+            currentScope.launch {
+                try {
+                    currentChannel.unsubscribe()
+                } catch (e: Exception) {
+                    android.util.Log.e(
+                        "RoyalTVRealtime",
+                        "Disconnect error: ${e.message}",
+                        e
+                    )
+                } finally {
+                    currentScope.cancel()
+                }
+            }
+        } else {
+            currentScope?.cancel()
+        }
     }
 }
