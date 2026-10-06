@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import androidx.compose.ui.platform.LocalConfiguration
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -56,6 +57,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        RoyalFontManager.initialize(this)
         recoveryTokenState.value = extractRecoveryToken(intent)
 
         setContent {
@@ -118,6 +120,36 @@ fun RoyalCoffeeApp(
     }
     var screen by remember { mutableStateOf("customer") }
     var token by remember { mutableStateOf("") }
+    val selectedArabicFont by
+    RoyalFontManager.arabicFont.collectAsState()
+
+val selectedEnglishFont by
+    RoyalFontManager.englishFont.collectAsState()
+
+val configuration = LocalConfiguration.current
+
+val appLanguage =
+    configuration.locales
+        .get(0)
+        ?.language
+        ?.lowercase()
+        .orEmpty()
+
+val activeFontFamily: FontFamily =
+    if (appLanguage.startsWith("ar")) {
+        RoyalFontManager
+            .getFont(selectedArabicFont)
+            .family
+    } else {
+        RoyalFontManager
+            .getFont(selectedEnglishFont)
+            .family
+    }
+
+val royalTypography =
+    Typography(
+        fontFamily = activeFontFamily
+    )
 
     LaunchedEffect(recoveryToken) {
         if (recoveryToken.isNotBlank()) {
@@ -126,20 +158,21 @@ fun RoyalCoffeeApp(
     }
 
     MaterialTheme(
-        colorScheme = if (darkMode) darkColorScheme(
-            primary = Gold,
-            background = Black,
-            surface = Black,
-            onBackground = Cream,
-            onSurface = Cream
-        ) else lightColorScheme(
-            primary = GoldDark,
-            background = Color(0xFFF7F2E8),
-            surface = Color(0xFFF7F2E8),
-            onBackground = Color(0xFF222222),
-            onSurface = Color(0xFF222222)
-        )
-    ) {
+    colorScheme = if (darkMode) darkColorScheme(
+        primary = Gold,
+        background = Black,
+        surface = Black,
+        onBackground = Cream,
+        onSurface = Cream
+    ) else lightColorScheme(
+        primary = GoldDark,
+        background = Color(0xFFF7F2E8),
+        surface = Color(0xFFF7F2E8),
+        onBackground = Color(0xFF222222),
+        onSurface = Color(0xFF222222)
+    ),
+    typography = royalTypography
+) {
         when (screen) {
             "customer" -> CustomerScreen(
                 darkMode = darkMode,
