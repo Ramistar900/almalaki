@@ -6,19 +6,23 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 
 /**
- * الخطوط الرسمية لتطبيق ROYAL.
+ * RoyalFontFamilies
  *
- * جميع ملفات الخطوط موجودة داخل:
+ * الربط الرسمي بين ملفات الخطوط الموجودة داخل:
+ *
  * app/src/main/res/font/
  *
- * هذه الطبقة تربط ملفات TTF الحقيقية مع Compose
- * حتى يمكن استخدام الخطوط في واجهة التطبيق.
+ * وبين Jetpack Compose.
+ *
+ * هذا الملف لا يحدد الخط الافتراضي للتطبيق.
+ * اختيار الخط وحفظه وتطبيقه على كامل النظام
+ * يتم لاحقًا من خلال RoyalFontManager.
  */
 object RoyalFontFamilies {
 
-    // ============================================================
-    // 🇸🇦 Arabic Fonts
-    // ============================================================
+    // =========================================================
+    // Arabic Fonts
+    // =========================================================
 
     /**
      * Noto Naskh Arabic
@@ -26,7 +30,8 @@ object RoyalFontFamilies {
     val notoNaskhArabic: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_naskh_arabic,
-            weight = FontWeight.Normal
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
         )
     )
 
@@ -36,7 +41,8 @@ object RoyalFontFamilies {
     val notoKufiArabic: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_kufi_arabic,
-            weight = FontWeight.Normal
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
         )
     )
 
@@ -46,7 +52,8 @@ object RoyalFontFamilies {
     val notoSansArabic: FontFamily = FontFamily(
         Font(
             resId = R.font.noto_sans_arabic,
-            weight = FontWeight.Normal
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
         )
     )
 
@@ -56,21 +63,19 @@ object RoyalFontFamilies {
     val cairo: FontFamily = FontFamily(
         Font(
             resId = R.font.cairo,
-            weight = FontWeight.Normal
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
         )
     )
 
     /**
      * Tajawal
      *
-     * Tajawal موجود بثلاثة أوزان فعلية:
-     * ExtraLight
-     * Light
-     * Black
+     * جميع أوزان Tajawal الموجودة حاليًا.
      */
     val tajawal: FontFamily = FontFamily(
         Font(
-            resId = R.font.tajawal_extra_light,
+            resId = R.font.tajawal_extralight,
             weight = FontWeight.ExtraLight
         ),
         Font(
@@ -78,20 +83,33 @@ object RoyalFontFamilies {
             weight = FontWeight.Light
         ),
         Font(
+            resId = R.font.tajawal_regular,
+            weight = FontWeight.Normal
+        ),
+        Font(
+            resId = R.font.tajawal_medium,
+            weight = FontWeight.Medium
+        ),
+        Font(
+            resId = R.font.tajawal_bold,
+            weight = FontWeight.Bold
+        ),
+        Font(
+            resId = R.font.tajawal_extrabold,
+            weight = FontWeight.ExtraBold
+        ),
+        Font(
             resId = R.font.tajawal_black,
             weight = FontWeight.Black
         )
     )
 
-
-    // ============================================================
-    // 🇬🇧 English Fonts
-    // ============================================================
+    // =========================================================
+    // English / Latin Fonts
+    // =========================================================
 
     /**
      * Noto Serif
-     *
-     * يدعم النسخة العادية والمائلة.
      */
     val notoSerif: FontFamily = FontFamily(
         Font(
@@ -108,8 +126,6 @@ object RoyalFontFamilies {
 
     /**
      * Playfair Display
-     *
-     * يدعم النسخة العادية والمائلة.
      */
     val playfairDisplay: FontFamily = FontFamily(
         Font(
@@ -126,8 +142,6 @@ object RoyalFontFamilies {
 
     /**
      * Libre Bodoni
-     *
-     * يدعم النسخة العادية والمائلة.
      */
     val libreBodoni: FontFamily = FontFamily(
         Font(
