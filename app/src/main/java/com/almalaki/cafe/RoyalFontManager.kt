@@ -14,7 +14,10 @@ enum class RoyalFontLanguage {
 }
 
 /**
- * الخطوط المدعومة في نظام ROYAL.
+ * الخطوط المدعومة حاليًا في نظام ROYAL.
+ *
+ * يمكن إضافة خطوط جديدة لاحقًا بدون تغيير
+ * طريقة عمل النظام.
  */
 enum class RoyalFontId {
 
@@ -26,10 +29,8 @@ enum class RoyalFontId {
     TAJAWAL,
 
     // English
-    NOTO_SANS,
     NOTO_SERIF,
-    ROBOTO,
-    MONTSERRAT
+    LIBRE_BODONI
 }
 
 /**
@@ -54,10 +55,6 @@ data class RoyalFontDefinition(
  * - حفظ الاختيارات.
  * - استعادة الاختيارات.
  * - توفير FontFamily للواجهة.
- *
- * ملاحظة:
- * ملفات TTF / OTF الحقيقية ستربط لاحقًا
- * داخل RoyalFontFamilies.
  */
 object RoyalFontManager {
 
@@ -93,7 +90,7 @@ object RoyalFontManager {
      */
     private val _englishFont =
         MutableStateFlow(
-            RoyalFontId.NOTO_SANS
+            RoyalFontId.NOTO_SERIF
         )
 
     val englishFont: StateFlow<RoyalFontId> =
@@ -133,6 +130,13 @@ object RoyalFontManager {
     fun setArabicFont(
         fontId: RoyalFontId
     ) {
+        if (
+            getFont(fontId).language !=
+            RoyalFontLanguage.ARABIC
+        ) {
+            return
+        }
+
         _arabicFont.value = fontId
 
         save(
@@ -147,6 +151,13 @@ object RoyalFontManager {
     fun setEnglishFont(
         fontId: RoyalFontId
     ) {
+        if (
+            getFont(fontId).language !=
+            RoyalFontLanguage.ENGLISH
+        ) {
+            return
+        }
+
         _englishFont.value = fontId
 
         save(
@@ -257,40 +268,22 @@ object RoyalFontManager {
                     family = RoyalFontFamilies.tajawal
                 )
 
-            RoyalFontId.NOTO_SANS ->
-                RoyalFontDefinition(
-                    id = fontId,
-                    name = "Noto Sans",
-                    language = RoyalFontLanguage.ENGLISH,
-                    isRoyalPreferred = true,
-                    family = RoyalFontFamilies.notoSans
-                )
-
             RoyalFontId.NOTO_SERIF ->
                 RoyalFontDefinition(
                     id = fontId,
                     name = "Noto Serif",
                     language = RoyalFontLanguage.ENGLISH,
-                    isRoyalPreferred = false,
+                    isRoyalPreferred = true,
                     family = RoyalFontFamilies.notoSerif
                 )
 
-            RoyalFontId.ROBOTO ->
+            RoyalFontId.LIBRE_BODONI ->
                 RoyalFontDefinition(
                     id = fontId,
-                    name = "Roboto",
-                    language = RoyalFontLanguage.ENGLISH,
-                    isRoyalPreferred = false,
-                    family = RoyalFontFamilies.roboto
-                )
-
-            RoyalFontId.MONTSERRAT ->
-                RoyalFontDefinition(
-                    id = fontId,
-                    name = "Montserrat",
+                    name = "Libre Bodoni",
                     language = RoyalFontLanguage.ENGLISH,
                     isRoyalPreferred = true,
-                    family = RoyalFontFamilies.montserrat
+                    family = RoyalFontFamilies.libreBodoni
                 )
         }
     }
@@ -366,9 +359,6 @@ object RoyalFontManager {
 
     /**
      * معرف الخط الخاص بنص معين.
-     *
-     * إذا لم يوجد خط مستقل:
-     * يرجع null.
      */
     fun getTextFontId(
         textId: String
@@ -410,7 +400,7 @@ object RoyalFontManager {
             RoyalFontId.NOTO_NASKH_ARABIC
 
         _englishFont.value =
-            RoyalFontId.NOTO_SANS
+            RoyalFontId.NOTO_SERIF
 
         _textFonts.value =
             emptyMap()
@@ -444,8 +434,6 @@ object RoyalFontManager {
 
         /*
          * الخط العربي الافتراضي.
-         *
-         * هنا parseFont لا يمكن أن يعيد null.
          */
         _arabicFont.value =
             parseFont(
@@ -455,7 +443,16 @@ object RoyalFontManager {
                 ),
                 fallback =
                     RoyalFontId.NOTO_NASKH_ARABIC
-            )
+            ).let { fontId ->
+                if (
+                    getFont(fontId).language ==
+                    RoyalFontLanguage.ARABIC
+                ) {
+                    fontId
+                } else {
+                    RoyalFontId.NOTO_NASKH_ARABIC
+                }
+            }
 
         /*
          * الخط الإنجليزي الافتراضي.
@@ -467,14 +464,20 @@ object RoyalFontManager {
                     null
                 ),
                 fallback =
-                    RoyalFontId.NOTO_SANS
-            )
+                    RoyalFontId.NOTO_SERIF
+            ).let { fontId ->
+                if (
+                    getFont(fontId).language ==
+                    RoyalFontLanguage.ENGLISH
+                ) {
+                    fontId
+                } else {
+                    RoyalFontId.NOTO_SERIF
+                }
+            }
 
         /*
          * استعادة الخطوط الخاصة بالنصوص.
-         *
-         * هنا null مسموح لأن النص قد لا يملك
-         * خطًا مستقلًا.
          */
         val savedTextFonts =
             mutableMapOf<String, RoyalFontId>()
@@ -518,10 +521,6 @@ object RoyalFontManager {
 
     /**
      * تحويل النص المحفوظ إلى RoyalFontId.
-     *
-     * مهم:
-     * هذه الدالة ترجع RoyalFontId دائمًا
-     * ولا ترجع null.
      */
     private fun parseFont(
         value: String?,
