@@ -5,24 +5,36 @@ import androidx.compose.ui.text.font.FontFamily
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/**
+ * اللغة التي يرتبط بها الخط.
+ */
 enum class RoyalFontLanguage {
     ARABIC,
     ENGLISH
 }
 
+/**
+ * الخطوط المدعومة في نظام ROYAL.
+ */
 enum class RoyalFontId {
+
+    // Arabic
     NOTO_NASKH_ARABIC,
     NOTO_KUFI_ARABIC,
     NOTO_SANS_ARABIC,
     CAIRO,
     TAJAWAL,
 
+    // English
     NOTO_SANS,
     NOTO_SERIF,
     ROBOTO,
     MONTSERRAT
 }
 
+/**
+ * تعريف الخط.
+ */
 data class RoyalFontDefinition(
     val id: RoyalFontId,
     val name: String,
@@ -31,9 +43,26 @@ data class RoyalFontDefinition(
     val family: FontFamily
 )
 
+/**
+ * النظام العام للخطوط في تطبيق ROYAL.
+ *
+ * مسؤول عن:
+ *
+ * - الخط العربي الافتراضي.
+ * - الخط الإنجليزي الافتراضي.
+ * - الخط الخاص بكل نص.
+ * - حفظ الاختيارات.
+ * - استعادة الاختيارات.
+ * - توفير FontFamily للواجهة.
+ *
+ * ملاحظة:
+ * ملفات TTF / OTF الحقيقية ستربط لاحقًا
+ * داخل RoyalFontFamilies.
+ */
 object RoyalFontManager {
 
-    private const val PREFS_NAME = "royal_font_system"
+    private const val PREFS_NAME =
+        "royal_font_system"
 
     private const val KEY_ARABIC_FONT =
         "default_arabic_font"
@@ -41,9 +70,16 @@ object RoyalFontManager {
     private const val KEY_ENGLISH_FONT =
         "default_english_font"
 
-    private const val KEY_TEXT_PREFIX =
+    private const val KEY_TEXT_FONT_PREFIX =
         "text_font_"
 
+    private var appContext: Context? = null
+
+    private var initialized = false
+
+    /*
+     * الخط العربي الافتراضي.
+     */
     private val _arabicFont =
         MutableStateFlow(
             RoyalFontId.NOTO_NASKH_ARABIC
@@ -52,6 +88,9 @@ object RoyalFontManager {
     val arabicFont: StateFlow<RoyalFontId> =
         _arabicFont
 
+    /*
+     * الخط الإنجليزي الافتراضي.
+     */
     private val _englishFont =
         MutableStateFlow(
             RoyalFontId.NOTO_SANS
@@ -60,6 +99,12 @@ object RoyalFontManager {
     val englishFont: StateFlow<RoyalFontId> =
         _englishFont
 
+    /*
+     * الخطوط الخاصة بالنصوص.
+     *
+     * المفتاح = معرف النص.
+     * القيمة = الخط المختار لهذا النص.
+     */
     private val _textFonts =
         MutableStateFlow<Map<String, RoyalFontId>>(
             emptyMap()
@@ -68,261 +113,297 @@ object RoyalFontManager {
     val textFonts: StateFlow<Map<String, RoyalFontId>> =
         _textFonts
 
-    private var appContext: Context? = null
+    /**
+     * تهيئة النظام.
+     */
+    fun initialize(
+        context: Context
+    ) {
+        appContext =
+            context.applicationContext
 
-    val fonts: List<RoyalFontDefinition>
-        get() = listOf(
-
-            RoyalFontDefinition(
-                id = RoyalFontId.NOTO_NASKH_ARABIC,
-                name = "Noto Naskh Arabic",
-                language = RoyalFontLanguage.ARABIC,
-                isRoyalPreferred = true,
-                family = RoyalFontFamilies.notoNaskhArabic
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.NOTO_KUFI_ARABIC,
-                name = "Noto Kufi Arabic",
-                language = RoyalFontLanguage.ARABIC,
-                isRoyalPreferred = true,
-                family = RoyalFontFamilies.notoKufiArabic
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.NOTO_SANS_ARABIC,
-                name = "Noto Sans Arabic",
-                language = RoyalFontLanguage.ARABIC,
-                isRoyalPreferred = true,
-                family = RoyalFontFamilies.notoSansArabic
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.CAIRO,
-                name = "Cairo",
-                language = RoyalFontLanguage.ARABIC,
-                isRoyalPreferred = false,
-                family = RoyalFontFamilies.cairo
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.TAJAWAL,
-                name = "Tajawal",
-                language = RoyalFontLanguage.ARABIC,
-                isRoyalPreferred = false,
-                family = RoyalFontFamilies.tajawal
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.NOTO_SANS,
-                name = "Noto Sans",
-                language = RoyalFontLanguage.ENGLISH,
-                isRoyalPreferred = true,
-                family = RoyalFontFamilies.notoSans
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.NOTO_SERIF,
-                name = "Noto Serif",
-                language = RoyalFontLanguage.ENGLISH,
-                isRoyalPreferred = true,
-                family = RoyalFontFamilies.notoSerif
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.ROBOTO,
-                name = "Roboto",
-                language = RoyalFontLanguage.ENGLISH,
-                isRoyalPreferred = false,
-                family = RoyalFontFamilies.roboto
-            ),
-
-            RoyalFontDefinition(
-                id = RoyalFontId.MONTSERRAT,
-                name = "Montserrat",
-                language = RoyalFontLanguage.ENGLISH,
-                isRoyalPreferred = true,
-                family = RoyalFontFamilies.montserrat
-            )
-        )
-
-    fun initialize(context: Context) {
-        appContext = context.applicationContext
         loadSavedSettings()
+
+        initialized = true
     }
 
+    /**
+     * تعيين الخط العربي الافتراضي.
+     */
     fun setArabicFont(
         fontId: RoyalFontId
-    ): Boolean {
-
-        val font = getFont(fontId)
-            ?: return false
-
-        if (
-            font.language !=
-            RoyalFontLanguage.ARABIC
-        ) {
-            return false
-        }
-
+    ) {
         _arabicFont.value = fontId
 
         save(
             key = KEY_ARABIC_FONT,
             value = fontId.name
         )
-
-        return true
     }
 
+    /**
+     * تعيين الخط الإنجليزي الافتراضي.
+     */
     fun setEnglishFont(
         fontId: RoyalFontId
-    ): Boolean {
-
-        val font = getFont(fontId)
-            ?: return false
-
-        if (
-            font.language !=
-            RoyalFontLanguage.ENGLISH
-        ) {
-            return false
-        }
-
+    ) {
         _englishFont.value = fontId
 
         save(
             key = KEY_ENGLISH_FONT,
             value = fontId.name
         )
-
-        return true
     }
 
+    /**
+     * تعيين خط مستقل لنص معين.
+     */
     fun setTextFont(
         textId: String,
         fontId: RoyalFontId
-    ): Boolean {
-
+    ) {
         if (textId.isBlank()) {
-            return false
+            return
         }
 
-        if (getFont(fontId) == null) {
-            return false
-        }
+        val updated =
+            _textFonts.value.toMutableMap()
 
-        _textFonts.value =
-            _textFonts.value +
-                (textId to fontId)
+        updated[textId] = fontId
+
+        _textFonts.value = updated
 
         save(
-            key = KEY_TEXT_PREFIX + textId,
+            key = KEY_TEXT_FONT_PREFIX + textId,
             value = fontId.name
         )
-
-        return true
     }
 
+    /**
+     * إزالة الخط الخاص بنص.
+     *
+     * عند الإزالة يعود النص إلى الخط العام.
+     */
     fun clearTextFont(
         textId: String
-    ): Boolean {
-
+    ) {
         if (textId.isBlank()) {
-            return false
+            return
         }
 
-        _textFonts.value =
-            _textFonts.value - textId
+        val updated =
+            _textFonts.value.toMutableMap()
+
+        updated.remove(textId)
+
+        _textFonts.value = updated
 
         remove(
-            key = KEY_TEXT_PREFIX + textId
+            key = KEY_TEXT_FONT_PREFIX + textId
         )
-
-        return true
     }
 
+    /**
+     * الحصول على تعريف خط معين.
+     */
     fun getFont(
         fontId: RoyalFontId
-    ): RoyalFontDefinition? {
-        return fonts.firstOrNull {
-            it.id == fontId
+    ): RoyalFontDefinition {
+
+        return when (fontId) {
+
+            RoyalFontId.NOTO_NASKH_ARABIC ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Noto Naskh Arabic",
+                    language = RoyalFontLanguage.ARABIC,
+                    isRoyalPreferred = true,
+                    family = RoyalFontFamilies.notoNaskhArabic
+                )
+
+            RoyalFontId.NOTO_KUFI_ARABIC ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Noto Kufi Arabic",
+                    language = RoyalFontLanguage.ARABIC,
+                    isRoyalPreferred = true,
+                    family = RoyalFontFamilies.notoKufiArabic
+                )
+
+            RoyalFontId.NOTO_SANS_ARABIC ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Noto Sans Arabic",
+                    language = RoyalFontLanguage.ARABIC,
+                    isRoyalPreferred = true,
+                    family = RoyalFontFamilies.notoSansArabic
+                )
+
+            RoyalFontId.CAIRO ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Cairo",
+                    language = RoyalFontLanguage.ARABIC,
+                    isRoyalPreferred = false,
+                    family = RoyalFontFamilies.cairo
+                )
+
+            RoyalFontId.TAJAWAL ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Tajawal",
+                    language = RoyalFontLanguage.ARABIC,
+                    isRoyalPreferred = false,
+                    family = RoyalFontFamilies.tajawal
+                )
+
+            RoyalFontId.NOTO_SANS ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Noto Sans",
+                    language = RoyalFontLanguage.ENGLISH,
+                    isRoyalPreferred = true,
+                    family = RoyalFontFamilies.notoSans
+                )
+
+            RoyalFontId.NOTO_SERIF ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Noto Serif",
+                    language = RoyalFontLanguage.ENGLISH,
+                    isRoyalPreferred = false,
+                    family = RoyalFontFamilies.notoSerif
+                )
+
+            RoyalFontId.ROBOTO ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Roboto",
+                    language = RoyalFontLanguage.ENGLISH,
+                    isRoyalPreferred = false,
+                    family = RoyalFontFamilies.roboto
+                )
+
+            RoyalFontId.MONTSERRAT ->
+                RoyalFontDefinition(
+                    id = fontId,
+                    name = "Montserrat",
+                    language = RoyalFontLanguage.ENGLISH,
+                    isRoyalPreferred = true,
+                    family = RoyalFontFamilies.montserrat
+                )
         }
     }
 
+    /**
+     * جميع الخطوط العربية.
+     */
     fun getArabicFonts():
         List<RoyalFontDefinition> {
-        return fonts.filter {
-            it.language ==
-                RoyalFontLanguage.ARABIC
-        }
-    }
 
-    fun getEnglishFonts():
-        List<RoyalFontDefinition> {
-        return fonts.filter {
-            it.language ==
-                RoyalFontLanguage.ENGLISH
-        }
-    }
-
-    fun getRoyalPreferredFonts():
-        List<RoyalFontDefinition> {
-        return fonts.filter {
-            it.isRoyalPreferred
-        }
-    }
-
-    fun getArabicFontFamily(): FontFamily {
-        return getFont(
-            _arabicFont.value
-        )?.family
-            ?: RoyalFontFamilies.notoNaskhArabic
-    }
-
-    fun getEnglishFontFamily(): FontFamily {
-        return getFont(
-            _englishFont.value
-        )?.family
-            ?: RoyalFontFamilies.notoSans
-    }
-
-    fun getTextFontId(
-        textId: String,
-        language: RoyalFontLanguage
-    ): RoyalFontId {
-
-        return _textFonts.value[textId]
-            ?: when (language) {
-                RoyalFontLanguage.ARABIC ->
-                    _arabicFont.value
-
-                RoyalFontLanguage.ENGLISH ->
-                    _englishFont.value
+        return RoyalFontId.entries
+            .filter {
+                getFont(it).language ==
+                    RoyalFontLanguage.ARABIC
+            }
+            .map {
+                getFont(it)
             }
     }
 
+    /**
+     * جميع الخطوط الإنجليزية.
+     */
+    fun getEnglishFonts():
+        List<RoyalFontDefinition> {
+
+        return RoyalFontId.entries
+            .filter {
+                getFont(it).language ==
+                    RoyalFontLanguage.ENGLISH
+            }
+            .map {
+                getFont(it)
+            }
+    }
+
+    /**
+     * الخطوط المفضلة لهوية ROYAL.
+     */
+    fun getRoyalPreferredFonts():
+        List<RoyalFontDefinition> {
+
+        return RoyalFontId.entries
+            .map {
+                getFont(it)
+            }
+            .filter {
+                it.isRoyalPreferred
+            }
+    }
+
+    /**
+     * FontFamily الحالي للغة العربية.
+     */
+    fun getArabicFontFamily():
+        FontFamily {
+
+        return getFont(
+            _arabicFont.value
+        ).family
+    }
+
+    /**
+     * FontFamily الحالي للغة الإنجليزية.
+     */
+    fun getEnglishFontFamily():
+        FontFamily {
+
+        return getFont(
+            _englishFont.value
+        ).family
+    }
+
+    /**
+     * معرف الخط الخاص بنص معين.
+     *
+     * إذا لم يوجد خط مستقل:
+     * يرجع null.
+     */
+    fun getTextFontId(
+        textId: String
+    ): RoyalFontId? {
+
+        if (textId.isBlank()) {
+            return null
+        }
+
+        return _textFonts.value[textId]
+    }
+
+    /**
+     * FontFamily الخاص بنص معين.
+     *
+     * إذا لم يوجد خط مستقل:
+     * يستخدم الخط العربي الافتراضي.
+     */
     fun getTextFontFamily(
-        textId: String,
-        language: RoyalFontLanguage
+        textId: String
     ): FontFamily {
 
         val fontId =
-            getTextFontId(
-                textId = textId,
-                language = language
-            )
+            getTextFontId(textId)
 
-        return getFont(fontId)?.family
-            ?: when (language) {
-                RoyalFontLanguage.ARABIC ->
-                    RoyalFontFamilies.notoNaskhArabic
-
-                RoyalFontLanguage.ENGLISH ->
-                    RoyalFontFamilies.notoSans
-            }
+        return if (fontId != null) {
+            getFont(fontId).family
+        } else {
+            getArabicFontFamily()
+        }
     }
 
+    /**
+     * إعادة الخطوط إلى الإعدادات الافتراضية.
+     */
     fun resetToDefaults() {
 
         _arabicFont.value =
@@ -334,16 +415,22 @@ object RoyalFontManager {
         _textFonts.value =
             emptyMap()
 
-        appContext
-            ?.getSharedPreferences(
+        val context =
+            appContext ?: return
+
+        context
+            .getSharedPreferences(
                 PREFS_NAME,
                 Context.MODE_PRIVATE
             )
-            ?.edit()
-            ?.clear()
-            ?.apply()
+            .edit()
+            .clear()
+            .apply()
     }
 
+    /**
+     * قراءة الإعدادات المحفوظة.
+     */
     private fun loadSavedSettings() {
 
         val context =
@@ -355,54 +442,73 @@ object RoyalFontManager {
                 Context.MODE_PRIVATE
             )
 
+        /*
+         * الخط العربي الافتراضي.
+         *
+         * هنا parseFont لا يمكن أن يعيد null.
+         */
         _arabicFont.value =
             parseFont(
-                preferences.getString(
+                value = preferences.getString(
                     KEY_ARABIC_FONT,
                     null
                 ),
-                RoyalFontId.NOTO_NASKH_ARABIC
+                fallback =
+                    RoyalFontId.NOTO_NASKH_ARABIC
             )
 
+        /*
+         * الخط الإنجليزي الافتراضي.
+         */
         _englishFont.value =
             parseFont(
-                preferences.getString(
+                value = preferences.getString(
                     KEY_ENGLISH_FONT,
                     null
                 ),
-                RoyalFontId.NOTO_SANS
+                fallback =
+                    RoyalFontId.NOTO_SANS
             )
 
+        /*
+         * استعادة الخطوط الخاصة بالنصوص.
+         *
+         * هنا null مسموح لأن النص قد لا يملك
+         * خطًا مستقلًا.
+         */
         val savedTextFonts =
             mutableMapOf<String, RoyalFontId>()
 
         preferences.all.forEach { entry ->
 
-            if (
-                !entry.key.startsWith(
-                    KEY_TEXT_PREFIX
-                )
-            ) {
-                return@forEach
-            }
-
-            val textId =
-                entry.key.removePrefix(
-                    KEY_TEXT_PREFIX
-                )
-
-            val fontId =
-                parseFont(
-                    entry.value as? String,
-                    null
-                )
+            val key = entry.key
 
             if (
-                textId.isNotBlank() &&
-                fontId != null
+                key.startsWith(
+                    KEY_TEXT_FONT_PREFIX
+                )
             ) {
-                savedTextFonts[textId] =
-                    fontId
+
+                val textId =
+                    key.removePrefix(
+                        KEY_TEXT_FONT_PREFIX
+                    )
+
+                val fontId =
+                    runCatching {
+                        RoyalFontId.valueOf(
+                            entry.value as? String
+                                ?: ""
+                        )
+                    }.getOrNull()
+
+                if (
+                    textId.isNotBlank() &&
+                    fontId != null
+                ) {
+                    savedTextFonts[textId] =
+                        fontId
+                }
             }
         }
 
@@ -410,53 +516,74 @@ object RoyalFontManager {
             savedTextFonts
     }
 
+    /**
+     * تحويل النص المحفوظ إلى RoyalFontId.
+     *
+     * مهم:
+     * هذه الدالة ترجع RoyalFontId دائمًا
+     * ولا ترجع null.
+     */
     private fun parseFont(
         value: String?,
-        fallback: RoyalFontId?
+        fallback: RoyalFontId
     ): RoyalFontId {
 
         if (value.isNullOrBlank()) {
             return fallback
-                ?: RoyalFontId.NOTO_NASKH_ARABIC
         }
 
         return runCatching {
-            RoyalFontId.valueOf(value)
+            RoyalFontId.valueOf(
+                value
+            )
         }.getOrDefault(
             fallback
-                ?: RoyalFontId.NOTO_NASKH_ARABIC
         )
     }
 
+    /**
+     * حفظ قيمة في SharedPreferences.
+     */
     private fun save(
         key: String,
         value: String
     ) {
 
-        appContext
-            ?.getSharedPreferences(
+        val context =
+            appContext ?: return
+
+        context
+            .getSharedPreferences(
                 PREFS_NAME,
                 Context.MODE_PRIVATE
             )
-            ?.edit()
-            ?.putString(
+            .edit()
+            .putString(
                 key,
                 value
             )
-            ?.apply()
+            .apply()
     }
 
+    /**
+     * حذف قيمة من SharedPreferences.
+     */
     private fun remove(
         key: String
     ) {
 
-        appContext
-            ?.getSharedPreferences(
+        val context =
+            appContext ?: return
+
+        context
+            .getSharedPreferences(
                 PREFS_NAME,
                 Context.MODE_PRIVATE
             )
-            ?.edit()
-            ?.remove(key)
-            ?.apply()
+            .edit()
+            .remove(
+                key
+            )
+            .apply()
     }
 }
