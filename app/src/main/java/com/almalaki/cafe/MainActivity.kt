@@ -147,8 +147,22 @@ val activeFontFamily: FontFamily =
     }
 
 val royalTypography =
-    Typography(
-        fontFamily = activeFontFamily
+    Typography().copy(
+        displayLarge = Typography().displayLarge.copy(fontFamily = activeFontFamily),
+        displayMedium = Typography().displayMedium.copy(fontFamily = activeFontFamily),
+        displaySmall = Typography().displaySmall.copy(fontFamily = activeFontFamily),
+        headlineLarge = Typography().headlineLarge.copy(fontFamily = activeFontFamily),
+        headlineMedium = Typography().headlineMedium.copy(fontFamily = activeFontFamily),
+        headlineSmall = Typography().headlineSmall.copy(fontFamily = activeFontFamily),
+        titleLarge = Typography().titleLarge.copy(fontFamily = activeFontFamily),
+        titleMedium = Typography().titleMedium.copy(fontFamily = activeFontFamily),
+        titleSmall = Typography().titleSmall.copy(fontFamily = activeFontFamily),
+        bodyLarge = Typography().bodyLarge.copy(fontFamily = activeFontFamily),
+        bodyMedium = Typography().bodyMedium.copy(fontFamily = activeFontFamily),
+        bodySmall = Typography().bodySmall.copy(fontFamily = activeFontFamily),
+        labelLarge = Typography().labelLarge.copy(fontFamily = activeFontFamily),
+        labelMedium = Typography().labelMedium.copy(fontFamily = activeFontFamily),
+        labelSmall = Typography().labelSmall.copy(fontFamily = activeFontFamily)
     )
 
     LaunchedEffect(recoveryToken) {
