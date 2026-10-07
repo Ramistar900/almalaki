@@ -31,10 +31,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_LIVE_OFFSET_X_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_LIVE_OFFSET_Y_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_LIVE_SIZE_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_LOGO_OFFSET_X_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_LOGO_OFFSET_Y_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_LOGO_SIZE_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_TICKER_SIZE_PERCENT
+import com.almalaki.cafe.ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT
+import com.almalaki.cafe.RoyalTVLayoutSettings
 import com.almalaki.cafe.RoyalTVResponsiveLogo
-import com.almalaki.cafe.royaltv.identity.loadRoyalTVLogoSizePercent
-import com.almalaki.cafe.royaltv.identity.resetRoyalTVLogoSizePercent
-import com.almalaki.cafe.royaltv.identity.saveRoyalTVLogoSizePercent
+import com.almalaki.cafe.changeRoyalTVOffsetXPercent
+import com.almalaki.cafe.changeRoyalTVOffsetYPercent
+import com.almalaki.cafe.changeRoyalTVSizePercent
+import com.almalaki.cafe.loadRoyalTVLayoutSettings
+import com.almalaki.cafe.resetRoyalTVLayoutSettings
+import com.almalaki.cafe.saveRoyalTVLayoutSettings
 
 private val RoyalGold = Color(0xFFD4AF37)
 private val RoyalGoldLight = Color(0xFFFFE9A3)
@@ -60,7 +73,7 @@ fun RoyalTVControlScreen(
     }
 
     if (identityOpen) {
-        RoyalTVIdentityControl(
+        RoyalTVLayoutControl(
             context = context,
             modifier = modifier,
             onBack = {
@@ -164,6 +177,7 @@ fun RoyalTVControlScreen(
                 items = items,
                 key = { it.title }
             ) { item ->
+
                 RoyalTVControlCard(
                     item = item,
                     onClick = {
@@ -179,41 +193,175 @@ fun RoyalTVControlScreen(
     }
 }
 
-/**
- * إعدادات شعار ROYAL TV من مركز التحكم.
+/*
+ * ============================================================
+ * ROYAL TV LAYOUT CONTROL
+ * ============================================================
  *
- * يستخدم نفس نظام حفظ الهوية الحالي.
- * لا ينشئ SharedPreferences جديدًا.
+ * مركز التحكم الحقيقي لتخطيط شاشة Royal TV.
+ *
+ * جميع القيم تأتي من:
+ *
+ * RoyalTVLayoutSettings.kt
+ *
+ * ولا يتم إنشاء SharedPreferences جديد هنا.
  */
 @Composable
-private fun RoyalTVIdentityControl(
+private fun RoyalTVLayoutControl(
     context: Context,
     modifier: Modifier = Modifier,
     onBack: () -> Unit
 ) {
-    var sizePercent by remember {
+    var settings by remember {
         mutableStateOf(
-            loadRoyalTVLogoSizePercent(context)
+            loadRoyalTVLayoutSettings(context)
         )
     }
 
-    fun changeSize(
+    fun save(
+        newSettings: RoyalTVLayoutSettings
+    ) {
+        settings = newSettings
+
+        saveRoyalTVLayoutSettings(
+            context = context,
+            settings = newSettings
+        )
+    }
+
+    fun changeLogoSize(
         increase: Boolean
     ) {
-        val newValue =
-            RoyalTVResponsiveLogo.applySizeStep(
-                currentPercent = sizePercent,
-                increase = increase
+        save(
+            settings.copy(
+                logoSizePercent =
+                    changeRoyalTVSizePercent(
+                        currentPercent =
+                            settings.logoSizePercent,
+                        increase = increase
+                    )
             )
+        )
+    }
 
-        if (newValue != sizePercent) {
-            sizePercent = newValue
-
-            saveRoyalTVLogoSizePercent(
-                context = context,
-                percent = newValue
+    fun changeLogoX(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                logoOffsetXPercent =
+                    changeRoyalTVOffsetXPercent(
+                        currentPercent =
+                            settings.logoOffsetXPercent,
+                        increase = increase
+                    )
             )
-        }
+        )
+    }
+
+    fun changeLogoY(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                logoOffsetYPercent =
+                    changeRoyalTVOffsetYPercent(
+                        currentPercent =
+                            settings.logoOffsetYPercent,
+                        increase = increase
+                    )
+            )
+        )
+    }
+
+    fun changeTickerSize(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                tickerSizePercent =
+                    changeRoyalTVSizePercent(
+                        currentPercent =
+                            settings.tickerSizePercent,
+                        increase = increase
+                    )
+            )
+        )
+    }
+
+    fun changeTimeSize(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                timeSizePercent =
+                    changeRoyalTVSizePercent(
+                        currentPercent =
+                            settings.timeSizePercent,
+                        increase = increase
+                    )
+            )
+        )
+    }
+
+    fun changeDateSize(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                dateSizePercent =
+                    changeRoyalTVSizePercent(
+                        currentPercent =
+                            settings.dateSizePercent,
+                        increase = increase
+                    )
+            )
+        )
+    }
+
+    fun changeLiveSize(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                liveSizePercent =
+                    changeRoyalTVSizePercent(
+                        currentPercent =
+                            settings.liveSizePercent,
+                        increase = increase
+                    )
+            )
+        )
+    }
+
+    fun changeLiveX(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                liveOffsetXPercent =
+                    changeRoyalTVOffsetXPercent(
+                        currentPercent =
+                            settings.liveOffsetXPercent,
+                        increase = increase
+                    )
+            )
+        )
+    }
+
+    fun changeLiveY(
+        increase: Boolean
+    ) {
+        save(
+            settings.copy(
+                liveOffsetYPercent =
+                    changeRoyalTVOffsetYPercent(
+                        currentPercent =
+                            settings.liveOffsetYPercent,
+                        increase = increase
+                    )
+            )
+        )
     }
 
     Column(
@@ -222,11 +370,13 @@ private fun RoyalTVIdentityControl(
             .background(RoyalBlack)
             .padding(18.dp)
     ) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
+
             Button(
                 onClick = onBack,
                 colors = ButtonDefaults.buttonColors(
@@ -242,9 +392,9 @@ private fun RoyalTVIdentityControl(
             )
 
             Text(
-                text = "👑 هوية ROYAL TV",
+                text = "👑 تخطيط ROYAL TV",
                 color = RoyalGold,
-                fontSize = 25.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -252,133 +402,527 @@ private fun RoyalTVIdentityControl(
         }
 
         Spacer(
-            modifier = Modifier.height(18.dp)
+            modifier = Modifier.height(14.dp)
         )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(
-                20.dp
-            ),
-            colors = CardDefaults.cardColors(
-                containerColor = RoyalPanel
-            )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement =
+                Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                horizontalAlignment =
-                    Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "📐 حجم الشعار",
-                    color = RoyalGoldLight,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold
-                )
 
-                Spacer(
-                    modifier = Modifier.height(6.dp)
+            item {
+                RoyalTVLayoutSectionTitle(
+                    title = "👑 الشعار",
+                    description =
+                        "الحجم والموقع. لا يتم تغيير طبقات PNG أو حركة الشعار."
                 )
+            }
 
-                Text(
-                    text =
-                        "يتكيف تلقائيًا مع أبعاد الشاشة مع الحفاظ على نسب الشعار وطبقاته وحركته.",
-                    color = RoyalCream,
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(
-                    modifier = Modifier.height(18.dp)
-                )
-
-                Text(
-                    text = "$sizePercent%",
-                    color = RoyalGold,
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(
-                    modifier = Modifier.height(14.dp)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(8.dp),
-                    verticalAlignment =
-                        Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = {
-                            changeSize(false)
-                        },
-                        enabled =
-                            sizePercent >
-                                RoyalTVResponsiveLogo.MIN_SIZE_PERCENT,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RoyalPanel,
-                            contentColor = RoyalGoldLight
+            item {
+                RoyalTVSizeControlCard(
+                    title = "حجم الشعار",
+                    value = settings.logoSizePercent,
+                    onDecrease = {
+                        changeLogoSize(false)
+                    },
+                    onReset = {
+                        save(
+                            settings.copy(
+                                logoSizePercent =
+                                    ROYAL_TV_DEFAULT_LOGO_SIZE_PERCENT
+                            )
                         )
-                    ) {
-                        Text("− 5%")
+                    },
+                    onIncrease = {
+                        changeLogoSize(true)
                     }
+                )
+            }
 
-                    Button(
-                        onClick = {
-                            resetRoyalTVLogoSizePercent(
+            item {
+                RoyalTVPositionControlCard(
+                    title = "الموضع الأفقي للشعار",
+                    value = settings.logoOffsetXPercent,
+                    negativeLabel = "← يسار",
+                    positiveLabel = "يمين →",
+                    onNegative = {
+                        changeLogoX(false)
+                    },
+                    onCenter = {
+                        save(
+                            settings.copy(
+                                logoOffsetXPercent =
+                                    ROYAL_TV_DEFAULT_LOGO_OFFSET_X_PERCENT
+                            )
+                        )
+                    },
+                    onPositive = {
+                        changeLogoX(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVPositionControlCard(
+                    title = "الموضع العمودي للشعار",
+                    value = settings.logoOffsetYPercent,
+                    negativeLabel = "↑ أعلى",
+                    positiveLabel = "أسفل ↓",
+                    onNegative = {
+                        changeLogoY(false)
+                    },
+                    onCenter = {
+                        save(
+                            settings.copy(
+                                logoOffsetYPercent =
+                                    ROYAL_TV_DEFAULT_LOGO_OFFSET_Y_PERCENT
+                            )
+                        )
+                    },
+                    onPositive = {
+                        changeLogoY(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVLayoutSectionTitle(
+                    title = "📰 شريط الأخبار",
+                    description =
+                        "الحجم فقط. النص الطويل يبقى داخل الشريط ويتحرك باستمرار."
+                )
+            }
+
+            item {
+                RoyalTVSizeControlCard(
+                    title = "حجم شريط الأخبار",
+                    value = settings.tickerSizePercent,
+                    onDecrease = {
+                        changeTickerSize(false)
+                    },
+                    onReset = {
+                        save(
+                            settings.copy(
+                                tickerSizePercent =
+                                    ROYAL_TV_DEFAULT_TICKER_SIZE_PERCENT
+                            )
+                        )
+                    },
+                    onIncrease = {
+                        changeTickerSize(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVLayoutSectionTitle(
+                    title = "🕐 الوقت والتاريخ",
+                    description =
+                        "يمكن ضبط حجم الوقت والتاريخ كلٌ على حدة."
+                )
+            }
+
+            item {
+                RoyalTVSizeControlCard(
+                    title = "حجم الوقت",
+                    value = settings.timeSizePercent,
+                    onDecrease = {
+                        changeTimeSize(false)
+                    },
+                    onReset = {
+                        save(
+                            settings.copy(
+                                timeSizePercent =
+                                    ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT
+                            )
+                        )
+                    },
+                    onIncrease = {
+                        changeTimeSize(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVSizeControlCard(
+                    title = "حجم التاريخ",
+                    value = settings.dateSizePercent,
+                    onDecrease = {
+                        changeDateSize(false)
+                    },
+                    onReset = {
+                        save(
+                            settings.copy(
+                                dateSizePercent =
+                                    ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT
+                            )
+                        )
+                    },
+                    onIncrease = {
+                        changeDateSize(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVLayoutSectionTitle(
+                    title = "🔴 مباشر",
+                    description =
+                        "الحجم والموقع لمؤشر البث."
+                )
+            }
+
+            item {
+                RoyalTVSizeControlCard(
+                    title = "حجم مباشر",
+                    value = settings.liveSizePercent,
+                    onDecrease = {
+                        changeLiveSize(false)
+                    },
+                    onReset = {
+                        save(
+                            settings.copy(
+                                liveSizePercent =
+                                    ROYAL_TV_DEFAULT_LIVE_SIZE_PERCENT
+                            )
+                        )
+                    },
+                    onIncrease = {
+                        changeLiveSize(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVPositionControlCard(
+                    title = "الموضع الأفقي لمباشر",
+                    value = settings.liveOffsetXPercent,
+                    negativeLabel = "← يسار",
+                    positiveLabel = "يمين →",
+                    onNegative = {
+                        changeLiveX(false)
+                    },
+                    onCenter = {
+                        save(
+                            settings.copy(
+                                liveOffsetXPercent =
+                                    ROYAL_TV_DEFAULT_LIVE_OFFSET_X_PERCENT
+                            )
+                        )
+                    },
+                    onPositive = {
+                        changeLiveX(true)
+                    }
+                )
+            }
+
+            item {
+                RoyalTVPositionControlCard(
+                    title = "الموضع العمودي لمباشر",
+                    value = settings.liveOffsetYPercent,
+                    negativeLabel = "↑ أعلى",
+                    positiveLabel = "أسفل ↓",
+                    onNegative = {
+                        changeLiveY(false)
+                    },
+                    onCenter = {
+                        save(
+                            settings.copy(
+                                liveOffsetYPercent =
+                                    ROYAL_TV_DEFAULT_LIVE_OFFSET_Y_PERCENT
+                            )
+                        )
+                    },
+                    onPositive = {
+                        changeLiveY(true)
+                    }
+                )
+            }
+
+            item {
+                Spacer(
+                    modifier = Modifier.height(4.dp)
+                )
+
+                Button(
+                    onClick = {
+                        resetRoyalTVLayoutSettings(
+                            context
+                        )
+
+                        settings =
+                            loadRoyalTVLayoutSettings(
                                 context
                             )
-
-                            sizePercent =
-                                RoyalTVResponsiveLogo.DEFAULT_SIZE_PERCENT
-                        },
-                        modifier = Modifier.weight(1.3f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RoyalGold,
-                            contentColor = RoyalBlack
-                        )
-                    ) {
-                        Text("استعادة 100%")
-                    }
-
-                    Button(
-                        onClick = {
-                            changeSize(true)
-                        },
-                        enabled =
-                            sizePercent <
-                                RoyalTVResponsiveLogo.MAX_SIZE_PERCENT,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RoyalPanel,
-                            contentColor = RoyalGoldLight
-                        )
-                    ) {
-                        Text("+ 5%")
-                    }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalGold,
+                        contentColor = RoyalBlack
+                    )
+                ) {
+                    Text(
+                        text = "♻️ استعادة كل التخطيط الأساسي",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 Spacer(
-                    modifier = Modifier.height(14.dp)
-                )
-
-                Text(
-                    text =
-                        "60% الحد الأدنى  •  100% الأساسي  •  160% الحد الأقصى",
-                    color = RoyalCream,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
+                    modifier = Modifier.height(10.dp)
                 )
             }
         }
     }
 }
 
+/**
+ * عنوان قسم داخل مركز التحكم.
+ */
+@Composable
+private fun RoyalTVLayoutSectionTitle(
+    title: String,
+    description: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = RoyalGold.copy(
+                alpha = 0.08f
+            )
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Text(
+                text = title,
+                color = RoyalGold,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
+            Text(
+                text = description,
+                color = RoyalCream,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+/**
+ * بطاقة تحكم بالحجم.
+ */
+@Composable
+private fun RoyalTVSizeControlCard(
+    title: String,
+    value: Int,
+    onDecrease: () -> Unit,
+    onReset: () -> Unit,
+    onIncrease: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = RoyalPanel
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                text = title,
+                color = RoyalGoldLight,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = "$value%",
+                color = RoyalGold,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
+            ) {
+
+                Button(
+                    onClick = onDecrease,
+                    enabled =
+                        value > 60,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalPanel,
+                        contentColor = RoyalGoldLight
+                    )
+                ) {
+                    Text("− 5%")
+                }
+
+                Button(
+                    onClick = onReset,
+                    modifier = Modifier.weight(1.35f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalGold,
+                        contentColor = RoyalBlack
+                    )
+                ) {
+                    Text("100%")
+                }
+
+                Button(
+                    onClick = onIncrease,
+                    enabled =
+                        value < 160,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalPanel,
+                        contentColor = RoyalGoldLight
+                    )
+                ) {
+                    Text("+ 5%")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * بطاقة تحكم بالموقع.
+ *
+ * القيمة:
+ *
+ * -100 ← يسار / أعلى
+ * 0    ← الوضع الأساسي
+ * +100 → يمين / أسفل
+ */
+@Composable
+private fun RoyalTVPositionControlCard(
+    title: String,
+    value: Int,
+    negativeLabel: String,
+    positiveLabel: String,
+    onNegative: () -> Unit,
+    onCenter: () -> Unit,
+    onPositive: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = RoyalPanel
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                text = title,
+                color = RoyalGoldLight,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text =
+                    if (value > 0) {
+                        "+$value%"
+                    } else {
+                        "$value%"
+                    },
+                color = RoyalGold,
+                fontSize = 27.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
+            ) {
+
+                Button(
+                    onClick = onNegative,
+                    enabled = value > -100,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalPanel,
+                        contentColor = RoyalGoldLight
+                    )
+                ) {
+                    Text(negativeLabel)
+                }
+
+                Button(
+                    onClick = onCenter,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalGold,
+                        contentColor = RoyalBlack
+                    )
+                ) {
+                    Text("0")
+                }
+
+                Button(
+                    onClick = onPositive,
+                    enabled = value < 100,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RoyalPanel,
+                        contentColor = RoyalGoldLight
+                    )
+                ) {
+                    Text(positiveLabel)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * بطاقة عنصر من القائمة الرئيسية.
+ */
 @Composable
 private fun RoyalTVControlCard(
     item: RoyalTVControlItem,
@@ -401,6 +945,7 @@ private fun RoyalTVControlCard(
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
+
             Text(
                 text = item.icon,
                 fontSize = 30.sp
@@ -413,6 +958,7 @@ private fun RoyalTVControlCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
+
                 Text(
                     text = item.title,
                     color = RoyalGoldLight,
