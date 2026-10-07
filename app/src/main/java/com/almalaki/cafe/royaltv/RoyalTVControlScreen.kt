@@ -45,6 +45,7 @@ import com.almalaki.cafe.changeRoyalTVOffsetXPercent
 import com.almalaki.cafe.changeRoyalTVOffsetYPercent
 import com.almalaki.cafe.changeRoyalTVSizePercent
 import com.almalaki.cafe.loadRoyalTVLayoutSettings
+import com.almalaki.cafe.RoyalTVScreen
 import com.almalaki.cafe.resetRoyalTVLayoutSettings
 import com.almalaki.cafe.saveRoyalTVLayoutSettings
 
