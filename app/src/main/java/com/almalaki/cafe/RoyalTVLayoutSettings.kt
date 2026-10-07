@@ -7,7 +7,7 @@ import android.content.Context
  * ROYAL TV — CENTRAL LAYOUT SETTINGS
  * ============================================================
  *
- * هذا الملف هو المصدر المركزي لإعدادات تخطيط هوية Royal TV.
+ * هذا الملف هو المصدر المركزي لإعدادات تخطيط Royal TV.
  *
  * الوظائف الحالية:
  *
@@ -24,26 +24,29 @@ import android.content.Context
  *
  * 📅 التاريخ:
  * - الحجم
+ * - إظهار / إخفاء
  *
  * 🔴 مباشر:
  * - الحجم
  * - الموقع الأفقي
  * - الموقع العمودي
  *
- * 💾 جميع القيم محفوظة في SharedPreferences واحد.
+ * 💾 جميع القيم محفوظة في SharedPreferences واحد
+ * خاص بشاشة Royal TV.
  *
  * ============================================================
  *
- * ملاحظة مهمة:
- *
  * هذا الملف لا يرسم أي عنصر على الشاشة.
- * ولا يغير حركة الشعار أو طبقات PNG.
+ *
+ * ولا يغير:
+ * - حركة الشعار
+ * - طبقات PNG
+ * - الهوية
+ * - النصوص
  *
  * وظيفته فقط:
  *
- * "أين؟ وكم الحجم؟"
- *
- * أما الرسم والحركة فتبقى في ملفاتها الحالية.
+ * "أين؟ وكم الحجم؟ وهل يظهر العنصر؟"
  *
  * ============================================================
  */
@@ -75,6 +78,9 @@ private const val KEY_TIME_SIZE_PERCENT =
 private const val KEY_DATE_SIZE_PERCENT =
     "date_size_percent"
 
+private const val KEY_SHOW_DATE =
+    "show_date"
+
 private const val KEY_LIVE_SIZE_PERCENT =
     "live_size_percent"
 
@@ -93,11 +99,8 @@ private const val KEY_LIVE_OFFSET_Y_PERCENT =
  *
  * الحجم الأساسي = 100%
  *
- * اللوجو:
- * الموقع الافتراضي = 0 / 0
- *
- * أي أن الشاشة الحالية هي نقطة الصفر
- * التي سنبني عليها التحكم بالموقع لاحقًا.
+ * التاريخ:
+ * ظاهر افتراضيًا.
  */
 
 const val ROYAL_TV_DEFAULT_LOGO_SIZE_PERCENT =
@@ -148,9 +151,6 @@ const val ROYAL_TV_SIZE_STEP_PERCENT =
  * -100 = أقصى جهة سالبة
  *  0   = الوضع الافتراضي
  * +100 = أقصى جهة موجبة
- *
- * سنستخدم هذه القيم لاحقًا
- * مع Responsive Position Engine.
  */
 
 const val ROYAL_TV_MIN_OFFSET_PERCENT =
@@ -169,6 +169,7 @@ const val ROYAL_TV_OFFSET_STEP_PERCENT =
  */
 
 data class RoyalTVLayoutSettings(
+
     val logoSizePercent: Int =
         ROYAL_TV_DEFAULT_LOGO_SIZE_PERCENT,
 
@@ -186,6 +187,14 @@ data class RoyalTVLayoutSettings(
 
     val dateSizePercent: Int =
         ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT,
+
+    /*
+     * هل التاريخ ظاهر على شاشة Royal TV؟
+     *
+     * true  = ظاهر
+     * false = مخفي
+     */
+    val showDate: Boolean = true,
 
     val liveSizePercent: Int =
         ROYAL_TV_DEFAULT_LIVE_SIZE_PERCENT,
@@ -316,7 +325,7 @@ fun changeRoyalTVOffsetYPercent(
             ).coerceAtLeast(
                 ROYAL_TV_MIN_OFFSET_PERCENT
             )
-    }
+        }
 }
 
 /*
@@ -402,6 +411,12 @@ fun loadRoyalTVLayoutSettings(
                 )
             ),
 
+        showDate =
+            prefs.getBoolean(
+                KEY_SHOW_DATE,
+                true
+            ),
+
         liveSizePercent =
             clampRoyalTVSizePercent(
                 prefs.getInt(
@@ -475,6 +490,9 @@ fun saveRoyalTVLayoutSettings(
                     settings.dateSizePercent
                 ),
 
+            showDate =
+                settings.showDate,
+
             liveSizePercent =
                 clampRoyalTVSizePercent(
                     settings.liveSizePercent
@@ -493,42 +511,57 @@ fun saveRoyalTVLayoutSettings(
 
     royalTVLayoutPreferences(context)
         .edit()
+
         .putInt(
             KEY_LOGO_SIZE_PERCENT,
             safeSettings.logoSizePercent
         )
+
         .putInt(
             KEY_LOGO_OFFSET_X_PERCENT,
             safeSettings.logoOffsetXPercent
         )
+
         .putInt(
             KEY_LOGO_OFFSET_Y_PERCENT,
             safeSettings.logoOffsetYPercent
         )
+
         .putInt(
             KEY_TICKER_SIZE_PERCENT,
             safeSettings.tickerSizePercent
         )
+
         .putInt(
             KEY_TIME_SIZE_PERCENT,
             safeSettings.timeSizePercent
         )
+
         .putInt(
             KEY_DATE_SIZE_PERCENT,
             safeSettings.dateSizePercent
         )
+
+        .putBoolean(
+            KEY_SHOW_DATE,
+            safeSettings.showDate
+        )
+
         .putInt(
             KEY_LIVE_SIZE_PERCENT,
             safeSettings.liveSizePercent
         )
+
         .putInt(
             KEY_LIVE_OFFSET_X_PERCENT,
             safeSettings.liveOffsetXPercent
         )
+
         .putInt(
             KEY_LIVE_OFFSET_Y_PERCENT,
             safeSettings.liveOffsetYPercent
         )
+
         .apply()
 }
 
@@ -541,6 +574,9 @@ fun saveRoyalTVLayoutSettings(
 /**
  * استعادة جميع إعدادات التخطيط
  * إلى الوضع الافتراضي.
+ *
+ * التاريخ سيعود إلى:
+ * ظاهر.
  *
  * لا يحذف:
  * - اللوجو
@@ -564,13 +600,10 @@ fun resetRoyalTVLayoutSettings(
  * ============================================================
  * INDIVIDUAL SAVE HELPERS
  * ============================================================
- *
- * هذه الدوال ستسهل ربط مركز التحكم
- * لاحقًا دون تكرار SharedPreferences.
  */
 
 /**
- * حفظ حجم اللوجو فقط.
+ * حفظ حجم وموقع اللوجو.
  */
 fun saveRoyalTVLogoLayout(
     context: Context,
@@ -590,10 +623,12 @@ fun saveRoyalTVLogoLayout(
                     clampRoyalTVSizePercent(
                         sizePercent
                     ),
+
                 logoOffsetXPercent =
                     clampRoyalTVOffsetPercent(
                         offsetXPercent
                     ),
+
                 logoOffsetYPercent =
                     clampRoyalTVOffsetPercent(
                         offsetYPercent
@@ -645,6 +680,7 @@ fun saveRoyalTVClockLayout(
                     clampRoyalTVSizePercent(
                         timeSizePercent
                     ),
+
                 dateSizePercent =
                     clampRoyalTVSizePercent(
                         dateSizePercent
@@ -674,10 +710,12 @@ fun saveRoyalTVLiveLayout(
                     clampRoyalTVSizePercent(
                         sizePercent
                     ),
+
                 liveOffsetXPercent =
                     clampRoyalTVOffsetPercent(
                         offsetXPercent
                     ),
+
                 liveOffsetYPercent =
                     clampRoyalTVOffsetPercent(
                         offsetYPercent
