@@ -197,22 +197,33 @@ fun RoyalTVScreen(
          * CLOCK SIZE
          * ====================================================
          *
-         * RoyalDateTime يعرض الوقت والتاريخ في كتلة واحدة.
+         * الآن الوقت والتاريخ مستقلان تماماً.
          *
-         * لذلك نستخدم أكبر قيمة بين إعداد الوقت
-         * وإعداد التاريخ حتى لا يحدث قص لأحد السطرين.
+         * الوقت:
+         * timeSizePercent
+         *
+         * التاريخ:
+         * dateSizePercent
+         *
+         * لا نستخدم maxOf() بينهما بعد الآن.
          */
-        val clockMultiplier =
-            maxOf(
-                timeSizePercent,
-                dateSizePercent
-            ) / 100f
+        val timeMultiplier =
+            timeSizePercent / 100f
 
-        val clockTextSize =
-            (22f * tvScale * clockMultiplier).sp
+        val dateMultiplier =
+            dateSizePercent / 100f
 
-        val clockLineHeight =
-            (27f * tvScale * clockMultiplier).sp
+        val timeTextSize =
+            (22f * tvScale * timeMultiplier).sp
+
+        val timeLineHeight =
+            (27f * tvScale * timeMultiplier).sp
+
+        val dateTextSize =
+            (22f * tvScale * dateMultiplier).sp
+
+        val dateLineHeight =
+            (27f * tvScale * dateMultiplier).sp
 
         /*
          * ====================================================
@@ -379,15 +390,23 @@ fun RoyalTVScreen(
                  * CLOCK
                  * =================================================
                  *
-                 * يعتمد على RoyalDateTime.kt.
+                 * الوقت والتاريخ أصبحا مستقلين:
                  *
-                 * الحجم أصبح مرتبطًا بالنظام المركزي.
+                 * - حجم الوقت مستقل.
+                 * - حجم التاريخ مستقل.
+                 * - showDate يتحكم بإظهار التاريخ.
+                 *
+                 * إذا كان showDate = false
+                 * فلن يحجز التاريخ أي مساحة.
                  */
                 if (showClock) {
                     RoyalTVClock(
                         scale = tvScale,
-                        textSize = clockTextSize,
-                        lineHeight = clockLineHeight
+                        showDate = layoutSettings.showDate,
+                        timeTextSize = timeTextSize,
+                        timeLineHeight = timeLineHeight,
+                        dateTextSize = dateTextSize,
+                        dateLineHeight = dateLineHeight
                     )
                 }
             }
@@ -535,12 +554,21 @@ private fun RoyalTVLiveIndicator(
  * الوقت والتاريخ.
  *
  * يعتمد على RoyalDateTime.kt.
+ *
+ * الآن:
+ *
+ * - حجم الوقت مستقل.
+ * - حجم التاريخ مستقل.
+ * - إظهار/إخفاء التاريخ مستقل.
  */
 @Composable
 private fun RoyalTVClock(
     scale: Float,
-    textSize: TextUnit,
-    lineHeight: TextUnit
+    showDate: Boolean,
+    timeTextSize: TextUnit,
+    timeLineHeight: TextUnit,
+    dateTextSize: TextUnit,
+    dateLineHeight: TextUnit
 ) {
     Box(
         modifier = Modifier
@@ -569,16 +597,23 @@ private fun RoyalTVClock(
 
         RoyalDateTime(
             language = "ar",
-            style = TextStyle(
+            showTime = true,
+            showDate = showDate,
+            timeStyle = TextStyle(
                 color = RoyalTVGoldLight,
-                fontSize = textSize,
+                fontSize = timeTextSize,
                 fontWeight = FontWeight.Bold,
-                lineHeight = lineHeight
+                lineHeight = timeLineHeight
+            ),
+            dateStyle = TextStyle(
+                color = RoyalTVGoldLight,
+                fontSize = dateTextSize,
+                fontWeight = FontWeight.Bold,
+                lineHeight = dateLineHeight
             )
         )
     }
 }
-
 /**
  * ============================================================
  * TICKER
