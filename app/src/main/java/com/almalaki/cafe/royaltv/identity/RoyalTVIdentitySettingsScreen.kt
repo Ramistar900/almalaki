@@ -54,13 +54,9 @@ private const val KEY_LIVE_TEXT = "live_text"
 private const val KEY_TICKER_TEXT = "ticker_text"
 private const val KEY_SPORTS_MODE = "sports_mode"
 
-/*
- * حجم شعار Royal TV.
- *
- * يتم حفظه داخل نفس نظام إعدادات الهوية الحالي.
- */
 private const val KEY_LOGO_SIZE_PERCENT = "logo_size_percent"
 private const val DEFAULT_LOGO_SIZE_PERCENT = 100
+
 private const val KEY_TICKER_SIZE_PERCENT = "ticker_size_percent"
 private const val DEFAULT_TICKER_SIZE_PERCENT = 100
 
@@ -70,9 +66,6 @@ private fun identityPrefs(context: Context) =
         Context.MODE_PRIVATE
     )
 
-/**
- * قراءة حجم شعار Royal TV المحفوظ.
- */
 fun loadRoyalTVLogoSizePercent(
     context: Context
 ): Int {
@@ -86,54 +79,7 @@ fun loadRoyalTVLogoSizePercent(
             RoyalTVResponsiveLogo.MAX_SIZE_PERCENT
         )
 }
-/**
- * قراءة حجم شريط الأخبار المحفوظ.
- */
-fun loadRoyalTVTickerSizePercent(
-    context: Context
-): Int {
-    return identityPrefs(context)
-        .getInt(
-            KEY_TICKER_SIZE_PERCENT,
-            DEFAULT_TICKER_SIZE_PERCENT
-        )
-        .coerceIn(60, 160)
-}
 
-/**
- * حفظ حجم شريط الأخبار.
- */
-fun saveRoyalTVTickerSizePercent(
-    context: Context,
-    percent: Int
-) {
-    val safePercent =
-        percent.coerceIn(60, 160)
-
-    identityPrefs(context)
-        .edit()
-        .putInt(
-            KEY_TICKER_SIZE_PERCENT,
-            safePercent
-        )
-        .apply()
-}
-
-/**
- * استعادة الحجم الأساسي لشريط الأخبار.
- */
-fun resetRoyalTVTickerSizePercent(
-    context: Context
-) {
-    saveRoyalTVTickerSizePercent(
-        context = context,
-        percent = DEFAULT_TICKER_SIZE_PERCENT
-    )
-}
-
-/**
- * حفظ حجم شعار Royal TV.
- */
 fun saveRoyalTVLogoSizePercent(
     context: Context,
     percent: Int
@@ -153,9 +99,6 @@ fun saveRoyalTVLogoSizePercent(
         .apply()
 }
 
-/**
- * استعادة الحجم الأساسي للشعار.
- */
 fun resetRoyalTVLogoSizePercent(
     context: Context
 ) {
@@ -165,14 +108,42 @@ fun resetRoyalTVLogoSizePercent(
     )
 }
 
-/**
- * شاشة إعداد هوية Royal TV.
- *
- * هذه الشاشة مخصصة للمالك فقط.
- *
- * جميع إعدادات الهوية محفوظة داخل نفس SharedPreferences
- * الحالي حتى لا يتم إنشاء نظام إعدادات مكرر.
- */
+fun loadRoyalTVTickerSizePercent(
+    context: Context
+): Int {
+    return identityPrefs(context)
+        .getInt(
+            KEY_TICKER_SIZE_PERCENT,
+            DEFAULT_TICKER_SIZE_PERCENT
+        )
+        .coerceIn(60, 160)
+}
+
+fun saveRoyalTVTickerSizePercent(
+    context: Context,
+    percent: Int
+) {
+    val safePercent =
+        percent.coerceIn(60, 160)
+
+    identityPrefs(context)
+        .edit()
+        .putInt(
+            KEY_TICKER_SIZE_PERCENT,
+            safePercent
+        )
+        .apply()
+}
+
+fun resetRoyalTVTickerSizePercent(
+    context: Context
+) {
+    saveRoyalTVTickerSizePercent(
+        context = context,
+        percent = DEFAULT_TICKER_SIZE_PERCENT
+    )
+}
+
 @Composable
 fun RoyalTVIdentitySettingsScreen(
     modifier: Modifier = Modifier,
@@ -257,10 +228,11 @@ fun RoyalTVIdentitySettingsScreen(
             loadRoyalTVLogoSizePercent(context)
         )
     }
+
     var tickerSizePercent by rememberSaveable {
-    mutableStateOf(
-        loadRoyalTVTickerSizePercent(context)
-    )
+        mutableStateOf(
+            loadRoyalTVTickerSizePercent(context)
+        )
     }
 
     fun saveBoolean(
@@ -409,11 +381,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             )
 
-            /*
-             * حجم الشعار المتجاوب.
-             *
-             * لا يغيّر طبقات PNG أو الحركة أو النسب.
-             */
             if (identityEnabled && logoEnabled) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -472,9 +439,7 @@ fun RoyalTVIdentitySettingsScreen(
                         ) {
                             Button(
                                 onClick = {
-                                    changeLogoSize(
-                                        increase = false
-                                    )
+                                    changeLogoSize(false)
                                 },
                                 enabled =
                                     logoSizePercent >
@@ -516,9 +481,7 @@ fun RoyalTVIdentitySettingsScreen(
 
                             Button(
                                 onClick = {
-                                    changeLogoSize(
-                                        increase = true
-                                    )
+                                    changeLogoSize(true)
                                 },
                                 enabled =
                                     logoSizePercent <
@@ -795,35 +758,12 @@ fun RoyalTVIdentitySettingsScreen(
                     liveEnabled = true
                     sportsMode = false
 
-                    saveBoolean(
-                        KEY_IDENTITY_ENABLED,
-                        true
-                    )
-
-                    saveBoolean(
-                        KEY_LOGO_ENABLED,
-                        true
-                    )
-
-                    saveBoolean(
-                        KEY_TICKER_ENABLED,
-                        true
-                    )
-
-                    saveBoolean(
-                        KEY_CLOCK_ENABLED,
-                        true
-                    )
-
-                    saveBoolean(
-                        KEY_LIVE_ENABLED,
-                        true
-                    )
-
-                    saveBoolean(
-                        KEY_SPORTS_MODE,
-                        false
-                    )
+                    saveBoolean(KEY_IDENTITY_ENABLED, true)
+                    saveBoolean(KEY_LOGO_ENABLED, true)
+                    saveBoolean(KEY_TICKER_ENABLED, true)
+                    saveBoolean(KEY_CLOCK_ENABLED, true)
+                    saveBoolean(KEY_LIVE_ENABLED, true)
+                    saveBoolean(KEY_SPORTS_MODE, false)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -848,9 +788,6 @@ fun RoyalTVIdentitySettingsScreen(
     }
 }
 
-/**
- * بطاقة مفتاح مستقلة لإعدادات هوية Royal TV.
- */
 @Composable
 private fun IdentitySwitchCard(
     title: String,
@@ -882,9 +819,7 @@ private fun IdentitySwitchCard(
                         if (enabled) {
                             RoyalGoldLight
                         } else {
-                            RoyalCream.copy(
-                                alpha = 0.45f
-                            )
+                            RoyalCream.copy(alpha = 0.45f)
                         },
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
@@ -900,9 +835,7 @@ private fun IdentitySwitchCard(
                         if (enabled) {
                             RoyalCream
                         } else {
-                            RoyalCream.copy(
-                                alpha = 0.35f
-                            )
+                            RoyalCream.copy(alpha = 0.35f)
                         },
                     fontSize = 13.sp
                 )
@@ -920,4 +853,5 @@ private fun IdentitySwitchCard(
         }
     }
 }
-                            
+
+  
