@@ -6,6 +6,7 @@ import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,19 +59,24 @@ fun startRoyalOrderRealtime(
                 }
 
             try {
-    channel.subscribe(blockUntilSubscribed = true)
+                channel.subscribe(
+                    blockUntilSubscribed = true
+                )
 
-    android.os.Handler(
-        android.os.Looper.getMainLooper()
-    ).post {
-        android.widget.Toast.makeText(
-            context,
-            "Realtime: تم الاتصال بنجاح",
-            android.widget.Toast.LENGTH_LONG
-        ).show()
-    }
-} catch (e: Exception) {
-    throw e
+                android.os.Handler(
+                    android.os.Looper.getMainLooper()
+                ).post {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Realtime: تم الاتصال بنجاح",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                throw e
             }
 
             changeFlow.collect {
@@ -79,22 +85,36 @@ fun startRoyalOrderRealtime(
                 }
             }
 
-        } catch (e: Exception) {
-    android.util.Log.e(
-        "RoyalRealtime",
-        "Realtime error: ${e.message}",
-        e
-    )
+        } catch (e: CancellationException) {
+            /*
+             * هذا ليس خطأ.
+             *
+             * يحدث طبيعيًا عند مغادرة شاشة المالك
+             * وإيقاف اتصال Realtime بواسطة:
+             *
+             * stopRoyalOrderRealtime()
+             *
+             * لذلك لا نعرض Toast للمستخدم.
+             */
+            throw e
 
-    android.os.Handler(
-        android.os.Looper.getMainLooper()
-    ).post {
-        android.widget.Toast.makeText(
-            context,
-            "Realtime: ${e.message ?: "خطأ غير معروف"}",
-            android.widget.Toast.LENGTH_LONG
-        ).show()
-    }
+        } catch (e: Exception) {
+
+            android.util.Log.e(
+                "RoyalRealtime",
+                "Realtime error: ${e.message}",
+                e
+            )
+
+            android.os.Handler(
+                android.os.Looper.getMainLooper()
+            ).post {
+                android.widget.Toast.makeText(
+                    context,
+                    "Realtime: ${e.message ?: "خطأ غير معروف"}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 }
