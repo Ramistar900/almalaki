@@ -8,10 +8,10 @@ import androidx.compose.ui.text.font.FontWeight
 /**
  * الخطوط الرسمية لتطبيق ROYAL.
  *
- * جميع ملفات الخطوط الموجودة حاليًا داخل:
+ * جميع ملفات الخطوط موجودة داخل:
  * app/src/main/res/font/
  *
- * يمكن إضافة خطوط جديدة لاحقًا دون تغيير بنية النظام.
+ * كل FontFamily هنا يمثل عائلة حقيقية من ملفات TTF.
  */
 object RoyalFontFamilies {
 
@@ -85,6 +85,52 @@ object RoyalFontFamilies {
         )
     )
 
+    /**
+     * Aref Ruqaa
+     *
+     * النسخة العادية والعريضة.
+     */
+    val arefRuqaa: FontFamily = FontFamily(
+        Font(
+            resId = R.font.aref_ruqaa_regular,
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
+        ),
+        Font(
+            resId = R.font.aref_ruqaa_bold,
+            weight = FontWeight.Bold,
+            style = FontStyle.Normal
+        )
+    )
+
+    /**
+     * Amiri
+     *
+     * يدعم العادي والعريض والمائل والعريض المائل.
+     */
+    val amiri: FontFamily = FontFamily(
+        Font(
+            resId = R.font.amiri_regular,
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
+        ),
+        Font(
+            resId = R.font.amiri_bold,
+            weight = FontWeight.Bold,
+            style = FontStyle.Normal
+        ),
+        Font(
+            resId = R.font.amiri_italic,
+            weight = FontWeight.Normal,
+            style = FontStyle.Italic
+        ),
+        Font(
+            resId = R.font.amiri_bold_italic,
+            weight = FontWeight.Bold,
+            style = FontStyle.Italic
+        )
+    )
+
     // =========================================================
     // English Fonts
     // =========================================================
@@ -115,6 +161,19 @@ object RoyalFontFamilies {
             resId = R.font.libre_bodoni_italic,
             weight = FontWeight.Normal,
             style = FontStyle.Italic
+        )
+    )
+
+    /**
+     * Courgette
+     *
+     * خط إنجليزي Script انسيابي وواضح.
+     */
+    val courgette: FontFamily = FontFamily(
+        Font(
+            resId = R.font.courgette_regular,
+            weight = FontWeight.Normal,
+            style = FontStyle.Normal
         )
     )
 }
