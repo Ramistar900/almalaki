@@ -133,6 +133,9 @@ fun RoyalTVDirectEditor(
     var draftSettings by remember(originalSettings) {
         mutableStateOf(originalSettings)
     }
+    var selectedTarget by remember(target) {
+    mutableStateOf(target)
+    }
 
     /**
      * --------------------------------------------------------
@@ -152,7 +155,7 @@ fun RoyalTVDirectEditor(
      * --------------------------------------------------------
      */
     val targetTitle =
-        when (target) {
+        when (selectedTarget) {
             RoyalTVEditTarget.LOGO ->
                 "👑 الشعار"
 
@@ -210,18 +213,19 @@ fun RoyalTVDirectEditor(
          * لأنهما يدعمان الموقع والحجم.
          */
         if (
-            target == RoyalTVEditTarget.LOGO ||
-            target == RoyalTVEditTarget.LIVE
-        ) {
+    selectedTarget == RoyalTVEditTarget.LOGO ||
+    selectedTarget == RoyalTVEditTarget.LIVE
+)
+            {
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(
-                        target,
-                        editorSize,
-                        draftSettings
-                    ) {
+                     selectedTarget,
+                     editorSize,
+                     draftSettings
+) {
 
                         detectTransformGestures(
                             panZoomLock = false
@@ -267,7 +271,7 @@ fun RoyalTVDirectEditor(
                                     1.15f
                                 )
 
-                            when (target) {
+                            when (selectedTarget) {
 
                                 /**
                                  * ==================================
@@ -408,7 +412,7 @@ fun RoyalTVDirectEditor(
          * - إلغاء.
          */
         RoyalTVEditorBottomPanel(
-            target = target,
+            target = selectedTarget,
             settings = draftSettings,
             onSettingsChanged = {
                 draftSettings = it
