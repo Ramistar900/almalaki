@@ -412,7 +412,9 @@ Column(
             )
                 }
 
-        RoyalBottomBar(newsText = interfaceSettings.newsText)
+             if (section != AdminSection.ROYAL_TV) {
+             RoyalBottomBar(newsText = interfaceSettings.newsText)
+        }
     }
     } else {
         Column(
@@ -478,7 +480,9 @@ Column(
                 highlightedOrderId = highlightedOrderId
             )
                         }
+            if (section != AdminSection.ROYAL_TV) {
             RoyalBottomBar(newsText = interfaceSettings.newsText)
+            }
         }
     }
 }
