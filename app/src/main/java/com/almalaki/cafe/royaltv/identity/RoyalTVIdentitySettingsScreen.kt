@@ -61,6 +61,8 @@ private const val KEY_SPORTS_MODE = "sports_mode"
  */
 private const val KEY_LOGO_SIZE_PERCENT = "logo_size_percent"
 private const val DEFAULT_LOGO_SIZE_PERCENT = 100
+private const val KEY_TICKER_SIZE_PERCENT = "ticker_size_percent"
+private const val DEFAULT_TICKER_SIZE_PERCENT = 100
 
 private fun identityPrefs(context: Context) =
     context.getSharedPreferences(
@@ -83,6 +85,50 @@ fun loadRoyalTVLogoSizePercent(
             RoyalTVResponsiveLogo.MIN_SIZE_PERCENT,
             RoyalTVResponsiveLogo.MAX_SIZE_PERCENT
         )
+}
+/**
+ * قراءة حجم شريط الأخبار المحفوظ.
+ */
+fun loadRoyalTVTickerSizePercent(
+    context: Context
+): Int {
+    return identityPrefs(context)
+        .getInt(
+            KEY_TICKER_SIZE_PERCENT,
+            DEFAULT_TICKER_SIZE_PERCENT
+        )
+        .coerceIn(60, 160)
+}
+
+/**
+ * حفظ حجم شريط الأخبار.
+ */
+fun saveRoyalTVTickerSizePercent(
+    context: Context,
+    percent: Int
+) {
+    val safePercent =
+        percent.coerceIn(60, 160)
+
+    identityPrefs(context)
+        .edit()
+        .putInt(
+            KEY_TICKER_SIZE_PERCENT,
+            safePercent
+        )
+        .apply()
+}
+
+/**
+ * استعادة الحجم الأساسي لشريط الأخبار.
+ */
+fun resetRoyalTVTickerSizePercent(
+    context: Context
+) {
+    saveRoyalTVTickerSizePercent(
+        context = context,
+        percent = DEFAULT_TICKER_SIZE_PERCENT
+    )
 }
 
 /**
@@ -210,6 +256,11 @@ fun RoyalTVIdentitySettingsScreen(
         mutableStateOf(
             loadRoyalTVLogoSizePercent(context)
         )
+    }
+    var tickerSizePercent by rememberSaveable {
+    mutableStateOf(
+        loadRoyalTVTickerSizePercent(context)
+    )
     }
 
     fun saveBoolean(
