@@ -606,7 +606,7 @@ private fun RoyalTVEditorBottomPanel(
                                         .coerceIn(
                                             ROYAL_TV_MIN_SIZE_PERCENT,
                                             ROYAL_TV_MAX_SIZE_PERCENT
-                          
+                                        )
                             )
                         )
                     }
