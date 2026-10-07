@@ -35,14 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.almalaki.cafe.RoyalTVResponsiveLogo
 
 private val RoyalGold = Color(0xFFD4AF37)
 private val RoyalGoldLight = Color(0xFFFFE9A3)
 private val RoyalBlack = Color(0xFF050505)
 private val RoyalPanel = Color(0xFF111111)
 private val RoyalCream = Color(0xFFF5F0E5)
-private val RoyalGreen = Color(0xFF35C759)
-private val RoyalRed = Color(0xFFE53935)
 
 private const val PREFS_NAME = "royal_tv_identity"
 
@@ -55,20 +54,78 @@ private const val KEY_LIVE_TEXT = "live_text"
 private const val KEY_TICKER_TEXT = "ticker_text"
 private const val KEY_SPORTS_MODE = "sports_mode"
 
+/*
+ * حجم شعار Royal TV.
+ *
+ * يتم حفظه داخل نفس نظام إعدادات الهوية الحالي.
+ */
+private const val KEY_LOGO_SIZE_PERCENT = "logo_size_percent"
+private const val DEFAULT_LOGO_SIZE_PERCENT = 100
+
 private fun identityPrefs(context: Context) =
-    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    context.getSharedPreferences(
+        PREFS_NAME,
+        Context.MODE_PRIVATE
+    )
+
+/**
+ * قراءة حجم شعار Royal TV المحفوظ.
+ */
+fun loadRoyalTVLogoSizePercent(
+    context: Context
+): Int {
+    return identityPrefs(context)
+        .getInt(
+            KEY_LOGO_SIZE_PERCENT,
+            DEFAULT_LOGO_SIZE_PERCENT
+        )
+        .coerceIn(
+            RoyalTVResponsiveLogo.MIN_SIZE_PERCENT,
+            RoyalTVResponsiveLogo.MAX_SIZE_PERCENT
+        )
+}
+
+/**
+ * حفظ حجم شعار Royal TV.
+ */
+fun saveRoyalTVLogoSizePercent(
+    context: Context,
+    percent: Int
+) {
+    val safePercent =
+        percent.coerceIn(
+            RoyalTVResponsiveLogo.MIN_SIZE_PERCENT,
+            RoyalTVResponsiveLogo.MAX_SIZE_PERCENT
+        )
+
+    identityPrefs(context)
+        .edit()
+        .putInt(
+            KEY_LOGO_SIZE_PERCENT,
+            safePercent
+        )
+        .apply()
+}
+
+/**
+ * استعادة الحجم الأساسي للشعار.
+ */
+fun resetRoyalTVLogoSizePercent(
+    context: Context
+) {
+    saveRoyalTVLogoSizePercent(
+        context = context,
+        percent = RoyalTVResponsiveLogo.DEFAULT_SIZE_PERCENT
+    )
+}
 
 /**
  * شاشة إعداد هوية Royal TV.
  *
  * هذه الشاشة مخصصة للمالك فقط.
  *
- * ملاحظة مهمة:
- * في هذه المرحلة يتم حفظ الإعدادات محليًا على الجهاز الذي
- * يفتح شاشة المالك.
- *
- * المزامنة الحقيقية بين هاتف المالك وتلفزيون المقهى ستتم
- * لاحقًا من خلال طبقة Royal TV المشتركة.
+ * جميع إعدادات الهوية محفوظة داخل نفس SharedPreferences
+ * الحالي حتى لا يتم إنشاء نظام إعدادات مكرر.
  */
 @Composable
 fun RoyalTVIdentitySettingsScreen(
@@ -79,31 +136,46 @@ fun RoyalTVIdentitySettingsScreen(
 
     var identityEnabled by rememberSaveable {
         mutableStateOf(
-            prefs.getBoolean(KEY_IDENTITY_ENABLED, true)
+            prefs.getBoolean(
+                KEY_IDENTITY_ENABLED,
+                true
+            )
         )
     }
 
     var logoEnabled by rememberSaveable {
         mutableStateOf(
-            prefs.getBoolean(KEY_LOGO_ENABLED, true)
+            prefs.getBoolean(
+                KEY_LOGO_ENABLED,
+                true
+            )
         )
     }
 
     var tickerEnabled by rememberSaveable {
         mutableStateOf(
-            prefs.getBoolean(KEY_TICKER_ENABLED, true)
+            prefs.getBoolean(
+                KEY_TICKER_ENABLED,
+                true
+            )
         )
     }
 
     var clockEnabled by rememberSaveable {
         mutableStateOf(
-            prefs.getBoolean(KEY_CLOCK_ENABLED, true)
+            prefs.getBoolean(
+                KEY_CLOCK_ENABLED,
+                true
+            )
         )
     }
 
     var liveEnabled by rememberSaveable {
         mutableStateOf(
-            prefs.getBoolean(KEY_LIVE_ENABLED, true)
+            prefs.getBoolean(
+                KEY_LIVE_ENABLED,
+                true
+            )
         )
     }
 
@@ -127,7 +199,16 @@ fun RoyalTVIdentitySettingsScreen(
 
     var sportsMode by rememberSaveable {
         mutableStateOf(
-            prefs.getBoolean(KEY_SPORTS_MODE, false)
+            prefs.getBoolean(
+                KEY_SPORTS_MODE,
+                false
+            )
+        )
+    }
+
+    var logoSizePercent by rememberSaveable {
+        mutableStateOf(
+            loadRoyalTVLogoSizePercent(context)
         )
     }
 
@@ -136,7 +217,10 @@ fun RoyalTVIdentitySettingsScreen(
         value: Boolean
     ) {
         prefs.edit()
-            .putBoolean(key, value)
+            .putBoolean(
+                key,
+                value
+            )
             .apply()
     }
 
@@ -145,8 +229,30 @@ fun RoyalTVIdentitySettingsScreen(
         value: String
     ) {
         prefs.edit()
-            .putString(key, value)
+            .putString(
+                key,
+                value
+            )
             .apply()
+    }
+
+    fun changeLogoSize(
+        increase: Boolean
+    ) {
+        val newValue =
+            RoyalTVResponsiveLogo.applySizeStep(
+                currentPercent = logoSizePercent,
+                increase = increase
+            )
+
+        if (newValue != logoSizePercent) {
+            logoSizePercent = newValue
+
+            saveRoyalTVLogoSizePercent(
+                context = context,
+                percent = newValue
+            )
+        }
     }
 
     Box(
@@ -161,12 +267,10 @@ fun RoyalTVIdentitySettingsScreen(
                     rememberScrollState()
                 )
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(14.dp)
         ) {
 
-            /*
-             * العنوان الرئيسي
-             */
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
@@ -178,7 +282,8 @@ fun RoyalTVIdentitySettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment =
+                        Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "📺",
@@ -213,7 +318,8 @@ fun RoyalTVIdentitySettingsScreen(
                     )
 
                     Text(
-                        text = "هذه الإعدادات خاصة بشاشة التلفزيون داخل المقهى.",
+                        text =
+                            "هذه الإعدادات خاصة بشاشة التلفزيون داخل المقهى.",
                         color = RoyalCream,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
@@ -221,9 +327,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             }
 
-            /*
-             * المفتاح الرئيسي
-             */
             IdentitySwitchCard(
                 title = "تفعيل هوية Royal Coffee",
                 description =
@@ -231,6 +334,7 @@ fun RoyalTVIdentitySettingsScreen(
                 checked = identityEnabled,
                 onCheckedChange = {
                     identityEnabled = it
+
                     saveBoolean(
                         KEY_IDENTITY_ENABLED,
                         it
@@ -238,9 +342,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             )
 
-            /*
-             * الشعار
-             */
             IdentitySwitchCard(
                 title = "👑 شعار Royal Coffee",
                 description =
@@ -249,6 +350,7 @@ fun RoyalTVIdentitySettingsScreen(
                 enabled = identityEnabled,
                 onCheckedChange = {
                     logoEnabled = it
+
                     saveBoolean(
                         KEY_LOGO_ENABLED,
                         it
@@ -257,8 +359,149 @@ fun RoyalTVIdentitySettingsScreen(
             )
 
             /*
-             * شريط الأخبار
+             * حجم الشعار المتجاوب.
+             *
+             * لا يغيّر طبقات PNG أو الحركة أو النسب.
              */
+            if (identityEnabled && logoEnabled) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = RoyalPanel
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "📐 حجم الشعار",
+                            color = RoyalGoldLight,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(5.dp)
+                        )
+
+                        Text(
+                            text =
+                                "الحجم يتكيف تلقائيًا مع الشاشة، ويمكن التحكم بالحجم يدويًا.",
+                            color = RoyalCream,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(14.dp)
+                        )
+
+                        Text(
+                            text = "$logoSizePercent%",
+                            color = RoyalGold,
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(12.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(8.dp),
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+                            Button(
+                                onClick = {
+                                    changeLogoSize(
+                                        increase = false
+                                    )
+                                },
+                                enabled =
+                                    logoSizePercent >
+                                        RoyalTVResponsiveLogo.MIN_SIZE_PERCENT,
+                                modifier =
+                                    Modifier.weight(1f),
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor =
+                                            RoyalPanel,
+                                        contentColor =
+                                            RoyalGoldLight
+                                    )
+                            ) {
+                                Text("− 5%")
+                            }
+
+                            Button(
+                                onClick = {
+                                    resetRoyalTVLogoSizePercent(
+                                        context
+                                    )
+
+                                    logoSizePercent =
+                                        RoyalTVResponsiveLogo.DEFAULT_SIZE_PERCENT
+                                },
+                                modifier =
+                                    Modifier.weight(1.25f),
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor =
+                                            RoyalGold,
+                                        contentColor =
+                                            RoyalBlack
+                                    )
+                            ) {
+                                Text("استعادة 100%")
+                            }
+
+                            Button(
+                                onClick = {
+                                    changeLogoSize(
+                                        increase = true
+                                    )
+                                },
+                                enabled =
+                                    logoSizePercent <
+                                        RoyalTVResponsiveLogo.MAX_SIZE_PERCENT,
+                                modifier =
+                                    Modifier.weight(1f),
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor =
+                                            RoyalPanel,
+                                        contentColor =
+                                            RoyalGoldLight
+                                    )
+                            ) {
+                                Text("+ 5%")
+                            }
+                        }
+
+                        Spacer(
+                            modifier = Modifier.height(12.dp)
+                        )
+
+                        Text(
+                            text =
+                                "60%  ←  الحد الأدنى   •   100% الأساسي   •   الحد الأقصى  →  160%",
+                            color = RoyalCream,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
             IdentitySwitchCard(
                 title = "📰 شريط الأخبار",
                 description =
@@ -267,6 +510,7 @@ fun RoyalTVIdentitySettingsScreen(
                 enabled = identityEnabled,
                 onCheckedChange = {
                     tickerEnabled = it
+
                     saveBoolean(
                         KEY_TICKER_ENABLED,
                         it
@@ -298,6 +542,7 @@ fun RoyalTVIdentitySettingsScreen(
                             value = tickerText,
                             onValueChange = {
                                 tickerText = it
+
                                 saveText(
                                     KEY_TICKER_TEXT,
                                     it
@@ -314,9 +559,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             }
 
-            /*
-             * الساعة والتاريخ
-             */
             IdentitySwitchCard(
                 title = "🕐 الوقت والتاريخ",
                 description =
@@ -325,6 +567,7 @@ fun RoyalTVIdentitySettingsScreen(
                 enabled = identityEnabled,
                 onCheckedChange = {
                     clockEnabled = it
+
                     saveBoolean(
                         KEY_CLOCK_ENABLED,
                         it
@@ -332,9 +575,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             )
 
-            /*
-             * مؤشر مباشر
-             */
             IdentitySwitchCard(
                 title = "🔴 مؤشر البث",
                 description =
@@ -343,6 +583,7 @@ fun RoyalTVIdentitySettingsScreen(
                 enabled = identityEnabled,
                 onCheckedChange = {
                     liveEnabled = it
+
                     saveBoolean(
                         KEY_LIVE_ENABLED,
                         it
@@ -374,6 +615,7 @@ fun RoyalTVIdentitySettingsScreen(
                             value = liveText,
                             onValueChange = {
                                 liveText = it
+
                                 saveText(
                                     KEY_LIVE_TEXT,
                                     it
@@ -390,9 +632,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             }
 
-            /*
-             * الوضع الرياضي
-             */
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -440,6 +679,7 @@ fun RoyalTVIdentitySettingsScreen(
                             checked = sportsMode,
                             onCheckedChange = {
                                 sportsMode = it
+
                                 saveBoolean(
                                     KEY_SPORTS_MODE,
                                     it
@@ -475,9 +715,6 @@ fun RoyalTVIdentitySettingsScreen(
                 }
             }
 
-            /*
-             * توضيح مهم
-             */
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
@@ -498,9 +735,6 @@ fun RoyalTVIdentitySettingsScreen(
                 )
             }
 
-            /*
-             * زر إعادة الهوية
-             */
             Button(
                 onClick = {
                     identityEnabled = true
@@ -514,22 +748,27 @@ fun RoyalTVIdentitySettingsScreen(
                         KEY_IDENTITY_ENABLED,
                         true
                     )
+
                     saveBoolean(
                         KEY_LOGO_ENABLED,
                         true
                     )
+
                     saveBoolean(
                         KEY_TICKER_ENABLED,
                         true
                     )
+
                     saveBoolean(
                         KEY_CLOCK_ENABLED,
                         true
                     )
+
                     saveBoolean(
                         KEY_LIVE_ENABLED,
                         true
                     )
+
                     saveBoolean(
                         KEY_SPORTS_MODE,
                         false
@@ -621,7 +860,8 @@ private fun IdentitySwitchCard(
             Spacer(
                 modifier = Modifier.width(12.dp)
             )
-Switch(
+
+            Switch(
                 checked = checked,
                 enabled = enabled,
                 onCheckedChange = onCheckedChange
@@ -629,3 +869,4 @@ Switch(
         }
     }
 }
+                            
