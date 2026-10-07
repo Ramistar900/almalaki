@@ -679,7 +679,15 @@ private fun RoyalFontChoiceCard(
             )
 
             Text(
-    text = "سحر الشرق يبدأ من دمشق",
+    text =
+        if (
+            font.language ==
+                RoyalFontLanguage.ARABIC
+        ) {
+            "سحر الشرق يبدأ من دمشق"
+        } else {
+            "The Magic of the East Begins in Damascus"
+        },
 
     color =
         if (selected) {
