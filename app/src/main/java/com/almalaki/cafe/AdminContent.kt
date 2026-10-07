@@ -64,6 +64,12 @@ if (section == AdminSection.ROYAL_TV) {
     )
     return
 }
+if (section == AdminSection.ROYAL_TV_CONTROL) {
+    RoyalTVControlScreen(
+        modifier = Modifier.fillMaxSize()
+    )
+    return
+}
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
