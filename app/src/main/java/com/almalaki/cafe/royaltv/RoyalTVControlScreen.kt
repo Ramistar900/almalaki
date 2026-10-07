@@ -41,7 +41,6 @@ import com.almalaki.cafe.ROYAL_TV_DEFAULT_LOGO_SIZE_PERCENT
 import com.almalaki.cafe.ROYAL_TV_DEFAULT_TICKER_SIZE_PERCENT
 import com.almalaki.cafe.ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT
 import com.almalaki.cafe.RoyalTVLayoutSettings
-import com.almalaki.cafe.RoyalTVResponsiveLogo
 import com.almalaki.cafe.changeRoyalTVOffsetXPercent
 import com.almalaki.cafe.changeRoyalTVOffsetYPercent
 import com.almalaki.cafe.changeRoyalTVSizePercent
@@ -565,6 +564,51 @@ private fun RoyalTVLayoutControl(
                 )
             }
 
+            /*
+             * ----------------------------------------------------
+             * إظهار / إخفاء التاريخ
+             * ----------------------------------------------------
+             *
+             * لا يغير حجم التاريخ.
+             * فقط يبدل ظهوره على شاشة Royal TV.
+             *
+             * الحالة محفوظة داخل RoyalTVLayoutSettings.
+             */
+            item {
+                Button(
+                    onClick = {
+                        save(
+                            settings.copy(
+                                showDate = !settings.showDate
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor =
+                            if (settings.showDate) {
+                                RoyalGold
+                            } else {
+                                RoyalPanel
+                            },
+                        contentColor =
+                            if (settings.showDate) {
+                                RoyalBlack
+                            } else {
+                                RoyalGoldLight
+                            }
+                    )
+                ) {
+                    Text(
+                        text = "📅 إظهار التاريخ / إخفاء التاريخ",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             item {
                 RoyalTVLayoutSectionTitle(
                     title = "🔴 مباشر",
@@ -775,8 +819,7 @@ private fun RoyalTVSizeControlCard(
 
                 Button(
                     onClick = onDecrease,
-                    enabled =
-                        value > 60,
+                    enabled = value > 60,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = RoyalPanel,
@@ -799,8 +842,7 @@ private fun RoyalTVSizeControlCard(
 
                 Button(
                     onClick = onIncrease,
-                    enabled =
-                        value < 160,
+                    enabled = value < 160,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = RoyalPanel,
