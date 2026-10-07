@@ -30,7 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -39,8 +39,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 import androidx.compose.ui.platform.LocalContext
+import kotlin.math.roundToInt
 
 private val RoyalTVBlack = Color(0xFF030303)
 private val RoyalTVGold = Color(0xFFD4AF37)
@@ -55,27 +55,31 @@ private val RoyalTVRed = Color(0xFFE53935)
  *
  * شاشة القناة الأساسية.
  *
- * تم تنظيف الطبقة العلوية القديمة.
- *
- * الموجود الآن:
+ * الموجود:
  *
  * 🔴 مباشر
  * 📰 شريط الأخبار السفلي
  * 🕐 الوقت والتاريخ السفلي
  * 👑 الشعار الملكي الحقيقي بطبقتيه في الأسفل
  *
- * لا يوجد:
+ * تم الحفاظ على:
  *
- * ❌ RC علوي
- * ❌ مربع علوي
- * ❌ شعار Royal Coffee علوي
- * ❌ وقت وتاريخ علوي
- * ❌ زر خروج شكلي
+ * - نظام Responsive
+ * - الشعار الحقيقي
+ * - حركة الشعار
+ * - حركة RC ثلاثية الأبعاد
+ * - لمعة الدرع والتاج
+ * - الشريط المتحرك
+ * - الوقت والتاريخ
  *
- * نظام الأحجام Responsive موجود.
+ * ============================================================
+ * CENTRAL LAYOUT SYSTEM
+ * ============================================================
  *
- * تم الآن ربط حجم الشعار مع
- * RoyalTVLayoutSettings المركزي.
+ * كل أحجام ومواقع العناصر التي تم تجهيزها
+ * أصبحت تُقرأ من:
+ *
+ * RoyalTVLayoutSettings.kt
  *
  * ============================================================
  */
@@ -97,14 +101,9 @@ fun RoyalTVScreen(
      * CENTRAL LAYOUT SETTINGS
      * ========================================================
      *
-     * نقرأ إعدادات التخطيط مرة واحدة داخل الشاشة.
+     * المصدر المركزي الوحيد للتخطيط الحالي.
      *
-     * لا نعيد اختراع نظام جديد للحجم.
-     * المصدر المركزي الآن هو:
-     *
-     * RoyalTVLayoutSettings.kt
-     *
-     * ========================================================
+     * لا ننشئ SharedPreferences جديدة هنا.
      */
     val layoutSettings = remember(context) {
         loadRoyalTVLayoutSettings(context)
@@ -123,10 +122,6 @@ fun RoyalTVScreen(
          *
          * المرجع:
          * 1280 × 720
-         *
-         * الهاتف والتابلت والشاشات الكبيرة
-         * تتعامل مع النظام الحالي بدون تغيير
-         * بقية التطبيق.
          */
         val widthDp = maxWidth.value
 
@@ -136,19 +131,88 @@ fun RoyalTVScreen(
 
         /*
          * ====================================================
-         * LIVE TEXT SIZE
+         * MANUAL RESPONSIVE PERCENTAGES
          * ====================================================
+         *
+         * جميع القيم محفوظة في:
+         *
+         * RoyalTVLayoutSettings
          */
-        val liveTextSize =
-            (24f * tvScale).sp
+        val tickerSizePercent =
+            clampRoyalTVSizePercent(
+                layoutSettings.tickerSizePercent
+            )
+
+        val timeSizePercent =
+            clampRoyalTVSizePercent(
+                layoutSettings.timeSizePercent
+            )
+
+        val dateSizePercent =
+            clampRoyalTVSizePercent(
+                layoutSettings.dateSizePercent
+            )
+
+        val liveSizePercent =
+            clampRoyalTVSizePercent(
+                layoutSettings.liveSizePercent
+            )
 
         /*
          * ====================================================
-         * TICKER TEXT SIZE
+         * LIVE SIZE
          * ====================================================
          */
+        val liveMultiplier =
+            liveSizePercent / 100f
+
+        val liveTextSize =
+            (24f * tvScale * liveMultiplier).sp
+
+        /*
+         * ====================================================
+         * TICKER SIZE
+         * ====================================================
+         *
+         * الحجم الأساسي:
+         * 25sp
+         *
+         * ثم Responsive
+         * ثم الحجم اليدوي 60% → 160%
+         */
+        val tickerMultiplier =
+            tickerSizePercent / 100f
+
         val tickerTextSize =
-            (25f * tvScale).sp
+            (25f * tvScale * tickerMultiplier).sp
+
+        val tickerHeight =
+            (62f * tvScale * tickerMultiplier).dp
+
+        val tickerCornerRadius =
+            (17f * tvScale * tickerMultiplier).dp
+
+        /*
+         * ====================================================
+         * CLOCK SIZE
+         * ====================================================
+         *
+         * RoyalDateTime يعرض الوقت والتاريخ في كتلة واحدة.
+         *
+         * لذلك نستخدم أكبر قيمة بين إعداد الوقت
+         * وإعداد التاريخ حتى لا يحدث قص لأحد السطرين.
+         */
+        val clockMultiplier =
+            maxOf(
+                timeSizePercent,
+                dateSizePercent
+            ) / 100f
+
+        val clockTextSize =
+            (22f * tvScale * clockMultiplier).sp
+
+        val clockLineHeight =
+            (27f * tvScale * clockMultiplier).sp
 
         /*
          * ====================================================
@@ -156,13 +220,7 @@ fun RoyalTVScreen(
          * ====================================================
          *
          * الحجم الأساسي Responsive
-         * يتم حسابه أولًا حسب الشاشة.
-         *
-         * ثم نطبق عليه الحجم اليدوي المحفوظ:
-         *
-         * 60% → 160%
-         *
-         * ====================================================
+         * + الحجم اليدوي المحفوظ.
          */
         val bottomLogoSize =
             RoyalTVResponsiveLogo.size(
@@ -173,10 +231,52 @@ fun RoyalTVScreen(
 
         /*
          * ====================================================
+         * LOGO POSITION
+         * ====================================================
+         *
+         * الموقع يُحسب نسبةً إلى موضع الشعار الحالي.
+         *
+         * 0   = الوضع الحالي
+         * +   = يمين / أسفل
+         * -   = يسار / أعلى
+         *
+         * القيمة مضروبة في tvScale حتى تبقى Responsive.
+         */
+        val logoOffsetX =
+            (layoutSettings.logoOffsetXPercent * tvScale)
+                .dp
+
+        val logoOffsetY =
+            (layoutSettings.logoOffsetYPercent * tvScale)
+                .dp
+
+        /*
+         * ====================================================
+         * LIVE POSITION
+         * ====================================================
+         *
+         * نفس المبدأ:
+         *
+         * 0 = الوضع الحالي
+         * +X = يمين
+         * -X = يسار
+         * +Y = أسفل
+         * -Y = أعلى
+         */
+        val liveOffsetX =
+            (layoutSettings.liveOffsetXPercent * tvScale)
+                .dp
+
+        val liveOffsetY =
+            (layoutSettings.liveOffsetYPercent * tvScale)
+                .dp
+
+        /*
+         * ====================================================
          * CONTENT LAYER
          * ====================================================
          *
-         * هذه المساحة مخصصة للمحتوى الحقيقي لاحقًا:
+         * مساحة المحتوى الحقيقي مستقبلًا:
          *
          * YouTube
          * صور
@@ -196,12 +296,10 @@ fun RoyalTVScreen(
          * LIVE LAYER
          * ====================================================
          *
-         * 🔴 مباشر يبقى كما طلب المستخدم.
+         * 🔴 مباشر
          *
-         * في هذه المرحلة يبقى في أعلى اليمين.
-         *
-         * الحجم والموقع اليدوي لمؤشر مباشر
-         * سيكونان في خطوة مستقلة.
+         * الحجم والموقع أصبحا مرتبطين
+         * بالنظام المركزي.
          */
         if (showLive) {
             RoyalTVLiveIndicator(
@@ -210,6 +308,10 @@ fun RoyalTVScreen(
                 scale = tvScale,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .offset(
+                        x = liveOffsetX,
+                        y = liveOffsetY
+                    )
                     .padding(
                         end = (34f * tvScale).dp,
                         top = (32f * tvScale).dp
@@ -222,13 +324,12 @@ fun RoyalTVScreen(
          * BOTTOM IDENTITY AREA
          * ====================================================
          *
-         * المنطقة السفلية تحتوي:
-         *
-         * 📰 الشريط الإخباري
-         * 👑 الشعار الحقيقي
+         * 👑 الشعار
          * 🕐 الوقت والتاريخ
          *
-         * لا يوجد أي عنصر علوي قديم هنا.
+         * الموضع الأساسي محفوظ كما هو.
+         *
+         * تعديل موقع الشعار لا يغيّر موضع الساعة.
          */
         if (showClock || showLogo) {
 
@@ -257,24 +358,19 @@ fun RoyalTVScreen(
                  * royal_crest_layer.png
                  * royal_rc_layer.png
                  *
-                 * لا نعيد رسم الشعار.
+                 * لا نعيد رسمه.
                  * لا نستبدله بـ RC نصي.
                  *
-                 * الحركة الأصلية محفوظة:
-                 *
-                 * 👑 التاج + الدرع ثابتان
-                 * ✨ لمعة متحركة
-                 * RC دوران 3D حول المحور العمودي
-                 *
-                 * التغيير الوحيد هنا:
-                 *
-                 * الحجم أصبح يقرأ من
-                 * RoyalTVLayoutSettings.
+                 * الحركة الأصلية محفوظة بالكامل.
                  */
                 if (showLogo) {
                     RoyalAppLogo(
                         modifier = Modifier
                             .size(bottomLogoSize)
+                            .offset(
+                                x = logoOffsetX,
+                                y = logoOffsetY
+                            )
                     )
                 }
 
@@ -283,14 +379,15 @@ fun RoyalTVScreen(
                  * CLOCK
                  * =================================================
                  *
-                 * يعتمد على RoyalDateTime.kt الموجود
-                 * في المشروع.
+                 * يعتمد على RoyalDateTime.kt.
                  *
-                 * لا نكرر منطق الوقت والتاريخ هنا.
+                 * الحجم أصبح مرتبطًا بالنظام المركزي.
                  */
                 if (showClock) {
                     RoyalTVClock(
-                        scale = tvScale
+                        scale = tvScale,
+                        textSize = clockTextSize,
+                        lineHeight = clockLineHeight
                     )
                 }
             }
@@ -303,20 +400,20 @@ fun RoyalTVScreen(
          *
          * الشريط الإخباري الرئيسي فقط.
          *
-         * لا يوجد المستطيل الإضافي القديم:
+         * مهما كان طول النص:
          *
-         * "جودة فاخرة أهلاً بكم في Royal TV"
-         *
-         * لأنه تم حذفه حسب التصميم الجديد.
-         *
-         * الحجم في هذه المرحلة يبقى بالنظام الحالي.
-         * سيتم ربط حجم الشريط في خطوة مستقلة.
+         * لا يكبر المستطيل
+         * لا يكسر الشاشة
+         * لا يخرج عن الشريط
+         * يستمر بالتمرير.
          */
         if (showTicker) {
             RoyalTVTicker(
                 text = tickerText,
                 textSize = tickerTextSize,
                 scale = tvScale,
+                tickerHeight = tickerHeight,
+                tickerCornerRadius = tickerCornerRadius,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
@@ -339,14 +436,11 @@ fun RoyalTVScreen(
  * LIVE INDICATOR
  * ============================================================
  *
- * مؤشر البث الحقيقي.
+ * مؤشر البث.
  *
  * 🔴 النقطة الحمراء متحركة.
  *
- * النص قابل للتغيير من إعدادات الهوية الحالية.
- *
- * الموقع والحجم اليدوي سيتم ربطهما لاحقًا
- * دون حذف هذه الوظيفة.
+ * الموقع والحجم أصبحا مركزيين.
  */
 @Composable
 private fun RoyalTVLiveIndicator(
@@ -438,13 +532,15 @@ private fun RoyalTVLiveIndicator(
  * CLOCK
  * ============================================================
  *
- * الوقت والتاريخ في الأسفل.
+ * الوقت والتاريخ.
  *
  * يعتمد على RoyalDateTime.kt.
  */
 @Composable
 private fun RoyalTVClock(
-    scale: Float
+    scale: Float,
+    textSize: TextUnit,
+    lineHeight: TextUnit
 ) {
     Box(
         modifier = Modifier
@@ -475,9 +571,9 @@ private fun RoyalTVClock(
             language = "ar",
             style = TextStyle(
                 color = RoyalTVGoldLight,
-                fontSize = (22f * scale).sp,
+                fontSize = textSize,
                 fontWeight = FontWeight.Bold,
-                lineHeight = (27f * scale).sp
+                lineHeight = lineHeight
             )
         )
     }
@@ -488,20 +584,23 @@ private fun RoyalTVClock(
  * TICKER
  * ============================================================
  *
- * شريط الأخبار الرئيسي.
+ * شريط الأخبار.
  *
  * يتحرك من اليمين إلى اليسار.
  *
  * يتم تكرار النص لضمان استمرار الحركة.
  *
- * مهما كان طول النص،
- * يبقى داخل الشريط ولا يكسر التخطيط.
+ * مهما كان النص طويلًا:
+ *
+ * يبقى داخل الشريط.
  */
 @Composable
 private fun RoyalTVTicker(
     text: String,
     textSize: TextUnit,
     scale: Float,
+    tickerHeight: androidx.compose.ui.unit.Dp,
+    tickerCornerRadius: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
     var textWidthPx by remember(text) {
@@ -540,12 +639,10 @@ private fun RoyalTVTicker(
 
     Box(
         modifier = modifier
-            .height(
-                (62f * scale).dp
-            )
+            .height(tickerHeight)
             .clip(
                 RoundedCornerShape(
-                    (17f * scale).dp
+                    tickerCornerRadius
                 )
             )
             .border(
@@ -553,13 +650,13 @@ private fun RoyalTVTicker(
                 color = RoyalTVGold,
                 shape =
                     RoundedCornerShape(
-                        (17f * scale).dp
+                        tickerCornerRadius
                     )
             )
             .background(
                 Color.Black.copy(alpha = 0.68f),
                 RoundedCornerShape(
-                    (17f * scale).dp
+                    tickerCornerRadius
                 )
             ),
         contentAlignment =
