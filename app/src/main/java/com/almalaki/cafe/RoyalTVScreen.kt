@@ -92,7 +92,8 @@ fun RoyalTVScreen(
     showLogo: Boolean = true,
     showTicker: Boolean = true,
     showClock: Boolean = true,
-    showLive: Boolean = true
+    showLive: Boolean = true,
+    layoutSettingsOverride: RoyalTVLayoutSettings? = null
 ) {
     val context = LocalContext.current
 
@@ -105,9 +106,13 @@ fun RoyalTVScreen(
      *
      * لا ننشئ SharedPreferences جديدة هنا.
      */
-    val layoutSettings = remember(context) {
-        loadRoyalTVLayoutSettings(context)
-    }
+    val storedLayoutSettings = remember(context) {
+    loadRoyalTVLayoutSettings(context)
+}
+
+val layoutSettings =
+    layoutSettingsOverride
+        ?: storedLayoutSettings
 
     BoxWithConstraints(
         modifier = modifier
