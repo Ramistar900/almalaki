@@ -679,30 +679,22 @@ private fun RoyalFontChoiceCard(
             )
 
             Text(
-                text =
-                    if (
-                        font.language ==
-                            RoyalFontLanguage.ARABIC
-                    ) {
-                        "الملكي • جودة فاخرة • قائمة Royal"
-                    } else {
-                        "Royal Coffee • Premium Quality"
-                    },
+    text = "سحر الشرق يبدأ من دمشق",
 
-                color =
-                    if (selected) {
-                        goldLight
-                    } else {
-                        secondaryText
-                    },
+    color =
+        if (selected) {
+            goldLight
+        } else {
+            secondaryText
+        },
 
-                fontFamily =
-                    font.family,
+    fontFamily =
+        font.family,
 
-                fontSize = 14.sp,
+    fontSize = 17.sp,
 
-                maxLines = 1
-            )
+    maxLines = 1
+)
         }
     }
 }
