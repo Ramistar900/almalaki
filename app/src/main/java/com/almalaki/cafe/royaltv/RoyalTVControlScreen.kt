@@ -216,6 +216,36 @@ private fun RoyalTVLayoutControl(
             loadRoyalTVLayoutSettings(context)
         )
     }
+    var directEditorOpen by remember {
+    mutableStateOf(false)
+    }
+    if (directEditorOpen) {
+    RoyalTVDirectEditor(
+        originalSettings = settings,
+        target = RoyalTVEditTarget.LOGO,
+        onSave = { newSettings ->
+            settings = newSettings
+
+            saveRoyalTVLayoutSettings(
+                context = context,
+                settings = newSettings
+            )
+
+            directEditorOpen = false
+        },
+        onCancel = {
+            directEditorOpen = false
+        }
+    ) { draftSettings ->
+
+        RoyalTVScreen(
+            modifier = Modifier.fillMaxSize(),
+            layoutSettingsOverride = draftSettings
+        )
+    }
+
+    return
+    }
 
     fun save(
         newSettings: RoyalTVLayoutSettings
@@ -398,6 +428,24 @@ private fun RoyalTVLayoutControl(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
+        }
+        Button(
+    onClick = {
+        directEditorOpen = true
+    },
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(56.dp),
+    colors = ButtonDefaults.buttonColors(
+        containerColor = RoyalGold,
+        contentColor = RoyalBlack
+    )
+) {
+    Text(
+        text = "✏️ تعديل مباشر",
+        fontSize = 17.sp,
+        fontWeight = FontWeight.Bold
+    )
         }
 
         Spacer(
