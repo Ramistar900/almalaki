@@ -83,6 +83,9 @@ var identityOpen by remember {
 var diagnosticsOpen by remember {
     mutableStateOf(false)
 }
+var displayOpen by remember {
+mutableStateOf(false)
+}
 
 if (identityOpen) {
     RoyalTVLayoutControl(
@@ -103,8 +106,24 @@ if (diagnosticsOpen) {
 
     return
 }
+if (displayOpen) {
+RoyalTVDisplayControlScreen(
+modifier = modifier,
+onBack = {
+displayOpen = false
+}
+)
+
+return
+
+}
 
 val items = listOf(
+    RoyalTVControlItem(
+RoyalTVIconKey.DISPLAY,
+"العرض والشاشة",
+"اتجاه العرض وملء الشاشة والخلفية"
+),
 
     RoyalTVControlItem(
         RoyalTVIconKey.YOUTUBE,
@@ -219,15 +238,21 @@ Column(
                 item = item,
                 onClick = {
 
-                    if (item.title == "هوية ROYAL TV") {
-                        identityOpen = true
-                    }
+if (item.title == "العرض والشاشة") {
+    displayOpen = true
+} else {
 
-                    if (item.title == "تشخيص الريموت") {
-                        diagnosticsOpen = true
-                    }
+    if (item.title == "هوية ROYAL TV") {
+        identityOpen = true
+    }
 
-                    onItemSelected(item)
+    if (item.title == "تشخيص الريموت") {
+        diagnosticsOpen = true
+    }
+
+    onItemSelected(item)
+}
+
                 }
             )
         }
