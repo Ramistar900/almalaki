@@ -26,6 +26,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.PaddingValues
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -489,6 +493,16 @@ private fun RoyalTVEditorBottomPanel(
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
+        var isSaving by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(isSaving) {
+        if (isSaving) {
+            delay(900)
+            onSave()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -718,16 +732,26 @@ private fun RoyalTVEditorBottomPanel(
             }
 
             Button(
-    onClick = onSave,
+    onClick = {
+        if (!isSaving) {
+            isSaving = true
+        }
+    },
+    enabled = !isSaving,
     modifier = Modifier
         .weight(1.5f)
         .height(54.dp),
     shape = RoundedCornerShape(16.dp),
+    contentPadding = PaddingValues(0.dp),
     colors =
         ButtonDefaults.buttonColors(
             containerColor =
                 RoyalEditorGold,
             contentColor =
+                Color.Black,
+            disabledContainerColor =
+                RoyalEditorGold,
+            disabledContentColor =
                 Color.Black
         ),
     elevation =
@@ -737,12 +761,68 @@ private fun RoyalTVEditorBottomPanel(
         )
 ) {
 
-    Text(
-        text = "💾 حفظ وخروج",
-        fontSize = 17.sp,
-        fontWeight =
-            FontWeight.Bold
-    )
+    androidx.compose.animation.core
+        .animateFloatAsState(
+            targetValue =
+                if (isSaving) 1f else 0f,
+            animationSpec =
+                androidx.compose.animation.core.tween(
+                    durationMillis = 650
+                ),
+            label = "royalSaveProgress"
+        ).value.let { progress ->
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(
+                        RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                if (isSaving) {
+
+                    Box(
+                        modifier = Modifier.size(
+                            (progress * 110f)
+                                .coerceAtLeast(1f)
+                                .dp
+                        )
+                            .background(
+                                Color(0xFF19B85A),
+                                androidx.compose.foundation
+                                    .shape
+                                    .CircleShape
+                            ),
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+
+                        if (progress > 0.55f) {
+
+                            Text(
+                                text = "✓",
+                                color = Color.White,
+                                fontSize = 30.sp,
+                                fontWeight =
+                                    FontWeight.ExtraBold
+                            )
+                        }
+                    }
+
+                } else {
+
+                    Text(
+                        text = "💾 حفظ وخروج",
+                        fontSize = 17.sp,
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+            }
+        }
             }
         }
     }
