@@ -7,6 +7,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.LayoutDirection
 import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -381,12 +383,11 @@ fun Royal3DAnimatedLogo(
  * ↓
  * توقف 5 ثوانٍ
  */
-@Composable
+ @Composable
 private fun RoyalGeneric3DLogo(
     filePath: String,
     modifier: Modifier = Modifier
 ) {
-
     val rotationTransition =
         rememberInfiniteTransition(
             label = "royal_generic_3d_logo"
@@ -394,16 +395,12 @@ private fun RoyalGeneric3DLogo(
 
     val rotationY by
         rotationTransition.animateFloat(
-
             initialValue = 0f,
             targetValue = 360f,
-
             animationSpec =
                 infiniteRepeatable(
-
                     animation =
                         keyframes {
-
                             durationMillis =
                                 GENERIC_LOGO_FRONT_PAUSE_MS +
                                     GENERIC_LOGO_TURN_MS
@@ -417,32 +414,48 @@ private fun RoyalGeneric3DLogo(
                                 GENERIC_LOGO_FRONT_PAUSE_MS +
                                     GENERIC_LOGO_TURN_MS
                         },
-
-                    repeatMode =
-                        RepeatMode.Restart
+                    repeatMode = RepeatMode.Restart
                 ),
-
             label = "royal_generic_rotation_y"
+        )
+
+    val shineTransition =
+        rememberInfiniteTransition(
+            label = "royal_generic_logo_diamond_shine"
+        )
+
+    /*
+     * اللمعة مستقلة عن الدوران.
+     *
+     * لذلك تستمر أيضًا أثناء توقف الشعار
+     * أماميًا لمدة 5 ثوانٍ.
+     */
+    val shineProgress by
+        shineTransition.animateFloat(
+            initialValue = -0.35f,
+            targetValue = 1.35f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis = 4_800,
+                            easing = LinearEasing
+                        ),
+                    repeatMode = RepeatMode.Restart
+                ),
+            label = "royal_generic_logo_shine_progress"
         )
 
     val bitmap =
         remember(filePath) {
-
-            if (
-                filePath.isNotBlank()
-            ) {
-
+            if (filePath.isNotBlank()) {
                 try {
-
                     BitmapFactory
                         .decodeFile(filePath)
                         ?.asImageBitmap()
-
                 } catch (_: Exception) {
-
                     null
                 }
-
             } else {
                 null
             }
@@ -452,31 +465,111 @@ private fun RoyalGeneric3DLogo(
         modifier =
             modifier
                 .graphicsLayer {
-
-                    this.rotationY =
-                        rotationY
-
-                    /*
-                     * لا يوجد تكبير أو تصغير.
-                     *
-                     * الحركة دوران فقط.
-                     */
-                    cameraDistance =
-                        24f * density
-                },
-
-        contentAlignment =
-            Alignment.Center
+                    this.rotationY = rotationY
+                    cameraDistance = 24f * density
+                }
+                .clipToBounds(),
+        contentAlignment = Alignment.Center
     ) {
 
         if (bitmap != null) {
 
-            Image(
-                bitmap = bitmap,
-                contentDescription = "Royal Coffee logo",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            compositingStrategy =
+                                CompositingStrategy.Offscreen
+                        }
+            ) {
+
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Royal Coffee logo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+
+                /*
+                 * لمعان ذهبي ماسي ناعم
+                 * يتحرك فوق كامل الشعار.
+                 */
+                Canvas(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+
+                    val shineCenterX =
+                        size.width * shineProgress
+
+                    val shineWidth =
+                        size.width * 0.18f
+
+                    val shineBrush =
+                        Brush.linearGradient(
+                            colors =
+                                listOf(
+                                    Color.Transparent,
+                                    RoyalGold.copy(
+                                        alpha = 0.10f
+                                    ),
+                                    RoyalGoldLight.copy(
+                                        alpha = 0.30f
+                                    ),
+                                    Color.White.copy(
+                                        alpha = 0.82f
+                                    ),
+                                    RoyalGoldLight.copy(
+                                        alpha = 0.30f
+                                    ),
+                                    RoyalGold.copy(
+                                        alpha = 0.10f
+                                    ),
+                                    Color.Transparent
+                                ),
+                            start =
+                                Offset(
+                                    shineCenterX -
+                                        shineWidth,
+                                    size.height
+                                ),
+                            end =
+                                Offset(
+                                    shineCenterX +
+                                        shineWidth,
+                                    0f
+                                )
+                        )
+
+                    drawRect(
+                        brush = shineBrush,
+                        blendMode = BlendMode.SrcAtop
+                    )
+
+                    /*
+                     * نقطة ضوء صغيرة داخل اللمعة
+                     * لتعطي إحساسًا ماسيًا ناعمًا.
+                     */
+                    drawCircle(
+                        color =
+                            Color.White.copy(
+                                alpha = 0.58f
+                            ),
+                        radius =
+                            (
+                                size.minDimension *
+                                    0.022f
+                            ).coerceAtLeast(1f),
+                        center =
+                            Offset(
+                                shineCenterX,
+                                size.height * 0.34f
+                            ),
+                        blendMode =
+                            BlendMode.SrcAtop
+                    )
+                }
+            }
 
         } else {
 
