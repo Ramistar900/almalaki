@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -83,6 +84,17 @@ val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCA
 var section by remember { mutableStateOf(AdminSection.HOME) }
 var menuOpen by remember { mutableStateOf(false) }
 val sectionHistory = remember { mutableStateListOf<AdminSection>() }
+BackHandler {
+    if (menuOpen) {
+        menuOpen = false
+    } else if (sectionHistory.isNotEmpty()) {
+        section = sectionHistory.removeAt(sectionHistory.lastIndex)
+    } else if (section != AdminSection.HOME) {
+        section = AdminSection.HOME
+    } else {
+        onBack()
+    }
+}
 
 var name by remember { mutableStateOf("") }
 var category by remember { mutableStateOf("") }
