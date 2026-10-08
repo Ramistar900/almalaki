@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -743,7 +742,8 @@ private fun RoyalTVEditorBottomPanel(
         .weight(1.5f)
         .height(54.dp),
     shape = RoundedCornerShape(16.dp),
-    contentPadding = PaddingValues(0.dp),
+    contentPadding =
+    androidx.compose.foundation.layout.PaddingValues(0.dp),
     colors =
         ButtonDefaults.buttonColors(
             containerColor =
