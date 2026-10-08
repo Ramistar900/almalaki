@@ -718,25 +718,31 @@ private fun RoyalTVEditorBottomPanel(
             }
 
             Button(
-                onClick = onSave,
-                modifier = Modifier
-                    .weight(1.4f)
-                    .height(52.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            RoyalEditorGold,
-                        contentColor =
-                            Color.Black
-                    )
-            ) {
+    onClick = onSave,
+    modifier = Modifier
+        .weight(1.5f)
+        .height(54.dp),
+    shape = RoundedCornerShape(16.dp),
+    colors =
+        ButtonDefaults.buttonColors(
+            containerColor =
+                RoyalEditorGold,
+            contentColor =
+                Color.Black
+        ),
+    elevation =
+        ButtonDefaults.buttonElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 2.dp
+        )
+) {
 
-                Text(
-                    text = "💾 حفظ التعديل",
-                    fontSize = 16.sp,
-                    fontWeight =
-                        FontWeight.Bold
-                )
+    Text(
+        text = "💾 حفظ وخروج",
+        fontSize = 17.sp,
+        fontWeight =
+            FontWeight.Bold
+    )
             }
         }
     }
