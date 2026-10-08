@@ -1,5 +1,8 @@
 package com.almalaki.cafe.royaltv
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -1260,5 +1263,42 @@ private fun RoyalTVSizeControls(
         ) {
             Text("+ 5%")
         }
+    }
+}
+/**
+ * ============================================================
+ * ROYAL TV SELECTION FRAME
+ * ============================================================
+ *
+ * إطار تحديد متقطع يظهر فقط أثناء التحرير.
+ *
+ * لا يغير العنصر نفسه.
+ * لا يضيف خلفية.
+ * لا يضيف ظل.
+ * لا يحرك العنصر.
+ *
+ * وظيفته فقط إظهار حدود العنصر المحدد.
+ */
+@Composable
+private fun RoyalTVDashedSelectionFrame(
+    modifier: Modifier = Modifier
+) {
+    Canvas(
+        modifier = modifier
+    ) {
+        drawRect(
+            color = RoyalEditorGold,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 2.dp.toPx(),
+                pathEffect =
+                    PathEffect.dashPathEffect(
+                        floatArrayOf(
+                            10.dp.toPx(),
+                            7.dp.toPx()
+                        ),
+                        phase = 0f
+                    )
+            )
+        )
     }
 }
