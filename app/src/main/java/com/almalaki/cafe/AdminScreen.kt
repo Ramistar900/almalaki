@@ -69,9 +69,9 @@ val revenue: Double
 
 @Composable
 fun AdminScreen(
-accessToken: String,
-onLogout: () -> Unit
-onBack: () -> Unit
+    accessToken: String,
+    onLogout: () -> Unit,
+    onBack: () -> Unit
 ) {
 val context = LocalContext.current
 val configuration = LocalConfiguration.current
