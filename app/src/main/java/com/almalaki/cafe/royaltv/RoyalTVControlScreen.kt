@@ -147,10 +147,11 @@ fun RoyalTVControlScreen(
     "التحكم بالتلفزيون من شاشة المالك"
     ),
     RoyalTVControlItem(
-    "🧪",
+    "💻",
     "تشخيص الريموت",
     "اكتشاف وتحليل أزرار جهاز التحكم الحقيقي"
 )
+    )
 
     Column(
         modifier = modifier
