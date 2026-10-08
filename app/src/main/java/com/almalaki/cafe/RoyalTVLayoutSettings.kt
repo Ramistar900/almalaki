@@ -77,6 +77,23 @@ private const val KEY_TIME_SIZE_PERCENT =
 
 private const val KEY_DATE_SIZE_PERCENT =
     "date_size_percent"
+private const val KEY_TICKER_OFFSET_X_PERCENT =
+    "ticker_offset_x_percent"
+
+private const val KEY_TICKER_OFFSET_Y_PERCENT =
+    "ticker_offset_y_percent"
+
+private const val KEY_TIME_OFFSET_X_PERCENT =
+    "time_offset_x_percent"
+
+private const val KEY_TIME_OFFSET_Y_PERCENT =
+    "time_offset_y_percent"
+
+private const val KEY_DATE_OFFSET_X_PERCENT =
+    "date_offset_x_percent"
+
+private const val KEY_DATE_OFFSET_Y_PERCENT =
+    "date_offset_y_percent"
 
 private const val KEY_SHOW_DATE =
     "show_date"
@@ -117,6 +134,23 @@ const val ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT =
 
 const val ROYAL_TV_DEFAULT_LIVE_SIZE_PERCENT =
     100
+const val ROYAL_TV_DEFAULT_TICKER_OFFSET_X_PERCENT =
+    0
+
+const val ROYAL_TV_DEFAULT_TICKER_OFFSET_Y_PERCENT =
+    0
+
+const val ROYAL_TV_DEFAULT_TIME_OFFSET_X_PERCENT =
+    0
+
+const val ROYAL_TV_DEFAULT_TIME_OFFSET_Y_PERCENT =
+    0
+
+const val ROYAL_TV_DEFAULT_DATE_OFFSET_X_PERCENT =
+    0
+
+const val ROYAL_TV_DEFAULT_DATE_OFFSET_Y_PERCENT =
+    0
 
 const val ROYAL_TV_DEFAULT_LOGO_OFFSET_X_PERCENT =
     0
@@ -180,13 +214,31 @@ data class RoyalTVLayoutSettings(
         ROYAL_TV_DEFAULT_LOGO_OFFSET_Y_PERCENT,
 
     val tickerSizePercent: Int =
-        ROYAL_TV_DEFAULT_TICKER_SIZE_PERCENT,
+    ROYAL_TV_DEFAULT_TICKER_SIZE_PERCENT,
+
+    val tickerOffsetXPercent: Int =
+    ROYAL_TV_DEFAULT_TICKER_OFFSET_X_PERCENT,
+
+    val tickerOffsetYPercent: Int =
+    ROYAL_TV_DEFAULT_TICKER_OFFSET_Y_PERCENT,
 
     val timeSizePercent: Int =
-        ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT,
+    ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT,
+
+    val timeOffsetXPercent: Int =
+    ROYAL_TV_DEFAULT_TIME_OFFSET_X_PERCENT,
+
+    val timeOffsetYPercent: Int =
+    ROYAL_TV_DEFAULT_TIME_OFFSET_Y_PERCENT,
 
     val dateSizePercent: Int =
-        ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT,
+    ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT,
+
+    val dateOffsetXPercent: Int =
+    ROYAL_TV_DEFAULT_DATE_OFFSET_X_PERCENT,
+
+    val dateOffsetYPercent: Int =
+    ROYAL_TV_DEFAULT_DATE_OFFSET_Y_PERCENT,
 
     /*
      * هل التاريخ ظاهر على شاشة Royal TV؟
@@ -394,22 +446,68 @@ fun loadRoyalTVLayoutSettings(
                     ROYAL_TV_DEFAULT_TICKER_SIZE_PERCENT
                 )
             ),
+        tickerOffsetXPercent =
+    clampRoyalTVOffsetPercent(
+        prefs.getInt(
+            KEY_TICKER_OFFSET_X_PERCENT,
+            ROYAL_TV_DEFAULT_TICKER_OFFSET_X_PERCENT
+        )
+    ),
 
-        timeSizePercent =
-            clampRoyalTVSizePercent(
-                prefs.getInt(
-                    KEY_TIME_SIZE_PERCENT,
-                    ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT
-                )
-            ),
+tickerOffsetYPercent =
+    clampRoyalTVOffsetPercent(
+        prefs.getInt(
+            KEY_TICKER_OFFSET_Y_PERCENT,
+            ROYAL_TV_DEFAULT_TICKER_OFFSET_Y_PERCENT
+        )
+    ),
 
-        dateSizePercent =
+timeSizePercent =
+    clampRoyalTVSizePercent(
+        prefs.getInt(
+            KEY_TIME_SIZE_PERCENT,
+            ROYAL_TV_DEFAULT_TIME_SIZE_PERCENT
+        )
+    ),
+
+timeOffsetXPercent =
+    clampRoyalTVOffsetPercent(
+        prefs.getInt(
+            KEY_TIME_OFFSET_X_PERCENT,
+            ROYAL_TV_DEFAULT_TIME_OFFSET_X_PERCENT
+        )
+    ),
+
+timeOffsetYPercent =
+    clampRoyalTVOffsetPercent(
+        prefs.getInt(
+            KEY_TIME_OFFSET_Y_PERCENT,
+            ROYAL_TV_DEFAULT_TIME_OFFSET_Y_PERCENT
+        )
+    ),
+
+dateSizePercent =
             clampRoyalTVSizePercent(
                 prefs.getInt(
                     KEY_DATE_SIZE_PERCENT,
                     ROYAL_TV_DEFAULT_DATE_SIZE_PERCENT
                 )
             ),
+        dateOffsetXPercent =
+    clampRoyalTVOffsetPercent(
+        prefs.getInt(
+            KEY_DATE_OFFSET_X_PERCENT,
+            ROYAL_TV_DEFAULT_DATE_OFFSET_X_PERCENT
+        )
+    ),
+
+dateOffsetYPercent =
+    clampRoyalTVOffsetPercent(
+        prefs.getInt(
+            KEY_DATE_OFFSET_Y_PERCENT,
+            ROYAL_TV_DEFAULT_DATE_OFFSET_Y_PERCENT
+        )
+    ),
 
         showDate =
             prefs.getBoolean(
@@ -457,7 +555,7 @@ fun saveRoyalTVLayoutSettings(
     settings: RoyalTVLayoutSettings
 ) {
 
-    val safeSettings =
+        val safeSettings =
         settings.copy(
 
             logoSizePercent =
@@ -480,14 +578,44 @@ fun saveRoyalTVLayoutSettings(
                     settings.tickerSizePercent
                 ),
 
+            tickerOffsetXPercent =
+                clampRoyalTVOffsetPercent(
+                    settings.tickerOffsetXPercent
+                ),
+
+            tickerOffsetYPercent =
+                clampRoyalTVOffsetPercent(
+                    settings.tickerOffsetYPercent
+                ),
+
             timeSizePercent =
                 clampRoyalTVSizePercent(
                     settings.timeSizePercent
                 ),
 
+            timeOffsetXPercent =
+                clampRoyalTVOffsetPercent(
+                    settings.timeOffsetXPercent
+                ),
+
+            timeOffsetYPercent =
+                clampRoyalTVOffsetPercent(
+                    settings.timeOffsetYPercent
+                ),
+
             dateSizePercent =
                 clampRoyalTVSizePercent(
                     settings.dateSizePercent
+                ),
+
+            dateOffsetXPercent =
+                clampRoyalTVOffsetPercent(
+                    settings.dateOffsetXPercent
+                ),
+
+            dateOffsetYPercent =
+                clampRoyalTVOffsetPercent(
+                    settings.dateOffsetYPercent
                 ),
 
             showDate =
@@ -531,15 +659,43 @@ fun saveRoyalTVLayoutSettings(
             KEY_TICKER_SIZE_PERCENT,
             safeSettings.tickerSizePercent
         )
+                .putInt(
+            KEY_TICKER_OFFSET_X_PERCENT,
+            safeSettings.tickerOffsetXPercent
+        )
+
+        .putInt(
+            KEY_TICKER_OFFSET_Y_PERCENT,
+            safeSettings.tickerOffsetYPercent
+        )
 
         .putInt(
             KEY_TIME_SIZE_PERCENT,
             safeSettings.timeSizePercent
         )
+                .putInt(
+            KEY_TIME_OFFSET_X_PERCENT,
+            safeSettings.timeOffsetXPercent
+        )
+
+        .putInt(
+            KEY_TIME_OFFSET_Y_PERCENT,
+            safeSettings.timeOffsetYPercent
+        )
+    
 
         .putInt(
             KEY_DATE_SIZE_PERCENT,
             safeSettings.dateSizePercent
+        )
+                .putInt(
+            KEY_DATE_OFFSET_X_PERCENT,
+            safeSettings.dateOffsetXPercent
+        )
+
+        .putInt(
+            KEY_DATE_OFFSET_Y_PERCENT,
+            safeSettings.dateOffsetYPercent
         )
 
         .putBoolean(
@@ -636,13 +792,14 @@ fun saveRoyalTVLogoLayout(
             )
     )
 }
-
 /**
- * حفظ حجم الشريط فقط.
+ * حفظ حجم وموقع الشريط الإخباري.
  */
 fun saveRoyalTVTickerLayout(
     context: Context,
-    sizePercent: Int
+    sizePercent: Int,
+    offsetXPercent: Int,
+    offsetYPercent: Int
 ) {
 
     val current =
@@ -652,21 +809,35 @@ fun saveRoyalTVTickerLayout(
         context = context,
         settings =
             current.copy(
+
                 tickerSizePercent =
                     clampRoyalTVSizePercent(
                         sizePercent
+                    ),
+
+                tickerOffsetXPercent =
+                    clampRoyalTVOffsetPercent(
+                        offsetXPercent
+                    ),
+
+                tickerOffsetYPercent =
+                    clampRoyalTVOffsetPercent(
+                        offsetYPercent
                     )
             )
     )
 }
-
 /**
- * حفظ أحجام الوقت والتاريخ.
+ * حفظ أحجام ومواقع الوقت والتاريخ.
  */
 fun saveRoyalTVClockLayout(
     context: Context,
     timeSizePercent: Int,
-    dateSizePercent: Int
+    timeOffsetXPercent: Int,
+    timeOffsetYPercent: Int,
+    dateSizePercent: Int,
+    dateOffsetXPercent: Int,
+    dateOffsetYPercent: Int
 ) {
 
     val current =
@@ -676,19 +847,39 @@ fun saveRoyalTVClockLayout(
         context = context,
         settings =
             current.copy(
+
                 timeSizePercent =
                     clampRoyalTVSizePercent(
                         timeSizePercent
                     ),
 
+                timeOffsetXPercent =
+                    clampRoyalTVOffsetPercent(
+                        timeOffsetXPercent
+                    ),
+
+                timeOffsetYPercent =
+                    clampRoyalTVOffsetPercent(
+                        timeOffsetYPercent
+                    ),
+
                 dateSizePercent =
                     clampRoyalTVSizePercent(
                         dateSizePercent
+                    ),
+
+                dateOffsetXPercent =
+                    clampRoyalTVOffsetPercent(
+                        dateOffsetXPercent
+                    ),
+
+                dateOffsetYPercent =
+                    clampRoyalTVOffsetPercent(
+                        dateOffsetYPercent
                     )
             )
     )
 }
-
 /**
  * حفظ حجم وموقع مؤشر مباشر.
  */
