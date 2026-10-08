@@ -214,9 +214,11 @@ fun RoyalTVDirectEditor(
          */
         if (
     selectedTarget == RoyalTVEditTarget.LOGO ||
+    selectedTarget == RoyalTVEditTarget.TICKER ||
+    selectedTarget == RoyalTVEditTarget.TIME ||
+    selectedTarget == RoyalTVEditTarget.DATE ||
     selectedTarget == RoyalTVEditTarget.LIVE
-)
-            {
+) {
 
             Box(
                 modifier = Modifier
