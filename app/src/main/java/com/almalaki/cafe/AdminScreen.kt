@@ -315,6 +315,10 @@ DisposableEffect(accessToken) {
     }
 }
 fun openSection(target: AdminSection) {
+    if (target != section) {
+        sectionHistory.add(section)
+    }
+
     section = target
     menuOpen = false
     when (target) {
