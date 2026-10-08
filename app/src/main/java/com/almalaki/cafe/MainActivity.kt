@@ -215,12 +215,15 @@ val royalTypography =
             )
 
             "admin" -> AdminScreen(
-                accessToken = token,
-                onLogout = {
-                    token = ""
-                    screen = "customer"
-                }
-            )
+    accessToken = token,
+    onLogout = {
+        token = ""
+        screen = "customer"
+    },
+    onBack = {
+        screen = "customer"
+    }
+)
 
             "reset" -> PasswordResetScreen(
                 recoveryToken = recoveryToken,
