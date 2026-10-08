@@ -55,6 +55,13 @@ private const val SUPABASE_AUTH_KEY =
 class MainActivity : ComponentActivity() {
 
     private var recoveryTokenState = mutableStateOf("")
+    
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+
+    RoyalUniversalRemoteDetector.detect(event)
+
+    return super.dispatchKeyEvent(event)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
