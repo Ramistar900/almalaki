@@ -328,6 +328,12 @@ fun openSection(target: AdminSection) {
         AdminSection.ROYAL_TV_IDENTITY -> Unit
     }
 }
+if (section == AdminSection.ROYAL_TV) {
+    RoyalTVScreen(
+        modifier = Modifier.fillMaxSize()
+    )
+    return
+}
 
 Column(
     modifier = Modifier
