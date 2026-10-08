@@ -46,6 +46,7 @@ import com.almalaki.cafe.changeRoyalTVOffsetYPercent
 import com.almalaki.cafe.changeRoyalTVSizePercent
 import com.almalaki.cafe.loadRoyalTVLayoutSettings
 import com.almalaki.cafe.RoyalTVScreen
+import com.almalaki.cafe.RoyalRemoteDiagnosticsScreen
 import com.almalaki.cafe.resetRoyalTVLayoutSettings
 import com.almalaki.cafe.saveRoyalTVLayoutSettings
 
@@ -71,6 +72,9 @@ fun RoyalTVControlScreen(
     var identityOpen by remember {
         mutableStateOf(false)
     }
+    var diagnosticsOpen by remember {
+    mutableStateOf(false)
+    }
 
     if (identityOpen) {
         RoyalTVLayoutControl(
@@ -82,6 +86,13 @@ fun RoyalTVControlScreen(
         )
 
         return
+    }
+    if (diagnosticsOpen) {
+    RoyalRemoteDiagnosticsScreen(
+        modifier = modifier
+    )
+
+    return
     }
 
     val items = listOf(
@@ -131,11 +142,15 @@ fun RoyalTVControlScreen(
             "عرض طلب جاهز أو إعلان مؤقت على التلفزيون"
         ),
         RoyalTVControlItem(
-            "🎮",
-            "التحكم عن بُعد",
-            "التحكم بالتلفزيون من شاشة المالك"
-        )
-    )
+    "🎮",
+    "التحكم عن بُعد",
+    "التحكم بالتلفزيون من شاشة المالك"
+    ),
+    RoyalTVControlItem(
+    "🧪",
+    "تشخيص الريموت",
+    "اكتشاف وتحليل أزرار جهاز التحكم الحقيقي"
+)
 
     Column(
         modifier = modifier
@@ -181,11 +196,15 @@ fun RoyalTVControlScreen(
                 RoyalTVControlCard(
                     item = item,
                     onClick = {
-                        if (item.title == "هوية ROYAL TV") {
-                            identityOpen = true
-                        }
+    if (item.title == "هوية ROYAL TV") {
+        identityOpen = true
+    }
 
-                        onItemSelected(item)
+    if (item.title == "تشخيص الريموت") {
+        diagnosticsOpen = true
+    }
+
+    onItemSelected(item)
                     }
                 )
             }
