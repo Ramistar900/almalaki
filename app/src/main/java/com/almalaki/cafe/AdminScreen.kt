@@ -82,6 +82,7 @@ val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCA
 
 var section by remember { mutableStateOf(AdminSection.HOME) }
 var menuOpen by remember { mutableStateOf(false) }
+val sectionHistory = remember { mutableStateListOf<AdminSection>() }
 
 var name by remember { mutableStateOf("") }
 var category by remember { mutableStateOf("") }
