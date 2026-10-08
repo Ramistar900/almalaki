@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -119,6 +120,14 @@ fun RoyalCoffeeApp(
         mutableStateOf(prefs.getBoolean("dark_mode", true))
     }
     var screen by remember { mutableStateOf("customer") }
+    BackHandler {
+    when (screen) {
+        "login" -> screen = "customer"
+        "reset" -> screen = "login"
+        "admin" -> screen = "customer"
+        "customer" -> Unit
+    }
+    }
     var token by remember { mutableStateOf("") }
     val selectedArabicFont by
     RoyalFontManager.arabicFont.collectAsState()
