@@ -286,6 +286,44 @@ val layoutSettings =
         val liveOffsetY =
             (layoutSettings.liveOffsetYPercent * tvScale)
                 .dp
+        /*
+ * ====================================================
+ * TICKER POSITION
+ * ====================================================
+ */
+val tickerOffsetX =
+    (layoutSettings.tickerOffsetXPercent * tvScale)
+        .dp
+
+val tickerOffsetY =
+    (layoutSettings.tickerOffsetYPercent * tvScale)
+        .dp
+
+/*
+ * ====================================================
+ * TIME POSITION
+ * ====================================================
+ */
+val timeOffsetX =
+    (layoutSettings.timeOffsetXPercent * tvScale)
+        .dp
+
+val timeOffsetY =
+    (layoutSettings.timeOffsetYPercent * tvScale)
+        .dp
+
+/*
+ * ====================================================
+ * DATE POSITION
+ * ====================================================
+ */
+val dateOffsetX =
+    (layoutSettings.dateOffsetXPercent * tvScale)
+        .dp
+
+val dateOffsetY =
+    (layoutSettings.dateOffsetYPercent * tvScale)
+        .dp
 
         /*
          * ====================================================
@@ -439,8 +477,12 @@ val layoutSettings =
                 tickerHeight = tickerHeight,
                 tickerCornerRadius = tickerCornerRadius,
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
+    .align(Alignment.BottomStart)
+    .offset(
+        x = tickerOffsetX,
+        y = tickerOffsetY
+    )
+    .fillMaxWidth()
                     .padding(
                         start = (34f * tvScale).dp,
                         end = (
