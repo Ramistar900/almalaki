@@ -31,7 +31,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,6 +43,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import com.almalaki.cafe.royaltv.RoyalTVEditTarget
 import kotlin.math.roundToInt
 
 private val RoyalTVBlack = Color(0xFF030303)
@@ -50,38 +54,80 @@ private val RoyalTVRed = Color(0xFFE53935)
 
 /**
  * ============================================================
+ * ROYAL TV EDITOR SELECTION FRAME
+ * ============================================================
+ *
+ * إطار ذهبي بخطوط متقطعة.
+ *
+ * يظهر فقط عندما يكون العنصر محدداً
+ * داخل محرر Royal TV.
+ *
+ * لا يضيف:
+ * - تعبئة
+ * - ظل
+ * - تغيير في العنصر
+ */
+private fun Modifier.royalTVSelectionFrame(
+    selected: Boolean
+): Modifier {
+
+    if (!selected) {
+        return this
+    }
+
+    return drawWithContent {
+
+        drawContent()
+
+        drawRect(
+            color = RoyalTVGold,
+            style = Stroke(
+                width = 2.dp.toPx(),
+                pathEffect =
+                    PathEffect.dashPathEffect(
+                        floatArrayOf(
+                            10.dp.toPx(),
+                            7.dp.toPx()
+                        ),
+                        phase = 0f
+                    )
+            )
+        )
+    }
+}
+
+/**
+ * ============================================================
  * ROYAL TV SCREEN
  * ============================================================
  *
- * شاشة القناة الأساسية.
+ * شاشة Royal TV الأساسية.
  *
- * الموجود:
+ * العناصر:
  *
  * 🔴 مباشر
- * 📰 شريط الأخبار السفلي
- * 🕐 الوقت والتاريخ السفلي
- * 👑 الشعار الملكي الحقيقي بطبقتيه في الأسفل
+ * 📰 شريط الأخبار
+ * 🕐 الوقت والتاريخ
+ * 👑 الشعار
  *
- * تم الحفاظ على:
- *
- * - نظام Responsive
- * - الشعار الحقيقي
- * - حركة الشعار
- * - حركة RC ثلاثية الأبعاد
- * - لمعة الدرع والتاج
- * - الشريط المتحرك
- * - الوقت والتاريخ
- *
- * ============================================================
- * CENTRAL LAYOUT SYSTEM
- * ============================================================
- *
- * كل أحجام ومواقع العناصر التي تم تجهيزها
- * أصبحت تُقرأ من:
+ * التخطيط المركزي:
  *
  * RoyalTVLayoutSettings.kt
  *
- * ============================================================
+ * يدعم:
+ *
+ * - Responsive
+ * - حجم الشعار
+ * - X/Y الشعار
+ * - حجم الشريط
+ * - X/Y الشريط
+ * - حجم الوقت
+ * - X/Y الوقت
+ * - حجم التاريخ
+ * - X/Y التاريخ
+ * - حجم LIVE
+ * - X/Y LIVE
+ * - إظهار/إخفاء التاريخ
  */
 @Composable
 fun RoyalTVScreen(
@@ -93,26 +139,25 @@ fun RoyalTVScreen(
     showTicker: Boolean = true,
     showClock: Boolean = true,
     showLive: Boolean = true,
-    layoutSettingsOverride: RoyalTVLayoutSettings? = null
+    layoutSettingsOverride: RoyalTVLayoutSettings? = null,
+    editorSelectedTarget: RoyalTVEditTarget? = null
 ) {
+
     val context = LocalContext.current
 
     /*
      * ========================================================
      * CENTRAL LAYOUT SETTINGS
      * ========================================================
-     *
-     * المصدر المركزي الوحيد للتخطيط الحالي.
-     *
-     * لا ننشئ SharedPreferences جديدة هنا.
      */
-    val storedLayoutSettings = remember(context) {
-    loadRoyalTVLayoutSettings(context)
-}
+    val storedLayoutSettings =
+        remember(context) {
+            loadRoyalTVLayoutSettings(context)
+        }
 
-val layoutSettings =
-    layoutSettingsOverride
-        ?: storedLayoutSettings
+    val layoutSettings =
+        layoutSettingsOverride
+            ?: storedLayoutSettings
 
     BoxWithConstraints(
         modifier = modifier
@@ -132,17 +177,17 @@ val layoutSettings =
 
         val tvScale =
             (widthDp / 1280f)
-                .coerceIn(0.72f, 2.40f)
+                .coerceIn(
+                    0.72f,
+                    2.40f
+                )
 
         /*
          * ====================================================
-         * MANUAL RESPONSIVE PERCENTAGES
+         * SIZE PERCENTAGES
          * ====================================================
-         *
-         * جميع القيم محفوظة في:
-         *
-         * RoyalTVLayoutSettings
          */
+
         val tickerSizePercent =
             clampRoyalTVSizePercent(
                 layoutSettings.tickerSizePercent
@@ -168,50 +213,53 @@ val layoutSettings =
          * LIVE SIZE
          * ====================================================
          */
+
         val liveMultiplier =
             liveSizePercent / 100f
 
         val liveTextSize =
-            (24f * tvScale * liveMultiplier).sp
+            (
+                24f *
+                    tvScale *
+                    liveMultiplier
+                ).sp
 
         /*
          * ====================================================
          * TICKER SIZE
          * ====================================================
-         *
-         * الحجم الأساسي:
-         * 25sp
-         *
-         * ثم Responsive
-         * ثم الحجم اليدوي 60% → 160%
          */
+
         val tickerMultiplier =
             tickerSizePercent / 100f
 
         val tickerTextSize =
-            (25f * tvScale * tickerMultiplier).sp
+            (
+                25f *
+                    tvScale *
+                    tickerMultiplier
+                ).sp
 
         val tickerHeight =
-            (62f * tvScale * tickerMultiplier).dp
+            (
+                62f *
+                    tvScale *
+                    tickerMultiplier
+                ).dp
 
         val tickerCornerRadius =
-            (17f * tvScale * tickerMultiplier).dp
+            (
+                17f *
+                    tvScale *
+                    tickerMultiplier
+                ).dp
 
         /*
          * ====================================================
          * CLOCK SIZE
          * ====================================================
-         *
-         * الآن الوقت والتاريخ مستقلان تماماً.
-         *
-         * الوقت:
-         * timeSizePercent
-         *
-         * التاريخ:
-         * dateSizePercent
-         *
-         * لا نستخدم maxOf() بينهما بعد الآن.
          */
+
         val timeMultiplier =
             timeSizePercent / 100f
 
@@ -219,25 +267,39 @@ val layoutSettings =
             dateSizePercent / 100f
 
         val timeTextSize =
-            (22f * tvScale * timeMultiplier).sp
+            (
+                22f *
+                    tvScale *
+                    timeMultiplier
+                ).sp
 
         val timeLineHeight =
-            (27f * tvScale * timeMultiplier).sp
+            (
+                27f *
+                    tvScale *
+                    timeMultiplier
+                ).sp
 
         val dateTextSize =
-            (22f * tvScale * dateMultiplier).sp
+            (
+                22f *
+                    tvScale *
+                    dateMultiplier
+                ).sp
 
         val dateLineHeight =
-            (27f * tvScale * dateMultiplier).sp
+            (
+                27f *
+                    tvScale *
+                    dateMultiplier
+                ).sp
 
         /*
          * ====================================================
-         * RESPONSIVE LOGO SIZE
+         * LOGO SIZE
          * ====================================================
-         *
-         * الحجم الأساسي Responsive
-         * + الحجم اليدوي المحفوظ.
          */
+
         val bottomLogoSize =
             RoyalTVResponsiveLogo.size(
                 scale = tvScale,
@@ -249,126 +311,141 @@ val layoutSettings =
          * ====================================================
          * LOGO POSITION
          * ====================================================
-         *
-         * الموقع يُحسب نسبةً إلى موضع الشعار الحالي.
-         *
-         * 0   = الوضع الحالي
-         * +   = يمين / أسفل
-         * -   = يسار / أعلى
-         *
-         * القيمة مضروبة في tvScale حتى تبقى Responsive.
          */
+
         val logoOffsetX =
-            (layoutSettings.logoOffsetXPercent * tvScale)
-                .dp
+            (
+                layoutSettings.logoOffsetXPercent *
+                    tvScale
+                ).dp
 
         val logoOffsetY =
-            (layoutSettings.logoOffsetYPercent * tvScale)
-                .dp
+            (
+                layoutSettings.logoOffsetYPercent *
+                    tvScale
+                ).dp
 
         /*
          * ====================================================
          * LIVE POSITION
          * ====================================================
-         *
-         * نفس المبدأ:
-         *
-         * 0 = الوضع الحالي
-         * +X = يمين
-         * -X = يسار
-         * +Y = أسفل
-         * -Y = أعلى
          */
+
         val liveOffsetX =
-            (layoutSettings.liveOffsetXPercent * tvScale)
-                .dp
+            (
+                layoutSettings.liveOffsetXPercent *
+                    tvScale
+                ).dp
 
         val liveOffsetY =
-            (layoutSettings.liveOffsetYPercent * tvScale)
-                .dp
+            (
+                layoutSettings.liveOffsetYPercent *
+                    tvScale
+                ).dp
+
         /*
- * ====================================================
- * TICKER POSITION
- * ====================================================
- */
-val tickerOffsetX =
-    (layoutSettings.tickerOffsetXPercent * tvScale)
-        .dp
+         * ====================================================
+         * TICKER POSITION
+         * ====================================================
+         */
 
-val tickerOffsetY =
-    (layoutSettings.tickerOffsetYPercent * tvScale)
-        .dp
+        val tickerOffsetX =
+            (
+                layoutSettings.tickerOffsetXPercent *
+                    tvScale
+                ).dp
 
-/*
- * ====================================================
- * TIME POSITION
- * ====================================================
- */
-val timeOffsetX =
-    (layoutSettings.timeOffsetXPercent * tvScale)
-        .dp
+        val tickerOffsetY =
+            (
+                layoutSettings.tickerOffsetYPercent *
+                    tvScale
+                ).dp
 
-val timeOffsetY =
-    (layoutSettings.timeOffsetYPercent * tvScale)
-        .dp
+        /*
+         * ====================================================
+         * TIME POSITION
+         * ====================================================
+         */
 
-/*
- * ====================================================
- * DATE POSITION
- * ====================================================
- */
-val dateOffsetX =
-    (layoutSettings.dateOffsetXPercent * tvScale)
-        .dp
+        val timeOffsetX =
+            (
+                layoutSettings.timeOffsetXPercent *
+                    tvScale
+                ).dp
 
-val dateOffsetY =
-    (layoutSettings.dateOffsetYPercent * tvScale)
-        .dp
+        val timeOffsetY =
+            (
+                layoutSettings.timeOffsetYPercent *
+                    tvScale
+                ).dp
+
+        /*
+         * ====================================================
+         * DATE POSITION
+         * ====================================================
+         */
+
+        val dateOffsetX =
+            (
+                layoutSettings.dateOffsetXPercent *
+                    tvScale
+                ).dp
+
+        val dateOffsetY =
+            (
+                layoutSettings.dateOffsetYPercent *
+                    tvScale
+                ).dp
 
         /*
          * ====================================================
          * CONTENT LAYER
          * ====================================================
-         *
-         * مساحة المحتوى الحقيقي مستقبلًا:
-         *
-         * YouTube
-         * صور
-         * فيديو
-         * إعلانات
-         * طلبات جاهزة
-         * Playlists
          */
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(RoyalTVBlack)
+                .background(
+                    RoyalTVBlack
+                )
         )
 
         /*
          * ====================================================
-         * LIVE LAYER
+         * LIVE
          * ====================================================
-         *
-         * 🔴 مباشر
-         *
-         * الحجم والموقع أصبحا مرتبطين
-         * بالنظام المركزي.
          */
+
         if (showLive) {
+
             RoyalTVLiveIndicator(
                 text = liveText,
                 textSize = liveTextSize,
                 scale = tvScale,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(
+                        Alignment.TopEnd
+                    )
                     .offset(
                         x = liveOffsetX,
                         y = liveOffsetY
                     )
                     .padding(
-                        end = (34f * tvScale).dp,
-                        top = (32f * tvScale).dp
+                        end =
+                            (
+                                34f *
+                                    tvScale
+                            ).dp,
+                        top =
+                            (
+                                32f *
+                                    tvScale
+                            ).dp
+                    )
+                    .royalTVSelectionFrame(
+                        editorSelectedTarget ==
+                            RoyalTVEditTarget.LIVE
                     )
             )
         }
@@ -377,53 +454,58 @@ val dateOffsetY =
          * ====================================================
          * BOTTOM IDENTITY AREA
          * ====================================================
-         *
-         * 👑 الشعار
-         * 🕐 الوقت والتاريخ
-         *
-         * الموضع الأساسي محفوظ كما هو.
-         *
-         * تعديل موقع الشعار لا يغيّر موضع الساعة.
          */
+
         if (showClock || showLogo) {
 
             Row(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(
+                        Alignment.BottomEnd
+                    )
                     .padding(
-                        end = (34f * tvScale).dp,
-                        bottom = (28f * tvScale).dp
+                        end =
+                            (
+                                34f *
+                                    tvScale
+                            ).dp,
+                        bottom =
+                            (
+                                28f *
+                                    tvScale
+                            ).dp
                     ),
                 verticalAlignment =
                     Alignment.CenterVertically,
                 horizontalArrangement =
                     Arrangement.spacedBy(
-                        (16f * tvScale).dp
+                        (
+                            16f *
+                                tvScale
+                        ).dp
                     )
             ) {
 
                 /*
                  * =================================================
-                 * REAL ROYAL LOGO
+                 * ROYAL LOGO
                  * =================================================
-                 *
-                 * الشعار الحقيقي بطبقتيه:
-                 *
-                 * royal_crest_layer.png
-                 * royal_rc_layer.png
-                 *
-                 * لا نعيد رسمه.
-                 * لا نستبدله بـ RC نصي.
-                 *
-                 * الحركة الأصلية محفوظة بالكامل.
                  */
+
                 if (showLogo) {
+
                     RoyalAppLogo(
                         modifier = Modifier
-                            .size(bottomLogoSize)
+                            .size(
+                                bottomLogoSize
+                            )
                             .offset(
                                 x = logoOffsetX,
                                 y = logoOffsetY
+                            )
+                            .royalTVSelectionFrame(
+                                editorSelectedTarget ==
+                                    RoyalTVEditTarget.LOGO
                             )
                     )
                 }
@@ -432,24 +514,29 @@ val dateOffsetY =
                  * =================================================
                  * CLOCK
                  * =================================================
-                 *
-                 * الوقت والتاريخ أصبحا مستقلين:
-                 *
-                 * - حجم الوقت مستقل.
-                 * - حجم التاريخ مستقل.
-                 * - showDate يتحكم بإظهار التاريخ.
-                 *
-                 * إذا كان showDate = false
-                 * فلن يحجز التاريخ أي مساحة.
                  */
+
                 if (showClock) {
+
                     RoyalTVClock(
                         scale = tvScale,
-                        showDate = layoutSettings.showDate,
-                        timeTextSize = timeTextSize,
-                        timeLineHeight = timeLineHeight,
-                        dateTextSize = dateTextSize,
-                        dateLineHeight = dateLineHeight
+                        showDate =
+                            layoutSettings.showDate,
+                        timeTextSize =
+                            timeTextSize,
+                        timeLineHeight =
+                            timeLineHeight,
+                        dateTextSize =
+                            dateTextSize,
+                        dateLineHeight =
+                            dateLineHeight,
+                        modifier =
+                            Modifier.royalTVSelectionFrame(
+                                editorSelectedTarget ==
+                                    RoyalTVEditTarget.TIME ||
+                                editorSelectedTarget ==
+                                    RoyalTVEditTarget.DATE
+                            )
                     )
                 }
             }
@@ -457,40 +544,49 @@ val dateOffsetY =
 
         /*
          * ====================================================
-         * TICKER LAYER
+         * TICKER
          * ====================================================
-         *
-         * الشريط الإخباري الرئيسي فقط.
-         *
-         * مهما كان طول النص:
-         *
-         * لا يكبر المستطيل
-         * لا يكسر الشاشة
-         * لا يخرج عن الشريط
-         * يستمر بالتمرير.
          */
+
         if (showTicker) {
+
             RoyalTVTicker(
                 text = tickerText,
                 textSize = tickerTextSize,
                 scale = tvScale,
                 tickerHeight = tickerHeight,
-                tickerCornerRadius = tickerCornerRadius,
+                tickerCornerRadius =
+                    tickerCornerRadius,
                 modifier = Modifier
-    .align(Alignment.BottomStart)
-    .offset(
-        x = tickerOffsetX,
-        y = tickerOffsetY
-    )
-    .fillMaxWidth()
+                    .align(
+                        Alignment.BottomStart
+                    )
+                    .offset(
+                        x = tickerOffsetX,
+                        y = tickerOffsetY
+                    )
+                    .fillMaxWidth()
                     .padding(
-                        start = (34f * tvScale).dp,
-                        end = (
-                            34f +
-                                118f +
-                                34f
+                        start =
+                            (
+                                34f *
+                                    tvScale
+                            ).dp,
+                        end =
+                            (
+                                34f +
+                                    118f +
+                                    34f
                             ).dp * tvScale,
-                        bottom = (28f * tvScale).dp
+                        bottom =
+                            (
+                                28f *
+                                    tvScale
+                            ).dp
+                    )
+                    .royalTVSelectionFrame(
+                        editorSelectedTarget ==
+                            RoyalTVEditTarget.TICKER
                     )
             )
         }
@@ -501,12 +597,6 @@ val dateOffsetY =
  * ============================================================
  * LIVE INDICATOR
  * ============================================================
- *
- * مؤشر البث.
- *
- * 🔴 النقطة الحمراء متحركة.
- *
- * الموقع والحجم أصبحا مركزيين.
  */
 @Composable
 private fun RoyalTVLiveIndicator(
@@ -515,6 +605,7 @@ private fun RoyalTVLiveIndicator(
     scale: Float,
     modifier: Modifier = Modifier
 ) {
+
     val transition =
         rememberInfiniteTransition(
             label = "royal_tv_live"
@@ -530,7 +621,8 @@ private fun RoyalTVLiveIndicator(
                         durationMillis = 1100,
                         easing = LinearEasing
                     ),
-                repeatMode = RepeatMode.Reverse
+                repeatMode =
+                    RepeatMode.Reverse
             ),
         label = "royal_tv_live_alpha"
     )
@@ -538,25 +630,45 @@ private fun RoyalTVLiveIndicator(
     Row(
         modifier = modifier
             .border(
-                width = (1.6f * scale).dp,
+                width =
+                    (
+                        1.6f *
+                            scale
+                    ).dp,
                 color =
                     RoyalTVGold.copy(
                         alpha = 0.9f
                     ),
                 shape =
                     RoundedCornerShape(
-                        (15f * scale).dp
+                        (
+                            15f *
+                                scale
+                        ).dp
                     )
             )
             .background(
-                Color.Black.copy(alpha = 0.62f),
+                Color.Black.copy(
+                    alpha = 0.62f
+                ),
                 RoundedCornerShape(
-                    (15f * scale).dp
+                    (
+                        15f *
+                            scale
+                    ).dp
                 )
             )
             .padding(
-                horizontal = (19f * scale).dp,
-                vertical = (8f * scale).dp
+                horizontal =
+                    (
+                        19f *
+                            scale
+                    ).dp,
+                vertical =
+                    (
+                        8f *
+                            scale
+                    ).dp
             ),
         verticalAlignment =
             Alignment.CenterVertically,
@@ -567,7 +679,10 @@ private fun RoyalTVLiveIndicator(
         Box(
             modifier = Modifier
                 .size(
-                    (10f * scale).dp
+                    (
+                        10f *
+                            scale
+                    ).dp
                 )
                 .background(
                     RoyalTVRed.copy(
@@ -579,7 +694,10 @@ private fun RoyalTVLiveIndicator(
 
         Spacer(
             modifier = Modifier.width(
-                (9f * scale).dp
+                (
+                    9f *
+                        scale
+                ).dp
             )
         )
 
@@ -597,48 +715,60 @@ private fun RoyalTVLiveIndicator(
  * ============================================================
  * CLOCK
  * ============================================================
- *
- * الوقت والتاريخ.
- *
- * يعتمد على RoyalDateTime.kt.
- *
- * الآن:
- *
- * - حجم الوقت مستقل.
- * - حجم التاريخ مستقل.
- * - إظهار/إخفاء التاريخ مستقل.
  */
-@Composable
+ @Composable
 private fun RoyalTVClock(
     scale: Float,
     showDate: Boolean,
     timeTextSize: TextUnit,
     timeLineHeight: TextUnit,
     dateTextSize: TextUnit,
-    dateLineHeight: TextUnit
+    dateLineHeight: TextUnit,
+    modifier: Modifier = Modifier
 ) {
+
     Box(
-        modifier = Modifier
+        modifier = modifier
             .border(
-                width = (1.5f * scale).dp,
+                width =
+                    (
+                        1.5f *
+                            scale
+                    ).dp,
                 color =
                     RoyalTVGold.copy(
                         alpha = 0.85f
                     ),
                 shape =
                     RoundedCornerShape(
-                        (14f * scale).dp
+                        (
+                            14f *
+                                scale
+                        ).dp
                     )
             )
             .background(
-                Color.Black.copy(alpha = 0.68f),
+                Color.Black.copy(
+                    alpha = 0.68f
+                ),
                 RoundedCornerShape(
-                    (14f * scale).dp
+                    (
+                        14f *
+                            scale
+                    ).dp
                 )
             )
             .padding(
-                horizontal = (18f * scale).dp,
-                vertical = (9f * scale).dp
+                horizontal =
+                    (
+                        18f *
+                            scale
+                    ).dp,
+                vertical =
+                    (
+                        9f *
+                            scale
+                    ).dp
             )
     ) {
 
@@ -647,20 +777,29 @@ private fun RoyalTVClock(
             showTime = true,
             showDate = showDate,
             timeStyle = TextStyle(
-                color = RoyalTVGoldLight,
-                fontSize = timeTextSize,
-                fontWeight = FontWeight.Bold,
-                lineHeight = timeLineHeight
+                color =
+                    RoyalTVGoldLight,
+                fontSize =
+                    timeTextSize,
+                fontWeight =
+                    FontWeight.Bold,
+                lineHeight =
+                    timeLineHeight
             ),
             dateStyle = TextStyle(
-                color = RoyalTVGoldLight,
-                fontSize = dateTextSize,
-                fontWeight = FontWeight.Bold,
-                lineHeight = dateLineHeight
+                color =
+                    RoyalTVGoldLight,
+                fontSize =
+                    dateTextSize,
+                fontWeight =
+                    FontWeight.Bold,
+                lineHeight =
+                    dateLineHeight
             )
         )
     }
 }
+
 /**
  * ============================================================
  * TICKER
@@ -668,13 +807,18 @@ private fun RoyalTVClock(
  *
  * شريط الأخبار.
  *
- * يتحرك من اليمين إلى اليسار.
+ * الحركة:
  *
- * يتم تكرار النص لضمان استمرار الحركة.
+ * بداية النص
+ *     ↓
+ * يتحرك من اليمين إلى اليسار
+ *     ↓
+ * يختفي بالكامل داخل نهاية الإطار
+ *     ↓
+ * تبدأ النسخة التالية من نفس نقطة البداية
  *
- * مهما كان النص طويلًا:
- *
- * يبقى داخل الشريط.
+ * الإطار نفسه يعمل كـ Clip،
+ * لذلك لا يظهر النص خارجه.
  */
 @Composable
 private fun RoyalTVTicker(
@@ -685,18 +829,67 @@ private fun RoyalTVTicker(
     tickerCornerRadius: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
+
+    /*
+     * ========================================================
+     * قياس النص الحقيقي بالبكسل.
+     * ========================================================
+     */
     var textWidthPx by remember(text) {
         mutableIntStateOf(0)
     }
 
+    /*
+     * ========================================================
+     * حركة الشريط.
+     * ========================================================
+     */
     val transition =
         rememberInfiniteTransition(
             label = "royal_tv_ticker"
         )
 
+    /*
+     * ========================================================
+     * المسافة بين النص الأول والثاني.
+     * ========================================================
+     */
+    val separatorWidthPx =
+        (
+            150f *
+                scale
+        ).roundToInt()
+
+    /*
+     * ========================================================
+     * طول الدورة الكاملة.
+     *
+     * النص + المسافة الفاصلة.
+     *
+     * عندما يصل النص إلى هذه المسافة:
+     *
+     * تكون النسخة التالية في المكان الصحيح
+     * تماماً لبدء الدورة من جديد.
+     * ========================================================
+     */
+    val cycleWidthPx =
+        if (textWidthPx > 0) {
+            (
+                textWidthPx +
+                    separatorWidthPx
+            ).toFloat()
+        } else {
+            1f
+        }
+
+    /*
+     * ========================================================
+     * تقدم الحركة.
+     * ========================================================
+     */
     val tickerX by transition.animateFloat(
         initialValue = 0f,
-        targetValue = -1f,
+        targetValue = -cycleWidthPx,
         animationSpec =
             infiniteRepeatable(
                 animation =
@@ -704,39 +897,46 @@ private fun RoyalTVTicker(
                         durationMillis = 16000,
                         easing = LinearEasing
                     ),
-                repeatMode = RepeatMode.Restart
+                repeatMode =
+                    RepeatMode.Restart
             ),
         label = "royal_tv_ticker_progress"
     )
 
-    val travelPx =
-        if (textWidthPx > 0) {
-            textWidthPx.toFloat()
-        } else {
-            1f
-        }
-
-    val offsetPx =
-        tickerX * travelPx
-
+    /*
+     * ========================================================
+     * إطار الشريط.
+     * ========================================================
+     *
+     * clip يمنع النص من الخروج خارج الإطار.
+     */
     Box(
         modifier = modifier
-            .height(tickerHeight)
+            .height(
+                tickerHeight
+            )
             .clip(
                 RoundedCornerShape(
                     tickerCornerRadius
                 )
             )
             .border(
-                width = (1.7f * scale).dp,
-                color = RoyalTVGold,
+                width =
+                    (
+                        1.7f *
+                            scale
+                    ).dp,
+                color =
+                    RoyalTVGold,
                 shape =
                     RoundedCornerShape(
                         tickerCornerRadius
                     )
             )
             .background(
-                Color.Black.copy(alpha = 0.68f),
+                Color.Black.copy(
+                    alpha = 0.68f
+                ),
                 RoundedCornerShape(
                     tickerCornerRadius
                 )
@@ -745,11 +945,16 @@ private fun RoyalTVTicker(
             Alignment.CenterStart
     ) {
 
+        /*
+         * ====================================================
+         * النص المتحرك.
+         * ====================================================
+         */
         Row(
             modifier = Modifier
                 .offset {
                     IntOffset(
-                        offsetPx.roundToInt(),
+                        tickerX.roundToInt(),
                         0
                     )
                 }
@@ -760,31 +965,56 @@ private fun RoyalTVTicker(
                 Alignment.CenterVertically
         ) {
 
+            /*
+             * =================================================
+             * النسخة الأولى.
+             * =================================================
+             */
             Text(
                 text = text,
                 color = RoyalTVCream,
                 fontSize = textSize,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight =
+                    FontWeight.SemiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Clip,
+                overflow =
+                    TextOverflow.Clip,
                 onTextLayout = {
-                    textWidthPx = it.size.width
+                    textWidthPx =
+                        it.size.width
                 }
             )
 
+            /*
+             * =================================================
+             * المسافة الفاصلة.
+             * =================================================
+             */
             Spacer(
                 modifier = Modifier.width(
-                    (150f * scale).dp
+                    (
+                        150f *
+                            scale
+                    ).dp
                 )
             )
 
+            /*
+             * =================================================
+             * النسخة الثانية.
+             *
+             * تضمن الاستمرار بدون توقف.
+             * =================================================
+             */
             Text(
                 text = text,
                 color = RoyalTVCream,
                 fontSize = textSize,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight =
+                    FontWeight.SemiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Clip
+                overflow =
+                    TextOverflow.Clip
             )
         }
     }
