@@ -5,12 +5,12 @@ import android.view.KeyEvent
 /**
  * Royal Universal Remote Detector
  *
- * المرحلة الأولى:
- * كشف جميع KeyEvent القادمة من أجهزة التحكم
- * التي يعمل بها تطبيق Android.
+ * المرحلة 18.3:
+ * استقبال وتحليل أحداث أزرار أجهزة التحكم
+ * والاحتفاظ بآخر حدث تم اكتشافه.
  *
- * لا يقوم هذا الملف بتخمين وظيفة أي زر.
- * بل يحتفظ بالمعلومات الحقيقية التي أرسلها الجهاز.
+ * هذا الملف لا يخمن وظيفة أي زر.
+ * بل يحتفظ بالمعلومات الحقيقية التي أرسلها جهاز Android.
  */
 data class RoyalRemoteKeyInfo(
     val keyCode: Int,
@@ -26,8 +26,16 @@ data class RoyalRemoteKeyInfo(
 object RoyalUniversalRemoteDetector {
 
     /**
-     * يحول KeyEvent الحقيقي إلى معلومات قابلة للقراءة
-     * ليتم استخدامها لاحقًا في محرك الريموت الموحد.
+     * آخر زر تم اكتشافه.
+     *
+     * نستخدمه لاحقاً في شاشة تشخيص الريموت.
+     */
+    private var lastDetectedKey: RoyalRemoteKeyInfo? = null
+
+    /**
+     * يحول KeyEvent الحقيقي إلى معلومات قابلة للقراءة.
+     *
+     * لا يتم هنا ربط الزر بأي وظيفة.
      */
     fun detect(
         event: KeyEvent
@@ -61,31 +69,57 @@ object RoyalUniversalRemoteDetector {
                 "KEYCODE_UNKNOWN_${event.keyCode}"
             }
 
-        return RoyalRemoteKeyInfo(
+        val info =
+            RoyalRemoteKeyInfo(
 
-            keyCode =
-                event.keyCode,
+                keyCode =
+                    event.keyCode,
 
-            keyName =
-                keyName,
+                keyName =
+                    keyName,
 
-            action =
-                event.action,
+                action =
+                    event.action,
 
-            actionName =
-                actionName,
+                actionName =
+                    actionName,
 
-            repeatCount =
-                event.repeatCount,
+                repeatCount =
+                    event.repeatCount,
 
-            deviceId =
-                event.deviceId,
+                deviceId =
+                    event.deviceId,
 
-            scanCode =
-                event.scanCode,
+                scanCode =
+                    event.scanCode,
 
-            source =
-                event.source
-        )
+                source =
+                    event.source
+            )
+
+        /**
+         * حفظ آخر حدث مكتشف.
+         */
+        lastDetectedKey = info
+
+        return info
+    }
+
+    /**
+     * يعيد آخر زر تم اكتشافه.
+     *
+     * يستخدم لاحقاً بواسطة شاشة تشخيص الريموت.
+     */
+    fun getLastDetectedKey(): RoyalRemoteKeyInfo? {
+        return lastDetectedKey
+    }
+
+    /**
+     * مسح آخر حدث مكتشف.
+     *
+     * سيستخدم لاحقاً عند بدء جلسة تشخيص جديدة.
+     */
+    fun clearLastDetectedKey() {
+        lastDetectedKey = null
     }
 }
