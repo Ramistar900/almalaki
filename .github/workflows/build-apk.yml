@@ -1,4 +1,4 @@
-name: Build Almalaki APK
+name: Build Almalaki and ROYAL TV APKs
 
 on:
   workflow_dispatch:
@@ -34,11 +34,19 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build APK
+      - name: Build Both Apps
         run: gradle assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Prepare APK Files
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk release/Almalaki.apk
+          cp royaltv/build/outputs/apk/debug/royaltv-debug.apk release/ROYAL-TV.apk
+          ls -lh release/
+
+      - name: Upload Both APKs
         uses: actions/upload-artifact@v4
         with:
-          name: Almalaki-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Almalaki-and-ROYAL-TV
+          path: release/*.apk
+          if-no-files-found: error
