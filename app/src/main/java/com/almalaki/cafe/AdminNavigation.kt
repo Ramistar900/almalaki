@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.focus.onFocusChanged
@@ -23,9 +22,6 @@ fun AdminSidebar(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val isTV = isRoyalTV(context)
-
     Column(
         modifier = modifier
             .background(AdminPanel)
@@ -101,43 +97,6 @@ fun AdminSidebar(
             section == AdminSection.ACCOUNT_SETTINGS
         ) {
             onSectionSelected(AdminSection.ACCOUNT_SETTINGS)
-        }
-
-        /*
-         * Royal TV
-         *
-         * يظهر على جميع الأجهزة:
-         * الهاتف / التابلت / Android TV / Google TV / TV Box
-         *
-         * الرمز الحالي مؤقت فقط إلى أن نضيف ملف royaltv.png.
-         */
-        Spacer(modifier = Modifier.height(8.dp))
-
-        AdminMenuItem(
-            "TV",
-            "Royal TV",
-            section == AdminSection.ROYAL_TV
-        ) {
-            onSectionSelected(AdminSection.ROYAL_TV)
-        }
-
-        /*
-         * إعدادات التلفزيون تظهر فقط على:
-         * Android TV / Google TV / TV Box / الرسيفرات
-         * التي يتعرف عليها التطبيق كجهاز تلفزيون.
-         *
-         * الهاتف والتابلت لن يظهر فيهما هذا الخيار.
-         */
-        if (isTV) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            AdminMenuItem(
-                "📺",
-                "إعدادات التلفزيون",
-                section == AdminSection.TV_SETTINGS
-            ) {
-                onSectionSelected(AdminSection.TV_SETTINGS)
-            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -338,31 +297,6 @@ fun AdminHorizontalMenu(
                     AdminSection.ACCOUNT_SETTINGS
                 )
             }
-        }
-
-        /*
-         * Royal TV
-         *
-         * يظهر أيضًا في القائمة الأفقية.
-         * الرمز مؤقت إلى أن نضيف الشعار PNG.
-         */
-        item {
-            AdminMenuItem(
-                "TV",
-                "Royal TV",
-                section == AdminSection.ROYAL_TV
-            ) {
-                onSectionSelected(AdminSection.ROYAL_TV)
-            }
-        }
-        item {
-    AdminMenuItem(
-        "🎛️",
-        "مركز تحكم ROYAL TV",
-        section == AdminSection.ROYAL_TV_CONTROL
-    ) {
-        onSectionSelected(AdminSection.ROYAL_TV_CONTROL)
-    }
         }
     }
 }
