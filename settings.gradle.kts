@@ -1,3 +1,4 @@
+
 pluginManagement {
     repositories {
         google()
@@ -15,4 +16,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Almalaki"
+
 include(":app")
+include(":royaltv")
