@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -97,6 +98,29 @@ private fun Modifier.royalTVSelectionFrame(
             )
         )
     }
+}
+private fun Modifier.royalTVEditorGestures(
+    target: RoyalTVEditTarget,
+    enabled: Boolean,
+    onTargetSelected: ((RoyalTVEditTarget) -> Unit)?,
+    onTransform: ((RoyalTVEditTarget, Offset, Float) -> Unit)?
+): Modifier {
+    if (!enabled) return this
+
+    return this
+        .pointerInput(target) {
+            detectTapGestures {
+                onTargetSelected?.invoke(target)
+            }
+        }
+        .pointerInput(target) {
+            detectTransformGestures { _, pan, zoom, _ ->
+                if (pan != Offset.Zero || zoom != 1f) {
+                    onTargetSelected?.invoke(target)
+                    onTransform?.invoke(target, pan, zoom)
+                }
+            }
+        }
 }
 
 /**
