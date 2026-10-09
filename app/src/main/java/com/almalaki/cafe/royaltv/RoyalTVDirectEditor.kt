@@ -288,118 +288,166 @@ fun RoyalTVDirectEditor(
                                     1.15f
                                 )
 
-                            when (selectedTarget) {
+when (selectedTarget) {
 
-                                /**
-                                 * ==================================
-                                 * LOGO
-                                 * ==================================
-                                 */
-                                RoyalTVEditTarget.LOGO -> {
+    RoyalTVEditTarget.LOGO -> {
+        val newX = (
+            draftSettings.logoOffsetXPercent +
+                xPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                    val newX =
-                                        (
-                                            draftSettings
-                                                .logoOffsetXPercent +
-                                                xPercent
-                                                    .roundToInt()
-                                        ).coerceIn(
-                                            ROYAL_TV_MIN_OFFSET_PERCENT,
-                                            ROYAL_TV_MAX_OFFSET_PERCENT
-                                        )
+        val newY = (
+            draftSettings.logoOffsetYPercent +
+                yPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                    val newY =
-                                        (
-                                            draftSettings
-                                                .logoOffsetYPercent +
-                                                yPercent
-                                                    .roundToInt()
-                                        ).coerceIn(
-                                            ROYAL_TV_MIN_OFFSET_PERCENT,
-                                            ROYAL_TV_MAX_OFFSET_PERCENT
-                                        )
+        val newSize = (
+            draftSettings.logoSizePercent * zoomFactor
+        ).roundToInt().coerceIn(
+            ROYAL_TV_MIN_SIZE_PERCENT,
+            ROYAL_TV_MAX_SIZE_PERCENT
+        )
 
-                                    val newSize =
-                                        (
-                                            draftSettings
-                                                .logoSizePercent *
-                                                zoomFactor
-                                        )
-                                            .roundToInt()
-                                            .coerceIn(
-                                                ROYAL_TV_MIN_SIZE_PERCENT,
-                                                ROYAL_TV_MAX_SIZE_PERCENT
-                                            )
+        draftSettings = draftSettings.copy(
+            logoOffsetXPercent = newX,
+            logoOffsetYPercent = newY,
+            logoSizePercent = newSize
+        )
+    }
 
-                                    draftSettings =
-                                        draftSettings.copy(
-                                            logoOffsetXPercent =
-                                                newX,
+    RoyalTVEditTarget.TICKER -> {
+        val newX = (
+            draftSettings.tickerOffsetXPercent +
+                xPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                            logoOffsetYPercent =
-                                                newY,
+        val newY = (
+            draftSettings.tickerOffsetYPercent +
+                yPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                            logoSizePercent =
-                                                newSize
-                                        )
-                                }
+        val newSize = (
+            draftSettings.tickerSizePercent * zoomFactor
+        ).roundToInt().coerceIn(
+            ROYAL_TV_MIN_SIZE_PERCENT,
+            ROYAL_TV_MAX_SIZE_PERCENT
+        )
 
-                                /**
-                                 * ==================================
-                                 * LIVE
-                                 * ==================================
-                                 */
-                                RoyalTVEditTarget.LIVE -> {
+        draftSettings = draftSettings.copy(
+            tickerOffsetXPercent = newX,
+            tickerOffsetYPercent = newY,
+            tickerSizePercent = newSize
+        )
+    }
 
-                                    val newX =
-                                        (
-                                            draftSettings
-                                                .liveOffsetXPercent +
-                                                xPercent
-                                                    .roundToInt()
-                                        ).coerceIn(
-                                            ROYAL_TV_MIN_OFFSET_PERCENT,
-                                            ROYAL_TV_MAX_OFFSET_PERCENT
-                                        )
+    RoyalTVEditTarget.TIME -> {
+        val newX = (
+            draftSettings.timeOffsetXPercent +
+                xPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                    val newY =
-                                        (
-                                            draftSettings
-                                                .liveOffsetYPercent +
-                                                yPercent
-                                                    .roundToInt()
-                                        ).coerceIn(
-                                            ROYAL_TV_MIN_OFFSET_PERCENT,
-                                            ROYAL_TV_MAX_OFFSET_PERCENT
-                                        )
+        val newY = (
+            draftSettings.timeOffsetYPercent +
+                yPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                    val newSize =
-                                        (
-                                            draftSettings
-                                                .liveSizePercent *
-                                                zoomFactor
-                                        )
-                                            .roundToInt()
-                                            .coerceIn(
-                                                ROYAL_TV_MIN_SIZE_PERCENT,
-                                                ROYAL_TV_MAX_SIZE_PERCENT
-                                            )
+        val newSize = (
+            draftSettings.timeSizePercent * zoomFactor
+        ).roundToInt().coerceIn(
+            ROYAL_TV_MIN_SIZE_PERCENT,
+            ROYAL_TV_MAX_SIZE_PERCENT
+        )
 
-                                    draftSettings =
-                                        draftSettings.copy(
-                                            liveOffsetXPercent =
-                                                newX,
+        draftSettings = draftSettings.copy(
+            timeOffsetXPercent = newX,
+            timeOffsetYPercent = newY,
+            timeSizePercent = newSize
+        )
+    }
 
-                                            liveOffsetYPercent =
-                                                newY,
+    RoyalTVEditTarget.DATE -> {
+        val newX = (
+            draftSettings.dateOffsetXPercent +
+                xPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                            liveSizePercent =
-                                                newSize
-                                        )
-                                }
+        val newY = (
+            draftSettings.dateOffsetYPercent +
+                yPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
 
-                                else -> Unit
-                            }
+        val newSize = (
+            draftSettings.dateSizePercent * zoomFactor
+        ).roundToInt().coerceIn(
+            ROYAL_TV_MIN_SIZE_PERCENT,
+            ROYAL_TV_MAX_SIZE_PERCENT
+        )
+
+        draftSettings = draftSettings.copy(
+            dateOffsetXPercent = newX,
+            dateOffsetYPercent = newY,
+            dateSizePercent = newSize
+        )
+    }
+
+    RoyalTVEditTarget.LIVE -> {
+        val newX = (
+            draftSettings.liveOffsetXPercent +
+                xPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
+
+        val newY = (
+            draftSettings.liveOffsetYPercent +
+                yPercent.roundToInt()
+        ).coerceIn(
+            ROYAL_TV_MIN_OFFSET_PERCENT,
+            ROYAL_TV_MAX_OFFSET_PERCENT
+        )
+
+        val newSize = (
+            draftSettings.liveSizePercent * zoomFactor
+        ).roundToInt().coerceIn(
+            ROYAL_TV_MIN_SIZE_PERCENT,
+            ROYAL_TV_MAX_SIZE_PERCENT
+        )
+
+        draftSettings = draftSettings.copy(
+            liveOffsetXPercent = newX,
+            liveOffsetYPercent = newY,
+            liveSizePercent = newSize
+        )
+    }
+
+    else -> Unit
+}
+
                         }
                     }
             )
