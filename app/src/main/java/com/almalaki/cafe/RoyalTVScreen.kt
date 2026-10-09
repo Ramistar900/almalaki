@@ -7,6 +7,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -140,7 +142,9 @@ fun RoyalTVScreen(
     showClock: Boolean = true,
     showLive: Boolean = true,
     layoutSettingsOverride: RoyalTVLayoutSettings? = null,
-    editorSelectedTarget: RoyalTVEditTarget? = null
+    editorSelectedTarget: RoyalTVEditTarget? = null,
+    editorSelectionEnabled: Boolean = false,
+    onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null
 ) {
 
     val context = LocalContext.current
@@ -444,9 +448,22 @@ fun RoyalTVScreen(
                             ).dp
                     )
                     .royalTVSelectionFrame(
-                        editorSelectedTarget ==
-                            RoyalTVEditTarget.LIVE
-                    )
+    editorSelectedTarget ==
+        RoyalTVEditTarget.LIVE
+)
+.then(
+    if (editorSelectionEnabled) {
+        Modifier.pointerInput(Unit) {
+            detectTapGestures {
+                onEditorTargetSelected?.invoke(
+                    RoyalTVEditTarget.LIVE
+                )
+            }
+        }
+    } else {
+        Modifier
+    }
+)
             )
         }
 
@@ -504,9 +521,22 @@ fun RoyalTVScreen(
                                 y = logoOffsetY
                             )
                             .royalTVSelectionFrame(
-                                editorSelectedTarget ==
-                                    RoyalTVEditTarget.LOGO
-                            )
+    editorSelectedTarget ==
+        RoyalTVEditTarget.LOGO
+)
+.then(
+    if (editorSelectionEnabled) {
+        Modifier.pointerInput(Unit) {
+            detectTapGestures {
+                onEditorTargetSelected?.invoke(
+                    RoyalTVEditTarget.LOGO
+                )
+            }
+        }
+    } else {
+        Modifier
+    }
+)
                     )
                 }
 
@@ -530,6 +560,8 @@ fun RoyalTVScreen(
                             dateTextSize,
                         dateLineHeight =
                             dateLineHeight,
+                        editorSelectionEnabled = editorSelectionEnabled,
+                        onEditorTargetSelected = onEditorTargetSelected,
                         modifier =
                             Modifier.royalTVSelectionFrame(
                                 editorSelectedTarget ==
@@ -585,9 +617,22 @@ fun RoyalTVScreen(
                             ).dp
                     )
                     .royalTVSelectionFrame(
-                        editorSelectedTarget ==
-                            RoyalTVEditTarget.TICKER
-                    )
+editorSelectedTarget ==
+RoyalTVEditTarget.TICKER
+)
+.then(
+if (editorSelectionEnabled) {
+Modifier.pointerInput(Unit) {
+detectTapGestures {
+onEditorTargetSelected?.invoke(
+RoyalTVEditTarget.TICKER
+)
+}
+}
+} else {
+Modifier
+}
+)
             )
         }
     }
@@ -724,7 +769,9 @@ private fun RoyalTVClock(
     timeLineHeight: TextUnit,
     dateTextSize: TextUnit,
     dateLineHeight: TextUnit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+editorSelectionEnabled: Boolean = false,
+onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null
 ) {
 
     Box(
@@ -771,32 +818,49 @@ private fun RoyalTVClock(
                     ).dp
             )
     ) {
-
-        RoyalDateTime(
-            language = "ar",
-            showTime = true,
-            showDate = showDate,
-            timeStyle = TextStyle(
-                color =
-                    RoyalTVGoldLight,
-                fontSize =
-                    timeTextSize,
-                fontWeight =
-                    FontWeight.Bold,
-                lineHeight =
-                    timeLineHeight
-            ),
-            dateStyle = TextStyle(
-                color =
-                    RoyalTVGoldLight,
-                fontSize =
-                    dateTextSize,
-                fontWeight =
-                    FontWeight.Bold,
-                lineHeight =
-                    dateLineHeight
-            )
-        )
+RoyalDateTime(
+language = "ar",
+showTime = true,
+showDate = showDate,
+timeStyle = TextStyle(
+color = RoyalTVGoldLight,
+fontSize = timeTextSize,
+fontWeight = FontWeight.Bold,
+lineHeight = timeLineHeight
+),
+dateStyle = TextStyle(
+color = RoyalTVGoldLight,
+fontSize = dateTextSize,
+fontWeight = FontWeight.Bold,
+lineHeight = dateLineHeight
+),
+timeModifier = Modifier.then(
+if (editorSelectionEnabled) {
+Modifier.pointerInput(Unit) {
+detectTapGestures {
+onEditorTargetSelected?.invoke(
+RoyalTVEditTarget.TIME
+)
+}
+}
+} else {
+Modifier
+}
+),
+dateModifier = Modifier.then(
+if (editorSelectionEnabled) {
+Modifier.pointerInput(Unit) {
+detectTapGestures {
+onEditorTargetSelected?.invoke(
+RoyalTVEditTarget.DATE
+)
+}
+}
+} else {
+Modifier
+}
+)
+)
     }
 }
 
