@@ -201,7 +201,12 @@ fun RoyalTVDirectEditor(
          * يتم تمرير draftSettings حتى تتغير
          * الشاشة فوراً أثناء التحرير.
          */
-        content(draftSettings)
+        content(
+    draftSettings,
+    selectedTarget
+) { newTarget ->
+    selectedTarget = newTarget
+        }
 
         /**
          * ====================================================
