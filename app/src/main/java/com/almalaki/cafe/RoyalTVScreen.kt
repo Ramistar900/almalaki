@@ -590,6 +590,7 @@ fun RoyalTVScreen(
             }
         }
     }
+}
 
 /**
  * ============================================================
@@ -800,12 +801,6 @@ dateModifier = Modifier.royalTVEditorGestures(
     onTargetSelected = onEditorTargetSelected,
     onTransform = onEditorTransform
 )
-}
-}
-} else {
-Modifier
-}
-)
 )
     }
 }
@@ -814,7 +809,7 @@ Modifier
  * ============================================================
  * TICKER
  * ============================================================
- *
+ */
  * شريط الأخبار.
  *
  * الحركة:
