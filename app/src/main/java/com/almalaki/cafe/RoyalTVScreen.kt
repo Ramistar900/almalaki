@@ -427,7 +427,7 @@ fun RoyalTVScreen(
                     tvScale
                 ).dp
 
-        /*
+            /*
          * ====================================================
          * CONTENT LAYER
          * ====================================================
@@ -436,228 +436,160 @@ fun RoyalTVScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    RoyalTVBlack
+                .background(RoyalTVBlack)
+        ) {
+
+            /*
+             * ====================================================
+             * LIVE
+             * ====================================================
+             */
+
+            if (showLive) {
+                RoyalTVLiveIndicator(
+                    text = liveText,
+                    textSize = liveTextSize,
+                    scale = tvScale,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(
+                            x = liveOffsetX,
+                            y = liveOffsetY
+                        )
+                        .padding(
+                            end = (34f * tvScale).dp,
+                            top = (32f * tvScale).dp
+                        )
+                        .royalTVSelectionFrame(
+                            editorSelectedTarget ==
+                                RoyalTVEditTarget.LIVE
+                        )
+                        .royalTVEditorGestures(
+                            target = RoyalTVEditTarget.LIVE,
+                            enabled = editorSelectionEnabled,
+                            onTargetSelected = onEditorTargetSelected,
+                            onTransform = onEditorTransform
+                        )
                 )
-        )
-
-        /*
-         * ====================================================
-         * LIVE
-         * ====================================================
-         */
-
-        if (showLive) {
-
-            RoyalTVLiveIndicator(
-                text = liveText,
-                textSize = liveTextSize,
-                scale = tvScale,
-                modifier = Modifier
-                    .align(
-                        Alignment.TopEnd
-                    )
-                    .offset(
-                        x = liveOffsetX,
-                        y = liveOffsetY
-                    )
-                    .padding(
-                        end =
-                            (
-                                34f *
-                                    tvScale
-                            ).dp,
-                        top =
-                            (
-                                32f *
-                                    tvScale
-                            ).dp
-                    )
-                    .royalTVSelectionFrame(
-    editorSelectedTarget == RoyalTVEditTarget.LIVE
-)
-.royalTVEditorGestures(
-    target = RoyalTVEditTarget.LIVE,
-    enabled = editorSelectionEnabled,
-    onTargetSelected = onEditorTargetSelected,
-    onTransform = onEditorTransform
-)
             }
-        }
-    } else {
-        Modifier
-    }
-)
-            )
-        }
 
-        /*
-         * ====================================================
-         * BOTTOM IDENTITY AREA
-         * ====================================================
-         */
+            /*
+             * ====================================================
+             * BOTTOM IDENTITY AREA
+             * ====================================================
+             */
 
-        if (showClock || showLogo) {
-
-            Row(
-                modifier = Modifier
-                    .align(
-                        Alignment.BottomEnd
+            if (showClock || showLogo) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            end = (34f * tvScale).dp,
+                            bottom = (28f * tvScale).dp
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(
+                        (16f * tvScale).dp
                     )
-                    .padding(
-                        end =
-                            (
-                                34f *
-                                    tvScale
-                            ).dp,
-                        bottom =
-                            (
-                                28f *
-                                    tvScale
-                            ).dp
-                    ),
-                verticalAlignment =
-                    Alignment.CenterVertically,
-                horizontalArrangement =
-                    Arrangement.spacedBy(
-                        (
-                            16f *
-                                tvScale
-                        ).dp
-                    )
-            ) {
+                ) {
 
-                /*
-                 * =================================================
-                 * ROYAL LOGO
-                 * =================================================
-                 */
+                    /*
+                     * ROYAL LOGO
+                     */
 
-                if (showLogo) {
+                    if (showLogo) {
+                        RoyalAppLogo(
+                            modifier = Modifier
+                                .size(bottomLogoSize)
+                                .offset(
+                                    x = logoOffsetX,
+                                    y = logoOffsetY
+                                )
+                                .royalTVSelectionFrame(
+                                    editorSelectedTarget ==
+                                        RoyalTVEditTarget.LOGO
+                                )
+                                .royalTVEditorGestures(
+                                    target = RoyalTVEditTarget.LOGO,
+                                    enabled = editorSelectionEnabled,
+                                    onTargetSelected =
+                                        onEditorTargetSelected,
+                                    onTransform = onEditorTransform
+                                )
+                        )
+                    }
 
-                    RoyalAppLogo(
-                        modifier = Modifier
-                            .size(
-                                bottomLogoSize
-                            )
-                            .offset(
-                                x = logoOffsetX,
-                                y = logoOffsetY
-                            )
-                            .royalTVSelectionFrame(
-    editorSelectedTarget == RoyalTVEditTarget.LOGO
-)
-.royalTVEditorGestures(
-    target = RoyalTVEditTarget.LOGO,
-    enabled = editorSelectionEnabled,
-    onTargetSelected = onEditorTargetSelected,
-    onTransform = onEditorTransform
-)
-            }
-        }
-    } else {
-        Modifier
-    }
-)
-                    )
-                }
+                    /*
+                     * CLOCK AND DATE
+                     */
 
-                /*
-                 * =================================================
-                 * CLOCK
-                 * =================================================
-                 */
-
-                if (showClock) {
-
-                    RoyalTVClock(
-                        scale = tvScale,
-                        showDate =
-                            layoutSettings.showDate,
-                        timeTextSize =
-                            timeTextSize,
-                        timeLineHeight =
-                            timeLineHeight,
-                        dateTextSize =
-                            dateTextSize,
-                        dateLineHeight =
-                            dateLineHeight,
-                        editorSelectionEnabled = editorSelectionEnabled,
-onEditorTargetSelected = onEditorTargetSelected,
-onEditorTransform = onEditorTransform,
-modifier =
-                            Modifier.royalTVSelectionFrame(
+                    if (showClock) {
+                        RoyalTVClock(
+                            scale = tvScale,
+                            showDate = layoutSettings.showDate,
+                            timeTextSize = timeTextSize,
+                            timeLineHeight = timeLineHeight,
+                            dateTextSize = dateTextSize,
+                            dateLineHeight = dateLineHeight,
+                            editorSelectionEnabled =
+                                editorSelectionEnabled,
+                            onEditorTargetSelected =
+                                onEditorTargetSelected,
+                            onEditorTransform =
+                                onEditorTransform,
+                            modifier = Modifier.royalTVSelectionFrame(
                                 editorSelectedTarget ==
                                     RoyalTVEditTarget.TIME ||
                                 editorSelectedTarget ==
                                     RoyalTVEditTarget.DATE
                             )
-                    )
+                        )
+                    }
                 }
             }
-        }
 
-        /*
-         * ====================================================
-         * TICKER
-         * ====================================================
-         */
+            /*
+             * ====================================================
+             * TICKER
+             * ====================================================
+             */
 
-        if (showTicker) {
-
-            RoyalTVTicker(
-                text = tickerText,
-                textSize = tickerTextSize,
-                scale = tvScale,
-                tickerHeight = tickerHeight,
-                tickerCornerRadius =
-                    tickerCornerRadius,
-                modifier = Modifier
-                    .align(
-                        Alignment.BottomStart
-                    )
-                    .offset(
-                        x = tickerOffsetX,
-                        y = tickerOffsetY
-                    )
-                    .fillMaxWidth()
-                    .padding(
-                        start =
-                            (
-                                34f *
-                                    tvScale
-                            ).dp,
-                        end =
-                            (
-                                34f +
-                                    118f +
-                                    34f
+            if (showTicker) {
+                RoyalTVTicker(
+                    text = tickerText,
+                    textSize = tickerTextSize,
+                    scale = tvScale,
+                    tickerHeight = tickerHeight,
+                    tickerCornerRadius = tickerCornerRadius,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .offset(
+                            x = tickerOffsetX,
+                            y = tickerOffsetY
+                        )
+                        .fillMaxWidth()
+                        .padding(
+                            start = (34f * tvScale).dp,
+                            end = (
+                                34f + 118f + 34f
                             ).dp * tvScale,
-                        bottom =
-                            (
-                                28f *
-                                    tvScale
-                            ).dp
-                    )
-                    .royalTVSelectionFrame(
-    editorSelectedTarget == RoyalTVEditTarget.TICKER
-)
-.royalTVEditorGestures(
-    target = RoyalTVEditTarget.TICKER,
-    enabled = editorSelectionEnabled,
-    onTargetSelected = onEditorTargetSelected,
-    onTransform = onEditorTransform
-)
-}
-}
-} else {
-Modifier
-}
-)
-            )
+                            bottom = (28f * tvScale).dp
+                        )
+                        .royalTVSelectionFrame(
+                            editorSelectedTarget ==
+                                RoyalTVEditTarget.TICKER
+                        )
+                        .royalTVEditorGestures(
+                            target = RoyalTVEditTarget.TICKER,
+                            enabled = editorSelectionEnabled,
+                            onTargetSelected =
+                                onEditorTargetSelected,
+                            onTransform = onEditorTransform
+                        )
+                )
+            }
         }
     }
-}
 
 /**
  * ============================================================
