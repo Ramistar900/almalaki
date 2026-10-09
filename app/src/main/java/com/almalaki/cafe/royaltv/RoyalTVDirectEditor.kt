@@ -123,7 +123,11 @@ fun RoyalTVDirectEditor(
     target: RoyalTVEditTarget,
     onSave: (RoyalTVLayoutSettings) -> Unit,
     onCancel: () -> Unit,
-    content: @Composable BoxScope.(RoyalTVLayoutSettings) -> Unit
+    content: @Composable BoxScope.(
+    RoyalTVLayoutSettings,
+    RoyalTVEditTarget,
+    (RoyalTVEditTarget) -> Unit
+) -> Unit
 ) {
 
     /**
