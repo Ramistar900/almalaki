@@ -474,16 +474,14 @@ fun RoyalTVScreen(
                             ).dp
                     )
                     .royalTVSelectionFrame(
-    editorSelectedTarget ==
-        RoyalTVEditTarget.LIVE
+    editorSelectedTarget == RoyalTVEditTarget.LIVE
 )
-.then(
-    if (editorSelectionEnabled) {
-        Modifier.pointerInput(Unit) {
-            detectTapGestures {
-                onEditorTargetSelected?.invoke(
-                    RoyalTVEditTarget.LIVE
-                )
+.royalTVEditorGestures(
+    target = RoyalTVEditTarget.LIVE,
+    enabled = editorSelectionEnabled,
+    onTargetSelected = onEditorTargetSelected,
+    onTransform = onEditorTransform
+)
             }
         }
     } else {
@@ -547,16 +545,14 @@ fun RoyalTVScreen(
                                 y = logoOffsetY
                             )
                             .royalTVSelectionFrame(
-    editorSelectedTarget ==
-        RoyalTVEditTarget.LOGO
+    editorSelectedTarget == RoyalTVEditTarget.LOGO
 )
-.then(
-    if (editorSelectionEnabled) {
-        Modifier.pointerInput(Unit) {
-            detectTapGestures {
-                onEditorTargetSelected?.invoke(
-                    RoyalTVEditTarget.LOGO
-                )
+.royalTVEditorGestures(
+    target = RoyalTVEditTarget.LOGO,
+    enabled = editorSelectionEnabled,
+    onTargetSelected = onEditorTargetSelected,
+    onTransform = onEditorTransform
+)
             }
         }
     } else {
@@ -587,8 +583,9 @@ fun RoyalTVScreen(
                         dateLineHeight =
                             dateLineHeight,
                         editorSelectionEnabled = editorSelectionEnabled,
-                        onEditorTargetSelected = onEditorTargetSelected,
-                        modifier =
+onEditorTargetSelected = onEditorTargetSelected,
+onEditorTransform = onEditorTransform,
+modifier =
                             Modifier.royalTVSelectionFrame(
                                 editorSelectedTarget ==
                                     RoyalTVEditTarget.TIME ||
@@ -643,15 +640,13 @@ fun RoyalTVScreen(
                             ).dp
                     )
                     .royalTVSelectionFrame(
-editorSelectedTarget ==
-RoyalTVEditTarget.TICKER
+    editorSelectedTarget == RoyalTVEditTarget.TICKER
 )
-.then(
-if (editorSelectionEnabled) {
-Modifier.pointerInput(Unit) {
-detectTapGestures {
-onEditorTargetSelected?.invoke(
-RoyalTVEditTarget.TICKER
+.royalTVEditorGestures(
+    target = RoyalTVEditTarget.TICKER,
+    enabled = editorSelectionEnabled,
+    onTargetSelected = onEditorTargetSelected,
+    onTransform = onEditorTransform
 )
 }
 }
@@ -797,7 +792,8 @@ private fun RoyalTVClock(
     dateLineHeight: TextUnit,
     modifier: Modifier = Modifier,
 editorSelectionEnabled: Boolean = false,
-onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null
+onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null,
+onEditorTransform: ((RoyalTVEditTarget, Offset, Float) -> Unit)? = null
 ) {
 
     Box(
@@ -860,25 +856,17 @@ fontSize = dateTextSize,
 fontWeight = FontWeight.Bold,
 lineHeight = dateLineHeight
 ),
-timeModifier = Modifier.then(
-if (editorSelectionEnabled) {
-Modifier.pointerInput(Unit) {
-detectTapGestures {
-onEditorTargetSelected?.invoke(
-RoyalTVEditTarget.TIME
-)
-}
-}
-} else {
-Modifier
-}
+timeModifier = Modifier.royalTVEditorGestures(
+    target = RoyalTVEditTarget.TIME,
+    enabled = editorSelectionEnabled,
+    onTargetSelected = onEditorTargetSelected,
+    onTransform = onEditorTransform
 ),
-dateModifier = Modifier.then(
-if (editorSelectionEnabled) {
-Modifier.pointerInput(Unit) {
-detectTapGestures {
-onEditorTargetSelected?.invoke(
-RoyalTVEditTarget.DATE
+dateModifier = Modifier.royalTVEditorGestures(
+    target = RoyalTVEditTarget.DATE,
+    enabled = editorSelectionEnabled && showDate,
+    onTargetSelected = onEditorTargetSelected,
+    onTransform = onEditorTransform
 )
 }
 }
