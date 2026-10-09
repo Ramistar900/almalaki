@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
@@ -144,7 +145,8 @@ fun RoyalTVScreen(
     layoutSettingsOverride: RoyalTVLayoutSettings? = null,
     editorSelectedTarget: RoyalTVEditTarget? = null,
     editorSelectionEnabled: Boolean = false,
-    onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null
+    onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null,
+    onEditorTransform: ((RoyalTVEditTarget, Offset, Float) -> Unit)? = null
 ) {
 
     val context = LocalContext.current
