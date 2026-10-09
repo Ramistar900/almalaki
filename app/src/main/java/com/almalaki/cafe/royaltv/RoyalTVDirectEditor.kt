@@ -126,7 +126,8 @@ fun RoyalTVDirectEditor(
     content: @Composable BoxScope.(
     RoyalTVLayoutSettings,
     RoyalTVEditTarget,
-    (RoyalTVEditTarget) -> Unit
+    (RoyalTVEditTarget) -> Unit,
+    (RoyalTVEditTarget, Offset, Float) -> Unit
 ) -> Unit
 ) {
 
@@ -201,12 +202,141 @@ fun RoyalTVDirectEditor(
          * يتم تمرير draftSettings حتى تتغير
          * الشاشة فوراً أثناء التحرير.
          */
-        content(
-    draftSettings,
-    selectedTarget
-) { newTarget ->
-    selectedTarget = newTarget
-        }
+                content(
+            draftSettings,
+            selectedTarget,
+            { newTarget ->
+                selectedTarget = newTarget
+            },
+            { editTarget, pan, zoom ->
+                if (editorSize.width > 0 && editorSize.height > 0) {
+                    val xChange =
+                        (pan.x / editorSize.width * 100f)
+                            .roundToInt()
+
+                    val yChange =
+                        (pan.y / editorSize.height * 100f)
+                            .roundToInt()
+
+                    draftSettings = when (editTarget) {
+                        RoyalTVEditTarget.LOGO ->
+                            draftSettings.copy(
+                                logoOffsetXPercent =
+                                    (draftSettings.logoOffsetXPercent + xChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                logoOffsetYPercent =
+                                    (draftSettings.logoOffsetYPercent + yChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                logoSizePercent =
+                                    (draftSettings.logoSizePercent * zoom)
+                                        .roundToInt()
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_SIZE_PERCENT,
+                                            ROYAL_TV_MAX_SIZE_PERCENT
+                                        )
+                            )
+
+                        RoyalTVEditTarget.TICKER ->
+                            draftSettings.copy(
+                                tickerOffsetXPercent =
+                                    (draftSettings.tickerOffsetXPercent + xChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                tickerOffsetYPercent =
+                                    (draftSettings.tickerOffsetYPercent + yChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                tickerSizePercent =
+                                    (draftSettings.tickerSizePercent * zoom)
+                                        .roundToInt()
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_SIZE_PERCENT,
+                                            ROYAL_TV_MAX_SIZE_PERCENT
+                                        )
+                            )
+
+                        RoyalTVEditTarget.TIME ->
+                            draftSettings.copy(
+                                timeOffsetXPercent =
+                                    (draftSettings.timeOffsetXPercent + xChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                timeOffsetYPercent =
+                                    (draftSettings.timeOffsetYPercent + yChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                timeSizePercent =
+                                    (draftSettings.timeSizePercent * zoom)
+                                        .roundToInt()
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_SIZE_PERCENT,
+                                            ROYAL_TV_MAX_SIZE_PERCENT
+                                        )
+                            )
+
+                        RoyalTVEditTarget.DATE ->
+                            draftSettings.copy(
+                                dateOffsetXPercent =
+                                    (draftSettings.dateOffsetXPercent + xChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                dateOffsetYPercent =
+                                    (draftSettings.dateOffsetYPercent + yChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                dateSizePercent =
+                                    (draftSettings.dateSizePercent * zoom)
+                                        .roundToInt()
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_SIZE_PERCENT,
+                                            ROYAL_TV_MAX_SIZE_PERCENT
+                                        )
+                            )
+
+                        RoyalTVEditTarget.LIVE ->
+                            draftSettings.copy(
+                                liveOffsetXPercent =
+                                    (draftSettings.liveOffsetXPercent + xChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                liveOffsetYPercent =
+                                    (draftSettings.liveOffsetYPercent + yChange)
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_OFFSET_PERCENT,
+                                            ROYAL_TV_MAX_OFFSET_PERCENT
+                                        ),
+                                liveSizePercent =
+                                    (draftSettings.liveSizePercent * zoom)
+                                        .roundToInt()
+                                        .coerceIn(
+                                            ROYAL_TV_MIN_SIZE_PERCENT,
+                                            ROYAL_TV_MAX_SIZE_PERCENT
+                                        )
+                            )
+                    }
+                }
+            }
+        )
         
         /*
          * DIRECT TOUCH LAYER
