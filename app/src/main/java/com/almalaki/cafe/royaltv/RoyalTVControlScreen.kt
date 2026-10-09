@@ -306,11 +306,14 @@ if (directEditorOpen) {
             directEditorOpen = false
         }
 
-    ) { draftSettings ->
+        ) { draftSettings, selectedTarget, onEditorTargetSelected ->
 
         RoyalTVScreen(
             modifier = Modifier.fillMaxSize(),
-            layoutSettingsOverride = draftSettings
+            layoutSettingsOverride = draftSettings,
+            editorSelectedTarget = selectedTarget,
+            editorSelectionEnabled = true,
+            onEditorTargetSelected = onEditorTargetSelected
         )
     }
 
