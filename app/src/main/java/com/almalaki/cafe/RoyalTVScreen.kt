@@ -531,6 +531,10 @@ fun RoyalTVScreen(
                             timeLineHeight = timeLineHeight,
                             dateTextSize = dateTextSize,
                             dateLineHeight = dateLineHeight,
+                            timeOffsetX = timeOffsetX,
+                            timeOffsetY = timeOffsetY,
+                            dateOffsetX = dateOffsetX,
+                            dateOffsetY = dateOffsetY,
                             editorSelectionEnabled =
                                 editorSelectionEnabled,
                             onEditorTargetSelected =
@@ -723,7 +727,11 @@ private fun RoyalTVClock(
     timeLineHeight: TextUnit,
     dateTextSize: TextUnit,
     dateLineHeight: TextUnit,
-    modifier: Modifier = Modifier,
+timeOffsetX: androidx.compose.ui.unit.Dp,
+timeOffsetY: androidx.compose.ui.unit.Dp,
+dateOffsetX: androidx.compose.ui.unit.Dp,
+dateOffsetY: androidx.compose.ui.unit.Dp,
+modifier: Modifier = Modifier,
 editorSelectionEnabled: Boolean = false,
 onEditorTargetSelected: ((RoyalTVEditTarget) -> Unit)? = null,
 onEditorTransform: ((RoyalTVEditTarget, Offset, Float) -> Unit)? = null
@@ -789,13 +797,23 @@ fontSize = dateTextSize,
 fontWeight = FontWeight.Bold,
 lineHeight = dateLineHeight
 ),
-timeModifier = Modifier.royalTVEditorGestures(
+timeModifier = Modifier
+    .offset(
+        x = timeOffsetX,
+        y = timeOffsetY
+    )
+    .royalTVEditorGestures(
     target = RoyalTVEditTarget.TIME,
     enabled = editorSelectionEnabled,
     onTargetSelected = onEditorTargetSelected,
     onTransform = onEditorTransform
 ),
-dateModifier = Modifier.royalTVEditorGestures(
+dateModifier = Modifier
+    .offset(
+        x = dateOffsetX,
+        y = dateOffsetY
+    )
+    .royalTVEditorGestures(
     target = RoyalTVEditTarget.DATE,
     enabled = editorSelectionEnabled && showDate,
     onTargetSelected = onEditorTargetSelected,
