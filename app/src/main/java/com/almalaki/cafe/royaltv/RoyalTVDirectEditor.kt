@@ -146,7 +146,18 @@ fun RoyalTVDirectEditor(
     }
     var selectedTarget by remember(target) {
     mutableStateOf(target)
+}
+
+var isSaving by remember {
+    mutableStateOf(false)
+}
+
+LaunchedEffect(isSaving) {
+    if (isSaving) {
+        delay(700)
+        onSave(draftSettings)
     }
+}
 
     /**
      * --------------------------------------------------------
@@ -348,44 +359,65 @@ fun RoyalTVDirectEditor(
          */
 
 
-        /**
-         * ====================================================
-         * TOP EDITOR BAR
-         * ====================================================
-         *
-         * شريط مؤقت يظهر أثناء التعديل فقط.
+        /*
+         * زر الحفظ المباشر:
+         * معاينة التلفاز تبقى نظيفة دون شريط علوي
+         * أو لوحة إعدادات سفلية.
          */
-        RoyalTVEditorTopBar(
-            targetTitle = targetTitle
-        )
 
-        /**
-         * ====================================================
-         * BOTTOM EDITOR PANEL
-         * ====================================================
-         *
-         * يحتوي على:
-         *
-         * - معلومات القيمة الحالية.
-         * - أزرار التحكم.
-         * - حفظ.
-         * - إلغاء.
-         */
-        RoyalTVEditorBottomPanel(
-            target = selectedTarget,
-            settings = draftSettings,
-            onSettingsChanged = {
-                draftSettings = it
-            },
-            onSave = {
-                onSave(draftSettings)
-            },
-            onCancel = {
-                onCancel()
+        val saveProgress =
+            androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isSaving) 1f else 0f,
+                animationSpec =
+                    androidx.compose.animation.core.tween(
+                        durationMillis = 550
+                    ),
+                label = "royalDirectSaveProgress"
+            ).value
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(28.dp)
+        ) {
+            Button(
+                onClick = {
+                    if (!isSaving) {
+                        isSaving = true
+                    }
+                },
+                enabled = !isSaving,
+                modifier = Modifier.size(68.dp),
+                shape = androidx.compose.foundation.shape.CircleShape,
+                contentPadding =
+                    androidx.compose.foundation.layout.PaddingValues(
+                        0.dp
+                    ),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (isSaving) Color(0xFF19B85A)
+                        else RoyalEditorGold,
+                    contentColor =
+                        if (isSaving) Color.White
+                        else Color.Black,
+                    disabledContainerColor = Color(0xFF19B85A),
+                    disabledContentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 2.dp
+                )
+            ) {
+                Text(
+                    text = "✓",
+                    fontSize = (28f + 8f * saveProgress).sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                )
             }
-        )
-    }
-}
+        }
+        
+
 
 /**
  * ============================================================
