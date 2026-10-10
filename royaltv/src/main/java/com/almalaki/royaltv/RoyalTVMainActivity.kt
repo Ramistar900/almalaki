@@ -321,8 +321,7 @@ private fun RoyalTVChannelScreen() {
         }
     }
 }
-    }
-}
+    
 
 @Composable
 private fun BroadcastWindow(
