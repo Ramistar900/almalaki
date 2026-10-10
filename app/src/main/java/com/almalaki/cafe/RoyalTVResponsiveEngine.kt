@@ -1,6 +1,9 @@
+
 package com.almalaki.cafe
 
+import android.util.DisplayMetrics
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -12,14 +15,29 @@ import kotlin.math.min
  * ROYAL TV — RESPONSIVE DISPLAY ENGINE
  * ============================================================
  *
- * المرحلة 5 — الخطوة 1
- * Display Metrics
+ * المرحلة 5.11 — TV Resolution
  *
- * طبقة مستقلة لقراءة وتحليل أبعاد شاشة Royal TV.
+ * مدمج مباشرة في محرك العرض الحالي.
+ * لا يحتاج إلى ملف دقة منفصل.
  *
- * لا تعتمد على دقة تلفزيون ثابتة.
+ * ملاحظة:
+ * أبعاد Compose تمثل مساحة العرض الحالية،
+ * وأبعاد Android تمثل أبعاد الشاشة التي يبلّغ عنها النظام.
+ * قد تختلف أبعاد النظام عن الدقة الأصلية للوحة التلفزيون.
  * ============================================================
  */
+
+enum class RoyalTVResolutionClass(
+    val label: String
+) {
+    SD("SD"),
+    HD("HD"),
+    FULL_HD("Full HD"),
+    QHD("QHD"),
+    UHD_4K("4K"),
+    UHD_8K("8K"),
+    UNKNOWN("Unknown")
+}
 
 data class RoyalTVDisplayMetrics(
     val widthDp: Dp,
@@ -29,7 +47,9 @@ data class RoyalTVDisplayMetrics(
     val density: Float,
     val aspectRatio: Float,
     val isLandscape: Boolean,
-    val isPortrait: Boolean
+    val isPortrait: Boolean,
+    val screenResolutionWidthPx: Int = 0,
+    val screenResolutionHeightPx: Int = 0
 ) {
 
     val shortestSideDp: Dp
@@ -43,6 +63,74 @@ data class RoyalTVDisplayMetrics(
             widthDp.value,
             heightDp.value
         ).dp
+
+    /**
+     * تصنيف الدقة المبلّغ عنها من Android.
+     * يستخدم أطول ضلع حتى لا يؤثر اتجاه الشاشة.
+     */
+    val resolutionClass: RoyalTVResolutionClass
+        get() {
+            val longestSide = max(
+                screenResolutionWidthPx,
+                screenResolutionHeightPx
+            )
+
+            return when {
+                longestSide <= 0 ->
+                    RoyalTVResolutionClass.UNKNOWN
+
+                longestSide < 1280 ->
+                    RoyalTVResolutionClass.SD
+
+                longestSide < 1920 ->
+                    RoyalTVResolutionClass.HD
+
+                longestSide < 2560 ->
+                    RoyalTVResolutionClass.FULL_HD
+
+                longestSide < 3840 ->
+                    RoyalTVResolutionClass.QHD
+
+                longestSide < 7680 ->
+                    RoyalTVResolutionClass.UHD_4K
+
+                else ->
+                    RoyalTVResolutionClass.UHD_8K
+            }
+        }
+
+    val reportedScreenResolution: String
+        get() =
+            if (
+                screenResolutionWidthPx > 0 &&
+                screenResolutionHeightPx > 0
+            ) {
+                "${screenResolutionWidthPx} × ${screenResolutionHeightPx}"
+            } else {
+                "Unknown"
+            }
+
+    /**
+     * نسبة أبعاد الشاشة المبلّغ عنها من Android.
+     */
+    val screenAspectRatio: Float
+        get() {
+            val width = max(
+                screenResolutionWidthPx,
+                0
+            )
+
+            val height = max(
+                screenResolutionHeightPx,
+                0
+            )
+
+            return if (width > 0 && height > 0) {
+                width.toFloat() / height.toFloat()
+            } else {
+                aspectRatio
+            }
+        }
 }
 
 /**
@@ -50,8 +138,8 @@ data class RoyalTVDisplayMetrics(
  * ROYAL TV RESPONSIVE ENGINE
  * ============================================================
  *
- * 1280 × 720 هو مرجع حسابي فقط.
- * لا يتم فرض هذه الدقة على شاشة التلفزيون.
+ * 1280 × 720 مرجع حسابي فقط.
+ * لا يتم فرض دقة ثابتة على الشاشة.
  * ============================================================
  */
 object RoyalTVResponsiveEngine {
@@ -60,7 +148,8 @@ object RoyalTVResponsiveEngine {
     const val REFERENCE_HEIGHT_DP = 720f
 
     /**
-     * مقياس متوازن يعتمد على العرض والارتفاع معًا.
+     * مقياس متوازن يعتمد على العرض والارتفاع.
+     * نحافظ على السلوك السابق لتجنب تغيير التصميم فجأة.
      */
     fun calculateScale(
         metrics: RoyalTVDisplayMetrics
@@ -81,7 +170,7 @@ object RoyalTVResponsiveEngine {
     }
 
     /**
-     * مقياس يعتمد على عرض الشاشة.
+     * مقياس يعتمد على عرض مساحة العرض.
      */
     fun calculateWidthScale(
         metrics: RoyalTVDisplayMetrics
@@ -90,11 +179,11 @@ object RoyalTVResponsiveEngine {
         return (
             metrics.widthDp.value /
                 REFERENCE_WIDTH_DP
-            ).coerceAtLeast(0.1f)
+        ).coerceAtLeast(0.1f)
     }
 
     /**
-     * مقياس يعتمد على ارتفاع الشاشة.
+     * مقياس يعتمد على ارتفاع مساحة العرض.
      */
     fun calculateHeightScale(
         metrics: RoyalTVDisplayMetrics
@@ -103,7 +192,16 @@ object RoyalTVResponsiveEngine {
         return (
             metrics.heightDp.value /
                 REFERENCE_HEIGHT_DP
-            ).coerceAtLeast(0.1f)
+        ).coerceAtLeast(0.1f)
+    }
+
+    /**
+     * الوصول إلى تصنيف الدقة من المحرك الموحد.
+     */
+    fun resolutionClass(
+        metrics: RoyalTVDisplayMetrics
+    ): RoyalTVResolutionClass {
+        return metrics.resolutionClass
     }
 }
 
@@ -112,14 +210,19 @@ object RoyalTVResponsiveEngine {
  * CREATE DISPLAY METRICS
  * ============================================================
  *
- * يحول أبعاد Compose إلى بيانات كاملة
- * يمكن استخدامها في جميع واجهات Royal TV.
+ * يحسب أبعاد مساحة العرض داخل Compose،
+ * ويستقبل أبعاد الشاشة التي يبلّغ عنها Android.
+ *
+ * الوسيطان الأخيران اختياريان للمحافظة على
+ * توافق الاستدعاءات القديمة.
  * ============================================================
  */
 fun createRoyalTVDisplayMetrics(
     widthDp: Dp,
     heightDp: Dp,
-    density: Float
+    density: Float,
+    screenResolutionWidthPx: Int = 0,
+    screenResolutionHeightPx: Int = 0
 ): RoyalTVDisplayMetrics {
 
     val safeWidthDp =
@@ -128,13 +231,16 @@ fun createRoyalTVDisplayMetrics(
     val safeHeightDp =
         heightDp.value.coerceAtLeast(0f)
 
+    val safeDensity =
+        density.coerceAtLeast(0.1f)
+
+    // أبعاد مساحة العرض الحالية، وليست بالضرورة
+    // الدقة الأصلية للوحة التلفزيون.
     val widthPx =
-        (safeWidthDp * density)
-            .toInt()
+        (safeWidthDp * safeDensity).toInt()
 
     val heightPx =
-        (safeHeightDp * density)
-            .toInt()
+        (safeHeightDp * safeDensity).toInt()
 
     val aspectRatio =
         if (safeHeightDp > 0f) {
@@ -148,10 +254,14 @@ fun createRoyalTVDisplayMetrics(
         heightDp = safeHeightDp.dp,
         widthPx = widthPx,
         heightPx = heightPx,
-        density = density,
+        density = safeDensity,
         aspectRatio = aspectRatio,
         isLandscape = safeWidthDp >= safeHeightDp,
-        isPortrait = safeHeightDp > safeWidthDp
+        isPortrait = safeHeightDp > safeWidthDp,
+        screenResolutionWidthPx =
+            screenResolutionWidthPx.coerceAtLeast(0),
+        screenResolutionHeightPx =
+            screenResolutionHeightPx.coerceAtLeast(0)
     )
 }
 
@@ -160,7 +270,8 @@ fun createRoyalTVDisplayMetrics(
  * COMPOSE DISPLAY METRICS
  * ============================================================
  *
- * نسخة جاهزة للاستخدام داخل شاشات Compose.
+ * تُستخدم مباشرة من شاشة Royal TV الحالية.
+ * لا حاجة إلى استدعاء جديد داخل RoyalTVScreen.kt.
  * ============================================================
  */
 @Composable
@@ -172,9 +283,19 @@ fun rememberRoyalTVDisplayMetrics(
     val density =
         LocalDensity.current.density
 
+    val context =
+        LocalContext.current
+
+    val androidDisplayMetrics: DisplayMetrics =
+        context.resources.displayMetrics
+
     return createRoyalTVDisplayMetrics(
         widthDp = widthDp,
         heightDp = heightDp,
-        density = density
+        density = density,
+        screenResolutionWidthPx =
+            androidDisplayMetrics.widthPixels,
+        screenResolutionHeightPx =
+            androidDisplayMetrics.heightPixels
     )
 }
