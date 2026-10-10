@@ -386,6 +386,15 @@ private fun BroadcastWindow(
                 textAlign = TextAlign.Center
             )
         }
+        
+        /*
+         * طبقة الإشعارات داخل حدود نافذة البث فقط.
+         * تتكيف تلقائيًا مع حجم النافذة والتكبير الكامل.
+         */
+        RoyalTVNotificationOverlay(
+            modifier = Modifier.fillMaxSize()
+        )
+        
 
         /*
          * مؤشر مباشر داخل نافذة البث.
