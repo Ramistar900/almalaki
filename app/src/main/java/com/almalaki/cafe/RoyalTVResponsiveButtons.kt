@@ -5,9 +5,14 @@ import androidx.compose.ui.unit.dp
 
 /**
  * ROYAL TV — RESPONSIVE BUTTONS
- * المرحلة 5.6
  *
- * أبعاد الأزرار المتجاوبة مع الشاشة.
+ * المرحلة 5.6:
+ * - أبعاد أزرار متجاوبة مع الشاشة.
+ * - معالجة آمنة لقيمة القياس.
+ * - الحفاظ على أسماء الدوال الحالية.
+ * - استخدام محرك القياس المركزي.
+ *
+ * هذا الملف يحسب الأبعاد فقط.
  */
 object RoyalTVResponsiveButtons {
 
@@ -36,9 +41,17 @@ object RoyalTVResponsiveButtons {
         value: Dp,
         scale: Float
     ): Dp {
+        val validScale =
+            if (scale.isFinite()) scale else 1f
+
+        val safeScale =
+            RoyalTVResponsiveScale.safeScale(
+                validScale
+            )
+
         return RoyalTVResponsiveScale.scaleDp(
             value,
-            RoyalTVResponsiveScale.safeScale(scale)
+            safeScale
         )
     }
 }
