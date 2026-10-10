@@ -1,3 +1,4 @@
+
 package com.almalaki.cafe
 
 import androidx.compose.ui.unit.Dp
@@ -6,7 +7,8 @@ import androidx.compose.ui.unit.dp
 /**
  * Royal TV — Responsive Ticker
  *
- * يجعل شريط الأخبار متجاوبًا مع مختلف أحجام ودقات الشاشات.
+ * إعدادات شريط الأخبار المتجاوب.
+ * مدة الحركة الأساسية 30 ثانية تقريبًا عند scale = 1.
  */
 object RoyalTVResponsiveTicker {
 
@@ -20,7 +22,7 @@ object RoyalTVResponsiveTicker {
     private const val BASE_SPACING = 12f
 
     /**
-     * الارتفاع الأساسي لشريط الأخبار.
+     * ارتفاع الشريط.
      */
     fun height(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -29,7 +31,7 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * المسافة الأفقية داخل شريط الأخبار.
+     * المسافة الأفقية الداخلية.
      */
     fun horizontalPadding(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -38,7 +40,7 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * المسافة العمودية داخل شريط الأخبار.
+     * المسافة العمودية الداخلية.
      */
     fun verticalPadding(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -47,7 +49,7 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * نصف قطر زوايا شريط الأخبار.
+     * استدارة الزوايا.
      */
     fun cornerRadius(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -65,7 +67,7 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * حجم أيقونة شريط الأخبار.
+     * حجم الأيقونة.
      */
     fun iconSize(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -74,7 +76,7 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * حجم منطقة النص الأساسية.
+     * حجم النص.
      */
     fun textSize(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -83,7 +85,7 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * المسافة بين عناصر شريط الأخبار.
+     * المسافة بين عناصر الشريط.
      */
     fun spacing(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
@@ -92,43 +94,34 @@ object RoyalTVResponsiveTicker {
         )
 
     /**
-     * سرعة حركة النص المتجاوبة.
+     * مدة دورة حركة النص بالمللي ثانية.
      *
-     * القيمة الأساسية محسوبة على شاشة 1280×720.
-     *
-     * كلما صغرت الشاشة زادت مدة الحركة
-     * للحفاظ على حركة مقروءة وراقية.
+     * عند scale = 1: حوالي 30 ثانية.
+     * تتكيف المدة مع مقياس العرض،
+     * مع منع القيم الصغيرة أو الكبيرة جدًا.
      */
-    fun animationDuration(
-        scale: Float
-    ): Int {
+    fun animationDuration(scale: Float): Int {
         val safeScale =
             RoyalTVResponsiveScale.safeScale(scale)
 
-        return (9000f / safeScale)
+        return (30000f / safeScale)
             .toInt()
             .coerceIn(
-                5000,
-                16000
+                18000,
+                45000
             )
     }
 
     /**
-     * الحد الأدنى للمسافة بين النص
-     * وبقية عناصر شريط الأخبار.
+     * المسافة بين النص وبقية عناصر الشريط.
      */
-    fun contentSpacing(
-        scale: Float
-    ): Dp =
+    fun contentSpacing(scale: Float): Dp =
         spacing(scale)
 
     /**
-     * الارتفاع المناسب لمنطقة النص
-     * داخل شريط الأخبار.
+     * ارتفاع حاوية النص.
      */
-    fun textContainerHeight(
-        scale: Float
-    ): Dp =
+    fun textContainerHeight(scale: Float): Dp =
         RoyalTVResponsiveScale.scaleDp(
             38.dp,
             scale
