@@ -15,9 +15,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ROYAL TV — Connection Manager
  *
  * يربط اكتشاف Wi-Fi Direct بالنقل المحلي TCP.
- * يدير إعادة المحاولة ويحفظ الرسائل غير المرسلة محلياً.
- *
- * يجب استدعاء initialize بعد منح أذونات Wi-Fi Direct.
+ * يقرأ إعدادات الاتصال المحفوظة ويدير إعادة المحاولة
+ * ويحفظ الرسائل غير المرسلة محلياً.
  */
 class RoyalTVConnectionManager(
     context: Context
@@ -36,7 +35,6 @@ class RoyalTVConnectionManager(
     companion object {
         private const val PREFS = "royal_tv_connection_manager"
         private const val KEY_QUEUE = "pending_messages"
-        private const val RETRY_SECONDS = 5L
         private const val MAX_PENDING_MESSAGES = 500
     }
 
@@ -74,10 +72,18 @@ class RoyalTVConnectionManager(
     @Volatile
     private var connected = false
 
-    /**
-     * تهيئة سجل الأجهزة ومدير Wi-Fi Direct.
-     * تعيد false إذا لم تتوفر الأذونات أو تعذرت التهيئة.
-     */
+    private fun discoveryEnabled(): Boolean =
+        RoyalTVConnectionSettings.isDiscoveryEnabled(appContext)
+
+    private fun autoReconnectEnabled(): Boolean =
+        RoyalTVConnectionSettings.isAutoReconnectEnabled(appContext)
+
+    private fun connectionPort(): Int =
+        RoyalTVConnectionSettings.getPort(appContext)
+
+    private fun retryDelaySeconds(): Long =
+        RoyalTVConnectionSettings.getRetrySeconds(appContext)
+
     @Synchronized
     fun initialize(listener: Listener): Boolean {
         this.listener = listener
@@ -109,9 +115,7 @@ class RoyalTVConnectionManager(
                     }
                 }
 
-                override fun onPeersAvailable(
-                    devices: List<WifiP2pDevice>
-                ) {
+                override fun onPeersAvailable(devices: List<WifiP2pDevice>) {
                     latestPeers = devices
                     this@RoyalTVConnectionManager.listener
                         ?.onPeersFound(devices)
@@ -121,9 +125,7 @@ class RoyalTVConnectionManager(
                     }
                 }
 
-                override fun onConnectionInfoAvailable(
-                    info: WifiP2pInfo
-                ) {
+                override fun onConnectionInfoAvailable(info: WifiP2pInfo) {
                     latestInfo = info
 
                     if (!stopped.get() && info.groupFormed) {
@@ -156,11 +158,7 @@ class RoyalTVConnectionManager(
     }
 
     /**
-     * بدء الاكتشاف التلقائي.
-     *
-     * جهاز العرض فقط يحاول إنشاء مجموعة.
-     * جهاز التحكم يبحث عن الأجهزة ويطلب الاتصال بها.
-     * يظل Android مسؤولاً عن موافقات Wi-Fi Direct الفعلية.
+     * يبدأ الاتصال وفق إعدادات الاكتشاف المحفوظة.
      */
     @Synchronized
     fun start(): Boolean {
@@ -176,47 +174,55 @@ class RoyalTVConnectionManager(
             return false
         }
 
+        if (scheduler.isShutdown) {
+            reportError("start", "مدير الاتصال أُغلق نهائياً")
+            return false
+        }
+
         stopped.set(false)
         reportStatus("DISCOVERY_STARTING")
 
         when (RoyalTVDeviceRoleManager.getRole(appContext)) {
             RoyalTVDeviceRole.DISPLAY -> {
+                // شاشة العرض تجهز المجموعة لاستقبال جهاز التحكم.
                 manager.createGroup()
+                scheduleDiscovery(initialAttempt = true)
             }
 
             RoyalTVDeviceRole.CONTROLLER,
             RoyalTVDeviceRole.CONTROLLER_AND_DISPLAY -> {
-                manager.discoverPeers()
+                if (discoveryEnabled()) {
+                    manager.discoverPeers()
+                    scheduleDiscovery(initialAttempt = true)
+                } else {
+                    reportStatus("DISCOVERY_DISABLED")
+                }
             }
         }
 
-        scheduleDiscovery()
         return true
     }
 
-    /**
-     * طلب تحديث قائمة الأجهزة المكتشفة.
-     */
     fun discoverNow(): Boolean {
         if (stopped.get()) {
             reportError("discoverNow", "مدير الاتصال متوقف")
             return false
         }
 
+        if (!discoveryEnabled()) {
+            reportStatus("DISCOVERY_DISABLED")
+            return false
+        }
+
         return wifiDirect?.discoverPeers() ?: false
     }
 
-    /**
-     * إتاحة قائمة الأجهزة المكتشفة للواجهة أو المتحكم.
-     */
     fun getDiscoveredPeers(): List<WifiP2pDevice> =
         latestPeers.toList()
 
     /**
-     * إرسال رسالة. تحفظ الرسالة إذا تعذر إرسالها.
-     *
-     * هذه الدالة تنقل نص الرسالة فقط؛
-     * تفسير أوامر ROYAL TV يحتاج معالجاً على الطرف المستقبل.
+     * يحفظ الرسالة إذا لم يكن النقل متصلاً.
+     * تعني false أن الرسالة لم تُرسل فوراً، حتى لو حُفظت بالطابور.
      */
     fun sendMessage(message: String): Boolean {
         if (message.isBlank()) return false
@@ -236,15 +242,15 @@ class RoyalTVConnectionManager(
 
         if (saved) {
             reportStatus("MESSAGE_QUEUED")
-            scheduleDiscovery()
+
+            if (autoReconnectEnabled()) {
+                scheduleDiscovery()
+            }
         }
 
         return false
     }
 
-    /**
-     * إرسال أمر ROYAL TV بتنسيق JSON موحد.
-     */
     fun sendCommand(command: RoyalTVCommand): Boolean {
         val envelope = JSONObject().apply {
             put("protocol", "ROYAL_TV_1")
@@ -258,16 +264,9 @@ class RoyalTVConnectionManager(
         return sendMessage(envelope.toString())
     }
 
-    /**
-     * عدد الرسائل التي ما زالت محفوظة محلياً.
-     */
     fun getPendingMessageCount(): Int =
         readQueue().length()
 
-    /**
-     * إيقاف الاكتشاف وإغلاق اتصال النقل.
-     * لا يحذف الرسائل المحفوظة.
-     */
     @Synchronized
     fun stop() {
         stopped.set(true)
@@ -288,9 +287,6 @@ class RoyalTVConnectionManager(
         reportStatus("STOPPED")
     }
 
-    /**
-     * إيقاف نهائي للمدير.
-     */
     fun release() {
         stop()
         scheduler.shutdownNow()
@@ -306,6 +302,8 @@ class RoyalTVConnectionManager(
 
         val manager = wifiDirect ?: return
 
+        if (!discoveryEnabled()) return
+
         val candidate = latestPeers.firstOrNull {
             it.deviceAddress.isNotBlank()
         } ?: return
@@ -315,7 +313,7 @@ class RoyalTVConnectionManager(
     }
 
     private fun prepareTransport(info: WifiP2pInfo) {
-        if (stopped.get()) return
+        if (stopped.get() || !info.groupFormed) return
 
         if (info.isGroupOwner) {
             startTransportServer()
@@ -343,13 +341,18 @@ class RoyalTVConnectionManager(
         val newTransport = createTransport()
         transport = newTransport
 
-        if (newTransport.startServer()) {
+        val port = connectionPort()
+
+        if (newTransport.startServer(port)) {
             serverStarted = true
             clientConnecting = false
-            reportStatus("TCP_SERVER_STARTING")
+            reportStatus("TCP_SERVER_STARTING:$port")
         } else {
             transport = null
-            reportError("startTransportServer", "تعذر بدء خادم TCP")
+            reportError(
+                "startTransportServer",
+                "تعذر بدء خادم TCP على المنفذ $port"
+            )
             scheduleDiscovery()
         }
     }
@@ -371,9 +374,11 @@ class RoyalTVConnectionManager(
         transport = newTransport
         clientConnecting = true
 
-        reportStatus("TCP_CONNECTING")
+        val port = connectionPort()
 
-        if (!newTransport.connect(host)) {
+        reportStatus("TCP_CONNECTING:$host:$port")
+
+        if (!newTransport.connect(host, port)) {
             clientConnecting = false
             transport = null
             scheduleDiscovery()
@@ -408,6 +413,7 @@ class RoyalTVConnectionManager(
                 override fun onDisconnected(reason: String) {
                     connected = false
                     clientConnecting = false
+                    serverStarted = false
 
                     val id = RoyalTVDeviceIdentity.getDeviceId(appContext)
                     RoyalTVDeviceRegistry.updateOnlineState(id, false)
@@ -435,8 +441,19 @@ class RoyalTVConnectionManager(
         )
     }
 
-    private fun scheduleDiscovery() {
+    /**
+     * المحاولة الأولية لا تتطلب تفعيل إعادة الاتصال.
+     * أما المحاولات اللاحقة فتحترم إعداد إعادة الاتصال التلقائية.
+     */
+    private fun scheduleDiscovery(initialAttempt: Boolean = false) {
         if (stopped.get() || retryScheduled) return
+
+        if (!initialAttempt && !autoReconnectEnabled()) {
+            reportStatus("AUTO_RECONNECT_DISABLED")
+            return
+        }
+
+        if (scheduler.isShutdown) return
 
         retryScheduled = true
 
@@ -461,11 +478,13 @@ class RoyalTVConnectionManager(
                     RoyalTVDeviceRoleManager.isDisplayOnly(appContext)
                 ) {
                     manager.createGroup()
-                } else {
+                } else if (discoveryEnabled()) {
                     manager.discoverPeers()
                     manager.requestPeers()
+                } else {
+                    reportStatus("DISCOVERY_DISABLED")
                 }
-            }, RETRY_SECONDS, TimeUnit.SECONDS)
+            }, retryDelaySeconds(), TimeUnit.SECONDS)
         } catch (_: Exception) {
             retryScheduled = false
         }
