@@ -410,19 +410,27 @@ class RoyalTVConnectionManager(
                     flushQueue()
                 }
 
-                override fun onDisconnected(reason: String) {
-                    connected = false
-                    clientConnecting = false
-                    serverStarted = false
+                
+override fun onDisconnected(reason: String) {
+    connected = false
+    clientConnecting = false
 
-                    val id = RoyalTVDeviceIdentity.getDeviceId(appContext)
-                    RoyalTVDeviceRegistry.updateOnlineState(id, false)
+    // لا نفترض أن خادم TCP توقف لمجرد انقطاع عميل.
+    // يظل الخادم قائمًا ليستقبل اتصالًا جديدًا.
+    if (!serverStarted) {
+        reportStatus("TCP_SERVER_NOT_ACTIVE")
+    }
 
-                    listener?.onDisconnected(reason)
-                    reportStatus("DISCONNECTED")
+    val id = RoyalTVDeviceIdentity.getDeviceId(appContext)
+    RoyalTVDeviceRegistry.updateOnlineState(id, false)
 
-                    scheduleDiscovery()
-                }
+    listener?.onDisconnected(reason)
+    reportStatus("DISCONNECTED")
+
+    // إعادة المحاولة وفق الإعدادات المحفوظة.
+    scheduleDiscovery()
+}
+
 
                 override fun onMessageReceived(message: String) {
                     listener?.onMessageReceived(message)
