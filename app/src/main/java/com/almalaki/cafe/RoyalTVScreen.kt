@@ -925,7 +925,8 @@ private fun RoyalTVTicker(
             infiniteRepeatable(
                 animation =
                     tween(
-                        durationMillis = 16000,
+                        durationMillis =
+    RoyalTVResponsiveTicker.animationDuration(scale),
                         easing = LinearEasing
                     ),
                 repeatMode =
