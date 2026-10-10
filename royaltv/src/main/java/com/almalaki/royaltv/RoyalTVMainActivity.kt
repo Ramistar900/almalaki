@@ -302,7 +302,7 @@ private fun RoyalTVChannelScreen() {
                 /*
                  * الهوية السفلية في صف واحد.
                  */
-                BottomIdentityBar(
+                                BottomIdentityBar(
                     currentTime = currentTime,
                     currentDate = currentDate,
                     compact = compact,
@@ -312,6 +312,15 @@ private fun RoyalTVChannelScreen() {
                 )
             }
         }
+
+        // زر الخيارات في واجهة القناة فقط
+        if (!fullscreen) {
+            RoyalTVOptionsOverlay(
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
     }
 }
 
