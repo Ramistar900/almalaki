@@ -1,3 +1,4 @@
+
 package com.almalaki.cafe.royaltv
 
 import android.content.Context
@@ -8,22 +9,19 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * مدير الحالة المركزي لنظام ROYAL TV.
  *
- * هذا المدير مستقل عن واجهات المستخدم.
+ * مسؤول عن:
+ * - إدارة الحالة الحالية.
+ * - تنفيذ أوامر ROYAL TV.
+ * - حفظ الحالة محليًا.
+ * - استعادة آخر حالة عند التهيئة.
+ * - إبقاء تحديثات شريط الأخبار مستقلة عن المحتوى الجاري.
  *
- * الهاتف والتابلت والتلفزيون وTV Box
- * يمكنهم لاحقًا قراءة الحالة وتحديثها
- * من خلال هذه الطبقة.
- *
- * مهم:
- * خروج المستخدم من شاشة التحكم لا يعني
- * إيقاف تشغيل التلفزيون.
+ * لا يؤدي الخروج من شاشة التحكم إلى إيقاف العرض.
  */
 object RoyalTVManager {
 
     private val _state =
-        MutableStateFlow(
-            RoyalTVState()
-        )
+        MutableStateFlow(RoyalTVState())
 
     /**
      * الحالة الحالية لـ ROYAL TV.
@@ -32,51 +30,79 @@ object RoyalTVManager {
         _state.asStateFlow()
 
     /**
-     * Context الخاص بالتطبيق عند تهيئة Core.
-     *
-     * نستخدم applicationContext فقط حتى لا
-     * نربط عمر Core بعمر شاشة Compose أو Activity.
+     * سياق التطبيق فقط، وليس سياق Activity.
      */
     private var appContext: Context? = null
 
     /**
-     * تهيئة Core.
+     * تهيئة المدير ومحركات التخزين المحلية.
      *
-     * يجب استدعاؤها من طبقة تشغيل ROYAL TV
-     * قبل استقبال أوامر الشاشة.
+     * تستعيد آخر حالة محفوظة عند توفرها.
      */
-    fun initialize(
-        context: Context
-    ) {
-        appContext =
+    @Synchronized
+    fun initialize(context: Context) {
+        val applicationContext =
             context.applicationContext
 
+        appContext = applicationContext
+
+        RoyalTVLocalDisplayEngine.initialize(
+            context = applicationContext
+        )
+
         RoyalTVTickerManager.initialize(
-            context = appContext!!
+            context = applicationContext
+        )
+
+        if (RoyalTVLocalDisplayEngine.hasSavedState()) {
+            _state.value =
+                RoyalTVLocalDisplayEngine.restoreState()
+        }
+    }
+
+    /**
+     * تحديث الحالة وحفظها محليًا.
+     */
+    @Synchronized
+    fun setState(newState: RoyalTVState) {
+        _state.value = newState
+
+        RoyalTVLocalDisplayEngine.saveState(
+            state = newState
         )
     }
 
     /**
-     * تحديث الحالة كاملة.
+     * تنفيذ أمر ROYAL TV.
      */
-    fun setState(
-        newState: RoyalTVState
-    ) {
-        _state.value = newState
-    }
+    fun executeCommand(command: RoyalTVCommand) {
 
-    /**
-     * تنفيذ أمر ROYAL TV
-     * وتحديث الحالة بناءً على نوع الأمر.
-     */
-    fun executeCommand(
-        command: RoyalTVCommand
-    ) {
+        /*
+         * تحديث شريط الأخبار عملية مستقلة.
+         * إذا تعرّف المستقبل على الأمر وطبّقه،
+         * فلا نغيّر مصدر العرض الحالي.
+         */
+        if (command.type == RoyalTVCommandType.SHOW_CONTENT) {
+            val context = appContext
+
+            if (
+                context != null &&
+                RoyalTVTickerReceiver.receive(
+                    context = context,
+                    command = command
+                )
+            ) {
+                return
+            }
+        }
+
+        val currentState = _state.value
+
         val newState =
             when (command.type) {
 
                 RoyalTVCommandType.SHOW_ORDER -> {
-                    _state.value.copy(
+                    currentState.copy(
                         source = RoyalTVSource.ORDER,
                         commandType = command.type,
                         payload = command.payload,
@@ -86,7 +112,7 @@ object RoyalTVManager {
                 }
 
                 RoyalTVCommandType.SHOW_YOUTUBE -> {
-                    _state.value.copy(
+                    currentState.copy(
                         source = RoyalTVSource.YOUTUBE,
                         commandType = command.type,
                         payload = command.payload,
@@ -95,7 +121,7 @@ object RoyalTVManager {
                 }
 
                 RoyalTVCommandType.SHOW_MEDIA -> {
-                    _state.value.copy(
+                    currentState.copy(
                         source = RoyalTVSource.MEDIA,
                         commandType = command.type,
                         payload = command.payload,
@@ -104,7 +130,7 @@ object RoyalTVManager {
                 }
 
                 RoyalTVCommandType.SHOW_AD -> {
-                    _state.value.copy(
+                    currentState.copy(
                         source = RoyalTVSource.AD,
                         commandType = command.type,
                         payload = command.payload,
@@ -113,24 +139,7 @@ object RoyalTVManager {
                 }
 
                 RoyalTVCommandType.SHOW_CONTENT -> {
-                    /*
-                     * إذا كان الأمر خاصًا بشريط الأخبار،
-                     * يستقبله Ticker Receiver أولًا.
-                     *
-                     * أما بقية أوامر المحتوى فتستمر
-                     * بالمرور كـ CONTENT بشكل طبيعي.
-                     */
-                    val context =
-                        appContext
-
-                    if (context != null) {
-                        RoyalTVTickerReceiver.receive(
-                            context = context,
-                            command = command
-                        )
-                    }
-
-                    _state.value.copy(
+                    currentState.copy(
                         source = RoyalTVSource.CONTENT,
                         commandType = command.type,
                         payload = command.payload,
@@ -139,7 +148,7 @@ object RoyalTVManager {
                 }
 
                 RoyalTVCommandType.REMOTE_COMMAND -> {
-                    _state.value.copy(
+                    currentState.copy(
                         commandType = command.type,
                         payload = command.payload
                     )
@@ -150,48 +159,45 @@ object RoyalTVManager {
                 }
             }
 
-        _state.value = newState
+        setState(newState)
     }
 
     /**
      * تغيير حالة التشغيل فقط.
      */
-    fun setPlaying(
-        playing: Boolean
-    ) {
-        _state.value =
+    fun setPlaying(playing: Boolean) {
+        setState(
             _state.value.copy(
                 isPlaying = playing
             )
+        )
     }
 
     /**
      * تغيير وضع ملء الشاشة.
      */
-    fun setFullscreen(
-        fullscreen: Boolean
-    ) {
-        _state.value =
+    fun setFullscreen(fullscreen: Boolean) {
+        setState(
             _state.value.copy(
                 isFullscreen = fullscreen
             )
+        )
     }
 
     /**
-     * إيقاف المحتوى مع إبقاء حالة النظام.
+     * إيقاف التشغيل مع الاحتفاظ بمعلومات المحتوى.
      */
     fun stopPlayback() {
-        _state.value =
-            _state.value.copy(
-                isPlaying = false
-            )
+        setPlaying(false)
     }
 
     /**
-     * مسح الشاشة والعودة للحالة الافتراضية.
+     * مسح الشاشة والعودة إلى الحالة الافتراضية.
+     * تُحفظ الحالة الافتراضية محليًا أيضًا.
      */
     fun clearScreen() {
-        _state.value =
+        setState(
             RoyalTVState()
+        )
     }
 }
