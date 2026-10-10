@@ -1,0 +1,54 @@
+name: Build ROYAL TV APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'royaltv/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'gradle/libs.versions.toml'
+
+jobs:
+  build-royaltv:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Install Android SDK
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build ROYAL TV Only
+        run: gradle :royaltv:assembleDebug --no-daemon
+
+      - name: Upload ROYAL TV APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ROYAL-TV-APK
+          path: royaltv/build/outputs/apk/debug/royaltv-debug.apk
+          if-no-files-found: error
