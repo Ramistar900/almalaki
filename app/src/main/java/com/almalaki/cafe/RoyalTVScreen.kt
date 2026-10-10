@@ -203,14 +203,22 @@ fun RoyalTVScreen(
          * المرجع:
          * 1280 × 720
          */
-        val widthDp = maxWidth.value
+        
+        /*
+         * قراءة أبعاد مساحة العرض الفعلية.
+         * حساب الحجم باستخدام العرض والارتفاع معًا.
+         */
+        val displayMetrics =
+            rememberRoyalTVDisplayMetrics(
+                widthDp = maxWidth,
+                heightDp = maxHeight
+            )
 
         val tvScale =
-            (widthDp / 1280f)
-                .coerceIn(
-                    0.72f,
-                    2.40f
-                )
+            RoyalTVResponsiveScale.calculate(
+                displayMetrics
+            )
+            
 
         /*
          * ====================================================
