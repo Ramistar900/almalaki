@@ -1,6 +1,6 @@
 package com.almalaki.royaltv
 
-
+import android.util.Log
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -106,6 +106,29 @@ class RoyalTVMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+                /*
+         * بدء استقبال أوامر ROYAL TV.
+         */
+        val royalTvDisplayId =
+            RoyalTVDisplayIdAllocator.getDisplayId(
+                applicationContext
+            )
+
+        RoyalTVRealtime.start(royalTvDisplayId) { command ->
+            Log.i(
+                "RoyalTVMainActivity",
+                "تم استقبال أمر ROYAL TV: ${command.type}"
+            )
+
+            runOnUiThread {
+                Toast.makeText(
+                    this,
+                    "وصل أمر ROYAL TV: ${command.type}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
 
         
 val projectionManager =
