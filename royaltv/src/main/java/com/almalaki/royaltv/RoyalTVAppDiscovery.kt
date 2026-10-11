@@ -1,6 +1,5 @@
 package com.almalaki.royaltv
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -33,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun RoyalTVAppDiscoveryPanel() {
+internal fun RoyalTVAppDiscoveryPanel(
+    onAppSelected: ((RoyalTVInstalledApp) -> Unit)? = null
+) {
     val context = LocalContext.current
 
     var apps by remember {
@@ -42,6 +43,10 @@ internal fun RoyalTVAppDiscoveryPanel() {
 
     var loading by remember {
         mutableStateOf(true)
+    }
+
+    var selectedApp by remember {
+        mutableStateOf<RoyalTVInstalledApp?>(null)
     }
 
     fun refreshApps() {
@@ -61,14 +66,14 @@ internal fun RoyalTVAppDiscoveryPanel() {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "التطبيقات المتاحة",
+            text = "تطبيقات ROYAL TV",
             color = Color(0xFFD4AF37),
             fontSize = 22.sp,
             fontWeight = FontWeight.ExtraBold
         )
 
         Text(
-            text = "اختر تطبيقًا لاختبار اكتشافه وتشغيله.",
+            text = "اختر التطبيق الذي تريد عرضه داخل نافذة البث.",
             color = Color(0xFFDCE5EE),
             fontSize = 12.sp
         )
@@ -89,9 +94,48 @@ internal fun RoyalTVAppDiscoveryPanel() {
             )
 
             Button(
-                onClick = { refreshApps() }
+                onClick = { refreshApps() },
+                enabled = !loading
             ) {
                 Text("تحديث")
+            }
+        }
+
+        if (selectedApp != null && onAppSelected == null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF182333)
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    Color(0xFFD4AF37)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "تم اختيار: ${selectedApp!!.label}",
+                        color = Color(0xFFD4AF37),
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "سيتم ربط هذا الاختيار بنافذة البث في الخطوة التالية. لم يتم فتح التطبيق خارج ROYAL TV.",
+                        color = Color(0xFFDCE5EE),
+                        fontSize = 12.sp
+                    )
+
+                    Button(
+                        onClick = { selectedApp = null }
+                    ) {
+                        Text("العودة إلى القائمة")
+                    }
+                }
             }
         }
 
@@ -103,7 +147,7 @@ internal fun RoyalTVAppDiscoveryPanel() {
             )
         } else if (apps.isEmpty()) {
             Text(
-                text = "لم يعثر النظام على تطبيقات قابلة للتشغيل.",
+                text = "لم يعثر النظام على تطبيقات مثبتة.",
                 color = Color(0xFFDCE5EE),
                 fontSize = 13.sp
             )
@@ -122,18 +166,10 @@ internal fun RoyalTVAppDiscoveryPanel() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                val opened =
-                                    RoyalTVInstalledAppsManager.launchApp(
-                                        context,
-                                        app.packageName
-                                    )
-
-                                if (!opened) {
-                                    Toast.makeText(
-                                        context,
-                                        "تعذّر فتح التطبيق: ${app.label}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                if (onAppSelected != null) {
+                                    onAppSelected(app)
+                                } else {
+                                    selectedApp = app
                                 }
                             }
                             .focusable(),
@@ -153,8 +189,7 @@ internal fun RoyalTVAppDiscoveryPanel() {
                                     horizontal = 12.dp,
                                     vertical = 9.dp
                                 ),
-                            verticalArrangement =
-                                Arrangement.spacedBy(3.dp)
+                            verticalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
                             Text(
                                 text = app.label,
