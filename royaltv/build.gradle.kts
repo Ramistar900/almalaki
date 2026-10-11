@@ -37,5 +37,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 
+    // اتصال ROYAL TV عبر Supabase Realtime
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.2.1"))
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
+    implementation("io.ktor:ktor-client-android:3.2.1")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
