@@ -87,6 +87,11 @@ var displayOpen by remember {
 mutableStateOf(false)
 }
 
+var senderOpen by remember {
+    mutableStateOf(false)
+}
+
+
 if (identityOpen) {
     RoyalTVLayoutControl(
         context = context,
@@ -117,6 +122,18 @@ displayOpen = false
 return
 
 }
+
+if (senderOpen) {
+    RoyalTVSenderControlScreen(
+        modifier = modifier,
+        onBack = {
+            senderOpen = false
+        }
+    )
+
+    return
+}
+
 
 val items = listOf(
     RoyalTVControlItem(
@@ -238,24 +255,30 @@ Column(
 
             RoyalTVControlCard(
                 item = item,
-                onClick = {
+                
+onClick = {
 
-if (item.title == "العرض والشاشة") {
-    displayOpen = true
-} else {
+    if (item.title == "بث شاشة الهاتف") {
+        senderOpen = true
 
-    if (item.title == "هوية ROYAL TV") {
-        identityOpen = true
+    } else if (item.title == "العرض والشاشة") {
+        displayOpen = true
+
+    } else {
+
+        if (item.title == "هوية ROYAL TV") {
+            identityOpen = true
+        }
+
+        if (item.title == "تشخيص الريموت") {
+            diagnosticsOpen = true
+        }
+
+        onItemSelected(item)
     }
 
-    if (item.title == "تشخيص الريموت") {
-        diagnosticsOpen = true
-    }
-
-    onItemSelected(item)
 }
 
-                }
             )
         }
     }
