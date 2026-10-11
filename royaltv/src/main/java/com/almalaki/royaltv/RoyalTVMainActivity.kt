@@ -186,6 +186,8 @@ val screenCapturePermissionLauncher =
         )
     }
         }
+            }
+}
 
 @Composable
 private fun RoyalTVChannelScreen(
