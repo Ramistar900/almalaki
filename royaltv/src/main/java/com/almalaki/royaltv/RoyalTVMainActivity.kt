@@ -666,8 +666,9 @@ private fun NewProductsPanel(
                     SizeTransform(clip = true)
                 )
             },
-            label = "royal_product_transitio
-             ) { targetIndex ->
+
+                        label = "royal_product_transition"
+        ) { targetIndex ->
 
             val product =
                 demoProducts[targetIndex]
