@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ROYAL TV — Connection Manager
  *
  * يربط اكتشاف Wi-Fi Direct بالنقل المحلي TCP.
- * يقرأ إعدادات الاتصال المحفوظة ويدير إعادة المحاولة
+ * يدير جاهزية الخادم واتصال العميل وإعادة المحاولة،
  * ويحفظ الرسائل غير المرسلة محلياً.
  */
 class RoyalTVConnectionManager(
@@ -62,6 +62,9 @@ class RoyalTVConnectionManager(
 
     @Volatile
     private var serverStarted = false
+
+    @Volatile
+    private var serverStarting = false
 
     @Volatile
     private var clientConnecting = false
@@ -184,7 +187,6 @@ class RoyalTVConnectionManager(
 
         when (RoyalTVDeviceRoleManager.getRole(appContext)) {
             RoyalTVDeviceRole.DISPLAY -> {
-                // شاشة العرض تجهز المجموعة لاستقبال جهاز التحكم.
                 manager.createGroup()
                 scheduleDiscovery(initialAttempt = true)
             }
@@ -222,14 +224,14 @@ class RoyalTVConnectionManager(
 
     /**
      * يحفظ الرسالة إذا لم يكن النقل متصلاً.
-     * تعني false أن الرسالة لم تُرسل فوراً، حتى لو حُفظت بالطابور.
      */
     fun sendMessage(message: String): Boolean {
         if (message.isBlank()) return false
 
         val activeTransport = transport
 
-        if (connected &&
+        if (
+            connected &&
             activeTransport != null &&
             activeTransport.isConnected()
         ) {
@@ -272,6 +274,7 @@ class RoyalTVConnectionManager(
         stopped.set(true)
         connected = false
         serverStarted = false
+        serverStarting = false
         clientConnecting = false
         retryScheduled = false
 
@@ -294,7 +297,7 @@ class RoyalTVConnectionManager(
     }
 
     private fun connectToDiscoveredPeer() {
-        if (stopped.get() || connected) return
+        if (stopped.get() || connected || clientConnecting) return
 
         if (RoyalTVDeviceRoleManager.isDisplayOnly(appContext)) {
             return
@@ -332,27 +335,42 @@ class RoyalTVConnectionManager(
         }
     }
 
+    /**
+     * لا نعتبر الخادم جاهزاً حتى يصل onServerStarted
+     * من RoyalTVLocalTransport بعد فتح المنفذ فعلياً.
+     */
     @Synchronized
     private fun startTransportServer() {
-        if (stopped.get() || serverStarted) return
+        if (stopped.get() || serverStarted || serverStarting) return
 
-        transport?.release()
+        val oldTransport = transport
+        transport = null
+
+        oldTransport?.release()
 
         val newTransport = createTransport()
         transport = newTransport
+        serverStarting = true
 
         val port = connectionPort()
 
         if (newTransport.startServer(port)) {
-            serverStarted = true
-            clientConnecting = false
             reportStatus("TCP_SERVER_STARTING:$port")
         } else {
-            transport = null
+            serverStarting = false
+            serverStarted = false
+
+            if (transport === newTransport) {
+                transport = null
+            }
+
+            newTransport.release()
+
             reportError(
                 "startTransportServer",
-                "تعذر بدء خادم TCP على المنفذ $port"
+                "تعذر بدء مهمة خادم TCP على المنفذ $port"
             )
+
             scheduleDiscovery()
         }
     }
@@ -368,6 +386,7 @@ class RoyalTVConnectionManager(
             return
         }
 
+        transport = null
         existing?.release()
 
         val newTransport = createTransport()
@@ -380,7 +399,12 @@ class RoyalTVConnectionManager(
 
         if (!newTransport.connect(host, port)) {
             clientConnecting = false
-            transport = null
+
+            if (transport === newTransport) {
+                transport = null
+            }
+
+            newTransport.release()
             scheduleDiscovery()
         }
     }
@@ -389,7 +413,33 @@ class RoyalTVConnectionManager(
         return RoyalTVLocalTransport(
             object : RoyalTVLocalTransport.Listener {
 
+                override fun onServerStarted(port: Int) {
+                    if (stopped.get()) return
+
+                    serverStarting = false
+                    serverStarted = true
+
+                    reportStatus("TCP_SERVER_READY:$port")
+                }
+
+                override fun onServerStopped(reason: String) {
+                    serverStarting = false
+                    serverStarted = false
+
+                    if (stopped.get()) return
+
+                    reportStatus("TCP_SERVER_STOPPED")
+
+                    // أعد تشغيل الخادم فقط إذا كان هذا النقل
+                    // هو النقل الحالي ولم يبدأ إيقافه عمداً.
+                    if (transport?.isServerListening() != true) {
+                        scheduleDiscovery()
+                    }
+                }
+
                 override fun onConnected() {
+                    if (stopped.get()) return
+
                     connected = true
                     clientConnecting = false
 
@@ -410,27 +460,35 @@ class RoyalTVConnectionManager(
                     flushQueue()
                 }
 
-                
-override fun onDisconnected(reason: String) {
-    connected = false
-    clientConnecting = false
+                override fun onDisconnected(reason: String) {
+                    connected = false
+                    clientConnecting = false
 
-    // لا نفترض أن خادم TCP توقف لمجرد انقطاع عميل.
-    // يظل الخادم قائمًا ليستقبل اتصالًا جديدًا.
-    if (!serverStarted) {
-        reportStatus("TCP_SERVER_NOT_ACTIVE")
-    }
+                    val currentTransport = transport
+                    val serverStillListening =
+                        serverStarted &&
+                        currentTransport?.isServerListening() == true
 
-    val id = RoyalTVDeviceIdentity.getDeviceId(appContext)
-    RoyalTVDeviceRegistry.updateOnlineState(id, false)
+                    if (serverStillListening) {
+                        // انقطع العميل، لكن الخادم ما زال يستقبل
+                        // اتصالات جديدة؛ لا نعلن توقف الخادم.
+                        reportStatus("TCP_SERVER_WAITING_FOR_CLIENT")
+                    } else {
+                        serverStarted = false
 
-    listener?.onDisconnected(reason)
-    reportStatus("DISCONNECTED")
+                        val id = RoyalTVDeviceIdentity
+                            .getDeviceId(appContext)
 
-    // إعادة المحاولة وفق الإعدادات المحفوظة.
-    scheduleDiscovery()
-}
+                        RoyalTVDeviceRegistry.updateOnlineState(id, false)
+                        reportStatus("DISCONNECTED")
+                    }
 
+                    listener?.onDisconnected(reason)
+
+                    if (!stopped.get()) {
+                        scheduleDiscovery()
+                    }
+                }
 
                 override fun onMessageReceived(message: String) {
                     listener?.onMessageReceived(message)
@@ -441,9 +499,20 @@ override fun onDisconnected(reason: String) {
                         clientConnecting = false
                     }
 
+                    if (
+                        operation == "startServer" ||
+                        operation == "accept"
+                    ) {
+                        serverStarted = false
+                        serverStarting = false
+                    }
+
                     listener?.onError(operation, reason)
                     reportStatus("ERROR:$operation")
-                    scheduleDiscovery()
+
+                    if (!stopped.get()) {
+                        scheduleDiscovery()
+                    }
                 }
             }
         )
@@ -451,7 +520,7 @@ override fun onDisconnected(reason: String) {
 
     /**
      * المحاولة الأولية لا تتطلب تفعيل إعادة الاتصال.
-     * أما المحاولات اللاحقة فتحترم إعداد إعادة الاتصال التلقائية.
+     * المحاولات اللاحقة تحترم إعداد إعادة الاتصال التلقائية.
      */
     private fun scheduleDiscovery(initialAttempt: Boolean = false) {
         if (stopped.get() || retryScheduled) return
