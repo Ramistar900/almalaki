@@ -482,9 +482,13 @@ private fun BroadcastWindow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     RoyalTVSourceTile(
-                        "البث", "محتوى الشاشة الرئيسية", "▣",
-                        Modifier.weight(1f)
-                    ) { selectedSource = "البث" }
+    "التطبيقات",
+    "اكتشاف تطبيقات الجهاز",
+    "▦",
+    Modifier.weight(1f)
+) {
+    selectedSource = "التطبيقات"
+                    }
 
                     RoyalTVSourceTile(
                         "يوتيوب", "YouTube Web", "▶",
