@@ -1,6 +1,11 @@
-
 package com.almalaki.royaltv
 
+
+import android.content.Intent
+import android.media.projection.MediaProjectionManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -102,6 +107,68 @@ class RoyalTVMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        
+val projectionManager =
+    getSystemService(MEDIA_PROJECTION_SERVICE)
+        as MediaProjectionManager
+
+val screenCapturePermissionLauncher =
+    registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val permissionData = result.data
+
+        if (
+            result.resultCode == android.app.Activity.RESULT_OK &&
+            permissionData != null
+        ) {
+            val captureIntent = Intent(
+                this,
+                RoyalTVHomeScreenCaptureService::class.java
+            ).apply {
+                action =
+                    RoyalTVHomeScreenCaptureService.ACTION_START
+
+                putExtra(
+                    RoyalTVHomeScreenCaptureService.EXTRA_RESULT_CODE,
+                    result.resultCode
+                )
+
+                putExtra(
+                    RoyalTVHomeScreenCaptureService.EXTRA_RESULT_DATA,
+                    permissionData
+                )
+            }
+
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(captureIntent)
+                } else {
+                    startService(captureIntent)
+                }
+
+                Toast.makeText(
+                    this,
+                    "بدأ تجهيز التقاط الشاشة",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (error: Exception) {
+                Toast.makeText(
+                    this,
+                    "تعذر بدء التقاط الشاشة",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        } else {
+            Toast.makeText(
+                this,
+                "تم إلغاء إذن مشاركة الشاشة",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    
+
         window.statusBarColor =
             android.graphics.Color.rgb(8, 12, 18)
 
@@ -109,15 +176,21 @@ class RoyalTVMainActivity : ComponentActivity() {
             android.graphics.Color.rgb(8, 12, 18)
 
         setContent {
-            MaterialTheme {
-                RoyalTVChannelScreen()
+    MaterialTheme {
+        RoyalTVChannelScreen(
+            onRequestHomeScreenBroadcast = {
+                screenCapturePermissionLauncher.launch(
+                    projectionManager.createScreenCaptureIntent()
+                )
             }
-        }
+        )
     }
-}
+        }
 
 @Composable
-private fun RoyalTVChannelScreen() {
+private fun RoyalTVChannelScreen(
+    onRequestHomeScreenBroadcast: () -> Unit
+) {
 
     var currentTime by remember {
         mutableStateOf("--:--")
@@ -316,8 +389,10 @@ private fun RoyalTVChannelScreen() {
         // زر الخيارات في واجهة القناة فقط
         if (!fullscreen) {
             RoyalTVOptionsOverlay(
-                modifier = Modifier.fillMaxSize()
-            )
+    modifier = Modifier.fillMaxSize(),
+    onRequestHomeScreenBroadcast =
+        onRequestHomeScreenBroadcast
+)
         }
     }
 }
