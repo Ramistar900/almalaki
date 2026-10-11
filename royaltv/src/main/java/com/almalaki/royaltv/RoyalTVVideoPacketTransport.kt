@@ -17,10 +17,15 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ROYAL TV - Video Packet Transport
  *
  * نقل حزم H.264 عبر TCP.
- * منفصل عن قناة الأوامر RoyalTVLocalTransport.
+ * منفصل عن قناة أوامر RoyalTVLocalTransport.
  *
- * جميع callbacks تُستدعى من خيوط العمل، وليس بالضرورة
- * من خيط واجهة المستخدم.
+ * تنسيق كل حزمة:
+ * Int    = حجم البيانات
+ * Long   = presentationTimeUs
+ * Int    = MediaCodec flags
+ * Byte[] = بيانات H.264
+ *
+ * تُستدعى callbacks من خيوط العمل.
  */
 class RoyalTVVideoPacketTransport(
     private val listener: Listener
@@ -28,13 +33,19 @@ class RoyalTVVideoPacketTransport(
 
     interface Listener {
         fun onConnected()
+
         fun onDisconnected(reason: String)
+
         fun onVideoPacket(
             data: ByteArray,
             presentationTimeUs: Long,
             flags: Int
         )
-        fun onError(operation: String, reason: String)
+
+        fun onError(
+            operation: String,
+            reason: String
+        )
 
         fun onServerStarted(port: Int) {}
     }
@@ -58,17 +69,13 @@ class RoyalTVVideoPacketTransport(
     @Volatile
     private var activeOutput: DataOutputStream? = null
 
-    @Volatile
-    private var serverMode = false
-
     /**
-     * تشغيل الخادم على جهاز العرض لاستقبال اتصال المرسل.
-     * يبقى الخادم مستمعًا حتى بعد انقطاع العميل،
-     * ويمكنه قبول اتصال جديد.
+     * تشغيل خادم الفيديو على جهاز العرض.
+     * يقبل اتصالًا جديدًا بعد انقطاع الاتصال السابق.
      */
     fun startServer(port: Int = DEFAULT_PORT) {
         if (closed.get()) {
-            reportError("startServer", "تم إغلاق ناقل الفيديو")
+            reportError("startServer", "ناقل الفيديو مغلق")
             return
         }
 
@@ -81,8 +88,6 @@ class RoyalTVVideoPacketTransport(
             reportError("startServer", "الخادم يعمل بالفعل")
             return
         }
-
-        serverMode = true
 
         Thread({
             var localServer: ServerSocket? = null
@@ -97,6 +102,7 @@ class RoyalTVVideoPacketTransport(
                         localServer.close()
                         return@Thread
                     }
+
                     serverSocket = localServer
                 }
 
@@ -121,10 +127,20 @@ class RoyalTVVideoPacketTransport(
                             break
                         }
 
-                        installConnection(client)
+                        val connectedClient = client
+
+                        if (!installConnection(connectedClient)) {
+                            connectedClient.close()
+                            client = null
+                            continue
+                        }
+
                         client = null
 
-                        readPackets(activeSocket)
+                        // قارئ واحد فقط لهذا الاتصال.
+                        // لا ننتقل لقبول عميل جديد حتى ينتهي هذا الاتصال.
+                        readPackets(connectedClient)
+
                     } catch (e: SocketException) {
                         if (
                             serverRunning.get() &&
@@ -177,7 +193,7 @@ class RoyalTVVideoPacketTransport(
     }
 
     /**
-     * اتصال العميل بالخادم.
+     * الاتصال بخادم الفيديو على جهاز العرض.
      * يُستخدم على جهاز إرسال الفيديو.
      */
     fun connect(
@@ -185,12 +201,15 @@ class RoyalTVVideoPacketTransport(
         port: Int = DEFAULT_PORT
     ) {
         if (closed.get()) {
-            reportError("connect", "تم إغلاق ناقل الفيديو")
+            reportError("connect", "ناقل الفيديو مغلق")
             return
         }
 
         if (host.isBlank() || port !in 1..65535) {
-            reportError("connect", "عنوان الجهاز أو المنفذ غير صالح")
+            reportError(
+                "connect",
+                "عنوان الجهاز أو رقم المنفذ غير صالح"
+            )
             return
         }
 
@@ -201,6 +220,7 @@ class RoyalTVVideoPacketTransport(
                 candidate = Socket()
                 candidate.tcpNoDelay = true
                 candidate.keepAlive = true
+
                 candidate.connect(
                     InetSocketAddress(host, port),
                     CONNECT_TIMEOUT_MS
@@ -211,10 +231,18 @@ class RoyalTVVideoPacketTransport(
                     return@Thread
                 }
 
-                installConnection(candidate)
+                val connectedSocket = candidate
+
+                if (!installConnection(connectedSocket)) {
+                    connectedSocket.close()
+                    return@Thread
+                }
+
                 candidate = null
 
-                readPackets(activeSocket)
+                // قارئ واحد فقط للاتصال.
+                readPackets(connectedSocket)
+
             } catch (e: Exception) {
                 if (!closed.get()) {
                     reportError(
@@ -235,13 +263,61 @@ class RoyalTVVideoPacketTransport(
     }
 
     /**
-     * إرسال حزمة فيديو مشفّرة.
+     * تجهيز الاتصال وتسجيل مخرج الإرسال فقط.
      *
-     * تنسيق الحزمة:
-     * 1) طول البيانات: Int
-     * 2) توقيت العرض بالميكروثانية: Long
-     * 3) أعلام MediaCodec: Int
-     * 4) بيانات H.264: ByteArray
+     * لا يبدأ قارئًا هنا؛ القراءة تتم في readPackets
+     * مرة واحدة من مسار الخادم أو العميل.
+     */
+    private fun installConnection(socket: Socket): Boolean {
+        val output = try {
+            DataOutputStream(
+                BufferedOutputStream(socket.getOutputStream())
+            )
+        } catch (e: Exception) {
+            reportError(
+                "installConnection",
+                e.message ?: "تعذر تجهيز اتصال الفيديو"
+            )
+            return false
+        }
+
+        synchronized(outputLock) {
+            if (
+                closed.get() ||
+                socket.isClosed ||
+                !socket.isConnected
+            ) {
+                return false
+            }
+
+            val oldSocket = activeSocket
+
+            activeSocket = socket
+            activeOutput = output
+
+            if (oldSocket != null && oldSocket !== socket) {
+                try {
+                    oldSocket.close()
+                } catch (_: Exception) {
+                }
+            }
+        }
+
+        try {
+            listener.onConnected()
+        } catch (e: Exception) {
+            reportError(
+                "onConnected",
+                e.message ?: "حدث خطأ في إشعار الاتصال"
+            )
+        }
+
+        return true
+    }
+
+    /**
+     * إرسال حزمة فيديو مشفّرة.
+     * يعيد false عند عدم وجود اتصال أو فشل الإرسال.
      */
     fun sendVideoPacket(
         data: ByteArray,
@@ -289,76 +365,21 @@ class RoyalTVVideoPacketTransport(
         }
     }
 
-    private fun installConnection(socket: Socket) {
-        val input = DataInputStream(
-            BufferedInputStream(socket.getInputStream())
-        )
-
-        val output = DataOutputStream(
-            BufferedOutputStream(socket.getOutputStream())
-        )
-
-        synchronized(outputLock) {
-            if (closed.get()) {
-                socket.close()
-                return
-            }
-
-            val oldSocket = activeSocket
-
-            activeSocket = socket
-            activeOutput = output
-
-            if (oldSocket != null && oldSocket !== socket) {
-                try {
-                    oldSocket.close()
-                } catch (_: Exception) {
-                }
-            }
-        }
-
-        listener.onConnected()
-
-        // يبدأ قارئ الحزم بعد تجهيز الاتصال.
-        Thread({
-            readPacketsFrom(socket, input)
-        }, "RoyalTV-Video-Reader").apply {
-            isDaemon = true
-            start()
-        }
-    }
-
     /**
-     * يُبقي الخادم مستمعًا بعد انقطاع العميل.
-     * في وضع العميل، ينتهي القارئ عند انقطاع الاتصال.
+     * قارئ الحزم الوحيد لكل اتصال.
      */
-    private fun readPackets(expectedSocket: Socket?) {
-        if (expectedSocket == null) return
-
+    private fun readPackets(socket: Socket) {
         try {
             val input = DataInputStream(
-                BufferedInputStream(expectedSocket.getInputStream())
+                BufferedInputStream(socket.getInputStream())
             )
-            readPacketsFrom(expectedSocket, input)
-        } catch (e: Exception) {
-            if (!closed.get()) {
-                reportError(
-                    "readPackets",
-                    e.message ?: "تعذرت قراءة الفيديو"
-                )
-            }
-        }
-    }
 
-    private fun readPacketsFrom(
-        socket: Socket,
-        input: DataInputStream
-    ) {
-        var reason = "انقطع اتصال الفيديو"
-
-        try {
             while (!closed.get() && !socket.isClosed) {
-                val length = input.readInt()
+                val length = try {
+                    input.readInt()
+                } catch (e: EOFException) {
+                    break
+                }
 
                 if (length !in 1..MAX_PACKET_BYTES) {
                     throw IOException(
@@ -380,35 +401,49 @@ class RoyalTVVideoPacketTransport(
                     )
                 }
             }
-        } catch (e: EOFException) {
-            reason = "أغلق الطرف الآخر اتصال الفيديو"
         } catch (e: SocketException) {
-            reason = e.message ?: "انقطع اتصال الشبكة"
-        } catch (e: Exception) {
-            reason = e.message ?: "تعذرت قراءة حزمة الفيديو"
-
             if (!closed.get()) {
-                reportError("readPackets", reason)
+                reportError(
+                    "readPackets",
+                    e.message ?: "انقطع اتصال الشبكة"
+                )
+            }
+        } catch (e: Exception) {
+            if (!closed.get()) {
+                reportError(
+                    "readPackets",
+                    e.message ?: "تعذرت قراءة حزمة الفيديو"
+                )
             }
         } finally {
-            val wasActive: Boolean
+            disconnectSocket(socket)
+        }
+    }
 
-            synchronized(outputLock) {
-                wasActive = activeSocket === socket
+    /**
+     * تحرير الاتصال الحالي دون إيقاف الخادم.
+     */
+    private fun disconnectSocket(socket: Socket) {
+        val wasActive: Boolean
 
-                if (wasActive) {
-                    activeSocket = null
-                    activeOutput = null
-                }
+        synchronized(outputLock) {
+            wasActive = activeSocket === socket
+
+            if (wasActive) {
+                activeSocket = null
+                activeOutput = null
             }
+        }
 
+        try {
+            socket.close()
+        } catch (_: Exception) {
+        }
+
+        if (wasActive && !closed.get()) {
             try {
-                socket.close()
+                listener.onDisconnected("انقطع اتصال الفيديو")
             } catch (_: Exception) {
-            }
-
-            if (wasActive && !closed.get()) {
-                listener.onDisconnected(reason)
             }
         }
     }
@@ -426,7 +461,8 @@ class RoyalTVVideoPacketTransport(
     }
 
     /**
-     * إيقاف الاتصال والخادم وتحرير الموارد.
+     * إيقاف الخادم والاتصال وتحرير الموارد.
+     * هذا الكائن لا يُعاد استخدامه بعد close().
      */
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
