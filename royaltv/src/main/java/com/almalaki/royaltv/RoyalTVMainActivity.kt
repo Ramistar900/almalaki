@@ -512,8 +512,40 @@ private fun BroadcastWindow(
                 }
             }
         } else if (selectedSource != null) {
+if (selectedSource == "التطبيقات") {
+Box(
+modifier = Modifier.fillMaxSize()
+) {
+RoyalTVAppDiscoveryPanel()
+
+                Text(
+                    text = "‹ العودة",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RoyalBlue)
+                        .border(
+                            1.dp,
+                            RoyalGold,
+                            RoundedCornerShape(8.dp)
+                        )
+                        .clickable {
+                            selectedSource = null
+                        }
+                        .padding(
+                            horizontal = 14.dp,
+                            vertical = 8.dp
+                        ),
+                    color = RoyalPearl,
+                    fontWeight = FontWeight.Bold
+                )
+                    }
+        } else {
             Column(
-                modifier = Modifier.align(Alignment.Center).padding(20.dp),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
@@ -535,14 +567,24 @@ private fun BroadcastWindow(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(RoyalBlue)
-                        .border(1.dp, RoyalGold, RoundedCornerShape(8.dp))
-                        .clickable { selectedSource = null }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .border(
+                            1.dp,
+                            RoyalGold,
+                            RoundedCornerShape(8.dp)
+                        )
+                        .clickable {
+                            selectedSource = null
+                        }
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 10.dp
+                        ),
                     color = RoyalPearl,
                     fontWeight = FontWeight.Bold
                 )
             }
-        } else {
+        }
+    } else {
             Column(
                 modifier = Modifier.align(Alignment.Center).padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
