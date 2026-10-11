@@ -13,8 +13,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * ROYAL TV — Connection Manager
  *
- * يدير اكتشاف Wi-Fi Direct، ونقل TCP، وإعادة الاتصال،
- * وطابور الرسائل المحلي، مع تجاهل إشعارات النقل القديم.
+ * يدير Wi-Fi Direct وقناة الأوامر وطابور الرسائل وإعادة الاتصال.
+ * قناة الفيديو مستقلة عن قناة الأوامر:
+ * - الأوامر: المنفذ المضبوط في RoyalTVConnectionSettings.
+ * - الفيديو: RoyalTVVideoPacketTransport.DEFAULT_PORT.
  */
 class RoyalTVConnectionManager(context: Context) {
 
@@ -26,6 +28,16 @@ class RoyalTVConnectionManager(context: Context) {
         fun onMessageReceived(message: String) {}
         fun onError(operation: String, reason: String) {}
         fun onPendingMessagesChanged(count: Int) {}
+
+        // أحداث قناة الفيديو المستقلة.
+        fun onVideoTransportConnected() {}
+        fun onVideoTransportDisconnected(reason: String) {}
+        fun onVideoPacket(
+            data: ByteArray,
+            presentationTimeUs: Long,
+            flags: Int
+        ) {}
+        fun onVideoTransportError(operation: String, reason: String) {}
     }
 
     companion object {
@@ -47,8 +59,13 @@ class RoyalTVConnectionManager(context: Context) {
     @Volatile
     private var wifiDirect: RoyalTVWiFiDirectManager? = null
 
+    // قناة الأوامر الحالية — لا تستخدم لنقل إطارات الفيديو.
     @Volatile
     private var transport: RoyalTVLocalTransport? = null
+
+    // قناة الفيديو المستقلة.
+    @Volatile
+    private var videoTransport: RoyalTVVideoPacketTransport? = null
 
     @Volatile
     private var latestPeers: List<WifiP2pDevice> = emptyList()
@@ -71,12 +88,20 @@ class RoyalTVConnectionManager(context: Context) {
     @Volatile
     private var connected = false
 
-    /**
-     * يتغير الرقم عند استبدال النقل أو إيقافه.
-     * أي callback من جيل قديم يتم تجاهله.
-     */
+    @Volatile
+    private var videoServerStarted = false
+
+    @Volatile
+    private var videoServerStarting = false
+
+    @Volatile
+    private var videoClientConnecting = false
+
     @Volatile
     private var transportGeneration = 0L
+
+    @Volatile
+    private var videoTransportGeneration = 0L
 
     private fun discoveryEnabled(): Boolean =
         RoyalTVConnectionSettings.isDiscoveryEnabled(appContext)
@@ -240,8 +265,8 @@ class RoyalTVConnectionManager(context: Context) {
         latestPeers.toList()
 
     /**
-     * true تعني أن الرسالة أُرسلت فوراً.
-     * false تعني أنها لم تُرسل فوراً؛ وقد تكون حُفظت بالطابور.
+     * إرسال رسالة عبر قناة الأوامر.
+     * إذا تعذر إرسالها، تحفظ في الطابور المحلي.
      */
     fun sendMessage(message: String): Boolean {
         if (message.isBlank()) return false
@@ -284,20 +309,64 @@ class RoyalTVConnectionManager(context: Context) {
         return sendMessage(envelope.toString())
     }
 
+    /**
+     * إرسال حزمة فيديو عبر TCP مستقل عن قناة الأوامر.
+     *
+     * يجب أن تكون قناة الفيديو متصلة أولاً.
+     */
+    fun sendVideoPacket(
+        data: ByteArray,
+        presentationTimeUs: Long,
+        flags: Int
+    ): Boolean {
+        if (stopped.get() || data.isEmpty()) return false
+
+        val activeTransport = videoTransport ?: return false
+
+        return try {
+            activeTransport.sendVideoPacket(
+                data,
+                presentationTimeUs,
+                flags
+            )
+        } catch (e: Exception) {
+            listener?.onVideoTransportError(
+                "sendVideoPacket",
+                e.message ?: "تعذر إرسال حزمة الفيديو"
+            )
+            false
+        }
+    }
+
+    fun isVideoTransportConnected(): Boolean =
+        videoTransport != null &&
+            !stopped.get() &&
+            !videoClientConnecting &&
+            !videoServerStarting
+
     fun getPendingMessageCount(): Int = readQueue().length()
 
     @Synchronized
     fun stop() {
         stopped.set(true)
 
-        // إبطال إشعارات النقل قبل تحريره.
+        // إبطال callbacks القديمة قبل تحرير النقلين.
         transportGeneration++
+        videoTransportGeneration++
 
         connected = false
         serverStarted = false
         serverStarting = false
         clientConnecting = false
         retryScheduled = false
+
+        videoServerStarted = false
+        videoServerStarting = false
+        videoClientConnecting = false
+
+        val oldVideoTransport = videoTransport
+        videoTransport = null
+        oldVideoTransport?.close()
 
         val oldTransport = transport
         transport = null
@@ -335,9 +404,17 @@ class RoyalTVConnectionManager(context: Context) {
         manager.connect(candidate)
     }
 
+    /**
+     * تُستخدم معلومة مالك مجموعة Wi-Fi Direct نفسها
+     * لتحديد طرف الخادم وطرف العميل في كلا النقلين.
+     */
     private fun prepareTransport(info: WifiP2pInfo) {
         if (stopped.get() || !info.groupFormed) return
 
+        // تشغيل قناة الفيديو المستقلة.
+        prepareVideoTransport(info)
+
+        // قناة الأوامر تبقى على منفذها وإعداداتها الحالية.
         if (info.isGroupOwner) {
             startTransportServer()
         } else {
@@ -355,11 +432,179 @@ class RoyalTVConnectionManager(context: Context) {
         }
     }
 
+    /**
+     * خادم الفيديو والعميل يعملان على نفس اتصال Wi-Fi Direct،
+     * لكن على منفذ منفصل عن رسائل الأوامر.
+     *
+     * قناة TCP ثنائية الاتجاه؛ يمكن لأي من الطرفين إرسال الحزم.
+     */
+    @Synchronized
+    private fun prepareVideoTransport(info: WifiP2pInfo) {
+        if (stopped.get() || !info.groupFormed) return
+
+        val current = videoTransport
+
+        if (
+            current != null &&
+            (videoServerStarted || videoServerStarting ||
+                videoClientConnecting)
+        ) {
+            return
+        }
+
+        val address = info.groupOwnerAddress?.hostAddress
+
+        if (!info.isGroupOwner && address.isNullOrBlank()) {
+            reportVideoError(
+                "prepareVideoTransport",
+                "لم يتوفر عنوان مالك مجموعة Wi-Fi Direct للفيديو"
+            )
+            return
+        }
+
+        videoTransportGeneration++
+
+        val oldTransport = videoTransport
+        videoTransport = null
+        oldTransport?.close()
+
+        val newTransport = createVideoTransport()
+        videoTransport = newTransport
+
+        val port = RoyalTVVideoPacketTransport.DEFAULT_PORT
+
+        if (info.isGroupOwner) {
+            videoServerStarting = true
+            videoServerStarted = false
+
+            reportStatus("VIDEO_TCP_SERVER_STARTING:$port")
+
+            if (!newTransport.startServer(port)) {
+                videoServerStarting = false
+                videoServerStarted = false
+
+                if (videoTransport === newTransport) {
+                    videoTransport = null
+                    videoTransportGeneration++
+                }
+
+                newTransport.close()
+
+                reportVideoError(
+                    "startVideoServer",
+                    "تعذر بدء خادم الفيديو على المنفذ $port"
+                )
+            }
+        } else {
+            videoClientConnecting = true
+
+            reportStatus("VIDEO_TCP_CONNECTING:$address:$port")
+
+            if (!newTransport.connect(address!!, port)) {
+                videoClientConnecting = false
+
+                if (videoTransport === newTransport) {
+                    videoTransport = null
+                    videoTransportGeneration++
+                }
+
+                newTransport.close()
+
+                reportVideoError(
+                    "connectVideoClient",
+                    "تعذر الاتصال بخادم الفيديو $address:$port"
+                )
+            }
+        }
+    }
+
+    private fun createVideoTransport(): RoyalTVVideoPacketTransport {
+        val generation = ++videoTransportGeneration
+
+        fun isCurrentVideoTransport(): Boolean =
+            !stopped.get() &&
+                generation == videoTransportGeneration
+
+        return RoyalTVVideoPacketTransport(
+            object : RoyalTVVideoPacketTransport.Listener {
+
+                override fun onServerStarted(port: Int) {
+                    if (!isCurrentVideoTransport()) return
+
+                    videoServerStarting = false
+                    videoServerStarted = true
+
+                    reportStatus("VIDEO_TCP_SERVER_READY:$port")
+                }
+
+                override fun onConnected() {
+                    if (!isCurrentVideoTransport()) return
+
+                    videoClientConnecting = false
+                    reportStatus("VIDEO_TCP_CONNECTED")
+
+                    listener?.onVideoTransportConnected()
+                }
+
+                override fun onDisconnected(reason: String) {
+                    if (generation != videoTransportGeneration) return
+
+                    videoServerStarting = false
+                    videoClientConnecting = false
+
+                    // قد يظل الخادم منتظراً اتصال جهاز آخر.
+                    if (!videoServerStarted) {
+                        val old = videoTransport
+                        videoTransport = null
+                        old?.close()
+                    }
+
+                    reportStatus("VIDEO_TCP_DISCONNECTED")
+                    listener?.onVideoTransportDisconnected(reason)
+
+                    if (!stopped.get() && autoReconnectEnabled()) {
+                        scheduleDiscovery()
+                    }
+                }
+
+                override fun onVideoPacket(
+                    data: ByteArray,
+                    presentationTimeUs: Long,
+                    flags: Int
+                ) {
+                    if (!isCurrentVideoTransport()) return
+
+                    listener?.onVideoPacket(
+                        data,
+                        presentationTimeUs,
+                        flags
+                    )
+                }
+
+                override fun onError(
+                    operation: String,
+                    reason: String
+                ) {
+                    if (!isCurrentVideoTransport()) return
+
+                    videoServerStarting = false
+                    videoClientConnecting = false
+
+                    listener?.onVideoTransportError(operation, reason)
+                    reportStatus("VIDEO_ERROR:$operation")
+
+                    if (!stopped.get() && autoReconnectEnabled()) {
+                        scheduleDiscovery()
+                    }
+                }
+            }
+        )
+    }
+
     @Synchronized
     private fun startTransportServer() {
         if (stopped.get() || serverStarted || serverStarting) return
 
-        // أبطل callbacks الخاصة بالنقل السابق قبل تحريره.
         transportGeneration++
 
         val oldTransport = transport
@@ -404,7 +649,6 @@ class RoyalTVConnectionManager(context: Context) {
             return
         }
 
-        // أبطل callbacks الخاصة بالنقل السابق.
         transportGeneration++
         transport = null
         existing?.release()
@@ -429,9 +673,6 @@ class RoyalTVConnectionManager(context: Context) {
         }
     }
 
-    /**
-     * كل callback يتحقق من جيل النقل قبل تعديل الحالة.
-     */
     private fun createTransport(): RoyalTVLocalTransport {
         val generation = ++transportGeneration
 
@@ -500,10 +741,9 @@ class RoyalTVConnectionManager(context: Context) {
                     val activeTransport = transport
                     val serverStillListening =
                         serverStarted &&
-                        activeTransport?.isServerListening() == true
+                            activeTransport?.isServerListening() == true
 
                     if (serverStillListening) {
-                        // انقطع العميل، لكن خادم الشاشة ما زال يعمل.
                         reportStatus("TCP_SERVER_WAITING_FOR_CLIENT")
                     } else {
                         reportStatus("DISCONNECTED")
@@ -526,7 +766,6 @@ class RoyalTVConnectionManager(context: Context) {
                     listener?.onMessageReceived(message)
                 }
 
-                
                 override fun onError(operation: String, reason: String) {
                     if (!isCurrentTransport()) return
 
@@ -546,16 +785,10 @@ class RoyalTVConnectionManager(context: Context) {
                         scheduleDiscovery()
                     }
                 }
-                
-
             }
         )
     }
 
-    /**
-     * المحاولة الأولية لا تتطلب تفعيل إعادة الاتصال.
-     * المحاولات التالية تحترم إعداد إعادة الاتصال التلقائية.
-     */
     @Synchronized
     private fun scheduleDiscovery(initialAttempt: Boolean = false) {
         if (stopped.get() || retryScheduled) return
@@ -636,7 +869,7 @@ class RoyalTVConnectionManager(context: Context) {
             reportError(
                 "enqueue",
                 "وصلت قائمة الرسائل المحفوظة إلى الحد الأقصى"
-            )
+                )
             return false
         }
 
@@ -676,5 +909,10 @@ class RoyalTVConnectionManager(context: Context) {
 
     private fun reportError(operation: String, reason: String) {
         listener?.onError(operation, reason)
+    }
+
+    private fun reportVideoError(operation: String, reason: String) {
+        listener?.onVideoTransportError(operation, reason)
+        reportStatus("VIDEO_ERROR:$operation")
     }
 }
