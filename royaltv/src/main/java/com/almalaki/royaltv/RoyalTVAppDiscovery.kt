@@ -1,8 +1,5 @@
 package com.almalaki.royaltv
 
-import android.content.Context
-import android.content.Intent
-import android.content.pm.ResolveInfo
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -13,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,102 +32,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-internal data class RoyalTVInstalledApp(
-    val label: String,
-    val packageName: String
-)
-
-internal object RoyalTVAppDiscovery {
-
-    @Suppress("DEPRECATION")
-    fun findLaunchableApps(
-        context: Context
-    ): List<RoyalTVInstalledApp> {
-
-        val packageManager = context.packageManager
-        val found =
-            LinkedHashMap<String, RoyalTVInstalledApp>()
-
-        val queries = listOf(
-            Intent(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER),
-            Intent(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LAUNCHER)
-        )
-
-        for (query in queries) {
-            val resolved =
-                packageManager.queryIntentActivities(query, 0)
-
-            for (info: ResolveInfo in resolved) {
-                val activityInfo = info.activityInfo
-                    ?: continue
-
-                val packageName = activityInfo.packageName
-
-                if (packageName == context.packageName) {
-                    continue
-                }
-
-                val label = info.loadLabel(packageManager)
-                    ?.toString()
-                    ?.trim()
-                    .orEmpty()
-                    .ifBlank { packageName }
-
-                if (!found.containsKey(packageName)) {
-                    found[packageName] =
-                        RoyalTVInstalledApp(
-                            label = label,
-                            packageName = packageName
-                        )
-                }
-            }
-        }
-
-        return found.values.sortedBy {
-            it.label.lowercase()
-        }
-    }
-
-    fun launch(
-        context: Context,
-        app: RoyalTVInstalledApp
-    ) {
-        val packageManager = context.packageManager
-
-        val intent =
-            packageManager.getLeanbackLaunchIntentForPackage(
-                app.packageName
-            ) ?: packageManager.getLaunchIntentForPackage(
-                app.packageName
-            )
-
-        if (intent == null) {
-            Toast.makeText(
-                context,
-                "لا يوجد مدخل تشغيل متاح لهذا التطبيق",
-                Toast.LENGTH_LONG
-            ).show()
-            return
-        }
-
-        try {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        } catch (error: Exception) {
-            Toast.makeText(
-                context,
-                "تعذّر فتح التطبيق: ${app.label}",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-}
-
 @Composable
 internal fun RoyalTVAppDiscoveryPanel() {
-
     val context = LocalContext.current
 
     var apps by remember {
@@ -144,7 +46,7 @@ internal fun RoyalTVAppDiscoveryPanel() {
 
     fun refreshApps() {
         loading = true
-        apps = RoyalTVAppDiscovery.findLaunchableApps(context)
+        apps = RoyalTVInstalledAppsManager.getLaunchableApps(context)
         loading = false
     }
 
@@ -193,7 +95,13 @@ internal fun RoyalTVAppDiscoveryPanel() {
             }
         }
 
-        if (!loading && apps.isEmpty()) {
+        if (loading) {
+            Text(
+                text = "جارٍ البحث عن التطبيقات...",
+                color = Color(0xFFDCE5EE),
+                fontSize = 13.sp
+            )
+        } else if (apps.isEmpty()) {
             Text(
                 text = "لم يعثر النظام على تطبيقات قابلة للتشغيل.",
                 color = Color(0xFFDCE5EE),
@@ -204,8 +112,7 @@ internal fun RoyalTVAppDiscoveryPanel() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement =
-                    Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(
                     items = apps,
@@ -215,10 +122,19 @@ internal fun RoyalTVAppDiscoveryPanel() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                RoyalTVAppDiscovery.launch(
-                                    context,
-                                    app
-                                )
+                                val opened =
+                                    RoyalTVInstalledAppsManager.launchApp(
+                                        context,
+                                        app.packageName
+                                    )
+
+                                if (!opened) {
+                                    Toast.makeText(
+                                        context,
+                                        "تعذّر فتح التطبيق: ${app.label}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                             .focusable(),
                         shape = RoundedCornerShape(8.dp),
