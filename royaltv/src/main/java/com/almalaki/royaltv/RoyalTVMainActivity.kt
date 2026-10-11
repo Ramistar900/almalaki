@@ -116,13 +116,22 @@ class RoyalTVMainActivity : ComponentActivity() {
                 applicationContext
             )
 
+                RoyalTVTickerManager.initialize(applicationContext)
+
         RoyalTVRealtime.start(royalTvDisplayId) { command ->
             Log.i(
                 "RoyalTVMainActivity",
                 "تم استقبال أمر ROYAL TV: ${command.type}"
             )
 
-            RoyalTVDisplayStateManager.executeCommand(command)
+            val tickerHandled = RoyalTVTickerReceiver.receive(
+                applicationContext,
+                command
+            )
+
+            if (!tickerHandled) {
+                RoyalTVDisplayStateManager.executeCommand(command)
+            }
 
             runOnUiThread {
                 Toast.makeText(
@@ -220,6 +229,9 @@ private fun RoyalTVChannelScreen(
 
     val displayState by
         RoyalTVDisplayStateManager.state.collectAsState()
+        
+    val tickerText by
+        RoyalTVTickerManager.text.collectAsState()
 
     var currentTime by remember {
         mutableStateOf("--:--")
@@ -409,6 +421,7 @@ private fun RoyalTVChannelScreen(
                 BottomIdentityBar(
                     currentTime = currentTime,
                     currentDate = currentDate,
+                    tickerText = tickerText,
                     compact = compact,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -824,6 +837,7 @@ private fun InfoPanel(
 private fun BottomIdentityBar(
     currentTime: String,
     currentDate: String,
+    tickerText: String,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -898,7 +912,7 @@ private fun BottomIdentityBar(
         ) {
 
             Text(
-                text = "جودة فاخرة  •  أهلاً بكم في الملكي  •  طعم يستحق التجربة  •  ",
+                text = tickerText,
                 modifier = Modifier
                     .fillMaxWidth()
                     .basicMarquee(
