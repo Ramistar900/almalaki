@@ -1,6 +1,6 @@
-
 package com.almalaki.royaltv
 
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -24,8 +24,9 @@ import android.view.WindowManager
  * ROYAL TV — Home Screen Capture Service
  *
  * يلتقط إطارات الشاشة بعد موافقة Android الرسمية.
- * لا ينقل الفيديو إلى جهاز آخر بعد؛ النقل والترميز
- * وربط نافذة العرض مراحل مستقلة لاحقة.
+ *
+ * هذه المرحلة مسؤولة عن الالتقاط والتنظيف الآمن فقط.
+ * لا ترمّز الفيديو ولا تنقله إلى جهاز آخر بعد.
  */
 class RoyalTVHomeScreenCaptureService : Service() {
 
@@ -49,6 +50,8 @@ class RoyalTVHomeScreenCaptureService : Service() {
     private var imageReader: ImageReader? = null
     private var projectionCallback: MediaProjection.Callback? = null
 
+    private var isStopping = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(
@@ -57,20 +60,26 @@ class RoyalTVHomeScreenCaptureService : Service() {
         startId: Int
     ): Int {
         when (intent?.action) {
+
             ACTION_STOP -> {
                 stopCapture()
+                stopForegroundCompat()
                 stopSelf()
                 return START_NOT_STICKY
             }
 
             ACTION_START -> {
-                val resultCode =
-                    intent.getIntExtra(
-                        EXTRA_RESULT_CODE,
-                        0
-                    )
+                if (projection != null) {
+                    Log.i(TAG, "Capture is already active")
+                    return START_NOT_STICKY
+                }
 
-                val resultData =
+                val resultCode = intent.getIntExtra(
+                    EXTRA_RESULT_CODE,
+                    0
+                )
+
+                val resultData: Intent? =
                     if (Build.VERSION.SDK_INT >= 33) {
                         intent.getParcelableExtra(
                             EXTRA_RESULT_DATA,
@@ -78,13 +87,19 @@ class RoyalTVHomeScreenCaptureService : Service() {
                         )
                     } else {
                         @Suppress("DEPRECATION")
-                        intent.getParcelableExtra<Intent>(
+                        intent.getParcelableExtra(
                             EXTRA_RESULT_DATA
                         )
                     }
 
-                if (resultCode == 0 || resultData == null) {
-                    Log.e(TAG, "Screen capture permission data missing")
+                if (
+                    resultCode != Activity.RESULT_OK ||
+                    resultData == null
+                ) {
+                    Log.e(
+                        TAG,
+                        "Screen capture permission data missing or invalid"
+                    )
                     stopSelf()
                     return START_NOT_STICKY
                 }
@@ -93,8 +108,13 @@ class RoyalTVHomeScreenCaptureService : Service() {
                     startForegroundCompat()
                     startCapture(resultCode, resultData)
                 } catch (error: Exception) {
-                    Log.e(TAG, "Unable to start screen capture", error)
+                    Log.e(
+                        TAG,
+                        "Unable to start screen capture",
+                        error
+                    )
                     stopCapture()
+                    stopForegroundCompat()
                     stopSelf()
                 }
             }
@@ -111,15 +131,15 @@ class RoyalTVHomeScreenCaptureService : Service() {
     private fun startForegroundCompat() {
         createNotificationChannel()
 
-        val notification =
-            Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("ROYAL TV")
-                .setContentText("جلسة التقاط الشاشة نشطة")
-                .setSmallIcon(
-                    android.R.drawable.ic_menu_view
-                )
-                .setOngoing(true)
-                .build()
+        val notification = Notification.Builder(
+            this,
+            CHANNEL_ID
+        )
+            .setContentTitle("ROYAL TV")
+            .setContentText("جلسة التقاط الشاشة نشطة")
+            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setOngoing(true)
+            .build()
 
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
@@ -135,42 +155,51 @@ class RoyalTVHomeScreenCaptureService : Service() {
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= 26) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "ROYAL TV Screen Capture",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description =
-                    "إشعار جلسة مشاركة الشاشة"
-            }
-
-            val manager =
-                getSystemService(
-                    Context.NOTIFICATION_SERVICE
-                ) as NotificationManager
-
-            manager.createNotificationChannel(channel)
+    private fun stopForegroundCompat() {
+        if (Build.VERSION.SDK_INT >= 24) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
         }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT < 26) return
+
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "ROYAL TV Screen Capture",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "إشعار جلسة مشاركة الشاشة"
+        }
+
+        val manager = getSystemService(
+            Context.NOTIFICATION_SERVICE
+        ) as NotificationManager
+
+        manager.createNotificationChannel(channel)
     }
 
     private fun startCapture(
         resultCode: Int,
         resultData: Intent
     ) {
-        if (projection != null) return
+        check(projection == null) {
+            "A screen projection is already active"
+        }
 
-        val manager =
-            getSystemService(
-                Context.MEDIA_PROJECTION_SERVICE
-            ) as MediaProjectionManager
+        isStopping = false
 
-        val mediaProjection =
-            manager.getMediaProjection(
-                resultCode,
-                resultData
-            ) ?: error("Android did not provide MediaProjection")
+        val manager = getSystemService(
+            Context.MEDIA_PROJECTION_SERVICE
+        ) as MediaProjectionManager
+
+        val mediaProjection = manager.getMediaProjection(
+            resultCode,
+            resultData
+        ) ?: error("Android did not provide MediaProjection")
 
         projection = mediaProjection
 
@@ -194,46 +223,57 @@ class RoyalTVHomeScreenCaptureService : Service() {
                     source.acquireLatestImage()?.use { frame ->
                         Log.d(
                             TAG,
-                            "Captured frame: ${frame.width}x${frame.height}"
+                            "Captured frame: " +
+                                "${frame.width}x${frame.height}"
                         )
                     }
                 } catch (error: Exception) {
-                    Log.e(TAG, "Frame processing error", error)
+                    if (!isStopping) {
+                        Log.e(
+                            TAG,
+                            "Frame processing error",
+                            error
+                        )
+                    }
                 }
             },
             null
         )
 
-        val callback =
-            object : MediaProjection.Callback() {
-                override fun onStop() {
-                    Log.i(TAG, "Android stopped screen projection")
-                    stopCapture()
-                    stopSelf()
-                }
+        val callback = object : MediaProjection.Callback() {
+            override fun onStop() {
+                Log.i(
+                    TAG,
+                    "Android stopped screen projection"
+                )
+
+                // Android أوقف الإسقاط بالفعل؛ ننظف الموارد
+                // دون استدعاء projection.stop() مرة أخرى.
+                stopCapture(stopProjection = false)
+                stopForegroundCompat()
+                stopSelf()
             }
+        }
 
         projectionCallback = callback
+
         mediaProjection.registerCallback(
             callback,
             null
         )
 
-        virtualDisplay =
-            mediaProjection.createVirtualDisplay(
-                "ROYAL-TV-Home-Capture",
-                width,
-                height,
-                density,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                reader.surface,
-                null,
-                null
-            )
+        val display = mediaProjection.createVirtualDisplay(
+            "ROYAL-TV-Home-Capture",
+            width,
+            height,
+            density,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            reader.surface,
+            null,
+            null
+        ) ?: error("Could not create screen virtual display")
 
-        if (virtualDisplay == null) {
-            error("Could not create screen virtual display")
-        }
+        virtualDisplay = display
 
         Log.i(
             TAG,
@@ -244,13 +284,14 @@ class RoyalTVHomeScreenCaptureService : Service() {
     private fun getScreenMetrics(): DisplayMetrics {
         val metrics = DisplayMetrics()
 
+        val windowManager = getSystemService(
+            Context.WINDOW_SERVICE
+        ) as WindowManager
+
         if (Build.VERSION.SDK_INT >= 30) {
-            val bounds =
-                (getSystemService(
-                    Context.WINDOW_SERVICE
-                ) as WindowManager)
-                    .currentWindowMetrics
-                    .bounds
+            val bounds = windowManager
+                .currentWindowMetrics
+                .bounds
 
             metrics.widthPixels = bounds.width()
             metrics.heightPixels = bounds.height()
@@ -258,46 +299,56 @@ class RoyalTVHomeScreenCaptureService : Service() {
                 resources.displayMetrics.densityDpi
         } else {
             @Suppress("DEPRECATION")
-            (getSystemService(
-                Context.WINDOW_SERVICE
-            ) as WindowManager)
-                .defaultDisplay
-                .getRealMetrics(metrics)
+            windowManager.defaultDisplay.getRealMetrics(metrics)
         }
 
         return metrics
     }
 
-    private fun stopCapture() {
+    private fun stopCapture(
+        stopProjection: Boolean = true
+    ) {
+        if (isStopping) return
+        isStopping = true
+
+        val activeProjection = projection
+        val callback = projectionCallback
+
+        // أزل المراجع أولاً لتقليل احتمال إعادة التنظيف.
+        projection = null
+        projectionCallback = null
+
         try {
             virtualDisplay?.release()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.w(TAG, "Virtual display release failed", error)
+        } finally {
+            virtualDisplay = null
         }
-        virtualDisplay = null
 
         try {
             imageReader?.setOnImageAvailableListener(null, null)
             imageReader?.close()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.w(TAG, "ImageReader cleanup failed", error)
+        } finally {
+            imageReader = null
         }
-        imageReader = null
-
-        val activeProjection = projection
-        val callback = projectionCallback
 
         try {
             if (activeProjection != null && callback != null) {
                 activeProjection.unregisterCallback(callback)
             }
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.w(TAG, "Projection callback cleanup failed", error)
         }
 
-        projectionCallback = null
-        projection = null
-
-        try {
-            activeProjection?.stop()
-        } catch (_: Exception) {
+        if (stopProjection) {
+            try {
+                activeProjection?.stop()
+            } catch (error: Exception) {
+                Log.w(TAG, "Projection stop failed", error)
+            }
         }
 
         Log.i(TAG, "Screen capture stopped")
@@ -305,7 +356,7 @@ class RoyalTVHomeScreenCaptureService : Service() {
 
     override fun onDestroy() {
         stopCapture()
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopForegroundCompat()
         super.onDestroy()
     }
 }
