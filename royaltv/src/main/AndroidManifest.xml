@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -36,7 +37,15 @@
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
 
-    <!-- التطبيق لا يشترط وجود Bluetooth أو Wi-Fi Direct بكل جهاز -->
+    <!-- خدمات المقدمة -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- التقاط الشاشة في Android 14 وما بعده -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+
+    <!-- لا نشترط وجود Bluetooth أو Wi-Fi Direct -->
     <uses-feature
         android:name="android.hardware.bluetooth"
         android:required="false" />
@@ -51,6 +60,7 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
+        <!-- شاشة التطبيق الرئيسية -->
         <activity
             android:name=".RoyalTVMainActivity"
             android:exported="true">
@@ -61,6 +71,12 @@
             </intent-filter>
 
         </activity>
+
+        <!-- خدمة التقاط الشاشة بعد موافقة المستخدم -->
+        <service
+            android:name=".RoyalTVHomeScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
 
     </application>
 
