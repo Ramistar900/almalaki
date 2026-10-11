@@ -18,7 +18,7 @@ private const val ROYAL_TV_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
 
 private const val ROYAL_TV_KEY =
-    "PASTE_EXISTING_SUPABASE_PUBLISHABLE_KEY_HERE"
+    sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd
 
 private const val ROYAL_TV_EVENT =
     "royal_tv_command"
