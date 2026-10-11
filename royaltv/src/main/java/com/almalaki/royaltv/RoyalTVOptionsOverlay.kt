@@ -83,16 +83,22 @@ private val royalOptions = listOf(
         "إعدادات القناة",
         "خيارات العرض والتحكم بالقناة"
     ),
-    RoyalOption(
+        RoyalOption(
         "💾",
         "الحفظ والاستعادة",
         "خيارات حفظ إعدادات ROYAL TV"
+    ),
+    RoyalOption(
+        "📺",
+        "بث محتوى الشاشة الرئيسية",
+        "مشاركة الشاشة بعد موافقة Android"
     )
 )
 
 @Composable
 fun RoyalTVOptionsOverlay(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRequestHomeScreenBroadcast: () -> Unit = {}
 ) {
     var menuOpen by remember {
         mutableStateOf(false)
@@ -237,7 +243,12 @@ fun RoyalTVOptionsOverlay(
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable {
-                                selectedOption = option
+    selectedOption = option
+
+    if (option.title == "بث محتوى الشاشة الرئيسية") {
+        menuOpen = false
+        onRequestHomeScreenBroadcast()
+    }
                             }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
