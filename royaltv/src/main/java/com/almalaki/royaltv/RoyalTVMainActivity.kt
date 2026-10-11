@@ -120,6 +120,8 @@ class RoyalTVMainActivity : ComponentActivity() {
                 "RoyalTVMainActivity",
                 "تم استقبال أمر ROYAL TV: ${command.type}"
             )
+            
+            RoyalTVDisplayStateManager.executeCommand(command)
 
             runOnUiThread {
                 Toast.makeText(
