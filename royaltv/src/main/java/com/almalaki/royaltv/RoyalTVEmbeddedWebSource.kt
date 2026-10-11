@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -22,11 +23,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 internal fun RoyalTVEmbeddedWebSource(
     modifier: Modifier = Modifier
 ) {
-    val webView = remember {
-        WebView(
-            androidx.compose.ui.platform.LocalContext
-                .current
-        ).apply {
+    // نأخذ Context داخل Composable قبل remember.
+    val context = LocalContext.current
+
+    val webView = remember(context) {
+        WebView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
