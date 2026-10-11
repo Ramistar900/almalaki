@@ -1,4 +1,3 @@
-
 package com.almalaki.royaltv
 
 import android.content.Context
@@ -6,7 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 
 /**
- * بيانات تطبيق مثبت يمكن تشغيله من جهاز ROYAL TV.
+ * بيانات تطبيق مثبت على الجهاز.
  */
 data class RoyalTVInstalledApp(
     val packageName: String,
@@ -16,34 +15,26 @@ data class RoyalTVInstalledApp(
 object RoyalTVInstalledAppsManager {
 
     /**
-     * اكتشاف التطبيقات التي تملك أيقونة تشغيل.
+     * اكتشاف التطبيقات المثبتة، بما فيها تطبيقات النظام،
+     * وليس التطبيقات التي تملك أيقونة تشغيل فقط.
      */
     fun getLaunchableApps(
         context: Context
     ): List<RoyalTVInstalledApp> {
         val packageManager = context.packageManager
 
-        val launcherIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-
         return try {
             @Suppress("DEPRECATION")
-            packageManager.queryIntentActivities(
-                launcherIntent,
+            packageManager.getInstalledApplications(
                 PackageManager.MATCH_ALL
             )
-                .mapNotNull { info ->
-                    val activity = info.activityInfo
+                .mapNotNull { application ->
+                    val packageName = application.packageName
+                        .takeIf { it.isNotBlank() }
                         ?: return@mapNotNull null
 
-                    val packageName = activity.packageName
-                    if (packageName.isBlank()) {
-                        return@mapNotNull null
-                    }
-
-                    val label = info
-                        .loadLabel(packageManager)
+                    val label = packageManager
+                        .getApplicationLabel(application)
                         .toString()
                         .trim()
                         .ifBlank { packageName }
@@ -54,17 +45,15 @@ object RoyalTVInstalledAppsManager {
                     )
                 }
                 .distinctBy { it.packageName }
-                .sortedBy {
-                    it.label.lowercase()
-                }
+                .sortedBy { it.label.lowercase() }
         } catch (_: RuntimeException) {
             emptyList()
         }
     }
 
     /**
-     * فتح تطبيق على الجهاز الحالي.
-     * true تعني أن أمر التشغيل أُرسل بنجاح.
+     * محاولة فتح التطبيق.
+     * بعض تطبيقات النظام لا تملك واجهة تشغيل عامة.
      */
     fun launchApp(
         context: Context,
