@@ -131,11 +131,13 @@ RoyalTVIconKey.DISPLAY,
         "تشغيل محتوى YouTube على ROYAL TV"
     ),
 
+    
     RoyalTVControlItem(
         RoyalTVIconKey.TV_APPS,
-        "بث تطبيقات شاشة التلفزيون",
-        "اختيار تطبيق مثبت على التلفزيون"
+        "بث محتوى الشاشة الرئيسية",
+        "عرض الشاشة الرئيسية الحقيقية والتحكم بمحتوياتها داخل نافذة البث"
     ),
+    
 
     RoyalTVControlItem(
         RoyalTVIconKey.DEVICE_MEDIA,
