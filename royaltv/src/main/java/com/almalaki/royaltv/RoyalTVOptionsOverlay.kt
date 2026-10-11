@@ -1,14 +1,13 @@
-
 package com.almalaki.royaltv
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,8 +22,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,188 +47,205 @@ private val OptionsBlack = Color(0xFF080C12)
 private val OptionsCard = Color(0xFF171B23)
 private val OptionsText = Color(0xFFDCE5EE)
 
+private const val HOME_SCREEN_BROADCAST_TITLE =
+"بث محتوى الشاشة الرئيسية"
+
 private data class RoyalOption(
-    val icon: String,
-    val title: String,
-    val description: String
+val icon: String,
+val title: String,
+val description: String
 )
 
 private val royalOptions = listOf(
-    RoyalOption(
-        "📶",
-        "البلوتوث",
-        "اكتشاف الأجهزة القريبة وإدارة الاتصال"
-    ),
-    RoyalOption(
-        "📡",
-        "Wi-Fi و Wi-Fi Direct",
-        "الاتصال المحلي والمباشر بين الأجهزة"
-    ),
-    RoyalOption(
-        "🔐",
-        "أذونات الاتصال",
-        "متابعة أذونات البلوتوث والشبكة"
-    ),
-    RoyalOption(
-        "📺",
-        "إدارة الشاشات",
-        "إعداد الأجهزة وأسماء الشاشات"
-    ),
-    RoyalOption(
-        "🔄",
-        "الاتصال التلقائي",
-        "إعدادات إعادة الاتصال عند الانقطاع"
-    ),
-    RoyalOption(
-        "🎛️",
-        "إعدادات القناة",
-        "خيارات العرض والتحكم بالقناة"
-    ),
-        RoyalOption(
-        "💾",
-        "الحفظ والاستعادة",
-        "خيارات حفظ إعدادات ROYAL TV"
-    ),
-    RoyalOption(
-        "📺",
-        "بث محتوى الشاشة الرئيسية",
-        "مشاركة الشاشة بعد موافقة Android"
-    )
+RoyalOption(
+icon = "📶",
+title = "البلوتوث",
+description = "اكتشاف الأجهزة القريبة وإدارة الاتصال"
+),
+RoyalOption(
+icon = "📡",
+title = "Wi-Fi و Wi-Fi Direct",
+description = "الاتصال المحلي والمباشر بين الأجهزة"
+),
+RoyalOption(
+icon = "🔐",
+title = "أذونات الاتصال",
+description = "متابعة أذونات البلوتوث والشبكة"
+),
+RoyalOption(
+icon = "📺",
+title = "إدارة الشاشات",
+description = "إعداد الأجهزة وأسماء الشاشات"
+),
+RoyalOption(
+icon = "🔄",
+title = "الاتصال التلقائي",
+description = "إعدادات إعادة الاتصال عند الانقطاع"
+),
+RoyalOption(
+icon = "🎛️",
+title = "إعدادات القناة",
+description = "خيارات العرض والتحكم بالقناة"
+),
+RoyalOption(
+icon = "💾",
+title = "الحفظ والاستعادة",
+description = "خيارات حفظ إعدادات ROYAL TV"
+),
+RoyalOption(
+icon = "📺",
+title = HOME_SCREEN_BROADCAST_TITLE,
+description = "مشاركة الشاشة بعد موافقة Android"
+)
 )
 
 @Composable
 fun RoyalTVOptionsOverlay(
-    modifier: Modifier = Modifier,
-    onRequestHomeScreenBroadcast: () -> Unit = {}
+modifier: Modifier = Modifier,
+onRequestHomeScreenBroadcast: () -> Unit = {}
 ) {
-    var menuOpen by remember {
-        mutableStateOf(false)
-    }
+var menuOpen by remember {
+mutableStateOf(false)
+}
 
-    var selectedOption by remember {
-        mutableStateOf<RoyalOption?>(null)
-    }
+var selectedOption by remember {
+    mutableStateOf<RoyalOption?>(null)
+}
 
-    val rotation by animateFloatAsState(
-        targetValue = if (menuOpen) 180f else 0f,
-        animationSpec = tween(320),
-        label = "royal_options_rotation"
-    )
+val rotation by animateFloatAsState(
+    targetValue = if (menuOpen) 180f else 0f,
+    animationSpec = tween(320),
+    label = "royal_options_rotation"
+)
 
-    val buttonScale = remember {
-        Animatable(1f)
-    }
+val buttonScale = remember {
+    Animatable(1f)
+}
 
-    val scope = rememberCoroutineScope()
+val scope = rememberCoroutineScope()
 
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        if (menuOpen) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Color.Black.copy(alpha = 0.58f)
-                    )
-                    .clickable {
-                        menuOpen = false
-                    }
-            )
-        }
-
-        AnimatedVisibility(
-            visible = menuOpen,
+Box(
+    modifier = modifier.fillMaxSize()
+) {
+    if (menuOpen) {
+        Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .fillMaxHeight()
-                .fillMaxWidth(0.86f)
-                .widthIn(max = 340.dp),
-            enter = slideInHorizontally(
-                initialOffsetX = { it },
-                animationSpec = tween(320)
-            ) + fadeIn(tween(240)),
-            exit = slideOutHorizontally(
-                targetOffsetX = { it },
-                animationSpec = tween(260)
-            ) + fadeOut(tween(180))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        OptionsBlack,
-                        RoundedCornerShape(
-                            topStart = 18.dp,
-                            bottomStart = 18.dp
-                        )
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = OptionsGold.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(
-                            topStart = 18.dp,
-                            bottomStart = 18.dp
-                        )
-                    )
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "ROYAL TV",
-                            color = OptionsGold,
-                            fontSize = 21.sp
-                        )
+                .fillMaxSize()
+                .background(
+                    Color.Black.copy(alpha = 0.58f)
+                )
+                .clickable {
+                    menuOpen = false
+                }
+        )
+    }
 
-                        Text(
-                            text = "خيارات القناة والاتصال",
-                            color = OptionsText,
-                            fontSize = 12.sp
-                        )
-                    }
+    AnimatedVisibility(
+        visible = menuOpen,
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .fillMaxHeight()
+            .fillMaxWidth(0.86f)
+            .widthIn(max = 340.dp),
+        enter = slideInHorizontally(
+            initialOffsetX = { it },
+            animationSpec = tween(320)
+        ) + fadeIn(
+            animationSpec = tween(240)
+        ),
+        exit = slideOutHorizontally(
+            targetOffsetX = { it },
+            animationSpec = tween(260)
+        ) + fadeOut(
+            animationSpec = tween(180)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = OptionsBlack,
+                    shape = RoundedCornerShape(
+                        topStart = 18.dp,
+                        bottomStart = 18.dp
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    color = OptionsGold.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(
+                        topStart = 18.dp,
+                        bottomStart = 18.dp
+                    )
+                )
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "ROYAL TV",
+                        color = OptionsGold,
+                        fontSize = 21.sp
+                    )
 
                     Text(
-                        text = "✕",
-                        color = OptionsGold,
-                        fontSize = 22.sp,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable {
-                                menuOpen = false
-                            }
-                            .padding(10.dp)
+                        text = "خيارات القناة والاتصال",
+                        color = OptionsText,
+                        fontSize = 12.sp
                     )
                 }
 
-                Box(
+                Text(
+                    text = "✕",
+                    color = OptionsGold,
+                    fontSize = 22.sp,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .size(
-                            width = 1.dp,
-                            height = 1.dp
-                        )
-                        .background(
-                            OptionsGold.copy(alpha = 0.65f)
-                        )
+                        .clip(CircleShape)
+                        .clickable {
+                            menuOpen = false
+                        }
+                        .padding(10.dp)
                 )
+            }
 
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightOneDp()
+                    .background(
+                        OptionsGold.copy(alpha = 0.65f)
+                    )
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        rememberScrollState()
+                    )
+                    .padding(top = 10.dp, bottom = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 royalOptions.forEach { option ->
+                    val isSelected = selectedOption == option
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(
+                                RoundedCornerShape(12.dp)
+                            )
                             .background(
-                                if (selectedOption == option) {
+                                if (isSelected) {
                                     OptionsGold.copy(alpha = 0.14f)
                                 } else {
                                     OptionsCard
@@ -235,7 +253,7 @@ fun RoyalTVOptionsOverlay(
                             )
                             .border(
                                 width = 1.dp,
-                                color = if (selectedOption == option) {
+                                color = if (isSelected) {
                                     OptionsGold
                                 } else {
                                     OptionsGold.copy(alpha = 0.24f)
@@ -243,12 +261,15 @@ fun RoyalTVOptionsOverlay(
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable {
-    selectedOption = option
+                                selectedOption = option
 
-    if (option.title == "بث محتوى الشاشة الرئيسية") {
-        menuOpen = false
-        onRequestHomeScreenBroadcast()
-    }
+                                if (
+                                    option.title ==
+                                    HOME_SCREEN_BROADCAST_TITLE
+                                ) {
+                                    menuOpen = false
+                                    onRequestHomeScreenBroadcast()
+                                }
                             }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -283,81 +304,93 @@ fun RoyalTVOptionsOverlay(
                         )
                     }
                 }
-
-                Spacer(
-                    modifier = Modifier.weight(1f)
-                )
-
-                Text(
-                    text = selectedOption?.let {
-                        "تم اختيار: ${it.title}\n" +
-                            "سيتم ربط الوظيفة الفعلية ضمن مراحل الاتصال."
-                    } ?: "اختر قسمًا لعرض خياراته.",
-                    color = OptionsText,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(OptionsCard)
-                        .padding(12.dp)
-                )
             }
-        }
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .graphicsLayer {
-                    scaleX = buttonScale.value
-                    scaleY = buttonScale.value
-                }
-                .clip(RoundedCornerShape(14.dp))
-                .background(OptionsBlack)
-                .border(
-                    1.5.dp,
-                    OptionsGold,
-                    RoundedCornerShape(14.dp)
-                )
-                .clickable {
-                    scope.launch {
-                        buttonScale.animateTo(
-                            0.88f,
-                            tween(75)
-                        )
-                        buttonScale.animateTo(
-                            1.08f,
-                            tween(110)
-                        )
-                        buttonScale.animateTo(
-                            1f,
-                            tween(130)
-                        )
-                    }
-
-                    menuOpen = !menuOpen
-                }
-                .padding(
-                    horizontal = 10.dp,
-                    vertical = 8.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            Text(
-                text = "⚙",
-                color = OptionsGold,
-                fontSize = 22.sp,
-                modifier = Modifier.graphicsLayer {
-                    rotationZ = rotation
-                }
-            )
 
             Text(
-                text = "خيارات",
-                color = OptionsGold,
-                fontSize = 12.sp
+                text = selectedOption?.let { option ->
+                    "تم اختيار: ${option.title}\n" +
+                        if (
+                            option.title ==
+                            HOME_SCREEN_BROADCAST_TITLE
+                        ) {
+                            "تم طلب فتح إذن مشاركة الشاشة."
+                        } else {
+                            "سيتم ربط الوظيفة الفعلية ضمن مراحل الاتصال."
+                        }
+                } ?: "اختر قسمًا لعرض خياراته.",
+                color = OptionsText,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(OptionsCard)
+                    .padding(12.dp)
             )
         }
     }
+
+    Row(
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(8.dp)
+            .graphicsLayer {
+                scaleX = buttonScale.value
+                scaleY = buttonScale.value
+            }
+            .clip(RoundedCornerShape(14.dp))
+            .background(OptionsBlack)
+            .border(
+                width = 1.5.dp,
+                color = OptionsGold,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable {
+                scope.launch {
+                    buttonScale.animateTo(
+                        targetValue = 0.88f,
+                        animationSpec = tween(75)
+                    )
+                    buttonScale.animateTo(
+                        targetValue = 1.08f,
+                        animationSpec = tween(110)
+                    )
+                    buttonScale.animateTo(
+                        targetValue = 1f,
+                        animationSpec = tween(130)
+                    )
+                }
+
+                menuOpen = !menuOpen
+            }
+            .padding(
+                horizontal = 10.dp,
+                vertical = 8.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Text(
+            text = "⚙",
+            color = OptionsGold,
+            fontSize = 22.sp,
+            modifier = Modifier.graphicsLayer {
+                rotationZ = rotation
+            }
+        )
+
+        Text(
+            text = "خيارات",
+            color = OptionsGold,
+            fontSize = 12.sp
+        )
+    }
+}
+
+}
+
+private fun Modifier.heightOneDp(): Modifier {
+return this.size(
+width = 1.dp,
+height = 1.dp
+)
 }
