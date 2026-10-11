@@ -440,7 +440,6 @@ private fun RoyalTVChannelScreen(
         }
     }
 }
-
 @Composable
 private fun BroadcastWindow(
     liveAlpha: Float,
@@ -449,161 +448,211 @@ private fun BroadcastWindow(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var selectedSource by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(9.dp))
             .background(
                 Brush.linearGradient(
-                    colors = listOf(
-                        RoyalCharcoal,
-                        RoyalBlue,
-                        RoyalBlack
-                    )
+                    listOf(RoyalCharcoal, RoyalBlue, RoyalBlack)
                 )
             )
-            .border(
-                width = 1.dp,
-                color = RoyalGold,
-                shape = RoundedCornerShape(9.dp)
-            )
+            .border(1.dp, RoyalGold, RoundedCornerShape(9.dp))
     ) {
+        if (selectedSource == null && displayState.source == RoyalTVSource.IDLE) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "ROYAL TV",
+                    color = RoyalGold,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text("اختر مصدر البث", color = RoyalPearl, fontSize = 15.sp)
 
-        /*
-         * تعرض هذه المنطقة نوع الأمر وحمولته النصية.
-         * تشغيل الفيديو الحقيقي يحتاج إلى ربط المشغّل لاحقًا.
-         */
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(12.dp),
-            horizontalAlignment =
-                Alignment.CenterHorizontally,
-            verticalArrangement =
-                Arrangement.spacedBy(8.dp)
-        ) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    RoyalTVSourceTile(
+                        "البث", "محتوى الشاشة الرئيسية", "▣",
+                        Modifier.weight(1f)
+                    ) { selectedSource = "البث" }
 
-            val sourceTitle = when (displayState.source) {
-                RoyalTVSource.IDLE -> "ROYAL TV"
-                RoyalTVSource.ORDER -> "طلب جديد"
-                RoyalTVSource.YOUTUBE -> "YouTube"
-                RoyalTVSource.MEDIA -> "وسائط ROYAL TV"
-                RoyalTVSource.AD -> "عروض الملكي"
-                RoyalTVSource.CONTENT -> "محتوى ROYAL TV"
+                    RoyalTVSourceTile(
+                        "يوتيوب", "YouTube Web", "▶",
+                        Modifier.weight(1f)
+                    ) { selectedSource = "يوتيوب" }
+                }
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    RoyalTVSourceTile(
+                        "موسيقى", "مكتبة الموسيقى", "♫",
+                        Modifier.weight(1f)
+                    ) { selectedSource = "موسيقى" }
+
+                    RoyalTVSourceTile(
+                        "الفيديو", "مكتبة الصور والفيديو", "▣",
+                        Modifier.weight(1f)
+                    ) { selectedSource = "الفيديو" }
+                }
             }
+        } else if (selectedSource != null) {
+            Column(
+                modifier = Modifier.align(Alignment.Center).padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    selectedSource.orEmpty(),
+                    color = RoyalGold,
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
 
-            val statusText = when {
-                displayState.source == RoyalTVSource.IDLE ->
-                    "جاهز لاستقبال المحتوى"
+                Text(
+                    "تم اختيار المصدر. سيُربط التشغيل الفعلي في الخطوة التالية.",
+                    color = RoyalPearl,
+                    textAlign = TextAlign.Center
+                )
 
-                !displayState.isPlaying ->
-                    "المحتوى متوقف"
-
-                else ->
-                    "تم استلام أمر العرض"
+                Text(
+                    "‹ العودة إلى مصادر البث",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RoyalBlue)
+                        .border(1.dp, RoyalGold, RoundedCornerShape(8.dp))
+                        .clickable { selectedSource = null }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    color = RoyalPearl,
+                    fontWeight = FontWeight.Bold
+                )
             }
+        } else {
+            Column(
+                modifier = Modifier.align(Alignment.Center).padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val title = when (displayState.source) {
+                    RoyalTVSource.IDLE -> "ROYAL TV"
+                    RoyalTVSource.ORDER -> "طلب جديد"
+                    RoyalTVSource.YOUTUBE -> "YouTube"
+                    RoyalTVSource.MEDIA -> "وسائط ROYAL TV"
+                    RoyalTVSource.AD -> "عروض الملكي"
+                    RoyalTVSource.CONTENT -> "محتوى ROYAL TV"
+                }
 
-            Text(
-                text = sourceTitle,
-                color = RoyalGold,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = statusText,
-                color = RoyalPearl,
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = displayState.payload.ifBlank {
-                    "سيظهر المحتوى هنا عند ربط المشغّل"
-                },
-                color = RoyalPearl.copy(alpha = 0.7f),
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
+                Text(
+                    title,
+                    color = RoyalGold,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    if (displayState.isPlaying) "تم استلام أمر العرض"
+                    else "المحتوى متوقف",
+                    color = RoyalPearl
+                )
+                Text(
+                    displayState.payload.ifBlank { "بانتظار المحتوى" },
+                    color = RoyalPearl.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "مصادر البث",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RoyalBlue)
+                        .border(1.dp, RoyalGold, RoundedCornerShape(8.dp))
+                        .clickable { selectedSource = null }
+                        .padding(12.dp),
+                    color = RoyalPearl
+                )
+            }
         }
 
-        /*
-         * طبقة الإشعارات داخل حدود نافذة البث فقط.
-         */
-        RoyalTVNotificationOverlay(
-            modifier = Modifier.fillMaxSize()
-        )
+        RoyalTVNotificationOverlay(Modifier.fillMaxSize())
 
-        /*
-         * مؤشر مباشر داخل نافذة البث.
-         */
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp)
                 .clip(CircleShape)
                 .background(RoyalBurgundy)
-                .border(
-                    1.dp,
-                    RoyalGold,
-                    CircleShape
-                )
-                .padding(
-                    horizontal = 10.dp,
-                    vertical = 6.dp
-                ),
-            verticalAlignment =
-                Alignment.CenterVertically,
-            horizontalArrangement =
-                Arrangement.spacedBy(6.dp)
+                .border(1.dp, RoyalGold, CircleShape)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-
             Box(
-                modifier = Modifier
-                    .size(8.dp)
+                Modifier.size(8.dp)
                     .alpha(liveAlpha)
-                    .background(
-                        RoyalRed,
-                        CircleShape
-                    )
+                    .background(RoyalRed, CircleShape)
             )
-
-            Text(
-                text = "مباشر",
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("مباشر", color = Color.White, fontSize = 12.sp)
         }
 
-        /*
-         * زر تكبير قابل للنقر.
-         */
         Text(
-            text = if (fullscreen) "⛶ رجوع" else "⛶",
+            if (fullscreen) "⛶ رجوع" else "⛶",
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(8.dp)
                 .clip(RoundedCornerShape(7.dp))
                 .background(RoyalBlue)
-                .border(
-                    1.dp,
-                    RoyalGold,
-                    RoundedCornerShape(7.dp)
-                )
-                .clickable {
-                    onToggleFullscreen()
-                }
-                .padding(
-                    horizontal = 10.dp,
-                    vertical = 7.dp
-                ),
+                .border(1.dp, RoyalGold, RoundedCornerShape(7.dp))
+                .clickable { onToggleFullscreen() }
+                .padding(horizontal = 10.dp, vertical = 7.dp),
             color = RoyalPearl,
             fontSize = if (fullscreen) 12.sp else 20.sp,
             fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun RoyalTVSourceTile(
+    title: String,
+    subtitle: String,
+    symbol: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF111722))
+            .border(1.dp, RoyalGold, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Text(symbol, color = RoyalGold, fontSize = 26.sp)
+        Text(
+            title,
+            color = RoyalPearl,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            subtitle,
+            color = RoyalPearl.copy(alpha = 0.72f),
+            fontSize = 10.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
