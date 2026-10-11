@@ -1,4 +1,3 @@
-
 package com.almalaki.royaltv
 
 import android.content.Context
@@ -527,6 +526,7 @@ class RoyalTVConnectionManager(context: Context) {
                     listener?.onMessageReceived(message)
                 }
 
+                
                 override fun onError(operation: String, reason: String) {
                     if (!isCurrentTransport()) return
 
@@ -534,10 +534,7 @@ class RoyalTVConnectionManager(context: Context) {
                         clientConnecting = false
                     }
 
-                    if (
-                        operation == "startServer" ||
-                        operation == "accept"
-                    ) {
+                    if (operation == "startServer") {
                         serverStarted = false
                         serverStarting = false
                     }
@@ -549,6 +546,8 @@ class RoyalTVConnectionManager(context: Context) {
                         scheduleDiscovery()
                     }
                 }
+                
+
             }
         )
     }
