@@ -8,25 +8,25 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.media.ImageReader
+import android.media.MediaFormat
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.Log
+import android.view.Surface
 import android.view.WindowManager
 
 /**
  * ROYAL TV — Home Screen Capture Service
  *
- * يلتقط إطارات الشاشة بعد موافقة Android الرسمية.
- *
- * هذه المرحلة مسؤولة عن الالتقاط والتنظيف الآمن فقط.
- * لا ترمّز الفيديو ولا تنقله إلى جهاز آخر بعد.
+ * يلتقط الشاشة ويرسل الإطارات إلى مشفر H.264.
+ * النقل إلى التلفزيون غير مفعّل في هذه المرحلة.
  */
 class RoyalTVHomeScreenCaptureService : Service() {
 
@@ -47,10 +47,14 @@ class RoyalTVHomeScreenCaptureService : Service() {
 
     private var projection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
-    private var imageReader: ImageReader? = null
+    private var videoEncoder: RoyalTVVideoEncoder? = null
     private var projectionCallback: MediaProjection.Callback? = null
 
+    @Volatile
     private var isStopping = false
+
+    @Volatile
+    private var encodedFrameCount = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -60,7 +64,6 @@ class RoyalTVHomeScreenCaptureService : Service() {
         startId: Int
     ): Int {
         when (intent?.action) {
-
             ACTION_STOP -> {
                 stopCapture()
                 stopForegroundCompat()
@@ -110,7 +113,7 @@ class RoyalTVHomeScreenCaptureService : Service() {
                 } catch (error: Exception) {
                     Log.e(
                         TAG,
-                        "Unable to start screen capture",
+                        "Unable to start H.264 screen capture",
                         error
                     )
                     stopCapture()
@@ -172,7 +175,7 @@ class RoyalTVHomeScreenCaptureService : Service() {
             "ROYAL TV Screen Capture",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "إشعار جلسة مشاركة الشاشة"
+            description = "إشعار جلسة التقاط الشاشة"
         }
 
         val manager = getSystemService(
@@ -191,6 +194,7 @@ class RoyalTVHomeScreenCaptureService : Service() {
         }
 
         isStopping = false
+        encodedFrameCount = 0
 
         val manager = getSystemService(
             Context.MEDIA_PROJECTION_SERVICE
@@ -203,72 +207,109 @@ class RoyalTVHomeScreenCaptureService : Service() {
 
         projection = mediaProjection
 
+        /*
+         * اجعل أبعاد الفيديو أعدادًا زوجية،
+         * لأن مشفر H.264 يحتاج أبعادًا مناسبة.
+         */
         val metrics = getScreenMetrics()
-        val width = metrics.widthPixels.coerceAtLeast(1)
-        val height = metrics.heightPixels.coerceAtLeast(1)
+        val width = evenDimension(metrics.widthPixels)
+        val height = evenDimension(metrics.heightPixels)
         val density = metrics.densityDpi.coerceAtLeast(1)
 
-        val reader = ImageReader.newInstance(
-            width,
-            height,
-            PixelFormat.RGBA_8888,
-            3
-        )
-
-        imageReader = reader
-
-        reader.setOnImageAvailableListener(
-            { source ->
-                try {
-                    source.acquireLatestImage()?.use { frame ->
-                        Log.d(
-                            TAG,
-                            "Captured frame: " +
-                                "${frame.width}x${frame.height}"
-                        )
-                    }
-                } catch (error: Exception) {
-                    if (!isStopping) {
-                        Log.e(
-                            TAG,
-                            "Frame processing error",
-                            error
-                        )
-                    }
-                }
-            },
-            null
-        )
-
+        /*
+         * سجّل callback قبل إنشاء VirtualDisplay
+         * للتوافق مع متطلبات MediaProjection الحديثة.
+         */
         val callback = object : MediaProjection.Callback() {
             override fun onStop() {
-                Log.i(
-                    TAG,
-                    "Android stopped screen projection"
-                )
+                Log.i(TAG, "Android stopped screen projection")
 
-                // Android أوقف الإسقاط بالفعل؛ ننظف الموارد
-                // دون استدعاء projection.stop() مرة أخرى.
-                stopCapture(stopProjection = false)
-                stopForegroundCompat()
-                stopSelf()
+                Handler(Looper.getMainLooper()).post {
+                    stopCapture(stopProjection = false)
+                    stopForegroundCompat()
+                    stopSelf()
+                }
             }
         }
 
         projectionCallback = callback
+        mediaProjection.registerCallback(callback, null)
 
-        mediaProjection.registerCallback(
-            callback,
-            null
+        /*
+         * جهّز مشفر H.264 وأنشئ سطح الإدخال.
+         */
+        val encoder = RoyalTVVideoEncoder(
+            width = width,
+            height = height,
+            bitRate = 2_000_000,
+            frameRate = 20,
+            iFrameIntervalSeconds = 2,
+            listener = object : RoyalTVVideoEncoder.Listener {
+
+                override fun onOutputFormatChanged(
+                    format: MediaFormat
+                ) {
+                    Log.i(
+                        TAG,
+                        "H.264 output format ready: $format"
+                    )
+                }
+
+                override fun onEncodedFrame(
+                    data: ByteArray,
+                    presentationTimeUs: Long,
+                    flags: Int
+                ) {
+                    encodedFrameCount++
+
+                    if (encodedFrameCount == 1) {
+                        Log.i(
+                            TAG,
+                            "First H.264 packet produced: " +
+                                "${data.size} bytes"
+                        )
+                    }
+
+                    /*
+                     * النقل الشبكي غير مربوط بعد.
+                     * البيانات المشفرة تُستقبل هنا فقط.
+                     */
+                }
+
+                override fun onEncoderError(error: Exception) {
+                    Log.e(TAG, "H.264 encoder error", error)
+
+                    Handler(Looper.getMainLooper()).post {
+                        if (!isStopping) {
+                            stopCapture()
+                            stopForegroundCompat()
+                            stopSelf()
+                        }
+                    }
+                }
+            }
         )
 
+        videoEncoder = encoder
+
+        val inputSurface: Surface = encoder.prepare()
+
+        /*
+         * شغّل المشفر قبل توجيه الشاشة إلى سطحه.
+         */
+        encoder.start()
+
+        /*
+         * بدل ImageReader، أصبحت الشاشة تدخل مباشرة
+         * إلى سطح مشفر H.264.
+         */
         val display = mediaProjection.createVirtualDisplay(
             "ROYAL-TV-Home-Capture",
             width,
             height,
             density,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            reader.surface,
+            inputSurface,
             null,
             null
         ) ?: error("Could not create screen virtual display")
@@ -277,8 +318,13 @@ class RoyalTVHomeScreenCaptureService : Service() {
 
         Log.i(
             TAG,
-            "Screen capture initialized: ${width}x${height}"
+            "H.264 screen capture initialized: ${width}x${height}"
         )
+    }
+
+    private fun evenDimension(value: Int): Int {
+        val safeValue = value.coerceAtLeast(2)
+        return safeValue - (safeValue % 2)
     }
 
     private fun getScreenMetrics(): DisplayMetrics {
@@ -313,26 +359,30 @@ class RoyalTVHomeScreenCaptureService : Service() {
 
         val activeProjection = projection
         val callback = projectionCallback
+        val activeEncoder = videoEncoder
+        val activeDisplay = virtualDisplay
 
-        // أزل المراجع أولاً لتقليل احتمال إعادة التنظيف.
+        /*
+         * أزل المراجع أولًا لمنع التنظيف المتكرر.
+         */
         projection = null
         projectionCallback = null
+        videoEncoder = null
+        virtualDisplay = null
 
+        /*
+         * أوقف الشاشة الافتراضية قبل تحرير سطح المشفر.
+         */
         try {
-            virtualDisplay?.release()
+            activeDisplay?.release()
         } catch (error: Exception) {
             Log.w(TAG, "Virtual display release failed", error)
-        } finally {
-            virtualDisplay = null
         }
 
         try {
-            imageReader?.setOnImageAvailableListener(null, null)
-            imageReader?.close()
+            activeEncoder?.stop()
         } catch (error: Exception) {
-            Log.w(TAG, "ImageReader cleanup failed", error)
-        } finally {
-            imageReader = null
+            Log.w(TAG, "H.264 encoder cleanup failed", error)
         }
 
         try {
@@ -351,7 +401,10 @@ class RoyalTVHomeScreenCaptureService : Service() {
             }
         }
 
-        Log.i(TAG, "Screen capture stopped")
+        Log.i(
+            TAG,
+            "Capture stopped; encoded packets: $encodedFrameCount"
+        )
     }
 
     override fun onDestroy() {
