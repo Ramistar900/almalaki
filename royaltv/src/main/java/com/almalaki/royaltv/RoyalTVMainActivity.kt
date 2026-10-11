@@ -43,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -107,7 +108,7 @@ class RoyalTVMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-                /*
+        /*
          * بدء استقبال أوامر ROYAL TV.
          */
         val royalTvDisplayId =
@@ -120,7 +121,7 @@ class RoyalTVMainActivity : ComponentActivity() {
                 "RoyalTVMainActivity",
                 "تم استقبال أمر ROYAL TV: ${command.type}"
             )
-            
+
             RoyalTVDisplayStateManager.executeCommand(command)
 
             runOnUiThread {
@@ -132,67 +133,65 @@ class RoyalTVMainActivity : ComponentActivity() {
             }
         }
 
-        
-val projectionManager =
-    getSystemService(MEDIA_PROJECTION_SERVICE)
-        as MediaProjectionManager
+        val projectionManager =
+            getSystemService(MEDIA_PROJECTION_SERVICE)
+                as MediaProjectionManager
 
-val screenCapturePermissionLauncher =
-    registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val permissionData = result.data
+        val screenCapturePermissionLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                val permissionData = result.data
 
-        if (
-            result.resultCode == android.app.Activity.RESULT_OK &&
-            permissionData != null
-        ) {
-            val captureIntent = Intent(
-                this,
-                RoyalTVHomeScreenCaptureService::class.java
-            ).apply {
-                action =
-                    RoyalTVHomeScreenCaptureService.ACTION_START
+                if (
+                    result.resultCode == android.app.Activity.RESULT_OK &&
+                    permissionData != null
+                ) {
+                    val captureIntent = Intent(
+                        this,
+                        RoyalTVHomeScreenCaptureService::class.java
+                    ).apply {
+                        action =
+                            RoyalTVHomeScreenCaptureService.ACTION_START
 
-                putExtra(
-                    RoyalTVHomeScreenCaptureService.EXTRA_RESULT_CODE,
-                    result.resultCode
-                )
+                        putExtra(
+                            RoyalTVHomeScreenCaptureService.EXTRA_RESULT_CODE,
+                            result.resultCode
+                        )
 
-                putExtra(
-                    RoyalTVHomeScreenCaptureService.EXTRA_RESULT_DATA,
-                    permissionData
-                )
-            }
+                        putExtra(
+                            RoyalTVHomeScreenCaptureService.EXTRA_RESULT_DATA,
+                            permissionData
+                        )
+                    }
 
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(captureIntent)
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(captureIntent)
+                        } else {
+                            startService(captureIntent)
+                        }
+
+                        Toast.makeText(
+                            this,
+                            "بدأ تجهيز التقاط الشاشة",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } catch (error: Exception) {
+                        Toast.makeText(
+                            this,
+                            "تعذر بدء التقاط الشاشة",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 } else {
-                    startService(captureIntent)
+                    Toast.makeText(
+                        this,
+                        "تم إلغاء إذن مشاركة الشاشة",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-
-                Toast.makeText(
-                    this,
-                    "بدأ تجهيز التقاط الشاشة",
-                    Toast.LENGTH_LONG
-                ).show()
-            } catch (error: Exception) {
-                Toast.makeText(
-                    this,
-                    "تعذر بدء التقاط الشاشة",
-                    Toast.LENGTH_LONG
-                ).show()
             }
-        } else {
-            Toast.makeText(
-                this,
-                "تم إلغاء إذن مشاركة الشاشة",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-    
 
         window.statusBarColor =
             android.graphics.Color.rgb(8, 12, 18)
@@ -201,23 +200,26 @@ val screenCapturePermissionLauncher =
             android.graphics.Color.rgb(8, 12, 18)
 
         setContent {
-    MaterialTheme {
-        RoyalTVChannelScreen(
-            onRequestHomeScreenBroadcast = {
-                screenCapturePermissionLauncher.launch(
-                    projectionManager.createScreenCaptureIntent()
+            MaterialTheme {
+                RoyalTVChannelScreen(
+                    onRequestHomeScreenBroadcast = {
+                        screenCapturePermissionLauncher.launch(
+                            projectionManager.createScreenCaptureIntent()
+                        )
+                    }
                 )
             }
-        )
-    }
         }
-            }
+    }
 }
 
 @Composable
 private fun RoyalTVChannelScreen(
     onRequestHomeScreenBroadcast: () -> Unit
 ) {
+
+    val displayState by
+        RoyalTVDisplayStateManager.state.collectAsState()
 
     var currentTime by remember {
         mutableStateOf("--:--")
@@ -311,6 +313,7 @@ private fun RoyalTVChannelScreen(
             BroadcastWindow(
                 liveAlpha = liveAlpha,
                 fullscreen = true,
+                displayState = displayState,
                 onToggleFullscreen = {
                     fullscreen = false
                 },
@@ -363,6 +366,7 @@ private fun RoyalTVChannelScreen(
                         BroadcastWindow(
                             liveAlpha = liveAlpha,
                             fullscreen = false,
+                            displayState = displayState,
                             onToggleFullscreen = {
                                 fullscreen = true
                             },
@@ -402,7 +406,7 @@ private fun RoyalTVChannelScreen(
                 /*
                  * الهوية السفلية في صف واحد.
                  */
-                                BottomIdentityBar(
+                BottomIdentityBar(
                     currentTime = currentTime,
                     currentDate = currentDate,
                     compact = compact,
@@ -416,19 +420,19 @@ private fun RoyalTVChannelScreen(
         // زر الخيارات في واجهة القناة فقط
         if (!fullscreen) {
             RoyalTVOptionsOverlay(
-    modifier = Modifier.fillMaxSize(),
-    onRequestHomeScreenBroadcast =
-        onRequestHomeScreenBroadcast
-)
+                modifier = Modifier.fillMaxSize(),
+                onRequestHomeScreenBroadcast =
+                    onRequestHomeScreenBroadcast
+            )
         }
     }
 }
-    
 
 @Composable
 private fun BroadcastWindow(
     liveAlpha: Float,
     fullscreen: Boolean,
+    displayState: RoyalTVState,
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -453,8 +457,8 @@ private fun BroadcastWindow(
     ) {
 
         /*
-         * منطقة تجريبية لمشغل الفيديو.
-         * يُربط مشغل البث الحقيقي لاحقًا.
+         * تعرض هذه المنطقة نوع الأمر وحمولته النصية.
+         * تشغيل الفيديو الحقيقي يحتاج إلى ربط المشغّل لاحقًا.
          */
         Column(
             modifier = Modifier
@@ -466,8 +470,28 @@ private fun BroadcastWindow(
                 Arrangement.spacedBy(8.dp)
         ) {
 
+            val sourceTitle = when (displayState.source) {
+                RoyalTVSource.IDLE -> "ROYAL TV"
+                RoyalTVSource.ORDER -> "طلب جديد"
+                RoyalTVSource.YOUTUBE -> "YouTube"
+                RoyalTVSource.MEDIA -> "وسائط ROYAL TV"
+                RoyalTVSource.AD -> "عروض الملكي"
+                RoyalTVSource.CONTENT -> "محتوى ROYAL TV"
+            }
+
+            val statusText = when {
+                displayState.source == RoyalTVSource.IDLE ->
+                    "جاهز لاستقبال المحتوى"
+
+                !displayState.isPlaying ->
+                    "المحتوى متوقف"
+
+                else ->
+                    "تم استلام أمر العرض"
+            }
+
             Text(
-                text = "ROYAL TV",
+                text = sourceTitle,
                 color = RoyalGold,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
@@ -475,28 +499,30 @@ private fun BroadcastWindow(
             )
 
             Text(
-                text = "نافذة البث الرئيسية",
+                text = statusText,
                 color = RoyalPearl,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = "منطقة عرض الفيديو",
+                text = displayState.payload.ifBlank {
+                    "سيظهر المحتوى هنا عند ربط المشغّل"
+                },
                 color = RoyalPearl.copy(alpha = 0.7f),
                 fontSize = 12.sp,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
             )
         }
-        
+
         /*
          * طبقة الإشعارات داخل حدود نافذة البث فقط.
-         * تتكيف تلقائيًا مع حجم النافذة والتكبير الكامل.
          */
         RoyalTVNotificationOverlay(
             modifier = Modifier.fillMaxSize()
         )
-        
 
         /*
          * مؤشر مباشر داخل نافذة البث.
@@ -609,8 +635,8 @@ private fun NewProductsPanel(
 
         /*
          * عنصر واحد ظاهر في كل مرة.
-         * القديم يخرج يمينًا، والجديد يدخل من اليسار.
          */
+         
         AnimatedContent(
             targetState = productIndex,
             modifier = Modifier
@@ -640,8 +666,8 @@ private fun NewProductsPanel(
                     SizeTransform(clip = true)
                 )
             },
-            label = "royal_product_transition"
-        ) { targetIndex ->
+            label = "royal_product_transitio
+             ) { targetIndex ->
 
             val product =
                 demoProducts[targetIndex]
@@ -677,8 +703,7 @@ private fun NewProductsPanel(
                 ) {
 
                     /*
-                     * مكان صورة طولية واحدة.
-                     * يستبدل بمكوّن الصورة الحقيقي عند الربط.
+                     * مكان صورة المنتج.
                      */
                     Box(
                         modifier = Modifier
@@ -807,7 +832,7 @@ private fun BottomIdentityBar(
 
     val tickerSize =
         if (compact) 10.sp else 13.sp
-    
+
     val timeSize =
         if (compact) 12.sp else 16.sp
 
@@ -824,7 +849,6 @@ private fun BottomIdentityBar(
 
         /*
          * موضع الشعار.
-         * يمكن ربط صورة الشعار الرسمية لاحقًا.
          */
         Column(
             modifier = Modifier
@@ -855,7 +879,7 @@ private fun BottomIdentityBar(
         }
 
         /*
-         * شريط متحرك في سطر واحد.
+         * الشريط المتحرك.
          */
         Box(
             modifier = Modifier
@@ -887,7 +911,7 @@ private fun BottomIdentityBar(
         }
 
         /*
-         * الوقت والتاريخ في مساحة واحدة.
+         * الوقت والتاريخ.
          */
         Column(
             modifier = Modifier
