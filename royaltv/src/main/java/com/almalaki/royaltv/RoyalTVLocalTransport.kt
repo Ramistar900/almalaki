@@ -1,3 +1,4 @@
+
 package com.almalaki.royaltv
 
 import java.io.BufferedInputStream
@@ -6,6 +7,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.EOFException
 import java.io.IOException
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
@@ -15,9 +17,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * ROYAL TV — Local TCP Transport
  *
- * النقل المحلي بين أجهزة ROYAL TV.
- * يميّز بين جاهزية الخادم واتصال العميل،
- * ويتيح للخادم استقبال عميل جديد بعد انقطاع السابق.
+ * يدير خادم TCP وعميل TCP.
+ * انقطاع العميل لا يوقف الخادم؛ يعود الخادم إلى accept()
+ * ليستقبل اتصالاً جديداً ما دام الخادم نشطاً.
  */
 class RoyalTVLocalTransport(
     private val listener: Listener
@@ -35,10 +37,7 @@ class RoyalTVLocalTransport(
         fun onMessageReceived(message: String)
         fun onError(operation: String, reason: String)
 
-        /** يُستدعى بعد نجاح فتح منفذ الخادم فعلياً. */
         fun onServerStarted(port: Int) {}
-
-        /** يُستدعى عند توقف الخادم الذي كان يعمل. */
         fun onServerStopped(reason: String) {}
     }
 
@@ -59,9 +58,6 @@ class RoyalTVLocalTransport(
     @Volatile
     private var serverListening = false
 
-    /**
-     * هل منفذ TCP مفتوح فعلياً ويستقبل الاتصالات؟
-     */
     fun isServerListening(): Boolean {
         val server = serverSocket
         return serverListening &&
@@ -80,9 +76,8 @@ class RoyalTVLocalTransport(
     }
 
     /**
-     * يبدأ خادم TCP بصورة غير متزامنة.
-     * true تعني قبول بدء المهمة فقط؛
-     * تأكيد الجاهزية يصل عبر onServerStarted.
+     * true تعني قبول بدء المهمة.
+     * الجاهزية الفعلية تُعلن عبر onServerStarted.
      */
     @Synchronized
     fun startServer(port: Int = DEFAULT_PORT): Boolean {
@@ -91,46 +86,64 @@ class RoyalTVLocalTransport(
         if (isServerListening()) return true
         if (!active.compareAndSet(false, true)) return false
 
-        try {
+        return try {
             executor.execute {
                 runServer(port)
             }
-            return true
+            true
         } catch (exception: Exception) {
             active.set(false)
             listener.onError(
                 "startServer",
                 exception.message ?: "تعذر تشغيل مهمة خادم TCP"
             )
-            return false
+            false
         }
     }
 
     private fun runServer(port: Int) {
         var localServer: ServerSocket? = null
         var stopReason = "توقف خادم TCP"
+        var startedSuccessfully = false
 
         try {
-            // إنشاء ServerSocket على هذا المنفذ يفتح المنفذ فعلياً.
-            localServer = ServerSocket(port)
+            val createdServer = ServerSocket()
+            localServer = createdServer
+
+            createdServer.reuseAddress = true
+            createdServer.bind(InetSocketAddress(port))
 
             if (!active.get() || released.get()) {
-                localServer.close()
                 return
             }
 
-            serverSocket = localServer
+            serverSocket = createdServer
             serverListening = true
+            startedSuccessfully = true
 
             listener.onServerStarted(port)
 
+            /*
+             * النقطة الأساسية:
+             * لا نضبط active على false عند انقطاع العميل.
+             * readMessages تعود، ثم تستمر الحلقة إلى accept().
+             */
             while (active.get() && !released.get()) {
                 val accepted = try {
-                    localServer.accept()
+                    createdServer.accept()
                 } catch (exception: SocketException) {
                     if (active.get() && !released.get()) {
                         stopReason = exception.message
                             ?: "توقف قبول اتصالات TCP"
+
+                        listener.onError("accept", stopReason)
+                    }
+                    break
+                } catch (exception: IOException) {
+                    if (active.get() && !released.get()) {
+                        stopReason = exception.message
+                            ?: "تعذر قبول اتصال TCP"
+
                         listener.onError("accept", stopReason)
                     }
                     break
@@ -143,19 +156,30 @@ class RoyalTVLocalTransport(
 
                 configureSocket(accepted)
 
-                socket = accepted
-                output = DataOutputStream(
-                    BufferedOutputStream(accepted.getOutputStream())
-                )
+                synchronized(outputLock) {
+                    if (!active.get() || released.get()) {
+                        closeQuietly(accepted)
+                        continue
+                    }
+
+                    socket = accepted
+                    output = DataOutputStream(
+                        BufferedOutputStream(
+                            accepted.getOutputStream()
+                        )
+                    )
+                }
 
                 listener.onConnected()
 
-                // عند انقطاع العميل تعود الدالة ويستمر الخادم
-                // في حلقة accept لاستقبال اتصال جديد.
+                // عند انقطاع العميل، تغلق readMessages اتصال العميل
+                // فقط، ثم تعود الحلقة لاستقبال عميل آخر.
                 readMessages(accepted)
             }
         } catch (exception: Exception) {
-            stopReason = exception.message ?: "تعذر تشغيل خادم TCP"
+            stopReason = exception.message
+                ?: "تعذر تشغيل خادم TCP"
+
             if (active.get() && !released.get()) {
                 listener.onError("startServer", stopReason)
             }
@@ -168,34 +192,35 @@ class RoyalTVLocalTransport(
 
             closeQuietly(localServer)
 
-            // لا نغلق اتصالاً أحدث أنشأته مهمة أخرى.
-            if (socket == null || !active.get() || released.get()) {
-                active.set(false)
-            }
+            /*
+             * هنا فقط يصبح الخادم غير نشط:
+             * بعد انتهاء حلقة الخادم نفسها، لا بعد انتهاء عميل.
+             */
+            active.set(false)
 
-            if (localServer != null) {
+            // نظّف اتصالاً متبقياً إن وُجد.
+            closeConnection("توقف خادم TCP")
+
+            if (startedSuccessfully) {
                 listener.onServerStopped(stopReason)
             }
         }
     }
 
-    /**
-     * يتصل هذا الجهاز بخادم TCP بعيد.
-     */
     @Synchronized
     fun connect(host: String, port: Int = DEFAULT_PORT): Boolean {
         if (released.get()) return false
         if (host.isBlank() || port !in 1..65535) return false
         if (!active.compareAndSet(false, true)) return false
 
-        try {
+        return try {
             executor.execute {
                 var client: Socket? = null
 
                 try {
                     client = Socket()
                     client.connect(
-                        java.net.InetSocketAddress(host, port),
+                        InetSocketAddress(host, port),
                         CONNECT_TIMEOUT_MS
                     )
 
@@ -205,10 +230,20 @@ class RoyalTVLocalTransport(
                     }
 
                     configureSocket(client)
-                    socket = client
-                    output = DataOutputStream(
-                        BufferedOutputStream(client.getOutputStream())
-                    )
+
+                    synchronized(outputLock) {
+                        if (!active.get() || released.get()) {
+                            closeQuietly(client)
+                            return@execute
+                        }
+
+                        socket = client
+                        output = DataOutputStream(
+                            BufferedOutputStream(
+                                client.getOutputStream()
+                            )
+                        )
+                    }
 
                     listener.onConnected()
                     readMessages(client)
@@ -221,17 +256,17 @@ class RoyalTVLocalTransport(
                     }
                 } finally {
                     active.set(false)
-                    closeConnection("انتهى اتصال TCP")
+                    closeConnection("انتهى اتصال TCP", client)
                 }
             }
-            return true
+            true
         } catch (exception: Exception) {
             active.set(false)
             listener.onError(
                 "connect",
                 exception.message ?: "تعذر بدء مهمة الاتصال"
             )
-            return false
+            false
         }
     }
 
@@ -240,10 +275,6 @@ class RoyalTVLocalTransport(
         target.keepAlive = true
     }
 
-    /**
-     * صيغة الرسائل:
-     * طول الرسالة بالبايت كعدد صحيح، ثم محتوى UTF-8.
-     */
     fun sendMessage(message: String): Boolean {
         if (released.get() || !isConnected()) return false
 
@@ -273,6 +304,7 @@ class RoyalTVLocalTransport(
                 "sendMessage",
                 exception.message ?: "تعذر إرسال الرسالة"
             )
+
             closeConnection("فشل إرسال الرسالة")
             false
         }
@@ -284,10 +316,10 @@ class RoyalTVLocalTransport(
                 BufferedInputStream(source.getInputStream())
             )
 
-            while (active.get() && !released.get() && !source.isClosed) {
+            while (active.get() && !released.get()) {
                 val length = try {
                     input.readInt()
-                } catch (exception: EOFException) {
+                } catch (_: EOFException) {
                     break
                 }
 
@@ -321,9 +353,14 @@ class RoyalTVLocalTransport(
                 )
             }
         } finally {
-            // يغلق اتصال العميل الحالي فقط.
-            // لا يوقف حلقة accept الخاصة بالخادم.
-            closeConnection("انتهى اتصال الطرف الآخر", source)
+            /*
+             * يغلق العميل الحالي فقط.
+             * لا يغيّر active، كي لا يوقف خادم TCP.
+             */
+            closeConnection(
+                "انتهى اتصال الطرف الآخر",
+                source
+            )
         }
     }
 
@@ -336,7 +373,7 @@ class RoyalTVLocalTransport(
         synchronized(outputLock) {
             val current = socket
 
-            // يمنع اتصال قديم من إغلاق اتصال أحدث.
+            // لا تسمح لاتصال قديم بإغلاق اتصال أحدث.
             if (expectedSocket != null && current !== expectedSocket) {
                 closeQuietly(expectedSocket)
                 return
@@ -354,25 +391,18 @@ class RoyalTVLocalTransport(
         }
     }
 
-    /**
-     * يوقف الخادم والاتصال الحالي.
-     */
     @Synchronized
     fun disconnect() {
         active.set(false)
 
         val oldServer = serverSocket
+        serverSocket = null
         serverListening = false
 
-        serverSocket = null
         closeQuietly(oldServer)
-
         closeConnection("تم قطع اتصال TCP")
     }
 
-    /**
-     * تحرير نهائي لموارد النقل.
-     */
     @Synchronized
     fun release() {
         if (!released.compareAndSet(false, true)) return
@@ -385,7 +415,7 @@ class RoyalTVLocalTransport(
         try {
             closeable?.close()
         } catch (_: Exception) {
-            // لا نوقف التنظيف بسبب فشل الإغلاق.
+            // تجاهل خطأ الإغلاق أثناء التنظيف.
         }
     }
 }
