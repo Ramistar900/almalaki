@@ -473,49 +473,20 @@ class RoyalTVConnectionManager(context: Context) {
 
         val port = RoyalTVVideoPacketTransport.DEFAULT_PORT
 
+        
         if (info.isGroupOwner) {
             videoServerStarting = true
             videoServerStarted = false
 
             reportStatus("VIDEO_TCP_SERVER_STARTING:$port")
-
-            if (!newTransport.startServer(port)) {
-                videoServerStarting = false
-                videoServerStarted = false
-
-                if (videoTransport === newTransport) {
-                    videoTransport = null
-                    videoTransportGeneration++
-                }
-
-                newTransport.close()
-
-                reportVideoError(
-                    "startVideoServer",
-                    "تعذر بدء خادم الفيديو على المنفذ $port"
-                )
-            }
+            newTransport.startServer(port)
         } else {
             videoClientConnecting = true
 
             reportStatus("VIDEO_TCP_CONNECTING:$address:$port")
-
-            if (!newTransport.connect(address!!, port)) {
-                videoClientConnecting = false
-
-                if (videoTransport === newTransport) {
-                    videoTransport = null
-                    videoTransportGeneration++
-                }
-
-                newTransport.close()
-
-                reportVideoError(
-                    "connectVideoClient",
-                    "تعذر الاتصال بخادم الفيديو $address:$port"
-                )
-            }
+            newTransport.connect(address!!, port)
         }
+        
     }
 
     private fun createVideoTransport(): RoyalTVVideoPacketTransport {
