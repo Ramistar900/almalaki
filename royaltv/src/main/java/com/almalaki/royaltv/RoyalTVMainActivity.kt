@@ -1221,7 +1221,7 @@ private fun NewProductsPanel(
             },
 
                         label = "royal_product_transition"
-        ) { targetIndex ->
+            content = { targetIndex ->
 
             val product =
                 demoProducts[targetIndex]
@@ -1371,6 +1371,7 @@ private fun InfoPanel(
         )
     }
 }
+        
 
 
 @Composable
