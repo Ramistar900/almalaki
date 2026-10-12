@@ -70,14 +70,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-private val RoyalBlue = Color(0xFF172B4D)
-private val RoyalGold = Color(0xFFB99A52)
-private val RoyalEmerald = Color(0xFF176B60)
-private val RoyalBurgundy = Color(0xFF6B3154)
-private val RoyalPearl = Color(0xFFDCE5EE)
-private val RoyalCharcoal = Color(0xFF252B35)
-private val RoyalRed = Color(0xFFFF4545)
-private val RoyalBlack = Color(0xFF080C12)
 private val RoyalBlue = Color(0xFF123B43)
 private val RoyalGold = Color(0xFFD4AF37)
 private val RoyalEmerald = Color(0xFF087653)
