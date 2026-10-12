@@ -963,11 +963,18 @@ try {
 
         
         
+        
         if (fullscreenButtonVisible) {
             Text(
-                text = "⛶",
+                text = if (fullscreen) "↙" else "⛶",
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(
+                        if (fullscreen) {
+                            Alignment.BottomStart
+                        } else {
+                            Alignment.BottomEnd
+                        }
+                    )
                     .padding(12.dp)
                     .clickable {
                         onToggleFullscreen()
@@ -978,6 +985,7 @@ try {
                 fontWeight = FontWeight.Normal
             )
         }
+        
         
     }
 }
