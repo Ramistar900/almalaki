@@ -6,23 +6,23 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,13 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -48,21 +48,25 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
-import androidx.compose.ui.unit.IntOffset
 
 private val BroadcastGold = Color(0xFFD4AF37)
 private val BroadcastCream = Color(0xFFF9F295)
-private val BroadcastBlack = Color(0xFF111111)
+
+/* فيروزي داكن ممزوج بالأسود */
+private val BroadcastTickerBackground = Color(0xFF153536)
+
+private val BroadcastTimeColor = Color.White
+private val BroadcastLiveRed = Color(0xFFFF3030)
 
 /**
- * هوية ROYAL TV العائمة.
+ * هوية البث الخاصة بوحدة ROYAL TV فقط.
  *
- * تتضمن:
- * - الشعار الملكي المتحرك.
- * - التاريخ والوقت.
- * - الشريط الإخباري المتحرك.
- *
- * هذه الواجهة تخص وحدة ROYAL TV فقط.
+ * - الشعار الملكي بطبقاته الأصلية.
+ * - ساعة فقط دون تاريخ.
+ * - خلفية الساعة شفافة.
+ * - شريط فيروزي داكن بإطار ذهبي ثابت.
+ * - حركة النص الإخباري فقط.
+ * - مؤشر مباشر مستقل.
  */
 @Composable
 fun RoyalTVBroadcastIdentity(
@@ -72,18 +76,14 @@ fun RoyalTVBroadcastIdentity(
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
     ) {
-        /*
-         * مقياس تلقائي حسب عرض الشاشة بوحدة dp.
-         * 360dp هو العرض المرجعي للهاتف.
-         */
         val scale = (maxWidth.value / 360f)
             .coerceIn(0.85f, 2.6f)
 
         val logoSize = (48f * scale).dp
-        val dateSize = (9f * scale).sp
-        val timeSize = (13f * scale).sp
+        val timeTextSize = (13f * scale).sp
         val tickerTextSize = (12f * scale).sp
-        val tickerHeight = (22f * scale).dp
+        val tickerHeight = (24f * scale).dp
+        val liveTextSize = (10f * scale).sp
 
         var now by remember {
             mutableStateOf(Date())
@@ -94,17 +94,6 @@ fun RoyalTVBroadcastIdentity(
                 now = Date()
                 delay(1000L)
             }
-        }
-
-        /*
-         * يطابق تنسيق التاريخ في الشريط السفلي الأصلي.
-         * يستخدم المنطقة الزمنية الافتراضية للجهاز.
-         */
-        val dateText = remember(now) {
-            SimpleDateFormat(
-                "EEEE d/M/yyyy",
-                Locale("ar")
-            ).format(now)
         }
 
         val timeText = remember(now) {
@@ -122,116 +111,53 @@ fun RoyalTVBroadcastIdentity(
                     horizontal = (8f * scale).dp,
                     vertical = (5f * scale).dp
                 ),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(
+                (6f * scale).dp
+            )
         ) {
-            /*
-             * الشعار الأساسي المتحرك.
-             * يستخدم طبقتَي PNG داخل وحدة ROYAL TV.
-             */
+            /* الشعار الملكي الأصلي */
             Box(
                 modifier = Modifier.size(logoSize),
                 contentAlignment = Alignment.Center
             ) {
                 RoyalLayeredLogoAnimation(
-                    crownShieldRes =
-                        R.drawable.royal_crest_layer,
-                    rcRes =
-                        R.drawable.royal_rc_layer,
+                    crownShieldRes = R.drawable.royal_crest_layer,
+                    rcRes = R.drawable.royal_rc_layer,
                     modifier = Modifier.fillMaxSize(),
                     contentDescription = "ROYAL TV"
                 )
             }
 
-            Spacer(
-                Modifier.width((5f * scale).dp)
-            )
-
-            /*
-             * التاريخ والوقت.
-             */
-            Column(
-                modifier = Modifier.width(
-                    (82f * scale).dp
-                ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom
+            /* الساعة فقط: خلفية شفافة وإطار ذهبي */
+            Box(
+                modifier = Modifier
+                    .width((68f * scale).dp)
+                    .height((29f * scale).dp)
+                    .clip(
+                        RoundedCornerShape((8f * scale).dp)
+                    )
+                    .border(
+                        width = (1f * scale).dp,
+                        color = BroadcastGold,
+                        shape = RoundedCornerShape(
+                            (8f * scale).dp
+                        )
+                    )
+                    .padding(horizontal = (3f * scale).dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = dateText,
-                    color = BroadcastGold,
-                    fontSize = dateSize,
-                    fontWeight = FontWeight.Medium,
+                    text = timeText,
+                    color = BroadcastTimeColor,
+                    fontSize = timeTextSize,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     softWrap = false
                 )
-
-                Spacer(
-                    Modifier.height((2f * scale).dp)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .width((68f * scale).dp)
-                        .height((25f * scale).dp)
-                        .clip(
-                            RoundedCornerShape(
-                                (7f * scale).dp
-                            )
-                        )
-                        .border(
-                            width = (1f * scale).dp,
-                            color = BroadcastGold,
-                            shape = RoundedCornerShape(
-                                (7f * scale).dp
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    /*
-                     * عرض الوقت بالأرقام اللاتينية
-                     * مع المحافظة على تنسيق HH:mm.
-                     */
-                    val parts = timeText.split(":")
-
-                    Row(
-                        verticalAlignment =
-                            Alignment.CenterVertically,
-                        horizontalArrangement =
-                            Arrangement.Center
-                    ) {
-                        Text(
-                            text = parts.getOrElse(0) { "00" },
-                            color = Color.White,
-                            fontSize = timeSize,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = ":",
-                            color = BroadcastGold,
-                            fontSize = timeSize,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = parts.getOrElse(1) { "00" },
-                            color = Color.White,
-                            fontSize = timeSize,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
             }
 
-            Spacer(
-                Modifier.width((6f * scale).dp)
-            )
-
-            /*
-             * الشريط الإخباري الأصلي:
-             * مستطيل أسود رفيع، إطار ذهبي،
-             * حركة من اليمين إلى اليسار.
-             */
+            /* الشريط الإخباري المتحرك */
             RoyalTVOriginalStyleTicker(
                 text = newsText,
                 scale = scale,
@@ -239,7 +165,72 @@ fun RoyalTVBroadcastIdentity(
                 textSize = tickerTextSize,
                 modifier = Modifier.weight(1f)
             )
+
+            /* مؤشر مباشر مستقل عن الشريط */
+            RoyalTVLiveIndicator(
+                scale = scale,
+                textSize = liveTextSize
+            )
         }
+    }
+}
+
+@Composable
+private fun RoyalTVLiveIndicator(
+    scale: Float,
+    textSize: androidx.compose.ui.unit.TextUnit
+) {
+    val transition = rememberInfiniteTransition(
+        label = "royal_tv_live_indicator"
+    )
+
+    val dotAlpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 700,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "royal_tv_live_dot_alpha"
+    )
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .border(
+                width = (1f * scale).dp,
+                color = BroadcastGold,
+                shape = RoundedCornerShape(50)
+            )
+            .padding(
+                horizontal = (7f * scale).dp,
+                vertical = (5f * scale).dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(
+            (4f * scale).dp
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .size((7f * scale).dp)
+                .background(
+                    BroadcastLiveRed.copy(alpha = dotAlpha),
+                    RoundedCornerShape(50)
+                )
+        )
+
+        Text(
+            text = "مباشر",
+            color = Color.White,
+            fontSize = textSize,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }
 
@@ -263,7 +254,7 @@ private fun RoyalTVOriginalStyleTicker(
 
     androidx.compose.runtime.key(text, ready) {
         val transition = rememberInfiniteTransition(
-            label = "royal_tv_original_ticker"
+            label = "royal_tv_ticker"
         )
 
         val offset by transition.animateFloat(
@@ -271,7 +262,7 @@ private fun RoyalTVOriginalStyleTicker(
             targetValue = -contentWidth.toFloat(),
             animationSpec = infiniteRepeatable(
                 animation = tween(
-                    durationMillis = 25_000,
+                    durationMillis = 25000,
                     easing = LinearEasing
                 ),
                 repeatMode = RepeatMode.Restart
@@ -283,7 +274,7 @@ private fun RoyalTVOriginalStyleTicker(
             modifier = modifier
                 .height(height)
                 .clip(RoundedCornerShape(50))
-                .background(BroadcastBlack)
+                .background(BroadcastTickerBackground)
                 .border(
                     width = (1f * scale).dp,
                     color = BroadcastGold,
@@ -325,15 +316,12 @@ private fun RoyalTVOriginalStyleTicker(
                         textAlign = TextAlign.Center
                     )
 
-                    /*
-                     * فاصل ثابت لتخفيف الحمل الرسومي.
-                     * الشعار المتحرك الرئيسي يبقى في الأسفل.
-                     */
                     if (index < items.lastIndex) {
                         Spacer(
                             Modifier.width((10f * scale).dp)
                         )
 
+                        /* فاصل ثابت بلا حركة لمعان */
                         Image(
                             painter = painterResource(
                                 R.drawable.royal_crest_layer
