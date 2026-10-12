@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import android.util.Log
 import android.content.Intent
@@ -457,9 +460,33 @@ private fun BroadcastWindow(
     var selectedApp by remember {
         mutableStateOf<RoyalTVInstalledApp?>(null)
     }
+    
+    var fullscreenButtonVisible by remember {
+        mutableStateOf(true)
+    }
 
+    var touchVersion by remember {
+        mutableIntStateOf(0)
+    }
+
+    LaunchedEffect(touchVersion) {
+        fullscreenButtonVisible = true
+        delay(5_000L)
+        fullscreenButtonVisible = false
+    }
+    
+
+    
     Box(
         modifier = modifier
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(
+                        requireUnconsumed = false
+                    )
+                    touchVersion++
+                }
+            }
             .clip(RoundedCornerShape(9.dp))
             .background(
                 Brush.linearGradient(
@@ -476,6 +503,7 @@ private fun BroadcastWindow(
                 RoundedCornerShape(9.dp)
             )
     ) {
+        
         when {
             // عرض صفحة YouTube داخل نافذة البث نفسها.
             selectedSource == "يوتيوب" -> {
@@ -901,59 +929,176 @@ try {
 
         RoyalTVNotificationOverlay(Modifier.fillMaxSize())
 
+        
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp)
-                .clip(CircleShape)
-                .background(RoyalBurgundy)
-                .border(1.dp, RoyalGold, CircleShape)
+                .clip(RoundedCornerShape(9.dp))
+                .background(Color.Black.copy(alpha = 0.38f))
+                .border(
+                    width = 1.dp,
+                    color = RoyalGold.copy(alpha = 0.65f),
+                    shape = RoundedCornerShape(9.dp)
+                )
                 .padding(
                     horizontal = 10.dp,
                     vertical = 6.dp
                 ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Box(
-                Modifier
-                    .size(8.dp)
-                    .alpha(liveAlpha)
-                    .background(RoyalRed, CircleShape)
-            )
+            
+            RoyalTVBroadcastSignal()
+            
 
             Text(
                 text = "مباشر",
                 color = Color.White,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
             )
         }
+        
 
-        Text(
-            text = if (fullscreen) "⛶ رجوع" else "⛶",
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(8.dp)
-                .clip(RoundedCornerShape(7.dp))
-                .background(RoyalBlue)
-                .border(
-                    1.dp,
-                    RoyalGold,
-                    RoundedCornerShape(7.dp)
-                )
-                .clickable {
-                    onToggleFullscreen()
-                }
-                .padding(
-                    horizontal = 10.dp,
-                    vertical = 7.dp
-                ),
-            color = RoyalPearl,
-            fontSize = if (fullscreen) 12.sp else 20.sp,
-            fontWeight = FontWeight.Bold
+        
+        
+        if (fullscreenButtonVisible) {
+            Text(
+                text = "⛶",
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .clickable {
+                        onToggleFullscreen()
+                    }
+                    .padding(4.dp),
+                color = Color.White,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
+        
+    }
+}
+
+@Composable
+private fun RoyalTVBroadcastSignal() {
+    val transition = rememberInfiniteTransition(
+        label = "royal_broadcast_signal"
+    )
+
+    val innerAlpha by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "signal_inner"
+    )
+
+    val middleAlpha by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, delayMillis = 300),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "signal_middle"
+    )
+
+    val outerAlpha by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, delayMillis = 600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "signal_outer"
+    )
+
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier.size(24.dp)
+    ) {
+        val stroke = 2.dp.toPx()
+        val cx = size.width / 2f
+        val baseY = size.height * 0.88f
+
+        // قاعدة الإشارة
+        drawLine(
+            color = RoyalRed,
+            start = androidx.compose.ui.geometry.Offset(
+                cx, baseY
+            ),
+            end = androidx.compose.ui.geometry.Offset(
+                cx, size.height * 0.68f
+            ),
+            strokeWidth = stroke
+        )
+
+        // القوس الداخلي
+        drawArc(
+            color = RoyalRed.copy(alpha = innerAlpha),
+            startAngle = 225f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(
+                cx - size.width * 0.16f,
+                size.height * 0.48f
+            ),
+            size = androidx.compose.ui.geometry.Size(
+                size.width * 0.32f,
+                size.height * 0.32f
+            ),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = stroke,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
+        )
+
+        // القوس الأوسط
+        drawArc(
+            color = RoyalRed.copy(alpha = middleAlpha),
+            startAngle = 225f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(
+                cx - size.width * 0.31f,
+                size.height * 0.29f
+            ),
+            size = androidx.compose.ui.geometry.Size(
+                size.width * 0.62f,
+                size.height * 0.62f
+            ),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = stroke,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
+        )
+
+        // القوس الخارجي
+        drawArc(
+            color = RoyalRed.copy(alpha = outerAlpha),
+            startAngle = 225f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(
+                cx - size.width * 0.46f,
+                size.height * 0.08f
+            ),
+            size = androidx.compose.ui.geometry.Size(
+                size.width * 0.92f,
+                size.height * 0.92f
+            ),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = stroke,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
         )
     }
 }
+
 
 
 @Composable
