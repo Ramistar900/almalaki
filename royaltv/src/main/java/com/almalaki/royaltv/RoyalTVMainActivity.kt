@@ -571,64 +571,120 @@ private fun BroadcastWindow(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement =
-                            Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = app?.label ?: "التطبيق المختار",
-                            color = RoyalGold,
-                            fontSize = 23.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center
-                        )
+                    
+} else {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = app?.label ?: "التطبيق المختار",
+            color = RoyalGold,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center
+        )
 
-                        Text(
-                            text = app?.packageName.orEmpty(),
-                            color = RoyalPearl,
-                            textAlign = TextAlign.Center
-                        )
+        Text(
+            text = app?.packageName.orEmpty(),
+            color = RoyalPearl,
+            textAlign = TextAlign.Center
+        )
 
-                        Text(
-                            text = capability?.message
-                                ?: "تعذّر تحديد طريقة عرض هذا التطبيق.",
-                            color = RoyalPearl,
-                            textAlign = TextAlign.Center
-                        )
+        Text(
+            text = capability?.message
+                ?: "تعذّر تحديد طريقة عرض هذا التطبيق.",
+            color = RoyalPearl,
+            textAlign = TextAlign.Center
+        )
 
-                        Text(
-                            text = "الخطوة التالية: دعم عرض التطبيقات الأصلية أو مشاركة شاشة الجهاز.",
-                            color = RoyalGold,
-                            textAlign = TextAlign.Center
-                        )
+        if (
+            app != null &&
+            capability?.mode ==
+                RoyalTVAppDisplayMode.NATIVE_LAUNCH_ONLY
+        ) {
+            Text(
+                text = "▶ تشغيل التطبيق على الجهاز",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(RoyalBlue)
+                    .border(
+                        1.dp,
+                        RoyalGold,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .clickable {
+                        val packageManager =
+                            context.packageManager
 
-                        Text(
-                            text = "‹ العودة إلى التطبيقات",
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(RoyalBlue)
-                                .border(
-                                    1.dp,
-                                    RoyalGold,
-                                    RoundedCornerShape(8.dp)
+                        val launchIntent =
+                            packageManager
+                                .getLeanbackLaunchIntentForPackage(
+                                    app.packageName
                                 )
-                                .clickable {
-                                    selectedSource = "التطبيقات"
-                                }
-                                .padding(
-                                    horizontal = 16.dp,
-                                    vertical = 10.dp
-                                ),
-                            color = RoyalPearl,
-                            fontWeight = FontWeight.Bold
-                        )
+                                ?: packageManager
+                                    .getLaunchIntentForPackage(
+                                        app.packageName
+                                    )
+
+                        if (launchIntent == null) {
+                            Toast.makeText(
+                                context,
+                                "لا يوجد مدخل تشغيل لهذا التطبيق",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            try {
+                                launchIntent.addFlags(
+                                    Intent.FLAG_ACTIVITY_NEW_TASK
+                                )
+                                context.startActivity(launchIntent)
+                            } catch (_: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    "تعذّر تشغيل التطبيق",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                     }
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 12.dp
+                    ),
+                color = RoyalPearl,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Text(
+            text = "‹ العودة إلى التطبيقات",
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(RoyalBlue)
+                .border(
+                    1.dp,
+                    RoyalGold,
+                    RoundedCornerShape(8.dp)
+                )
+                .clickable {
+                    selectedSource = "التطبيقات"
                 }
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 10.dp
+                ),
+            color = RoyalPearl,
+            fontWeight = FontWeight.Bold
+        )
+    }
+                }
+                
+
             }
             
             // المصادر التي لم نربط تشغيلها بعد.
