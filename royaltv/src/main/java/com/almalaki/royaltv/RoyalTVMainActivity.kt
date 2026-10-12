@@ -78,6 +78,15 @@ private val RoyalPearl = Color(0xFFDCE5EE)
 private val RoyalCharcoal = Color(0xFF252B35)
 private val RoyalRed = Color(0xFFFF4545)
 private val RoyalBlack = Color(0xFF080C12)
+private val RoyalBlue = Color(0xFF123B43)
+private val RoyalGold = Color(0xFFD4AF37)
+private val RoyalEmerald = Color(0xFF087653)
+private val RoyalTurquoise = Color(0xFF16858A)
+private val RoyalBurgundy = Color(0xFF54245F)
+private val RoyalPearl = Color(0xFFF0E9F5)
+private val RoyalCharcoal = Color(0xFF17191F)
+private val RoyalRed = Color(0xFFFF3038)
+private val RoyalBlack = Color(0xFF050609)
 
 private data class RoyalDemoProduct(
     val name: String,
@@ -1157,9 +1166,10 @@ private fun NewProductsPanel(
             .clip(RoundedCornerShape(9.dp))
             .background(RoyalBlue)
             .border(
-                1.dp,
-                RoyalGold,
-                RoundedCornerShape(9.dp)
+    1.dp,
+    RoyalRed,
+    RoundedCornerShape(9.dp)
+)
             )
             .padding(5.dp),
         horizontalAlignment =
@@ -1331,9 +1341,9 @@ private fun InfoPanel(
                     )
                 )
             )
-            .border(
+                        .border(
                 1.dp,
-                RoyalGold.copy(alpha = 0.85f),
+                RoyalRed,
                 RoundedCornerShape(9.dp)
             )
             .padding(
@@ -1369,6 +1379,59 @@ private fun InfoPanel(
         )
     }
 }
+
+
+@Composable
+private fun RoyalOrnamentalDivider(
+modifier: Modifier = Modifier
+) {
+Row(
+modifier = modifier
+.fillMaxWidth()
+.height(16.dp),
+verticalAlignment = Alignment.CenterVertically,
+horizontalArrangement = Arrangement.Center
+) {
+Text(
+text = "➤",
+color = RoyalGold,
+fontSize = 12.sp,
+fontWeight = FontWeight.Bold
+)
+
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 4.dp)
+            .height(1.dp)
+            .background(RoyalGold)
+    )
+
+    Text(
+        text = "❦",
+        color = RoyalGold,
+        fontSize = 17.sp,
+        fontWeight = FontWeight.Bold
+    )
+
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 4.dp)
+            .height(1.dp)
+            .background(RoyalGold)
+    )
+
+    Text(
+        text = "➤",
+        color = RoyalGold,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold
+    )
+}
+
+}
+
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
