@@ -440,6 +440,7 @@ private fun RoyalTVChannelScreen(
         }
     }
 }
+
 @Composable
 private fun BroadcastWindow(
     liveAlpha: Float,
@@ -448,75 +449,49 @@ private fun BroadcastWindow(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedSource by remember { mutableStateOf<String?>(null) }
+    var selectedSource by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var selectedApp by remember {
+        mutableStateOf<RoyalTVInstalledApp?>(null)
+    }
 
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(9.dp))
             .background(
                 Brush.linearGradient(
-                    listOf(RoyalCharcoal, RoyalBlue, RoyalBlack)
+                    listOf(
+                        RoyalCharcoal,
+                        RoyalBlue,
+                        RoyalBlack
+                    )
                 )
             )
-            .border(1.dp, RoyalGold, RoundedCornerShape(9.dp))
+            .border(
+                1.dp,
+                RoyalGold,
+                RoundedCornerShape(9.dp)
+            )
     ) {
-        if (selectedSource == null && displayState.source == RoyalTVSource.IDLE) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    "ROYAL TV",
-                    color = RoyalGold,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold
+        when {
+            // عرض صفحة YouTube داخل نافذة البث نفسها.
+            selectedSource == "يوتيوب" -> {
+                RoyalTVEmbeddedWebSource(
+                    url = "https://www.youtube.com/tv",
+                    modifier = Modifier.fillMaxSize()
                 )
-                Text("اختر مصدر البث", color = RoyalPearl, fontSize = 15.sp)
-
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    RoyalTVSourceTile(
-    "التطبيقات",
-    "اكتشاف تطبيقات الجهاز",
-    "▦",
-    Modifier.weight(1f)
-) {
-    selectedSource = "التطبيقات"
-                    }
-
-                    RoyalTVSourceTile(
-                        "يوتيوب", "YouTube Web", "▶",
-                        Modifier.weight(1f)
-                    ) { selectedSource = "يوتيوب" }
-                }
-
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    RoyalTVSourceTile(
-                        "موسيقى", "مكتبة الموسيقى", "♫",
-                        Modifier.weight(1f)
-                    ) { selectedSource = "موسيقى" }
-
-                    RoyalTVSourceTile(
-                        "الفيديو", "مكتبة الصور والفيديو", "▣",
-                        Modifier.weight(1f)
-                    ) { selectedSource = "الفيديو" }
-                }
             }
-        } else if (selectedSource != null) {
-if (selectedSource == "التطبيقات") {
-Box(
-modifier = Modifier.fillMaxSize()
-) {
-RoyalTVAppDiscoveryPanel()
+
+            // قائمة التطبيقات، مع إعادة الاختيار إلى النافذة.
+            selectedSource == "التطبيقات" -> {
+                RoyalTVAppDiscoveryPanel(
+                    onAppSelected = { app ->
+                        selectedApp = app
+                        selectedSource = "التطبيق المختار"
+                    }
+                )
 
                 Text(
                     text = "‹ العودة",
@@ -532,6 +507,7 @@ RoyalTVAppDiscoveryPanel()
                         )
                         .clickable {
                             selectedSource = null
+                            selectedApp = null
                         }
                         .padding(
                             horizontal = 14.dp,
@@ -540,91 +516,236 @@ RoyalTVAppDiscoveryPanel()
                     color = RoyalPearl,
                     fontWeight = FontWeight.Bold
                 )
-                    }
-        } else {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Text(
-                    selectedSource.orEmpty(),
-                    color = RoyalGold,
-                    fontSize = 25.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-
-                Text(
-                    "تم اختيار المصدر. سيُربط التشغيل الفعلي في الخطوة التالية.",
-                    color = RoyalPearl,
-                    textAlign = TextAlign.Center
-                )
-
-                Text(
-                    "‹ العودة إلى مصادر البث",
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(RoyalBlue)
-                        .border(
-                            1.dp,
-                            RoyalGold,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .clickable {
-                            selectedSource = null
-                        }
-                        .padding(
-                            horizontal = 16.dp,
-                            vertical = 10.dp
-                        ),
-                    color = RoyalPearl,
-                    fontWeight = FontWeight.Bold
-                )
             }
-        }
-    } else {
-            Column(
-                modifier = Modifier.align(Alignment.Center).padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val title = when (displayState.source) {
-                    RoyalTVSource.IDLE -> "ROYAL TV"
-                    RoyalTVSource.ORDER -> "طلب جديد"
-                    RoyalTVSource.YOUTUBE -> "YouTube"
-                    RoyalTVSource.MEDIA -> "وسائط ROYAL TV"
-                    RoyalTVSource.AD -> "عروض الملكي"
-                    RoyalTVSource.CONTENT -> "محتوى ROYAL TV"
-                }
 
-                Text(
-                    title,
-                    color = RoyalGold,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    if (displayState.isPlaying) "تم استلام أمر العرض"
-                    else "المحتوى متوقف",
-                    color = RoyalPearl
-                )
-                Text(
-                    displayState.payload.ifBlank { "بانتظار المحتوى" },
-                    color = RoyalPearl.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    "مصادر البث",
+            // إظهار التطبيق الذي اختاره المستخدم داخل النافذة.
+            selectedSource == "التطبيق المختار" -> {
+                Column(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(RoyalBlue)
-                        .border(1.dp, RoyalGold, RoundedCornerShape(8.dp))
-                        .clickable { selectedSource = null }
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = selectedApp?.label
+                            ?: "التطبيق المختار",
+                        color = RoyalGold,
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = selectedApp?.packageName.orEmpty(),
+                        color = RoyalPearl,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "تم استلام اختيار التطبيق. يلزم تحديد طريقة عرض متوافقة معه قبل تشغيل محتواه داخل نافذة ROYAL TV.",
+                        color = RoyalPearl,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "‹ العودة إلى التطبيقات",
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RoyalBlue)
+                            .border(
+                                1.dp,
+                                RoyalGold,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                selectedSource = "التطبيقات"
+                            }
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = 10.dp
+                            ),
+                        color = RoyalPearl,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // المصادر التي لم نربط تشغيلها بعد.
+            selectedSource != null -> {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = selectedSource.orEmpty(),
+                        color = RoyalGold,
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+
+                    Text(
+                        text = "هذا المصدر لم يُربط بالتشغيل الداخلي بعد.",
+                        color = RoyalPearl,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "‹ العودة إلى مصادر البث",
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RoyalBlue)
+                            .border(
+                                1.dp,
+                                RoyalGold,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                selectedSource = null
+                            }
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = 10.dp
+                            ),
+                        color = RoyalPearl,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // قائمة المصادر الرئيسية.
+            displayState.source == RoyalTVSource.IDLE -> {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "ROYAL TV",
+                        color = RoyalGold,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+
+                    Text(
+                        text = "اختر مصدر البث",
+                        color = RoyalPearl,
+                        fontSize = 15.sp
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        RoyalTVSourceTile(
+                            "التطبيقات",
+                            "اكتشاف تطبيقات الجهاز",
+                            "▦",
+                            Modifier.weight(1f)
+                        ) {
+                            selectedSource = "التطبيقات"
+                        }
+
+                        RoyalTVSourceTile(
+                            "يوتيوب",
+                            "YouTube Web",
+                            "▶",
+                            Modifier.weight(1f)
+                        ) {
+                            selectedSource = "يوتيوب"
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        RoyalTVSourceTile(
+                            "موسيقى",
+                            "مكتبة الموسيقى",
+                            "♫",
+                            Modifier.weight(1f)
+                        ) {
+                            selectedSource = "موسيقى"
+                        }
+
+                        RoyalTVSourceTile(
+                            "الفيديو",
+                            "مكتبة الصور والفيديو",
+                            "▣",
+                            Modifier.weight(1f)
+                        ) {
+                            selectedSource = "الفيديو"
+                        }
+                    }
+                }
+            }
+
+            // عرض حالة المحتوى القادم من نظام ROYAL TV.
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
                         .padding(12.dp),
-                    color = RoyalPearl
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val title = when (displayState.source) {
+                        RoyalTVSource.IDLE -> "ROYAL TV"
+                        RoyalTVSource.ORDER -> "طلب جديد"
+                        RoyalTVSource.YOUTUBE -> "YouTube"
+                        RoyalTVSource.MEDIA -> "وسائط ROYAL TV"
+                        RoyalTVSource.AD -> "عروض الملكي"
+                        RoyalTVSource.CONTENT -> "محتوى ROYAL TV"
+                    }
+
+                    Text(
+                        text = title,
+                        color = RoyalGold,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+
+                    Text(
+                        text = if (displayState.isPlaying) {
+                            "تم استلام أمر العرض"
+                        } else {
+                            "المحتوى متوقف"
+                        },
+                        color = RoyalPearl
+                    )
+
+                    Text(
+                        text = displayState.payload.ifBlank {
+                            "بانتظار المحتوى"
+                        },
+                        color = RoyalPearl.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "مصادر البث",
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RoyalBlue)
+                            .border(
+                                1.dp,
+                                RoyalGold,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                selectedSource = null
+                            }
+                            .padding(12.dp),
+                        color = RoyalPearl
+                    )
+                }
             }
         }
 
@@ -637,34 +758,53 @@ RoyalTVAppDiscoveryPanel()
                 .clip(CircleShape)
                 .background(RoyalBurgundy)
                 .border(1.dp, RoyalGold, CircleShape)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(
+                    horizontal = 10.dp,
+                    vertical = 6.dp
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Box(
-                Modifier.size(8.dp)
+                Modifier
+                    .size(8.dp)
                     .alpha(liveAlpha)
                     .background(RoyalRed, CircleShape)
             )
-            Text("مباشر", color = Color.White, fontSize = 12.sp)
+
+            Text(
+                text = "مباشر",
+                color = Color.White,
+                fontSize = 12.sp
+            )
         }
 
         Text(
-            if (fullscreen) "⛶ رجوع" else "⛶",
+            text = if (fullscreen) "⛶ رجوع" else "⛶",
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(8.dp)
                 .clip(RoundedCornerShape(7.dp))
                 .background(RoyalBlue)
-                .border(1.dp, RoyalGold, RoundedCornerShape(7.dp))
-                .clickable { onToggleFullscreen() }
-                .padding(horizontal = 10.dp, vertical = 7.dp),
+                .border(
+                    1.dp,
+                    RoyalGold,
+                    RoundedCornerShape(7.dp)
+                )
+                .clickable {
+                    onToggleFullscreen()
+                }
+                .padding(
+                    horizontal = 10.dp,
+                    vertical = 7.dp
+                ),
             color = RoyalPearl,
             fontSize = if (fullscreen) 12.sp else 20.sp,
             fontWeight = FontWeight.Bold
         )
     }
 }
+
 
 @Composable
 private fun RoyalTVSourceTile(
