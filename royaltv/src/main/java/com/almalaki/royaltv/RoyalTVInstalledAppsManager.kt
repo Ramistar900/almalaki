@@ -15,8 +15,13 @@ data class RoyalTVInstalledApp(
 object RoyalTVInstalledAppsManager {
 
     /**
-     * اكتشاف التطبيقات المثبتة، بما فيها تطبيقات النظام،
-     * وليس التطبيقات التي تملك أيقونة تشغيل فقط.
+     * اكتشاف التطبيقات التي تملك نقطة تشغيل فعلية.
+     *
+     * يدعم مشغلات Android العادية ومشغلات Android TV
+     * (Leanback)، ويتجنب عرض حزم النظام التي لا تملك
+     * واجهة تشغيل عامة.
+     *
+     * هذه الدالة لا تشغّل أي تطبيق.
      */
     fun getLaunchableApps(
         context: Context
@@ -32,6 +37,24 @@ object RoyalTVInstalledAppsManager {
                     val packageName = application.packageName
                         .takeIf { it.isNotBlank() }
                         ?: return@mapNotNull null
+
+                    val standardLaunchIntent =
+                        packageManager.getLaunchIntentForPackage(
+                            packageName
+                        )
+
+                    val tvLaunchIntent =
+                        packageManager.getLeanbackLaunchIntentForPackage(
+                            packageName
+                        )
+
+                    // لا نعرض الحزم التي لا تملك أي مدخل تشغيل.
+                    if (
+                        standardLaunchIntent == null &&
+                        tvLaunchIntent == null
+                    ) {
+                        return@mapNotNull null
+                    }
 
                     val label = packageManager
                         .getApplicationLabel(application)
@@ -52,8 +75,10 @@ object RoyalTVInstalledAppsManager {
     }
 
     /**
-     * محاولة فتح التطبيق.
-     * بعض تطبيقات النظام لا تملك واجهة تشغيل عامة.
+     * محاولة فتح التطبيق عند طلب صريح من المستخدم.
+     *
+     * لا تستخدم هذه الدالة لتضمين التطبيق داخل ROYAL TV؛
+     * فهي تنقل التطبيق إلى واجهة Android الخارجية.
      */
     fun launchApp(
         context: Context,
@@ -62,9 +87,14 @@ object RoyalTVInstalledAppsManager {
         if (packageName.isBlank()) return false
 
         return try {
-            val intent = context.packageManager
-                .getLaunchIntentForPackage(packageName)
-                ?: return false
+            val packageManager = context.packageManager
+
+            val intent =
+                packageManager.getLaunchIntentForPackage(packageName)
+                    ?: packageManager.getLeanbackLaunchIntentForPackage(
+                        packageName
+                    )
+                    ?: return false
 
             intent.addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
