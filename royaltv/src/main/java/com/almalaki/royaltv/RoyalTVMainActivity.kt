@@ -1,5 +1,6 @@
 package com.almalaki.royaltv
 
+import androidx.compose.ui.platform.LocalContext
 import android.util.Log
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
@@ -518,59 +519,118 @@ private fun BroadcastWindow(
                 )
             }
 
-            // إظهار التطبيق الذي اختاره المستخدم داخل النافذة.
+        
+            
+            // فحص طريقة عرض التطبيق داخل نافذة ROYAL TV.
             selectedSource == "التطبيق المختار" -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                val context = LocalContext.current
+                val app = selectedApp
+
+                val capability = remember(app, context) {
+                    app?.let {
+                        RoyalTVAppDisplayCapabilityResolver.resolve(
+                            context,
+                            it
+                        )
+                    }
+                }
+
+                if (
+                    capability?.mode ==
+                        RoyalTVAppDisplayMode.EMBEDDED_WEB &&
+                    !capability.embeddedUrl.isNullOrBlank()
                 ) {
-                    Text(
-                        text = selectedApp?.label
-                            ?: "التطبيق المختار",
-                        color = RoyalGold,
-                        fontSize = 23.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        RoyalTVEmbeddedWebSource(
+                            url = capability.embeddedUrl!!,
+                            modifier = Modifier.fillMaxSize()
+                        )
 
-                    Text(
-                        text = selectedApp?.packageName.orEmpty(),
-                        color = RoyalPearl,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Text(
-                        text = "تم استلام اختيار التطبيق. يلزم تحديد طريقة عرض متوافقة معه قبل تشغيل محتواه داخل نافذة ROYAL TV.",
-                        color = RoyalPearl,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Text(
-                        text = "‹ العودة إلى التطبيقات",
+                        Text(
+                            text = "‹ العودة",
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(RoyalBlue)
+                                .border(
+                                    1.dp,
+                                    RoyalGold,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable {
+                                    selectedSource = "التطبيقات"
+                                }
+                                .padding(
+                                    horizontal = 14.dp,
+                                    vertical = 8.dp
+                                ),
+                            color = RoyalPearl,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Column(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(RoyalBlue)
-                            .border(
-                                1.dp,
-                                RoyalGold,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .clickable {
-                                selectedSource = "التطبيقات"
-                            }
-                            .padding(
-                                horizontal = 16.dp,
-                                vertical = 10.dp
-                            ),
-                        color = RoyalPearl,
-                        fontWeight = FontWeight.Bold
-                    )
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement =
+                            Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = app?.label ?: "التطبيق المختار",
+                            color = RoyalGold,
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = app?.packageName.orEmpty(),
+                            color = RoyalPearl,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = capability?.message
+                                ?: "تعذّر تحديد طريقة عرض هذا التطبيق.",
+                            color = RoyalPearl,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "الخطوة التالية: دعم عرض التطبيقات الأصلية أو مشاركة شاشة الجهاز.",
+                            color = RoyalGold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "‹ العودة إلى التطبيقات",
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(RoyalBlue)
+                                .border(
+                                    1.dp,
+                                    RoyalGold,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable {
+                                    selectedSource = "التطبيقات"
+                                }
+                                .padding(
+                                    horizontal = 16.dp,
+                                    vertical = 10.dp
+                                ),
+                            color = RoyalPearl,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
-
+            
             // المصادر التي لم نربط تشغيلها بعد.
             selectedSource != null -> {
                 Column(
