@@ -7,14 +7,13 @@ import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.view.Gravity
-import android.view.View
 import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 
 /**
  * خدمة الهوية العائمة الخاصة بـ ROYAL TV.
@@ -101,7 +100,9 @@ class RoyalTVBroadcastOverlayService :
                 android.graphics.Color.TRANSPARENT
             )
 
-            ViewTreeLifecycleOwner.set(this, this@RoyalTVBroadcastOverlayService)
+            setViewTreeLifecycleOwner(
+                this@RoyalTVBroadcastOverlayService
+            )
 
             setContent {
                 RoyalTVBroadcastIdentity()
@@ -148,18 +149,21 @@ class RoyalTVBroadcastOverlayService :
     }
 
     private fun stopOverlay() {
-        serviceLifecycle.currentState.let { state ->
-            if (state.isAtLeast(Lifecycle.State.RESUMED)) {
-                serviceLifecycle.handleLifecycleEvent(
-                    Lifecycle.Event.ON_PAUSE
-                )
-            }
+        val state = serviceLifecycle.currentState
 
-            if (state.isAtLeast(Lifecycle.State.STARTED)) {
-                serviceLifecycle.handleLifecycleEvent(
-                    Lifecycle.Event.ON_STOP
-                )
-            }
+        if (state.isAtLeast(Lifecycle.State.RESUMED)) {
+            serviceLifecycle.handleLifecycleEvent(
+                Lifecycle.Event.ON_PAUSE
+            )
+        }
+
+        if (serviceLifecycle.currentState.isAtLeast(
+                Lifecycle.State.STARTED
+            )
+        ) {
+            serviceLifecycle.handleLifecycleEvent(
+                Lifecycle.Event.ON_STOP
+            )
         }
 
         val view = overlayView
@@ -179,9 +183,11 @@ class RoyalTVBroadcastOverlayService :
     override fun onDestroy() {
         stopOverlay()
 
-        serviceLifecycle.handleLifecycleEvent(
-            Lifecycle.Event.ON_DESTROY
-        )
+        if (serviceLifecycle.currentState != Lifecycle.State.DESTROYED) {
+            serviceLifecycle.handleLifecycleEvent(
+                Lifecycle.Event.ON_DESTROY
+            )
+        }
 
         windowManager = null
         super.onDestroy()
@@ -189,4 +195,3 @@ class RoyalTVBroadcastOverlayService :
 
     override fun onBind(intent: Intent?): IBinder? = null
     }
-    
