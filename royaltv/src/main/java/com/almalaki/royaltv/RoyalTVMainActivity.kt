@@ -637,18 +637,52 @@ private fun BroadcastWindow(
                                 Toast.LENGTH_LONG
                             ).show()
                         } else {
-                            try {
-                                launchIntent.addFlags(
-                                    Intent.FLAG_ACTIVITY_NEW_TASK
-                                )
-                                context.startActivity(launchIntent)
-                            } catch (_: Exception) {
-                                Toast.makeText(
-                                    context,
-                                    "تعذّر تشغيل التطبيق",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+                            
+try {
+    // التحقق من إذن الظهور فوق التطبيقات.
+    if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+        !android.provider.Settings.canDrawOverlays(context)
+    ) {
+        val permissionIntent = Intent(
+            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            android.net.Uri.parse(
+                "package:${context.packageName}"
+            )
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        context.startActivity(permissionIntent)
+
+        Toast.makeText(
+            context,
+            "اسمح لـ ROYAL TV بالظهور فوق التطبيقات، ثم ارجع واضغط تشغيل التطبيق مرة أخرى.",
+            Toast.LENGTH_LONG
+        ).show()
+    } else {
+        // تشغيل هوية البث العائمة أولاً.
+        val overlayIntent = Intent(
+            context,
+            RoyalTVBroadcastOverlayService::class.java
+        ).setAction(
+            RoyalTVBroadcastOverlayService.ACTION_START
+        )
+
+        context.startService(overlayIntent)
+
+        // ثم فتح التطبيق الذي اختاره المستخدم.
+        launchIntent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+        )
+        context.startActivity(launchIntent)
+    }
+} catch (_: Exception) {
+    Toast.makeText(
+        context,
+        "تعذّر تشغيل التطبيق أو بدء هوية البث",
+        Toast.LENGTH_LONG
+    ).show()
+}
+
                         }
                     }
                     .padding(
