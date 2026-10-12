@@ -1,4 +1,4 @@
-package com.almalaki.cafe
+package com.almalaki.royaltv
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
