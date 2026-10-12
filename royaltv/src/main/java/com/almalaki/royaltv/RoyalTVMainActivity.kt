@@ -1153,20 +1153,20 @@ private fun NewProductsPanel(
     modifier: Modifier = Modifier
 ) {
 
+    
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(9.dp))
             .background(RoyalBlue)
             .border(
-    1.dp,
-    RoyalRed,
-    RoundedCornerShape(9.dp)
-)
+                1.dp,
+                RoyalRed,
+                RoundedCornerShape(9.dp)
             )
             .padding(5.dp),
-        horizontalAlignment =
-            Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        
 
         Text(
             text = "جديدنا",
