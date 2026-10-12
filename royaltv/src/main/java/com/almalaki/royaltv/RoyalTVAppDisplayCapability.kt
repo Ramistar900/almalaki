@@ -1,12 +1,14 @@
 package com.almalaki.royaltv
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
 
 /**
  * نتيجة فحص طريقة عرض تطبيق داخل ROYAL TV.
  *
- * وجود نقطة تشغيل لا يعني أن الواجهة الأصلية
- * قابلة للتضمين داخل Activity أخرى.
+ * وجود نقطة تشغيل لا يعني أن Activity خارجية
+ * قابلة للتضمين داخل نافذة ROYAL TV.
  */
 internal enum class RoyalTVAppDisplayMode {
     EMBEDDED_WEB,
@@ -23,26 +25,46 @@ internal data class RoyalTVAppDisplayCapability(
 internal object RoyalTVAppDisplayCapabilityResolver {
 
     /**
-     * يفحص طريقة العرض المتاحة دون تشغيل التطبيق.
+     * اسم metadata اختياري يمكن للتطبيق الخارجي إعلانه.
+     */
+    const val EMBEDDED_WEB_URL_METADATA =
+        "com.almalaki.royaltv.EMBEDDED_WEB_URL"
+
+    /**
+     * يفحص طرق العرض المتاحة دون تشغيل التطبيق خارجيًا.
      */
     fun resolve(
         context: Context,
         app: RoyalTVInstalledApp
     ): RoyalTVAppDisplayCapability {
 
-        // أولًا: هل توجد طريقة ويب داخلية معروفة؟
-        val embeddedUrl =
+        // 1. البحث عن تكامل معروف لهذا التطبيق.
+        val compatibilityUrl =
             RoyalTVAppCompatibility.resolveEmbeddedWebUrl(app)
 
-        if (!embeddedUrl.isNullOrBlank()) {
+        if (isSafeWebUrl(compatibilityUrl)) {
             return RoyalTVAppDisplayCapability(
                 mode = RoyalTVAppDisplayMode.EMBEDDED_WEB,
-                message = "تتوفر طريقة عرض ويب داخل ROYAL TV.",
-                embeddedUrl = embeddedUrl
+                message =
+                    "تم العثور على مصدر ويب يمكن عرضه داخل نافذة ROYAL TV.",
+                embeddedUrl = compatibilityUrl
             )
         }
 
-        // ثانيًا: هل توجد نقطة تشغيل على الجهاز؟
+        // 2. البحث عن مصدر يعلنه التطبيق الخارجي بنفسه.
+        val declaredUrl =
+            readDeclaredEmbeddedUrl(context, app)
+
+        if (isSafeWebUrl(declaredUrl)) {
+            return RoyalTVAppDisplayCapability(
+                mode = RoyalTVAppDisplayMode.EMBEDDED_WEB,
+                message =
+                    "هذا التطبيق يعلن مصدر ويب متوافقًا مع العرض داخل ROYAL TV.",
+                embeddedUrl = declaredUrl
+            )
+        }
+
+        // 3. التحقق من وجود نقطة تشغيل عامة.
         val hasLaunchIntent = try {
             val packageManager = context.packageManager
 
@@ -52,20 +74,67 @@ internal object RoyalTVAppDisplayCapabilityResolver {
                 packageManager.getLeanbackLaunchIntentForPackage(
                     app.packageName
                 ) != null
-        } catch (_: RuntimeException) {
+        } catch (_: Exception) {
             false
         }
 
         return if (hasLaunchIntent) {
             RoyalTVAppDisplayCapability(
                 mode = RoyalTVAppDisplayMode.NATIVE_LAUNCH_ONLY,
-                message = "التطبيق قابل للتشغيل، لكن تضمين واجهته الأصلية داخل ROYAL TV غير مضمون."
+                message =
+                    "التطبيق مثبت، لكنه لا يعلن حاليًا طريقة تضمين متوافقة. " +
+                    "يمكن إضافة التكامل إذا وفر التطبيق واجهة مخصصة " +
+                    "أو دعمًا مناسبًا من النظام."
             )
         } else {
             RoyalTVAppDisplayCapability(
                 mode = RoyalTVAppDisplayMode.UNAVAILABLE,
-                message = "لا توجد طريقة تشغيل أو عرض داخلية معروفة لهذا التطبيق."
+                message =
+                    "لم يتم العثور على مصدر عرض مضمّن " +
+                    "أو نقطة تشغيل عامة لهذا التطبيق."
             )
+        }
+    }
+
+    /**
+     * قراءة عنوان العرض الذي يعلنه التطبيق الخارجي.
+     */
+    private fun readDeclaredEmbeddedUrl(
+        context: Context,
+        app: RoyalTVInstalledApp
+    ): String? {
+        return try {
+            @Suppress("DEPRECATION")
+            val applicationInfo =
+                context.packageManager.getApplicationInfo(
+                    app.packageName,
+                    PackageManager.GET_META_DATA
+                )
+
+            applicationInfo.metaData
+                ?.getString(EMBEDDED_WEB_URL_METADATA)
+                ?.trim()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * السماح بعناوين HTTP وHTTPS فقط.
+     */
+    private fun isSafeWebUrl(
+        url: String?
+    ): Boolean {
+        if (url.isNullOrBlank()) return false
+
+        return try {
+            val uri = Uri.parse(url)
+
+            (uri.scheme == "https" ||
+                uri.scheme == "http") &&
+                !uri.host.isNullOrBlank()
+        } catch (_: Exception) {
+            false
         }
     }
 }
