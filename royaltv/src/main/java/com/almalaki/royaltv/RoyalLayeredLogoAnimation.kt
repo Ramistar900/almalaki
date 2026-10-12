@@ -1,5 +1,6 @@
 package com.almalaki.royaltv
 
+import com.almalaki.royaltv.R
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
