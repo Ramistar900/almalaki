@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.ImageView
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
@@ -231,6 +234,45 @@ class RoyalTVMainActivity : ComponentActivity() {
 private fun RoyalTVChannelScreen(
     onRequestHomeScreenBroadcast: () -> Unit
 ) {
+        val context = LocalContext.current
+
+    var productImageUri by remember {
+        mutableStateOf(
+            RoyalTVLocalMediaLibrary.getImage(
+                context,
+                RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS
+            )
+        )
+    }
+
+    val productImagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                try {
+                    context.contentResolver
+                        .takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+
+                    RoyalTVLocalMediaLibrary.saveImage(
+                        context,
+                        RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS,
+                        uri
+                    )
+
+                    productImageUri = uri
+                } catch (error: Exception) {
+                    Toast.makeText(
+                        context,
+                        "تعذر حفظ صلاحية الصورة",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
 
     val displayState by
         RoyalTVDisplayStateManager.state.collectAsState()
@@ -399,8 +441,14 @@ private fun RoyalTVChannelScreen(
                             Arrangement.spacedBy(gap)
                     ) {
 
-                        NewProductsPanel(
+                    NewProductsPanel(. 
                             productIndex = productIndex,
+                            imageUri = productImageUri,
+                            onChooseImage = {
+                                productImagePicker.launch(
+                                    arrayOf("image/*")
+                                )
+                            },
                             modifier = Modifier.weight(2.2f)
                         )
 
@@ -1150,9 +1198,10 @@ private fun RoyalTVSourceTile(
 @Composable
 private fun NewProductsPanel(
     productIndex: Int,
+    imageUri: android.net.Uri?,
+    onChooseImage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     
     Column(
         modifier = modifier
@@ -1239,14 +1288,38 @@ private fun NewProductsPanel(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "صورة\nالمنتج",
-                        color = RoyalPearl,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                                        if (imageUri != null) {
+                        AndroidView(
+                            factory = { viewContext ->
+                                ImageView(viewContext).apply {
+                                    scaleType =
+                                        ImageView.ScaleType.CENTER_CROP
+                                }
+                            },
+                            update = { imageView ->
+                                imageView.setImageURI(imageUri)
+                            },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable {
+                                    onChooseImage()
+                                }
+                        )
+                    } else {
+                        Text(
+                            text = "اضغط لاختيار صورة المنتج",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable {
+                                    onChooseImage()
+                                }
+                                .padding(6.dp),
+                            color = RoyalPearl,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                                        }
 
                 Spacer(
                     modifier = Modifier.height(6.dp)
