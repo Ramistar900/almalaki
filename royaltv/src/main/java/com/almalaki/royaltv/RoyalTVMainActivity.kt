@@ -1189,128 +1189,91 @@ private fun NewProductsPanel(
         /*
          * عنصر واحد ظاهر في كل مرة.
          */
-         
-        AnimatedContent(
-            targetState = productIndex,
+        
+        /*
+         * عرض المنتج الحالي دون AnimatedContent.
+         */
+        val product = demoProducts[
+            productIndex.coerceIn(0, demoProducts.lastIndex)
+        ]
+
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
-            transitionSpec = {
-
-                (
-                    slideInHorizontally(
-                        animationSpec = tween(650),
-                        initialOffsetX = { width ->
-                            -width
-                        }
-                    ) + fadeIn(
-                        animationSpec = tween(450)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            product.accent.copy(alpha = 0.85f),
+                            RoyalCharcoal,
+                            RoyalBlack
+                        )
                     )
-                ).togetherWith(
-                    slideOutHorizontally(
-                        animationSpec = tween(650),
-                        targetOffsetX = { width ->
-                            width
-                        }
-                    ) + fadeOut(
-                        animationSpec = tween(450)
-                    )
-                ).using(
-                    SizeTransform(clip = true)
                 )
-            },
-
-                        label = "royal_product_transition"
-            content = { targetIndex ->
-
-            val product =
-                demoProducts[targetIndex]
-
-            Box(
+                .border(
+                    1.dp,
+                    RoyalGold.copy(alpha = 0.7f),
+                    RoundedCornerShape(6.dp)
+                )
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                product.accent.copy(alpha = 0.85f),
-                                RoyalCharcoal,
-                                RoyalBlack
-                            )
-                        )
-                    )
-                    .border(
-                        1.dp,
-                        RoyalGold.copy(alpha = 0.7f),
-                        RoundedCornerShape(6.dp)
-                    )
+                    .padding(5.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-
-                Column(
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(5.dp),
-                    horizontalAlignment =
-                        Alignment.CenterHorizontally,
-                    verticalArrangement =
-                        Arrangement.Center
-                ) {
-
-                    /*
-                     * مكان صورة المنتج.
-                     */
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.88f)
-                            .weight(1f)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                RoyalPearl.copy(alpha = 0.08f)
-                            )
-                            .border(
-                                1.dp,
-                                product.accent,
-                                RoundedCornerShape(6.dp)
-                            ),
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
-
-                        Text(
-                            text = "صورة\nالمنتج",
-                            color = RoyalPearl,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                        .fillMaxWidth(0.88f)
+                        .weight(1f)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            RoyalPearl.copy(alpha = 0.08f)
                         )
-                    }
-
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
-
+                        .border(
+                            1.dp,
+                            product.accent,
+                            RoundedCornerShape(6.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = product.name,
-                        color = RoyalGold,
+                        text = "صورة\nالمنتج",
+                        color = RoyalPearl,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Text(
-                        text = product.description,
-                        color = RoyalPearl,
-                        fontSize = 10.sp,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        textAlign = TextAlign.Center
                     )
                 }
+
+                Spacer(
+                    modifier = Modifier.height(6.dp)
+                )
+
+                Text(
+                    text = product.name,
+                    color = RoyalGold,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = product.description,
+                    color = RoyalPearl,
+                    fontSize = 10.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-        }
     }
+}
+
 }
 
 @Composable
