@@ -1638,9 +1638,11 @@ private fun RoyalPanelFrame(
         ),
         contentDescription = null,
         modifier = modifier,
-        contentScale = ContentScale.FillBounds
+        contentScale = ContentScale.FillBounds,
+        alignment = Alignment.Center
     )
 }
+
 
 @Composable
 private fun RoyalOrnamentalDivider(
@@ -1653,7 +1655,7 @@ private fun RoyalOrnamentalDivider(
         contentDescription = null,
         modifier = modifier
             .fillMaxWidth()
-            .height(18.dp),
+            .height(30.dp),
         contentScale = ContentScale.FillBounds
     )
 }
