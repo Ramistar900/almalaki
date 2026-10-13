@@ -1146,6 +1146,7 @@ private fun RoyalTVSourceTile(
     }
 }
 
+
 @Composable
 private fun NewProductsPanel(
     productIndex: Int,
