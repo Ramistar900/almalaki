@@ -934,11 +934,12 @@ try {
 
         context.startService(overlayIntent)
 
-        // ثم فتح التطبيق الذي اختاره المستخدم.
-        launchIntent.addFlags(
-            Intent.FLAG_ACTIVITY_NEW_TASK
-        )
-        context.startActivity(launchIntent)
+        // تجهيز قائمة التطبيقات للعودة إليها.
+selectedSource = "التطبيقات"
+selectedApp = null
+
+// فتح التطبيق ضمن مسار الرجوع الحالي.
+context.startActivity(launchIntent)
     }
 } catch (_: Exception) {
     Toast.makeText(
