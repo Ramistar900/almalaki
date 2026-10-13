@@ -72,14 +72,20 @@ private val BroadcastLiveRed = Color(0xFFFF3030)
  */
 @Composable
 fun RoyalTVBroadcastIdentity(
-    newsText: String = RoyalTVTickerManager.getText(),
+    newsText: String? = null,
     modifier: Modifier = Modifier
 ) {
-        val context = LocalContext.current
+    val context = LocalContext.current
 
     LaunchedEffect(context) {
+        RoyalTVTickerManager.initialize(context)
         RoyalTVBroadcastSettings.initialize(context)
     }
+
+    val managedNewsText by
+        RoyalTVTickerManager.text.collectAsState()
+
+    val displayedNewsText = newsText ?: managedNewsText
 
     val tickerEnabled by
         RoyalTVBroadcastSettings.tickerEnabled.collectAsState()
@@ -172,7 +178,7 @@ fun RoyalTVBroadcastIdentity(
                         /* الشريط الإخباري المتحرك */
             if (tickerEnabled) {
                 RoyalTVOriginalStyleTicker(
-                    text = newsText,
+                    text = displayedNewsText,
                     scale = scale,
                     height = tickerHeight,
                     textSize = tickerTextSize,
