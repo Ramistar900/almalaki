@@ -420,18 +420,17 @@ private fun RoyalTVChannelScreen(
                     }
                 }
 
+
                 /*
-                 * الهوية السفلية في صف واحد.
+                 * هوية البث الجديدة الخاصة بـ ROYAL TV.
                  */
-                BottomIdentityBar(
-                    currentTime = currentTime,
-                    currentDate = currentDate,
-                    tickerText = tickerText,
-                    compact = compact,
+                RoyalTVBroadcastIdentity(
+                    newsText = tickerText,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(identityHeight)
                 )
+                
             }
         }
 
