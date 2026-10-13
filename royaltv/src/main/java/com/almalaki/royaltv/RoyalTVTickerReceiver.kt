@@ -3,24 +3,70 @@ package com.almalaki.royaltv
 import android.content.Context
 
 /**
- * يستقبل تحديثات الشريط الإخباري دون تغيير المحتوى الرئيسي
- * المعروض على شاشة ROYAL TV.
+ * يستقبل أوامر الشريط الإخباري الخاصة بـ ROYAL TV.
+ *
+ * يدعم:
+ * 1. تحديث نص الشريط.
+ * 2. إظهار الشريط.
+ * 3. إخفاء الشريط مع الاحتفاظ بالنص المحفوظ.
  */
 object RoyalTVTickerReceiver {
 
-    private const val TICKER_PREFIX = "TICKER_UPDATE|"
+    private const val TICKER_PREFIX =
+        "TICKER_UPDATE|"
+
+    private const val TICKER_ENABLED_PREFIX =
+        "TICKER_ENABLED|"
 
     /**
-     * يعالج أمر تحديث الشريط.
+     * يعالج أوامر الشريط.
      *
-     * true  = تمت معالجة أمر الشريط.
-     * false = الأمر ليس تحديثًا للشريط.
+     * true  = تمت معالجة الأمر.
+     * false = الأمر ليس أمرًا خاصًا بالشريط.
      */
     fun receive(
         context: Context,
         command: RoyalTVCommand
     ): Boolean {
-        val text = extractText(command) ?: return false
+
+        if (
+            command.type !=
+            RoyalTVCommandType.SHOW_CONTENT
+        ) {
+            return false
+        }
+
+        val payload = command.payload
+
+        // تشغيل الشريط أو إيقافه.
+        if (
+            payload.startsWith(
+                TICKER_ENABLED_PREFIX
+            )
+        ) {
+            val value = payload
+                .removePrefix(
+                    TICKER_ENABLED_PREFIX
+                )
+                .trim()
+
+            val enabled = when (value) {
+                "true" -> true
+                "false" -> false
+                else -> return false
+            }
+
+            RoyalTVBroadcastSettings.setTickerEnabled(
+                context = context,
+                enabled = enabled
+            )
+
+            return true
+        }
+
+        // تحديث نص الشريط مع الحفاظ على السلوك السابق.
+        val text = extractText(command)
+            ?: return false
 
         RoyalTVTickerManager.setText(
             context = context,
@@ -31,22 +77,37 @@ object RoyalTVTickerReceiver {
     }
 
     /**
-     * يتحقق من أن الأمر مخصص لتحديث الشريط.
+     * يتحقق من أن الأمر خاص بالشريط.
      */
     fun isTickerCommand(
         command: RoyalTVCommand
     ): Boolean {
-        return command.type == RoyalTVCommandType.SHOW_CONTENT &&
-            command.payload.startsWith(TICKER_PREFIX)
+        return command.type ==
+            RoyalTVCommandType.SHOW_CONTENT &&
+            (
+                command.payload.startsWith(
+                    TICKER_PREFIX
+                ) ||
+                command.payload.startsWith(
+                    TICKER_ENABLED_PREFIX
+                )
+            )
     }
 
     /**
-     * يستخرج نص الشريط من الحمولة.
+     * يستخرج نص الشريط من أمر التحديث.
      */
     fun extractText(
         command: RoyalTVCommand
     ): String? {
-        if (!isTickerCommand(command)) {
+
+        if (
+            command.type !=
+            RoyalTVCommandType.SHOW_CONTENT ||
+            !command.payload.startsWith(
+                TICKER_PREFIX
+            )
+        ) {
             return null
         }
 
