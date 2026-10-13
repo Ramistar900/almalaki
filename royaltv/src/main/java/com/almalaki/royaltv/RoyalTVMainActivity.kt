@@ -274,6 +274,82 @@ private fun RoyalTVChannelScreen(
             }
         }
 
+            var adsImageUri by remember {
+        mutableStateOf(
+            RoyalTVLocalMediaLibrary.getImage(
+                context,
+                RoyalTVLocalMediaLibrary.Section.ADS
+            )
+        )
+    }
+
+    var ordersImageUri by remember {
+        mutableStateOf(
+            RoyalTVLocalMediaLibrary.getImage(
+                context,
+                RoyalTVLocalMediaLibrary.Section.ORDERS
+            )
+        )
+    }
+
+    val adsImagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                try {
+                    context.contentResolver
+                        .takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+
+                    RoyalTVLocalMediaLibrary.saveImage(
+                        context,
+                        RoyalTVLocalMediaLibrary.Section.ADS,
+                        uri
+                    )
+
+                    adsImageUri = uri
+                } catch (error: Exception) {
+                    Toast.makeText(
+                        context,
+                        "تعذر حفظ صورة العرض",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+
+    val ordersImagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                try {
+                    context.contentResolver
+                        .takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+
+                    RoyalTVLocalMediaLibrary.saveImage(
+                        context,
+                        RoyalTVLocalMediaLibrary.Section.ORDERS,
+                        uri
+                    )
+
+                    ordersImageUri = uri
+                } catch (error: Exception) {
+                    Toast.makeText(
+                        context,
+                        "تعذر حفظ صورة الطلب",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+
     val displayState by
         RoyalTVDisplayStateManager.state.collectAsState()
         
@@ -452,10 +528,16 @@ private fun RoyalTVChannelScreen(
                             modifier = Modifier.weight(2.2f)
                         )
 
-                        InfoPanel(
-                            title = "العروض",
-                            subtitle = "عروض الملكي",
-                            accent = RoyalBurgundy,
+                                                InfoPanel(
+                            title = "الطلبات",
+                            subtitle = "حالة الطلبات",
+                            accent = RoyalEmerald,
+                            imageUri = ordersImageUri,
+                            onChooseImage = {
+                                ordersImagePicker.launch(
+                                    arrayOf("image/*")
+                                )
+                            },
                             modifier = Modifier.weight(1f)
                         )
 
@@ -1355,9 +1437,10 @@ private fun InfoPanel(
     title: String,
     subtitle: String,
     accent: Color,
+    imageUri: android.net.Uri?,
+    onChooseImage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -1370,21 +1453,19 @@ private fun InfoPanel(
                     )
                 )
             )
-                        .border(
+            .border(
                 1.dp,
                 RoyalRed,
                 RoundedCornerShape(9.dp)
             )
+            .clickable(onClick = onChooseImage)
             .padding(
                 horizontal = 6.dp,
                 vertical = 7.dp
             ),
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-        verticalArrangement =
-            Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = title,
             color = Color.White,
@@ -1393,6 +1474,35 @@ private fun InfoPanel(
             textAlign = TextAlign.Center,
             maxLines = 1
         )
+
+        Spacer(
+            modifier = Modifier.height(3.dp)
+        )
+
+        if (imageUri != null) {
+            AndroidView(
+                factory = { viewContext ->
+                    ImageView(viewContext).apply {
+                        scaleType =
+                            ImageView.ScaleType.CENTER_CROP
+                    }
+                },
+                update = { imageView ->
+                    imageView.setImageURI(imageUri)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(5.dp))
+            )
+        } else {
+            Text(
+                text = "اضغط لإضافة صورة",
+                color = RoyalGold,
+                fontSize = 10.sp,
+                textAlign = TextAlign.Center
+            )
+        }
 
         Spacer(
             modifier = Modifier.height(3.dp)
@@ -1408,6 +1518,7 @@ private fun InfoPanel(
         )
     }
 }
+
         
 
 
