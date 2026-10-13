@@ -1,3 +1,4 @@
+
 package com.almalaki.royaltv
 
 import android.app.Service
@@ -14,12 +15,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import kotlin.math.roundToInt
 
 /**
  * خدمة الهوية العائمة الخاصة بـ ROYAL TV.
  *
- * تعرض هوية البث فوق التطبيقات الخارجية.
- * لا تعترض اللمسات الموجّهة إلى التطبيق الموجود تحتها.
+ * تعرض هوية البث أسفل التطبيقات الخارجية.
+ * النافذة شفافة وغير قابلة للمس أو التركيز.
+ * لا تغطي الشاشة عموديًا إلا بالقدر اللازم للهوية.
  */
 class RoyalTVBroadcastOverlayService :
     Service(),
@@ -58,7 +61,6 @@ class RoyalTVBroadcastOverlayService :
         flags: Int,
         startId: Int
     ): Int {
-
         when (intent?.action) {
             ACTION_STOP -> {
                 stopOverlay()
@@ -77,7 +79,7 @@ class RoyalTVBroadcastOverlayService :
     private fun startOverlay() {
         if (overlayView != null) return
 
-        // لا يمكن إظهار النافذة دون موافقة المستخدم.
+        // التحقق من إذن الظهور فوق التطبيقات.
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             !Settings.canDrawOverlays(this)
@@ -90,6 +92,23 @@ class RoyalTVBroadcastOverlayService :
             stopSelf()
             return
         }
+
+        /*
+         * حساب ارتفاع النافذة بما يتناسب مع حجم الهوية.
+         * نستخدم عرض الشاشة نفسه الذي سيُعرض عليه الشريط.
+         */
+        val metrics = resources.displayMetrics
+        val density = metrics.density.coerceAtLeast(0.1f)
+        val screenWidthDp = metrics.widthPixels / density
+
+        val scale = (screenWidthDp / 360f)
+            .coerceIn(0.85f, 2.6f)
+
+        // الشعار 48dp مع حشوة رأسية 10dp تقريبًا.
+        // نضيف هامشًا صغيرًا لمنع قص محتوى الهوية.
+        val overlayHeightDp = 64f * scale
+        val overlayHeightPx =
+            (overlayHeightDp * density).roundToInt()
 
         val composeView = ComposeView(this).apply {
             setViewCompositionStrategy(
@@ -119,14 +138,15 @@ class RoyalTVBroadcastOverlayService :
 
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+            overlayHeightPx,
             windowType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            // تثبيت الهوية في أسفل الشاشة.
+            gravity = Gravity.BOTTOM or Gravity.START
             x = 0
             y = 0
         }
@@ -141,7 +161,13 @@ class RoyalTVBroadcastOverlayService :
             serviceLifecycle.handleLifecycleEvent(
                 Lifecycle.Event.ON_RESUME
             )
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            android.util.Log.e(
+                "RoyalTVOverlay",
+                "تعذر إنشاء نافذة الهوية العائمة",
+                error
+            )
+
             composeView.disposeComposition()
             overlayView = null
             stopSelf()
@@ -149,17 +175,18 @@ class RoyalTVBroadcastOverlayService :
     }
 
     private fun stopOverlay() {
-        val state = serviceLifecycle.currentState
-
-        if (state.isAtLeast(Lifecycle.State.RESUMED)) {
+        if (
+            serviceLifecycle.currentState
+                .isAtLeast(Lifecycle.State.RESUMED)
+        ) {
             serviceLifecycle.handleLifecycleEvent(
                 Lifecycle.Event.ON_PAUSE
             )
         }
 
-        if (serviceLifecycle.currentState.isAtLeast(
-                Lifecycle.State.STARTED
-            )
+        if (
+            serviceLifecycle.currentState
+                .isAtLeast(Lifecycle.State.STARTED)
         ) {
             serviceLifecycle.handleLifecycleEvent(
                 Lifecycle.Event.ON_STOP
@@ -172,8 +199,12 @@ class RoyalTVBroadcastOverlayService :
         if (view != null) {
             try {
                 windowManager?.removeView(view)
-            } catch (_: Exception) {
-                // قد تكون النافذة أزيلت مسبقًا من النظام.
+            } catch (error: Exception) {
+                android.util.Log.w(
+                    "RoyalTVOverlay",
+                    "تعذر إزالة النافذة أو أنها أزيلت مسبقًا",
+                    error
+                )
             }
 
             view.disposeComposition()
@@ -183,7 +214,10 @@ class RoyalTVBroadcastOverlayService :
     override fun onDestroy() {
         stopOverlay()
 
-        if (serviceLifecycle.currentState != Lifecycle.State.DESTROYED) {
+        if (
+            serviceLifecycle.currentState !=
+            Lifecycle.State.DESTROYED
+        ) {
             serviceLifecycle.handleLifecycleEvent(
                 Lifecycle.Event.ON_DESTROY
             )
@@ -195,3 +229,4 @@ class RoyalTVBroadcastOverlayService :
 
     override fun onBind(intent: Intent?): IBinder? = null
     }
+    
