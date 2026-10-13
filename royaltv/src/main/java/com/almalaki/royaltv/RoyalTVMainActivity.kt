@@ -239,49 +239,26 @@ private fun RoyalTVChannelScreen(
 ) {
         val context = LocalContext.current
 
-    var productImageUri by remember {
+    val productSection =
+        RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS
+
+    val adsSection =
+        RoyalTVLocalMediaLibrary.Section.ADS
+
+    var productImageUris by remember {
         mutableStateOf(
-            RoyalTVLocalMediaLibrary.getImage(
+            RoyalTVLocalMediaLibrary.getImages(
                 context,
-                RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS
+                productSection
             )
         )
     }
 
-    val productImagePicker =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument()
-        ) { uri ->
-            if (uri != null) {
-                try {
-                    context.contentResolver
-                        .takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        )
-
-                    RoyalTVLocalMediaLibrary.saveImage(
-                        context,
-                        RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS,
-                        uri
-                    )
-
-                    productImageUri = uri
-                } catch (error: Exception) {
-                    Toast.makeText(
-                        context,
-                        "تعذر حفظ صلاحية الصورة",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-
-            var adsImageUri by remember {
+    var adsImageUris by remember {
         mutableStateOf(
-            RoyalTVLocalMediaLibrary.getImage(
+            RoyalTVLocalMediaLibrary.getImages(
                 context,
-                RoyalTVLocalMediaLibrary.Section.ADS
+                adsSection
             )
         )
     }
@@ -295,30 +272,93 @@ private fun RoyalTVChannelScreen(
         )
     }
 
-    val adsImagePicker =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument()
-        ) { uri ->
-            if (uri != null) {
-                try {
-                    context.contentResolver
-                        .takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        )
+    var productImageIndex by remember {
+        mutableIntStateOf(0)
+    }
 
-                    RoyalTVLocalMediaLibrary.saveImage(
+    var adsImageIndex by remember {
+        mutableIntStateOf(0)
+    }
+
+    val productImagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenMultipleDocuments()
+        ) { selectedUris ->
+            if (selectedUris.isNotEmpty()) {
+                val validUris = mutableListOf<android.net.Uri>()
+
+                selectedUris.forEach { uri ->
+                    try {
+                        context.contentResolver
+                            .takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        validUris.add(uri)
+                    } catch (error: Exception) {
+                        // نتجاوز الصورة التي تعذّر حفظ صلاحيتها.
+                    }
+                }
+
+                if (validUris.isNotEmpty()) {
+                    val combined =
+                        (productImageUris + validUris).distinct()
+
+                    RoyalTVLocalMediaLibrary.saveImages(
                         context,
-                        RoyalTVLocalMediaLibrary.Section.ADS,
-                        uri
+                        productSection,
+                        combined
                     )
 
-                    adsImageUri = uri
-                } catch (error: Exception) {
+                    productImageUris = combined
+                    productImageIndex = 0
+                } else {
                     Toast.makeText(
                         context,
-                        "تعذر حفظ صورة العرض",
-                        Toast.LENGTH_SHORT
+                        "تعذر الوصول إلى الصور المختارة",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
+    val adsImagePicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenMultipleDocuments()
+        ) { selectedUris ->
+            if (selectedUris.isNotEmpty()) {
+                val validUris = mutableListOf<android.net.Uri>()
+
+                selectedUris.forEach { uri ->
+                    try {
+                        context.contentResolver
+                            .takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        validUris.add(uri)
+                    } catch (error: Exception) {
+                        // نتجاوز الصورة التي تعذّر حفظ صلاحيتها.
+                    }
+                }
+
+                if (validUris.isNotEmpty()) {
+                    val combined =
+                        (adsImageUris + validUris).distinct()
+
+                    RoyalTVLocalMediaLibrary.saveImages(
+                        context,
+                        adsSection,
+                        combined
+                    )
+
+                    adsImageUris = combined
+                    adsImageIndex = 0
+                } else {
+                    Toast.makeText(
+                        context,
+                        "تعذر الوصول إلى صور العروض",
+                        Toast.LENGTH_LONG
                     ).show()
                 }
             }
@@ -352,6 +392,12 @@ private fun RoyalTVChannelScreen(
                 }
             }
         }
+        
+
+
+
+        
+    
 
     val displayState by
         RoyalTVDisplayStateManager.state.collectAsState()
@@ -410,17 +456,40 @@ private fun RoyalTVChannelScreen(
     }
 
     /*
-     * تغيير المنتج كل 30 ثانية.
+     * تغيير المنتج كل 20 ثانية.
      */
     LaunchedEffect(Unit) {
 
         while (true) {
-            delay(30_000L)
+            delay(20_000L)
 
             productIndex =
                 (productIndex + 1) % demoProducts.size
         }
     }
+    
+LaunchedEffect(productImageUris) {
+    while (true) {
+        delay(20_000L)
+
+        if (productImageUris.isNotEmpty()) {
+            productImageIndex =
+                (productImageIndex + 1) % productImageUris.size
+        }
+    }
+}
+
+LaunchedEffect(adsImageUris) {
+    while (true) {
+        delay(20_000L)
+
+        if (adsImageUris.isNotEmpty()) {
+            adsImageIndex =
+                (adsImageIndex + 1) % adsImageUris.size
+        }
+    }
+}
+
 
     /*
      * نبض مؤشر مباشر.
@@ -528,7 +597,7 @@ private fun RoyalTVChannelScreen(
                     ) {
                         NewProductsPanel(
                             productIndex = productIndex,
-                            imageUri = productImageUri,
+                            imageUri = productImageUris.getOrNull(productImageIndex),
                             onChooseImage = {
                                 productImagePicker.launch(arrayOf("image/*"))
                             },
@@ -550,7 +619,7 @@ private fun RoyalTVChannelScreen(
                             title = "العروض",
                             subtitle = "عروض الملكي",
                             accent = RoyalBurgundy,
-                            imageUri = adsImageUri,
+                            imageUri = adsImageUris.getOrNull(adsImageIndex),
                             onChooseImage = {
                                 adsImagePicker.launch(arrayOf("image/*"))
                             },
