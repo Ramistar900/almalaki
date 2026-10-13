@@ -529,6 +529,8 @@ private fun RoyalTVChannelScreen(
                         modifier = Modifier.weight(2.2f)
                     )
 
+                    RoyalOrnamentalDivider()
+
                     InfoPanel(
                         title = "العروض",
                         subtitle = "عروض الملكي",
@@ -541,6 +543,8 @@ private fun RoyalTVChannelScreen(
                         },
                         modifier = Modifier.weight(1f)
                     )
+
+                    RoyalOrnamentalDivider()
 
                     InfoPanel(
                         title = "الطلبات",
@@ -1530,57 +1534,59 @@ private fun InfoPanel(
 }
 
         
-
-
 @Composable
 private fun RoyalOrnamentalDivider(
-modifier: Modifier = Modifier
+    modifier: Modifier = Modifier
 ) {
-Row(
-modifier = modifier
-.fillMaxWidth()
-.height(16.dp),
-verticalAlignment = Alignment.CenterVertically,
-horizontalArrangement = Arrangement.Center
-) {
-Text(
-text = "➤",
-color = RoyalGold,
-fontSize = 12.sp,
-fontWeight = FontWeight.Bold
-)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        // رأس الرمح الأيسر: يتجه إلى اليسار.
+        Text(
+            text = "◀",
+            color = RoyalGold,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
 
-    Box(
-        modifier = Modifier
-            .weight(1f)
-            .padding(horizontal = 4.dp)
-            .height(1.dp)
-            .background(RoyalGold)
-    )
+        // الخط الذهبي الأيسر.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 3.dp)
+                .height(1.dp)
+                .background(RoyalGold)
+        )
 
-    Text(
-        text = "❦",
-        color = RoyalGold,
-        fontSize = 17.sp,
-        fontWeight = FontWeight.Bold
-    )
+        // الزخرفة النباتية الملكية في المنتصف.
+        Text(
+            text = "❦",
+            color = RoyalGold,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+        )
 
-    Box(
-        modifier = Modifier
-            .weight(1f)
-            .padding(horizontal = 4.dp)
-            .height(1.dp)
-            .background(RoyalGold)
-    )
+        // الخط الذهبي الأيمن.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 3.dp)
+                .height(1.dp)
+                .background(RoyalGold)
+        )
 
-    Text(
-        text = "➤",
-        color = RoyalGold,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold
-    )
-}
-
+        // رأس الرمح الأيمن: يتجه إلى اليمين.
+        Text(
+            text = "▶",
+            color = RoyalGold,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
 }
 
 
