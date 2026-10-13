@@ -97,6 +97,8 @@ private const val KEY_DATE_OFFSET_Y_PERCENT =
 
 private const val KEY_SHOW_DATE =
     "show_date"
+private const val KEY_SHOW_TICKER =
+    "show_ticker"
 
 private const val KEY_LIVE_SIZE_PERCENT =
     "live_size_percent"
@@ -247,6 +249,10 @@ data class RoyalTVLayoutSettings(
      * false = مخفي
      */
     val showDate: Boolean = true,
+    /*
+ * هل الشريط الإخباري ظاهر على شاشة Royal TV؟
+ */
+val showTicker: Boolean = true,
 
     val liveSizePercent: Int =
         ROYAL_TV_DEFAULT_LIVE_SIZE_PERCENT,
@@ -514,6 +520,11 @@ dateOffsetYPercent =
                 KEY_SHOW_DATE,
                 true
             ),
+        showTicker =
+    prefs.getBoolean(
+        KEY_SHOW_TICKER,
+        true
+    ),
 
         liveSizePercent =
             clampRoyalTVSizePercent(
@@ -620,6 +631,8 @@ fun saveRoyalTVLayoutSettings(
 
             showDate =
                 settings.showDate,
+            showTicker =
+                settings.showTicker,
 
             liveSizePercent =
                 clampRoyalTVSizePercent(
@@ -702,6 +715,10 @@ fun saveRoyalTVLayoutSettings(
             KEY_SHOW_DATE,
             safeSettings.showDate
         )
+        .putBoolean(
+            KEY_SHOW_TICKER,
+            safeSettings.showTicker
+)
 
         .putInt(
             KEY_LIVE_SIZE_PERCENT,
