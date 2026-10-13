@@ -441,7 +441,7 @@ private fun RoyalTVChannelScreen(
                             Arrangement.spacedBy(gap)
                     ) {
 
-                    NewProductsPanel(. 
+                    NewProductsPanel(
                             productIndex = productIndex,
                             imageUri = productImageUri,
                             onChooseImage = {
@@ -1320,6 +1320,7 @@ private fun NewProductsPanel(
                             textAlign = TextAlign.Center
                         )
                                         }
+                }
 
                 Spacer(
                     modifier = Modifier.height(6.dp)
