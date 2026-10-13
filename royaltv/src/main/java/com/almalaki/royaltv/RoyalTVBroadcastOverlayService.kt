@@ -130,7 +130,7 @@ class RoyalTVBroadcastOverlayService :
             )
 
             setBackgroundColor(
-                android.graphics.Color.TRANSPARENT
+                android.graphics.Color.MAGENTA
             )
 
             setViewTreeLifecycleOwner(
