@@ -541,12 +541,7 @@ private fun RoyalTVChannelScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        InfoPanel(
-                            title = "الطلبات",
-                            subtitle = "حالة الطلبات",
-                            accent = RoyalEmerald,
-                            modifier = Modifier.weight(1f)
-                        )
+                    
                     }
                 }
 
