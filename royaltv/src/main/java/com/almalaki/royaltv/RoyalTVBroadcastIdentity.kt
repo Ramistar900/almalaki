@@ -1,5 +1,7 @@
 package com.almalaki.royaltv
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -73,9 +75,19 @@ fun RoyalTVBroadcastIdentity(
     newsText: String = RoyalTVTickerManager.getText(),
     modifier: Modifier = Modifier
 ) {
+        val context = LocalContext.current
+
+    LaunchedEffect(context) {
+        RoyalTVBroadcastSettings.initialize(context)
+    }
+
+    val tickerEnabled by
+        RoyalTVBroadcastSettings.tickerEnabled.collectAsState()
+        
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
     ) {
+    
         val scale = (maxWidth.value / 360f)
             .coerceIn(0.85f, 2.6f)
 
@@ -157,14 +169,16 @@ fun RoyalTVBroadcastIdentity(
                 )
             }
 
-            /* الشريط الإخباري المتحرك */
-            RoyalTVOriginalStyleTicker(
-                text = newsText,
-                scale = scale,
-                height = tickerHeight,
-                textSize = tickerTextSize,
-                modifier = Modifier.weight(1f)
-            )
+                        /* الشريط الإخباري المتحرك */
+            if (tickerEnabled) {
+                RoyalTVOriginalStyleTicker(
+                    text = newsText,
+                    scale = scale,
+                    height = tickerHeight,
+                    textSize = tickerTextSize,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             /* مؤشر مباشر مستقل عن الشريط */
             RoyalTVLiveIndicator(
