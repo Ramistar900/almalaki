@@ -1,4 +1,3 @@
-
 package com.almalaki.royaltv
 
 import android.app.Service
@@ -7,8 +6,10 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.Lifecycle
@@ -17,18 +18,13 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import kotlin.math.roundToInt
 
-/**
- * خدمة الهوية العائمة الخاصة بـ ROYAL TV.
- *
- * تعرض هوية البث أسفل التطبيقات الخارجية.
- * النافذة شفافة وغير قابلة للمس أو التركيز.
- * لا تغطي الشاشة عموديًا إلا بالقدر اللازم للهوية.
- */
 class RoyalTVBroadcastOverlayService :
     Service(),
     LifecycleOwner {
 
     companion object {
+        private const val TAG = "RoyalTVOverlay"
+
         const val ACTION_START =
             "com.almalaki.royaltv.action.START_BROADCAST_OVERLAY"
 
@@ -36,8 +32,7 @@ class RoyalTVBroadcastOverlayService :
             "com.almalaki.royaltv.action.STOP_BROADCAST_OVERLAY"
     }
 
-    private val serviceLifecycle =
-        LifecycleRegistry(this)
+    private val serviceLifecycle = LifecycleRegistry(this)
 
     override val lifecycle: Lifecycle
         get() = serviceLifecycle
@@ -47,6 +42,8 @@ class RoyalTVBroadcastOverlayService :
 
     override fun onCreate() {
         super.onCreate()
+
+        Log.i(TAG, "تم إنشاء خدمة الهوية العائمة")
 
         serviceLifecycle.handleLifecycleEvent(
             Lifecycle.Event.ON_CREATE
@@ -61,6 +58,8 @@ class RoyalTVBroadcastOverlayService :
         flags: Int,
         startId: Int
     ): Int {
+        Log.i(TAG, "وصل أمر للخدمة: ${intent?.action}")
+
         when (intent?.action) {
             ACTION_STOP -> {
                 stopOverlay()
@@ -71,32 +70,50 @@ class RoyalTVBroadcastOverlayService :
             ACTION_START, null -> {
                 startOverlay()
             }
+
+            else -> {
+                Log.w(TAG, "تم تجاهل أمر غير معروف")
+            }
         }
 
         return START_NOT_STICKY
     }
 
-    private fun startOverlay() {
-        if (overlayView != null) return
+    private fun showMessage(message: String) {
+        Toast.makeText(
+            applicationContext,
+            message,
+            Toast.LENGTH_LONG
+        ).show()
+    }
 
-        // التحقق من إذن الظهور فوق التطبيقات.
+    private fun startOverlay() {
+        if (overlayView != null) {
+            Log.i(TAG, "نافذة الهوية موجودة بالفعل")
+            showMessage("هوية ROYAL TV تعمل بالفعل")
+            return
+        }
+
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             !Settings.canDrawOverlays(this)
         ) {
+            Log.e(TAG, "صلاحية الظهور فوق التطبيقات غير ممنوحة")
+            showMessage(
+                "ROYAL TV: صلاحية الظهور فوق التطبيقات غير مفعّلة"
+            )
             stopSelf()
             return
         }
 
-        val manager = windowManager ?: run {
+        val manager = windowManager
+        if (manager == null) {
+            Log.e(TAG, "WindowManager غير متاح")
+            showMessage("ROYAL TV: تعذر الوصول إلى مدير النوافذ")
             stopSelf()
             return
         }
 
-        /*
-         * حساب ارتفاع النافذة بما يتناسب مع حجم الهوية.
-         * نستخدم عرض الشاشة نفسه الذي سيُعرض عليه الشريط.
-         */
         val metrics = resources.displayMetrics
         val density = metrics.density.coerceAtLeast(0.1f)
         val screenWidthDp = metrics.widthPixels / density
@@ -104,11 +121,8 @@ class RoyalTVBroadcastOverlayService :
         val scale = (screenWidthDp / 360f)
             .coerceIn(0.85f, 2.6f)
 
-        // الشعار 48dp مع حشوة رأسية 10dp تقريبًا.
-        // نضيف هامشًا صغيرًا لمنع قص محتوى الهوية.
-        val overlayHeightDp = 64f * scale
         val overlayHeightPx =
-            (overlayHeightDp * density).roundToInt()
+            (64f * scale * density).roundToInt()
 
         val composeView = ComposeView(this).apply {
             setViewCompositionStrategy(
@@ -145,7 +159,6 @@ class RoyalTVBroadcastOverlayService :
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            // تثبيت الهوية في أسفل الشاشة.
             gravity = Gravity.BOTTOM or Gravity.START
             x = 0
             y = 0
@@ -161,15 +174,37 @@ class RoyalTVBroadcastOverlayService :
             serviceLifecycle.handleLifecycleEvent(
                 Lifecycle.Event.ON_RESUME
             )
+
+            Log.i(
+                TAG,
+                "نجحت إضافة نافذة الهوية، الارتفاع=$overlayHeightPx px"
+            )
+
+            showMessage("ROYAL TV: تم إنشاء نافذة الهوية")
+
         } catch (error: Exception) {
-            android.util.Log.e(
-                "RoyalTVOverlay",
-                "تعذر إنشاء نافذة الهوية العائمة",
+            Log.e(
+                TAG,
+                "فشل إنشاء نافذة الهوية العائمة",
                 error
             )
 
-            composeView.disposeComposition()
+            try {
+                composeView.disposeComposition()
+            } catch (disposeError: Exception) {
+                Log.w(
+                    TAG,
+                    "تعذر التخلص من محتوى Compose",
+                    disposeError
+                )
+            }
+
             overlayView = null
+
+            showMessage(
+                "ROYAL TV: فشل إنشاء الهوية — ${error.javaClass.simpleName}"
+            )
+
             stopSelf()
         }
     }
@@ -199,19 +234,30 @@ class RoyalTVBroadcastOverlayService :
         if (view != null) {
             try {
                 windowManager?.removeView(view)
+                Log.i(TAG, "تمت إزالة نافذة الهوية")
             } catch (error: Exception) {
-                android.util.Log.w(
-                    "RoyalTVOverlay",
-                    "تعذر إزالة النافذة أو أنها أزيلت مسبقًا",
+                Log.w(
+                    TAG,
+                    "تعذر إزالة النافذة",
                     error
                 )
             }
 
-            view.disposeComposition()
+            try {
+                view.disposeComposition()
+            } catch (error: Exception) {
+                Log.w(
+                    TAG,
+                    "تعذر التخلص من محتوى Compose",
+                    error
+                )
+            }
         }
     }
 
     override fun onDestroy() {
+        Log.i(TAG, "تم إيقاف خدمة الهوية العائمة")
+
         stopOverlay()
 
         if (
