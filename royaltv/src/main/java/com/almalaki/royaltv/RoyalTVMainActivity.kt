@@ -517,29 +517,44 @@ private fun RoyalTVChannelScreen(
                             Arrangement.spacedBy(gap)
                     ) {
 
+                    
                     NewProductsPanel(
-                            productIndex = productIndex,
-                            imageUri = productImageUri,
-                            onChooseImage = {
-                                productImagePicker.launch(
-                                    arrayOf("image/*")
-                                )
-                            },
-                            modifier = Modifier.weight(2.2f)
-                        )
+                        productIndex = productIndex,
+                        imageUri = productImageUri,
+                        onChooseImage = {
+                            productImagePicker.launch(
+                                arrayOf("image/*")
+                            )
+                        },
+                        modifier = Modifier.weight(2.2f)
+                    )
 
-                                                InfoPanel(
-                            title = "الطلبات",
-                            subtitle = "حالة الطلبات",
-                            accent = RoyalEmerald,
-                            imageUri = ordersImageUri,
-                            onChooseImage = {
-                                ordersImagePicker.launch(
-                                    arrayOf("image/*")
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                    InfoPanel(
+                        title = "العروض",
+                        subtitle = "عروض الملكي",
+                        accent = RoyalBurgundy,
+                        imageUri = adsImageUri,
+                        onChooseImage = {
+                            adsImagePicker.launch(
+                                arrayOf("image/*")
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    InfoPanel(
+                        title = "الطلبات",
+                        subtitle = "حالة الطلبات",
+                        accent = RoyalEmerald,
+                        imageUri = ordersImageUri,
+                        onChooseImage = {
+                            ordersImagePicker.launch(
+                                arrayOf("image/*")
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    
 
                     
                     }
