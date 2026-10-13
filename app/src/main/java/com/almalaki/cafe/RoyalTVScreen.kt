@@ -429,7 +429,7 @@ fun RoyalTVScreen(
             /*
              * TICKER
              */
-            if (showTicker) {
+            if (showTicker && layoutSettings.showTicker) {
                 RoyalTVTicker(
                     text = tickerText,
                     textSize = tickerTextSize,
