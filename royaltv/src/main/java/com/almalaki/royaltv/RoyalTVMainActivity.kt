@@ -28,6 +28,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -61,6 +62,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -518,46 +521,67 @@ private fun RoyalTVChannelScreen(
                     ) {
 
                     
-                    NewProductsPanel(
-                        productIndex = productIndex,
-                        imageUri = productImageUri,
-                        onChooseImage = {
-                            productImagePicker.launch(
-                                arrayOf("image/*")
-                            )
-                        },
-                        modifier = Modifier.weight(2.2f)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(2.2f)
+                            .fillMaxWidth()
+                    ) {
+                        NewProductsPanel(
+                            productIndex = productIndex,
+                            imageUri = productImageUri,
+                            onChooseImage = {
+                                productImagePicker.launch(arrayOf("image/*"))
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        RoyalPanelFrame(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
                     RoyalOrnamentalDivider()
 
-                    InfoPanel(
-                        title = "العروض",
-                        subtitle = "عروض الملكي",
-                        accent = RoyalBurgundy,
-                        imageUri = adsImageUri,
-                        onChooseImage = {
-                            adsImagePicker.launch(
-                                arrayOf("image/*")
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        InfoPanel(
+                            title = "العروض",
+                            subtitle = "عروض الملكي",
+                            accent = RoyalBurgundy,
+                            imageUri = adsImageUri,
+                            onChooseImage = {
+                                adsImagePicker.launch(arrayOf("image/*"))
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        RoyalPanelFrame(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
                     RoyalOrnamentalDivider()
 
-                    InfoPanel(
-                        title = "الطلبات",
-                        subtitle = "حالة الطلبات",
-                        accent = RoyalEmerald,
-                        imageUri = ordersImageUri,
-                        onChooseImage = {
-                            ordersImagePicker.launch(
-                                arrayOf("image/*")
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        InfoPanel(
+                            title = "الطلبات",
+                            subtitle = "حالة الطلبات",
+                            accent = RoyalEmerald,
+                            imageUri = ordersImageUri,
+                            onChooseImage = {
+                                ordersImagePicker.launch(arrayOf("image/*"))
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        RoyalPanelFrame(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                     
 
                     
@@ -1535,59 +1559,36 @@ private fun InfoPanel(
 
         
 @Composable
+private fun RoyalPanelFrame(
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(
+            id = R.drawable.royal_panel_frame
+        ),
+        contentDescription = null,
+        modifier = modifier,
+        contentScale = ContentScale.FillBounds
+    )
+}
+
+@Composable
 private fun RoyalOrnamentalDivider(
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Image(
+        painter = painterResource(
+            id = R.drawable.royal_panel_divider
+        ),
+        contentDescription = null,
         modifier = modifier
             .fillMaxWidth()
             .height(18.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        // رأس الرمح الأيسر: يتجه إلى اليسار.
-        Text(
-            text = "◀",
-            color = RoyalGold,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-
-        // الخط الذهبي الأيسر.
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 3.dp)
-                .height(1.dp)
-                .background(RoyalGold)
-        )
-
-        // الزخرفة النباتية الملكية في المنتصف.
-        Text(
-            text = "❦",
-            color = RoyalGold,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        // الخط الذهبي الأيمن.
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 3.dp)
-                .height(1.dp)
-                .background(RoyalGold)
-        )
-
-        // رأس الرمح الأيمن: يتجه إلى اليمين.
-        Text(
-            text = "▶",
-            color = RoyalGold,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-    }
+        contentScale = ContentScale.FillBounds
+    )
 }
+
+
 
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
