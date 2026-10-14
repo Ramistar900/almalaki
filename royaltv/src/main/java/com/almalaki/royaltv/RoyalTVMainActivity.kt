@@ -729,6 +729,9 @@ LaunchedEffect(adsImageUris) {
                             liveAlpha = liveAlpha,
                             fullscreen = false,
                             displayState = displayState,
+                            tickerText = tickerText,
+                            currentTime = currentTime,
+                            currentDate = currentDate,
                             onToggleFullscreen = {
                                 fullscreen = true
                             },
@@ -836,6 +839,9 @@ private fun BroadcastWindow(
     liveAlpha: Float,
     fullscreen: Boolean,
     displayState: RoyalTVState,
+    tickerText: String,
+    currentTime: String,
+    currentDate: String,
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1245,7 +1251,11 @@ selectedSource == "موسيقى" -> {
         modifier = Modifier.fillMaxSize(),
         onBack = {
             selectedSource = null
-        }
+        },
+        tickerText = tickerText,
+        currentTime = currentTime,
+        currentDate = currentDate,
+        liveAlpha = liveAlpha
     )
 }
             selectedSource != null -> {
