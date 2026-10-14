@@ -267,10 +267,7 @@ class RoyalTVMainActivity : ComponentActivity() {
 
         startService(stopOverlayIntent)
     }
-    
-    }
 }
-
 
 @Composable
 private fun RoyalTVChannelScreen(
