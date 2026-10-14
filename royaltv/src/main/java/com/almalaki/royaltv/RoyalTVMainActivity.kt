@@ -603,8 +603,7 @@ LaunchedEffect(adsImageUris) {
                             },
                             modifier = Modifier.fillMaxSize()
                         )
-                        RoyalPanelFrame(
-                            
+                    
                     }
 
                     RoyalOrnamentalDivider()
