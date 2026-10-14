@@ -1239,6 +1239,15 @@ textAlign = TextAlign.Center
             }
             
             // المصادر التي لم نربط تشغيلها بعد.
+            // تشغيل الموسيقى داخل نافذة ROYAL TV.
+selectedSource == "موسيقى" -> {
+    RoyalTVMusicPlayer(
+        modifier = Modifier.fillMaxSize(),
+        onBack = {
+            selectedSource = null
+        }
+    )
+}
             selectedSource != null -> {
                 Column(
                     modifier = Modifier
