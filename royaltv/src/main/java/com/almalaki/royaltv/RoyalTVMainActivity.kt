@@ -1330,7 +1330,6 @@ context.startActivity(launchIntent)
                             incomingStreamActive = false
                             selectedSource = "بث الملكي"
                         }
-                    }
                     
                     }
                 }
