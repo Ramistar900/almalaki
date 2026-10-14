@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- ظل ثلاثي الأبعاد -->
+    <path
+        android:fillColor="#080A10"
+        android:pathData="M12,9 L37,9 Q43,9 43,15 L43,34 Q43,40 37,40 L12,40 Q6,40 6,34 L6,15 Q6,9 12,9 Z" />
+
+    <!-- جسم شعار YouTube الأحمر -->
+    <path
+        android:fillColor="#FF0000"
+        android:pathData="M12,6 L36,6 Q42,6 42,12 L42,31 Q42,37 36,37 L12,37 Q6,37 6,31 L6,12 Q6,6 12,6 Z" />
+
+    <!-- لمعة علوية -->
+    <path
+        android:fillColor="#FF7777"
+        android:pathData="M12,8 L36,8 Q39,8 40,11 L8,11 Q9,8 12,8 Z" />
+
+    <!-- زر التشغيل الأبيض -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M19,14 L19,29 L31,21.5 Z" />
+
+    <!-- لمعة خفيفة على زر التشغيل -->
+    <path
+        android:fillColor="#E8E8E8"
+        android:pathData="M20,16 L20,26 L22,24 L22,18 Z" />
+</vector>
