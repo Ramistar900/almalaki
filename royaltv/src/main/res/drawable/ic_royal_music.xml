@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- ظل ثلاثي الأبعاد -->
+    <path
+        android:fillColor="#080711"
+        android:pathData="M15,7 L39,3 L39,30 Q39,35 34,36 Q28,37 27,32 Q26,28 32,26 L32,12 L19,14 L19,34 Q19,39 14,40 Q8,41 7,36 Q6,31 12,29 L12,10 Q12,8 15,7 Z" />
+
+    <!-- ساق النغمة الذهبية -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M13,7 L36,3 L36,29 Q36,34 31,35 Q25,36 24,31 Q23,27 29,25 L29,11 L17,13 L17,33 Q17,38 12,39 Q6,40 5,35 Q4,30 10,28 L10,10 Q10,8 13,7 Z" />
+
+    <!-- لمعة ذهبية -->
+    <path
+        android:fillColor="#FFE9A0"
+        android:pathData="M13,8 L34,4 L34,7 L13,11 Z" />
+
+    <!-- قاعدة النغمة البنفسجية -->
+    <path
+        android:fillColor="#8D55D9"
+        android:pathData="M10,29 Q16,27 17,32 Q18,37 12,38 Q6,39 6,34 Q6,31 10,29 Z" />
+
+    <path
+        android:fillColor="#B98BFF"
+        android:pathData="M29,26 Q35,24 36,29 Q37,34 31,35 Q25,36 25,31 Q25,28 29,26 Z" />
+
+    <!-- انعكاس ثلاثي الأبعاد -->
+    <path
+        android:fillColor="#E3C7FF"
+        android:pathData="M29,27 Q32,26 34,28 Q31,27 29,30 Z" />
+</vector>
