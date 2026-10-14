@@ -1101,9 +1101,22 @@ private fun BroadcastWindow(
                         RoyalGold,
                         RoundedCornerShape(8.dp)
                     )
-                    .clickable {
-                        val packageManager =
-                            context.packageManager
+                    
+.clickable {
+    // فحص اتجاه الشاشة قبل محاولة تشغيل التطبيق.
+    if (
+        context.resources.configuration.orientation !=
+        android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    ) {
+        Toast.makeText(
+            context,
+            "لا يمكن التشغيل في هذا الوضع",
+            Toast.LENGTH_LONG
+        ).show()
+    } else {
+        val packageManager =
+            context.packageManager
+        
 
                         val launchIntent =
                             packageManager
@@ -1161,6 +1174,7 @@ selectedApp = null
 // فتح التطبيق ضمن مسار الرجوع الحالي.
 context.startActivity(launchIntent)
     }
+
 } catch (_: Exception) {
     Toast.makeText(
         context,
@@ -1168,17 +1182,17 @@ context.startActivity(launchIntent)
         Toast.LENGTH_LONG
     ).show()
 }
+    }
+}
+.padding(
+    horizontal = 16.dp,
+    vertical = 12.dp
+),
+color = RoyalPearl,
+fontWeight = FontWeight.Bold,
+textAlign = TextAlign.Center
+)
 
-                        }
-                    }
-                    .padding(
-                        horizontal = 16.dp,
-                        vertical = 12.dp
-                    ),
-                color = RoyalPearl,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
         }
 
         Text(
