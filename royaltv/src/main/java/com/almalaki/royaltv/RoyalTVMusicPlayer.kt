@@ -54,11 +54,17 @@ private val MusicBlue = Color(0xFF172B4D)
 private val MusicEmerald = Color(0xFF176B60)
 private val MusicPanel = Color(0xFF080C12)
 
+
 @Composable
 fun RoyalTVMusicPlayer(
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tickerText: String = "",
+    currentTime: String = "--:--",
+    currentDate: String = "",
+    liveAlpha: Float = 1f
 ) {
+    
     val context = LocalContext.current
 
     var selectedUri by remember {
@@ -518,45 +524,88 @@ fun RoyalTVMusicPlayer(
             )
 
             // هوية داخلية مؤقتة للمشغّل
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.32f))
-                    .border(
-                        1.dp,
-                        MusicGold.copy(alpha = 0.55f),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .padding(
-                        horizontal = 14.dp,
-                        vertical = if (compact) 6.dp else 9.dp
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "الملكي",
-                    color = MusicGold,
-                    fontSize = if (compact) 14.sp else 17.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+            
+Row(
+    modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(10.dp))
+        .background(Color(0xFF252B35))
+        .border(
+            1.dp,
+            MusicGold.copy(alpha = 0.75f),
+            RoundedCornerShape(10.dp)
+        )
+        .padding(horizontal = 8.dp, vertical = 7.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+) {
+    Text(
+        text = "الملكي",
+        color = MusicGold,
+        fontSize = if (compact) 13.sp else 17.sp,
+        fontWeight = FontWeight.ExtraBold
+    )
 
-                Text(
-                    text = "ROYAL TV • MUSIC",
-                    color = MusicPearl.copy(alpha = 0.72f),
-                    fontSize = if (compact) 9.sp else 11.sp,
-                    letterSpacing = 1.sp
-                )
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(5.dp))
+            .background(Color(0xFF080C12))
+            .padding(horizontal = 7.dp, vertical = 6.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = tickerText.ifBlank { "أهلاً بكم في ROYAL TV" },
+            color = MusicPearl,
+            fontSize = if (compact) 9.sp else 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 
-                Text(
-                    text = "تشغيل محلي",
-                    color = MusicEmerald,
-                    fontSize = if (compact) 10.sp else 12.sp,
-                    fontWeight = FontWeight.Bold
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = currentTime,
+            color = MusicGold,
+            fontSize = if (compact) 10.sp else 13.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
+        Text(
+            text = currentDate,
+            color = MusicPearl,
+            fontSize = if (compact) 7.sp else 9.sp,
+            maxLines = 1
+        )
+    }
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(Color(0xFF401820))
+            .padding(horizontal = 6.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(
+                    Color(0xFFFF4545).copy(alpha = liveAlpha)
                 )
-            }
-        }
+        )
+        Text(
+            text = "مباشر",
+            color = Color(0xFFFF6666),
+            fontSize = if (compact) 9.sp else 11.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+}
+
     }
 }
 
