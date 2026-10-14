@@ -230,7 +230,8 @@ class RoyalTVMainActivity : ComponentActivity() {
                 )
             }
         }
-        
+    }
+
     override fun onResume() {
         super.onResume()
 
@@ -242,9 +243,8 @@ class RoyalTVMainActivity : ComponentActivity() {
             )
         )
     }
-    
-    }
 }
+
 
 @Composable
 private fun RoyalTVChannelScreen(
