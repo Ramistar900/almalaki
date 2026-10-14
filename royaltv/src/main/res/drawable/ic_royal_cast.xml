@@ -1,0 +1,61 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- إطار شاشة الاستقبال -->
+    <path
+        android:fillColor="#172B4D"
+        android:strokeColor="#B99A52"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M10,10 L54,10 L54,43 L10,43 Z" />
+
+    <!-- لمعة ذهبية داخل الشاشة -->
+    <path
+        android:fillColor="#253F69"
+        android:pathData="M14,14 L50,14 L50,39 L14,39 Z" />
+
+    <!-- رمز البث -->
+    <path
+        android:fillColor="#B99A52"
+        android:pathData="M18,35
+            C18,30 22,26 27,26
+            L27,30
+            C24,30 22,32 22,35 Z" />
+
+    <path
+        android:fillColor="#B99A52"
+        android:pathData="M18,35
+            C18,27 24,21 32,21
+            L32,25
+            C26,25 22,29 22,35 Z" />
+
+    <path
+        android:fillColor="#176B60"
+        android:pathData="M18,35
+            C18,23 27,15 38,15
+            L38,19
+            C29,19 22,26 22,35 Z" />
+
+    <!-- نقطة استقبال البث -->
+    <path
+        android:fillColor="#FF4545"
+        android:pathData="M28,31 A3,3 0,1 0,34 31 A3,3 0,1 0,28 31" />
+
+    <!-- قاعدة الشاشة -->
+    <path
+        android:fillColor="#B99A52"
+        android:pathData="M27,43 L37,43 L37,48 L27,48 Z" />
+
+    <path
+        android:fillColor="#B99A52"
+        android:pathData="M21,48 L43,48 L43,52 L21,52 Z" />
+
+    <!-- لمعة القاعدة -->
+    <path
+        android:fillColor="#DCE5EE"
+        android:pathData="M24,49 L40,49 L40,50 L24,50 Z" />
+
+</vector>
