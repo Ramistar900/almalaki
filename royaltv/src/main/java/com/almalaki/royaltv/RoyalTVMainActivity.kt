@@ -1133,16 +1133,18 @@ private fun BroadcastWindow(
         val packageManager =
             context.packageManager
         
-
-                        val launchIntent =
-                            packageManager
-                                .getLeanbackLaunchIntentForPackage(
-                                    app.packageName
-                                )
-                                ?: packageManager
-                                    .getLaunchIntentForPackage(
-                                        app.packageName
-                                    )
+// نفضّل مدخل التطبيق العادي لتفادي تخطيط Leanback
+// الذي قد يسبب حوافًا سوداء في بعض التطبيقات.
+// نستخدم مدخل Android TV فقط إذا لم يتوفر العادي.
+val launchIntent =
+    packageManager
+        .getLaunchIntentForPackage(
+            app.packageName
+        )
+        ?: packageManager
+            .getLeanbackLaunchIntentForPackage(
+                app.packageName
+            )
 
                         if (launchIntent == null) {
                             Toast.makeText(
