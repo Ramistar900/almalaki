@@ -1184,6 +1184,7 @@ context.startActivity(launchIntent)
 }
     }
 }
+}
 .padding(
     horizontal = 16.dp,
     vertical = 12.dp
