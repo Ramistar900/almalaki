@@ -673,6 +673,7 @@ LaunchedEffect(adsImageUris) {
             
 
             
+
 BroadcastWindow(
     liveAlpha = liveAlpha,
     fullscreen = true,
@@ -685,6 +686,7 @@ BroadcastWindow(
     },
     modifier = Modifier.fillMaxSize()
 )
+
 
 
         } else {
@@ -1251,11 +1253,16 @@ textAlign = TextAlign.Center
             
             // المصادر التي لم نربط تشغيلها بعد.
             // تشغيل الموسيقى داخل نافذة ROYAL TV.
+
 selectedSource == "موسيقى" -> {
     RoyalTVMusicPlayer(
         modifier = Modifier.fillMaxSize(),
         onBack = {
             selectedSource = null
+        }
+    )
+}
+
         },
         tickerText = tickerText,
         currentTime = currentTime,
