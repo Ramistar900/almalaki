@@ -504,7 +504,7 @@ private fun RoyalTVChannelScreen(
     
 LaunchedEffect(productImageUris) {
     while (true) {
-        delay(20_000L)
+        delay(25_000L)
 
         if (productImageUris.isNotEmpty()) {
             productImageIndex =
@@ -515,7 +515,7 @@ LaunchedEffect(productImageUris) {
 
 LaunchedEffect(adsImageUris) {
     while (true) {
-        delay(20_000L)
+        delay(15_000L)
 
         if (adsImageUris.isNotEmpty()) {
             adsImageIndex =
@@ -556,7 +556,7 @@ LaunchedEffect(adsImageUris) {
         targetValue = 6.2831855f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 20_000
+                durationMillis = 15_000
             ),
             repeatMode = RepeatMode.Restart
         ),
@@ -572,103 +572,101 @@ LaunchedEffect(adsImageUris) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .drawBehind {
-                    val w = size.width
-                    val h = size.height
-                    val radius = maxOf(w, h) * 0.72f
+                
+.drawBehind {
+    val w = size.width
+    val h = size.height
 
-                    drawRect(Color(0xFF080C12))
+    // ضباب أقرب وأوضح حتى تظهر الحركة للعين
+    val radius = maxOf(w, h) * 0.48f
 
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF176B60)
-                                    .copy(alpha = 0.48f),
-                                Color.Transparent
-                            ),
-                            center = Offset(
-                                w * (0.24f + 0.13f * cos(fogPhase)),
-                                h * (0.30f + 0.16f * sin(fogPhase))
-                            ),
-                            radius = radius
-                        )
-                    )
+    drawRect(Color(0xFF080C12))
 
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF172B4D)
-                                    .copy(alpha = 0.62f),
-                                Color.Transparent
-                            ),
-                            center = Offset(
-                                w * (0.76f + 0.15f * cos(fogPhase * 2f)),
-                                h * (0.28f + 0.17f * sin(fogPhase * 2f))
-                            ),
-                            radius = radius
-                        )
-                    )
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFF176B60).copy(alpha = 0.70f),
+                Color.Transparent
+            ),
+            center = Offset(
+                w * (0.22f + 0.27f * cos(fogPhase)),
+                h * (0.30f + 0.22f * sin(fogPhase))
+            ),
+            radius = radius
+        )
+    )
 
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF6B3154)
-                                    .copy(alpha = 0.38f),
-                                Color.Transparent
-                            ),
-                            center = Offset(
-                                w * (0.68f + 0.19f * cos(fogPhase * 3f)),
-                                h * (0.76f + 0.12f * sin(fogPhase * 3f))
-                            ),
-                            radius = radius
-                        )
-                    )
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFF172B4D).copy(alpha = 0.75f),
+                Color.Transparent
+            ),
+            center = Offset(
+                w * (0.78f + 0.24f * cos(fogPhase * 2f)),
+                h * (0.25f + 0.23f * sin(fogPhase * 2f))
+            ),
+            radius = radius
+        )
+    )
 
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFB32636)
-                                    .copy(alpha = 0.27f),
-                                Color.Transparent
-                            ),
-                            center = Offset(
-                                w * (0.32f + 0.17f * sin(fogPhase * 2f)),
-                                h * (0.72f + 0.13f * cos(fogPhase * 2f))
-                            ),
-                            radius = radius * 0.85f
-                        )
-                    )
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFF6B3154).copy(alpha = 0.58f),
+                Color.Transparent
+            ),
+            center = Offset(
+                w * (0.67f + 0.27f * cos(fogPhase * 1.5f)),
+                h * (0.76f + 0.19f * sin(fogPhase * 1.5f))
+            ),
+            radius = radius
+        )
+    )
 
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFB99A52)
-                                    .copy(alpha = 0.20f),
-                                Color.Transparent
-                            ),
-                            center = Offset(
-                                w * (0.50f + 0.24f * cos(fogPhase)),
-                                h * (0.48f + 0.18f * sin(fogPhase))
-                            ),
-                            radius = radius * 0.72f
-                        )
-                    )
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFFFF3038).copy(alpha = 0.42f),
+                Color.Transparent
+            ),
+            center = Offset(
+                w * (0.30f + 0.25f * sin(fogPhase * 2f)),
+                h * (0.72f + 0.20f * cos(fogPhase * 2f))
+            ),
+            radius = radius * 0.90f
+        )
+    )
 
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFDCE5EE)
-                                    .copy(alpha = 0.12f),
-                                Color.Transparent
-                            ),
-                            center = Offset(
-                                w * (0.48f + 0.18f * sin(fogPhase * 3f)),
-                                h * (0.22f + 0.12f * cos(fogPhase * 3f))
-                            ),
-                            radius = radius * 0.62f
-                        )
-                    )
-                }
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFFB99A52).copy(alpha = 0.38f),
+                Color.Transparent
+            ),
+            center = Offset(
+                w * (0.50f + 0.30f * cos(fogPhase)),
+                h * (0.48f + 0.24f * sin(fogPhase))
+            ),
+            radius = radius * 0.82f
+        )
+    )
+
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFFDCE5EE).copy(alpha = 0.24f),
+                Color.Transparent
+            ),
+            center = Offset(
+                w * (0.48f + 0.24f * sin(fogPhase * 2f)),
+                h * (0.22f + 0.19f * cos(fogPhase * 2f))
+            ),
+            radius = radius * 0.72f
+        )
+    )
+}
+
         )
 
         if (fullscreen) {
