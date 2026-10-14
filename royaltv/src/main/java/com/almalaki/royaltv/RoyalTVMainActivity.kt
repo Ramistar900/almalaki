@@ -1643,7 +1643,7 @@ private fun RoyalTVBroadcastSignal() {
 private fun RoyalTVSourceTile(
     title: String,
     subtitle: String,
-    symbol: String,
+    iconRes: Int,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -1657,7 +1657,12 @@ private fun RoyalTVSourceTile(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Text(symbol, color = RoyalGold, fontSize = 26.sp)
+        Image(
+    painter = painterResource(id = iconRes),
+    contentDescription = title,
+    modifier = Modifier.size(48.dp),
+    contentScale = ContentScale.Fit
+)
         Text(
             title,
             color = RoyalPearl,
