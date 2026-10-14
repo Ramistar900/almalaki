@@ -604,8 +604,7 @@ LaunchedEffect(adsImageUris) {
                             modifier = Modifier.fillMaxSize()
                         )
                         RoyalPanelFrame(
-                            modifier = Modifier.fillMaxSize()
-                        )
+                            
                     }
 
                     RoyalOrnamentalDivider()
@@ -625,9 +624,7 @@ LaunchedEffect(adsImageUris) {
                             },
                             modifier = Modifier.fillMaxSize()
                         )
-                        RoyalPanelFrame(
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        
                     }
 
                     RoyalOrnamentalDivider()
@@ -647,9 +644,7 @@ LaunchedEffect(adsImageUris) {
                             },
                             modifier = Modifier.fillMaxSize()
                         )
-                        RoyalPanelFrame(
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        
                     }
                     
 
@@ -734,11 +729,25 @@ private fun BroadcastWindow(
                     )
                 )
             )
-            .border(
-                1.dp,
-                RoyalGold,
-                RoundedCornerShape(9.dp)
-            )
+            
+.border(
+    2.dp,
+    Brush.linearGradient(
+        listOf(
+            RoyalGold,
+            RoyalPearl,
+            RoyalBlue,
+            RoyalGold
+        )
+    ),
+    RoundedCornerShape(9.dp)
+)
+.border(
+    1.dp,
+    RoyalPearl.copy(alpha = 0.85f),
+    RoundedCornerShape(9.dp)
+)
+
     ) {
         
         when {
@@ -1655,7 +1664,7 @@ private fun RoyalOrnamentalDivider(
         contentDescription = null,
         modifier = modifier
             .fillMaxWidth()
-            .height(30.dp),
+            .height(35.dp),
         contentScale = ContentScale.FillBounds
     )
 }
