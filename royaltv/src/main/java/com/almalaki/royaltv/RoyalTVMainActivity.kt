@@ -230,6 +230,19 @@ class RoyalTVMainActivity : ComponentActivity() {
                 )
             }
         }
+        
+    override fun onResume() {
+        super.onResume()
+
+        // إخفاء الهوية العائمة عند العودة إلى ROYAL TV.
+        stopService(
+            Intent(
+                this,
+                RoyalTVBroadcastOverlayService::class.java
+            )
+        )
+    }
+    
     }
 }
 
