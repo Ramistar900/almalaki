@@ -833,6 +833,10 @@ private fun BroadcastWindow(
         mutableStateOf<RoyalTVInstalledApp?>(null)
     }
     
+    var incomingStreamActive by remember {
+        mutableStateOf(false)
+        }
+    
     var fullscreenButtonVisible by remember {
         mutableStateOf(true)
     }
@@ -891,6 +895,73 @@ private fun BroadcastWindow(
     ) {
         
         when {
+            
+            // استقبال بث H.264 القادم من تطبيق الملكي.
+            selectedSource == "بث الملكي" -> {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    RoyalTVVideoPlaybackLayer(
+                        modifier = Modifier.fillMaxSize(),
+                        onStreamingChanged = { active ->
+                            incomingStreamActive = active
+                        }
+                    )
+
+                    if (!incomingStreamActive) {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = "بث الملكي المباشر",
+                                color = RoyalGold,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Text(
+                                text = "بانتظار اتصال المرسل على المنفذ 39872",
+                                color = RoyalPearl,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Text(
+                                text = "افتح نافذة البث هذه أولاً، ثم ابدأ الإرسال من تطبيق الملكي.",
+                                color = RoyalPearl.copy(alpha = 0.78f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "‹ العودة",
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(RoyalBlue)
+                            .border(
+                                1.dp,
+                                RoyalGold,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                incomingStreamActive = false
+                                selectedSource = null
+                            }
+                            .padding(
+                                horizontal = 14.dp,
+                                vertical = 8.dp
+                            ),
+                        color = RoyalPearl,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
             // عرض صفحة YouTube داخل نافذة البث نفسها.
             selectedSource == "يوتيوب" -> {
                 RoyalTVEmbeddedWebSource(
@@ -1227,9 +1298,10 @@ context.startActivity(launchIntent)
                         }
                     }
 
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         RoyalTVSourceTile(
                             "موسيقى",
@@ -1248,6 +1320,18 @@ context.startActivity(launchIntent)
                         ) {
                             selectedSource = "الفيديو"
                         }
+
+                        RoyalTVSourceTile(
+                            "بث الملكي",
+                            "استقبال H.264",
+                            "LIVE",
+                            Modifier.weight(1f)
+                        ) {
+                            incomingStreamActive = false
+                            selectedSource = "بث الملكي"
+                        }
+                    }
+                    
                     }
                 }
             }
