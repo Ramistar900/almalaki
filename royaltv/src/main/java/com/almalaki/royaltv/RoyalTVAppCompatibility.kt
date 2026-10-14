@@ -3,34 +3,24 @@ package com.almalaki.royaltv
 /**
  * يحدد التطبيقات التي نملك لها طريقة عرض ويب داخل نافذة ROYAL TV.
  *
- * لا يشغّل التطبيق الأصلي ولا يفتحه خارج ROYAL TV.
- * التطبيقات غير المدرجة تُعامل على أنها غير مدعومة
- * حتى نضيف لها طريقة عرض متوافقة.
+ * YouTube Web له مربع مستقل في واجهة ROYAL TV.
+ * أما YouTube المثبّت فيُعامل كتطبيق أصلي من مربع التطبيقات.
  */
 internal object RoyalTVAppCompatibility {
 
     /**
-     * يعيد رابط العرض الداخلي إذا كان التطبيق مدعومًا،
-     * أو null إذا لم تتوفر طريقة عرض داخلية.
+     * يعيد رابط ويب داخليًا للتطبيقات التي نقرر دعمها بهذه الطريقة.
+     *
+     * لا نحول تطبيق YouTube المثبّت إلى صفحة ويب هنا؛
+     * تشغيله يتم من مسار التطبيقات الأصلي.
      */
     fun resolveEmbeddedWebUrl(
         app: RoyalTVInstalledApp
     ): String? {
         return when (app.packageName) {
-
-            // YouTube على الهواتف والأجهزة اللوحية.
-            "com.google.android.youtube" ->
-                YOUTUBE_TV_URL
-
-            // YouTube المخصص لأجهزة التلفاز.
-            "com.google.android.youtube.tv" ->
-                YOUTUBE_TV_URL
-
-            // لا نفتح التطبيقات الأصلية خارجيًا.
+            // لا توجد حاليًا تطبيقات مخصصة في هذا الملف.
+            // يبقى YouTube Web في مربع «يوتيوب» المستقل.
             else -> null
         }
     }
-
-    private const val YOUTUBE_TV_URL =
-        "https://www.youtube.com/tv"
 }
