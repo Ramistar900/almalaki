@@ -90,6 +90,9 @@ mutableStateOf(false)
 var senderOpen by remember {
     mutableStateOf(false)
 }
+var tickerOpen by remember {
+    mutableStateOf(false)
+}
 
 
 if (identityOpen) {
@@ -131,6 +134,15 @@ if (senderOpen) {
         }
     )
 
+    return
+}
+if (tickerOpen) {
+    RoyalTVTickerControlScreen(
+        modifier = modifier,
+        onBack = {
+            tickerOpen = false
+        }
+    )
     return
 }
 
@@ -179,6 +191,11 @@ RoyalTVIconKey.DISPLAY,
         "المحتوى والإعلانات",
         "إدارة المحتوى والإعلانات والبوسترات"
     ),
+    RoyalTVControlItem(
+    RoyalTVIconKey.TICKER,
+    "شريط الأخبار",
+    "تحديث نص الخبر وتشغيل الشريط وإيقافه"
+),
 
     RoyalTVControlItem(
         RoyalTVIconKey.IDENTITY,
@@ -259,12 +276,15 @@ Column(
 onClick = {
 
     if (item.title == "بث شاشة الهاتف") {
-        senderOpen = true
+    senderOpen = true
 
-    } else if (item.title == "العرض والشاشة") {
-        displayOpen = true
+} else if (item.title == "العرض والشاشة") {
+    displayOpen = true
 
-    } else {
+} else if (item.title == "شريط الأخبار") {
+    tickerOpen = true
+
+} else {
 
         if (item.title == "هوية ROYAL TV") {
             identityOpen = true
