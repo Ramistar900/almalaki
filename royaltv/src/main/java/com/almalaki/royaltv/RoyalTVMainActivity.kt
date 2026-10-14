@@ -672,15 +672,20 @@ LaunchedEffect(adsImageUris) {
         if (fullscreen) {
             
 
-            BroadcastWindow(
-                liveAlpha = liveAlpha,
-                fullscreen = true,
-                displayState = displayState,
-                onToggleFullscreen = {
-                    fullscreen = false
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+            
+BroadcastWindow(
+    liveAlpha = liveAlpha,
+    fullscreen = true,
+    displayState = displayState,
+    tickerText = tickerText,
+    currentTime = currentTime,
+    currentDate = currentDate,
+    onToggleFullscreen = {
+        fullscreen = false
+    },
+    modifier = Modifier.fillMaxSize()
+)
+
 
         } else {
 
