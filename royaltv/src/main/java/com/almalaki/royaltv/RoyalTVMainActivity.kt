@@ -123,9 +123,7 @@ class RoyalTVMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-                requestedOrientation =
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-
+                
         /*
          * بدء استقبال أوامر ROYAL TV.
          */
