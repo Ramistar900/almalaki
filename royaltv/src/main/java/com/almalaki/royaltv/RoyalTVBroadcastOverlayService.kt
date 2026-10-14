@@ -50,7 +50,10 @@ class RoyalTVBroadcastOverlayService : Service() {
     private var overlayView: View? = null
 
     private var tickerView: TextView? = null
-    private var tickerContainer: View? = null
+
+    // الإصلاح: الحاوية LinearLayout لكي تدعم addView().
+    private var tickerContainer: LinearLayout? = null
+
     private var timeView: TextView? = null
     private var dateView: TextView? = null
     private var liveDot: View? = null
@@ -79,8 +82,7 @@ class RoyalTVBroadcastOverlayService : Service() {
                 if (enabled) View.VISIBLE else View.GONE
 
             if (enabled) {
-                val latestText =
-                    RoyalTVTickerManager.getText()
+                val latestText = RoyalTVTickerManager.getText()
 
                 tickerView?.let { ticker ->
                     if (ticker.text.toString() != latestText) {
@@ -165,7 +167,8 @@ class RoyalTVBroadcastOverlayService : Service() {
     }
 
     private fun buildLogo(): View {
-        val size = dp(46)
+        // شعار أكبر مع الحفاظ على طبقتي PNG الأصليتين.
+        val size = dp(70)
 
         return FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -173,17 +176,19 @@ class RoyalTVBroadcastOverlayService : Service() {
                 size
             )
 
-            val crest = ImageView(this@RoyalTVBroadcastOverlayService).apply {
-                setImageResource(R.drawable.royal_crest_layer)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                contentDescription = "شعار الملكي"
-            }
+            val crest =
+                ImageView(this@RoyalTVBroadcastOverlayService).apply {
+                    setImageResource(R.drawable.royal_crest_layer)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    contentDescription = "شعار الملكي"
+                }
 
-            val rc = ImageView(this@RoyalTVBroadcastOverlayService).apply {
-                setImageResource(R.drawable.royal_rc_layer)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                contentDescription = "ROYAL"
-            }
+            val rc =
+                ImageView(this@RoyalTVBroadcastOverlayService).apply {
+                    setImageResource(R.drawable.royal_rc_layer)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    contentDescription = "ROYAL"
+                }
 
             addView(
                 crest,
@@ -383,7 +388,10 @@ class RoyalTVBroadcastOverlayService : Service() {
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            dp(58),
+
+            // ارتفاع أكبر لاحتواء الشعار المكبّر.
+            dp(82),
+
             windowType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
@@ -408,6 +416,7 @@ class RoyalTVBroadcastOverlayService : Service() {
             Log.e(TAG, "فشل إظهار الهوية الملكية", error)
 
             removeOverlay()
+
             Toast.makeText(
                 this,
                 "تعذر إظهار هوية ROYAL TV",
