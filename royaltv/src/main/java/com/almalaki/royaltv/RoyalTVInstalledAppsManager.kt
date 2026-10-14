@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 
-/**
- * بيانات تطبيق مثبت على الجهاز.
- */
 data class RoyalTVInstalledApp(
     val packageName: String,
     val label: String
@@ -14,15 +11,6 @@ data class RoyalTVInstalledApp(
 
 object RoyalTVInstalledAppsManager {
 
-    /**
-     * اكتشاف التطبيقات التي تملك نقطة تشغيل فعلية.
-     *
-     * يدعم مشغلات Android العادية ومشغلات Android TV
-     * (Leanback)، ويتجنب عرض حزم النظام التي لا تملك
-     * واجهة تشغيل عامة.
-     *
-     * هذه الدالة لا تشغّل أي تطبيق.
-     */
     fun getLaunchableApps(
         context: Context
     ): List<RoyalTVInstalledApp> {
@@ -38,20 +26,19 @@ object RoyalTVInstalledAppsManager {
                         .takeIf { it.isNotBlank() }
                         ?: return@mapNotNull null
 
-                    val standardLaunchIntent =
+                    val standardIntent =
                         packageManager.getLaunchIntentForPackage(
                             packageName
                         )
 
-                    val tvLaunchIntent =
+                    val tvIntent =
                         packageManager.getLeanbackLaunchIntentForPackage(
                             packageName
                         )
 
-                    // لا نعرض الحزم التي لا تملك أي مدخل تشغيل.
                     if (
-                        standardLaunchIntent == null &&
-                        tvLaunchIntent == null
+                        standardIntent == null &&
+                        tvIntent == null
                     ) {
                         return@mapNotNull null
                     }
@@ -74,12 +61,6 @@ object RoyalTVInstalledAppsManager {
         }
     }
 
-    /**
-     * محاولة فتح التطبيق عند طلب صريح من المستخدم.
-     *
-     * لا تستخدم هذه الدالة لتضمين التطبيق داخل ROYAL TV؛
-     * فهي تنقل التطبيق إلى واجهة Android الخارجية.
-     */
     fun launchApp(
         context: Context,
         packageName: String
@@ -89,9 +70,12 @@ object RoyalTVInstalledAppsManager {
         return try {
             val packageManager = context.packageManager
 
+            // نفضّل واجهة التلفاز إذا كان التطبيق يوفرها.
             val intent =
-                packageManager.getLaunchIntentForPackage(packageName)
-                    ?: packageManager.getLeanbackLaunchIntentForPackage(
+                packageManager.getLeanbackLaunchIntentForPackage(
+                    packageName
+                )
+                    ?: packageManager.getLaunchIntentForPackage(
                         packageName
                     )
                     ?: return false
