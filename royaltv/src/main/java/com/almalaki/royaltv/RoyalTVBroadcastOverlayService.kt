@@ -8,14 +8,13 @@ import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
+import android.view.View
 import android.view.WindowManager
+import android.widget.TextView
 import android.widget.Toast
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.setViewTreeLifecycleOwner
 import kotlin.math.roundToInt
 
 class RoyalTVBroadcastOverlayService :
@@ -38,7 +37,7 @@ class RoyalTVBroadcastOverlayService :
         get() = serviceLifecycle
 
     private var windowManager: WindowManager? = null
-    private var overlayView: ComposeView? = null
+    private var overlayView: View? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -89,8 +88,8 @@ class RoyalTVBroadcastOverlayService :
 
     private fun startOverlay() {
         if (overlayView != null) {
-            Log.i(TAG, "نافذة الهوية موجودة بالفعل")
-            showMessage("هوية ROYAL TV تعمل بالفعل")
+            Log.i(TAG, "نافذة الاختبار موجودة بالفعل")
+            showMessage("ROYAL TV: نافذة الاختبار تعمل بالفعل")
             return
         }
 
@@ -100,16 +99,17 @@ class RoyalTVBroadcastOverlayService :
         ) {
             Log.e(TAG, "صلاحية الظهور فوق التطبيقات غير ممنوحة")
             showMessage(
-                "ROYAL TV: صلاحية الظهور فوق التطبيقات غير مفعّلة"
+                "ROYAL TV: فعّل صلاحية الظهور فوق التطبيقات"
             )
             stopSelf()
             return
         }
 
         val manager = windowManager
+
         if (manager == null) {
             Log.e(TAG, "WindowManager غير متاح")
-            showMessage("ROYAL TV: تعذر الوصول إلى مدير النوافذ")
+            showMessage("ROYAL TV: مدير النوافذ غير متاح")
             stopSelf()
             return
         }
@@ -124,22 +124,23 @@ class RoyalTVBroadcastOverlayService :
         val overlayHeightPx =
             (64f * scale * density).roundToInt()
 
-        val composeView = ComposeView(this).apply {
-            setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnDetachedFromWindow
+        // اختبار نافذة Android عادية، بدون Compose.
+        val testView = TextView(this).apply {
+            text = "ROYAL TV — اختبار النافذة العائمة"
+            textSize = 18f
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(
+                (12f * density).roundToInt(),
+                0,
+                (12f * density).roundToInt(),
+                0
             )
-
             setBackgroundColor(
                 android.graphics.Color.MAGENTA
             )
-
-            setViewTreeLifecycleOwner(
-                this@RoyalTVBroadcastOverlayService
-            )
-
-            setContent {
-                RoyalTVBroadcastIdentity()
-            }
+            importantForAccessibility =
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
 
         val windowType =
@@ -157,7 +158,7 @@ class RoyalTVBroadcastOverlayService :
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
+            PixelFormat.OPAQUE
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.START
             x = 0
@@ -165,8 +166,8 @@ class RoyalTVBroadcastOverlayService :
         }
 
         try {
-            manager.addView(composeView, layoutParams)
-            overlayView = composeView
+            manager.addView(testView, layoutParams)
+            overlayView = testView
 
             serviceLifecycle.handleLifecycleEvent(
                 Lifecycle.Event.ON_START
@@ -177,32 +178,23 @@ class RoyalTVBroadcastOverlayService :
 
             Log.i(
                 TAG,
-                "نجحت إضافة نافذة الهوية، الارتفاع=$overlayHeightPx px"
+                "أضيفت نافذة Android التجريبية، الارتفاع=$overlayHeightPx px"
             )
 
-            showMessage("ROYAL TV: تم إنشاء نافذة الهوية")
-
+            showMessage(
+                "ROYAL TV: تمت إضافة نافذة الاختبار"
+            )
         } catch (error: Exception) {
             Log.e(
                 TAG,
-                "فشل إنشاء نافذة الهوية العائمة",
+                "فشل إنشاء نافذة Android التجريبية",
                 error
             )
-
-            try {
-                composeView.disposeComposition()
-            } catch (disposeError: Exception) {
-                Log.w(
-                    TAG,
-                    "تعذر التخلص من محتوى Compose",
-                    disposeError
-                )
-            }
 
             overlayView = null
 
             showMessage(
-                "ROYAL TV: فشل إنشاء الهوية — ${error.javaClass.simpleName}"
+                "ROYAL TV: فشل الاختبار — ${error.javaClass.simpleName}"
             )
 
             stopSelf()
@@ -234,21 +226,11 @@ class RoyalTVBroadcastOverlayService :
         if (view != null) {
             try {
                 windowManager?.removeView(view)
-                Log.i(TAG, "تمت إزالة نافذة الهوية")
+                Log.i(TAG, "تمت إزالة نافذة الاختبار")
             } catch (error: Exception) {
                 Log.w(
                     TAG,
-                    "تعذر إزالة النافذة",
-                    error
-                )
-            }
-
-            try {
-                view.disposeComposition()
-            } catch (error: Exception) {
-                Log.w(
-                    TAG,
-                    "تعذر التخلص من محتوى Compose",
+                    "تعذر إزالة نافذة الاختبار",
                     error
                 )
             }
