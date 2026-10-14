@@ -522,11 +522,25 @@ LaunchedEffect(adsImageUris) {
         label = "royal_live_alpha"
     )
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(RoyalBlack)
-    ) {
+    
+BoxWithConstraints(
+    modifier = Modifier
+        .fillMaxSize()
+        .background(
+            Brush.verticalGradient(
+                colorStops = arrayOf(
+                    0.00f to Color(0xFF080C12),
+                    0.20f to Color(0xFF172B4D),
+                    0.40f to Color(0xFF176B60),
+                    0.58f to Color(0xFF252038),
+                    0.73f to Color(0xFF6B3154),
+                    0.86f to Color(0xFF54232F),
+                    1.00f to Color(0xFF080C12)
+                )
+            )
+        )
+) {
+    
 
         if (fullscreen) {
 
