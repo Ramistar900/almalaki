@@ -38,7 +38,6 @@ class RoyalTVBroadcastOverlayService : Service() {
             "com.almalaki.royaltv.action.STOP_BROADCAST_OVERLAY"
 
         private const val GOLD = 0xFFD4AF37.toInt()
-        private const val PEARL = 0xFFF0E9F5.toInt()
         private const val RED = 0xFFFF3038.toInt()
         private const val TURQUOISE = 0xFF16858A.toInt()
         private const val EMERALD = 0xFF087653.toInt()
@@ -58,6 +57,21 @@ class RoyalTVBroadcastOverlayService : Service() {
             timeZone = TimeZone.getTimeZone("Asia/Damascus")
         }
 
+    /**
+     * يكرر النص حتى يستمر شريط الأخبار بالحركة
+     * حتى عندما يكون النص الأصلي قصيراً.
+     */
+    private fun tickerDisplayText(value: String): String {
+        val clean = value.trim().ifEmpty {
+            "مرحباً بكم في ROYAL TV"
+        }
+
+        return "$clean     ✦     $clean     ✦     "
+    }
+
+    /**
+     * تحديث الساعة والشريط ومؤشر البث.
+     */
     private val refreshRunnable = object : Runnable {
         override fun run() {
             timeView?.text = damascusTime.format(Date())
@@ -71,12 +85,15 @@ class RoyalTVBroadcastOverlayService : Service() {
                 if (enabled) View.VISIBLE else View.GONE
 
             if (enabled) {
-                val latestText = RoyalTVTickerManager.getText()
+                val latestText = tickerDisplayText(
+                    RoyalTVTickerManager.getText()
+                )
 
                 tickerView?.let { ticker ->
                     if (ticker.text.toString() != latestText) {
                         ticker.isSelected = false
                         ticker.text = latestText
+
                         ticker.post {
                             ticker.isSelected = true
                         }
@@ -89,7 +106,9 @@ class RoyalTVBroadcastOverlayService : Service() {
                     if (dot.alpha > 0.7f) 0.35f else 1f
             }
 
-            handler.postDelayed(this, 1_000L)
+            if (overlayView != null) {
+                handler.postDelayed(this, 1_000L)
+            }
         }
     }
 
@@ -116,12 +135,16 @@ class RoyalTVBroadcastOverlayService : Service() {
                 stopSelf()
             }
 
-            ACTION_START, null -> startOverlay()
+            ACTION_START, null -> {
+                startOverlay()
+            }
 
-            else -> Log.w(
-                TAG,
-                "أمر غير معروف: ${intent.action}"
-            )
+            else -> {
+                Log.w(
+                    TAG,
+                    "أمر غير معروف: ${intent.action}"
+                )
+            }
         }
 
         return START_NOT_STICKY
@@ -132,6 +155,9 @@ class RoyalTVBroadcastOverlayService : Service() {
             .toInt()
             .coerceAtLeast(1)
 
+    /**
+     * خلفية الشريط الإخباري المتدرجة.
+     */
     private fun tickerBackground(): GradientDrawable =
         GradientDrawable(
             GradientDrawable.Orientation.LEFT_RIGHT,
@@ -144,6 +170,17 @@ class RoyalTVBroadcastOverlayService : Service() {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = dp(24).toFloat()
             setStroke(dp(1), GOLD)
+        }
+
+    /**
+     * مستطيل الساعة الشفاف بإطار ذهبي هادئ.
+     */
+    private fun timeBackground(): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(8).toFloat()
+            setColor(Color.argb(30, 8, 12, 18))
+            setStroke(dp(1), 0x99D4AF37.toInt())
         }
 
     private fun makeText(
@@ -166,6 +203,9 @@ class RoyalTVBroadcastOverlayService : Service() {
             }
         }
 
+    /**
+     * بناء الشعار من طبقتي الشعار الموجودتين في المشروع.
+     */
     private fun buildLogo(): View {
         val size = dp(72)
 
@@ -215,8 +255,10 @@ class RoyalTVBroadcastOverlayService : Service() {
         }
     }
 
+    /**
+     * إنشاء الهوية العائمة أسفل التطبيقات الخارجية.
+     */
     private fun buildOverlay(): View {
-        // خلفية شفافة بالكامل.
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
@@ -226,7 +268,7 @@ class RoyalTVBroadcastOverlayService : Service() {
             clipToPadding = true
         }
 
-        // مباشر في الزاوية العلوية اليمنى.
+        // مؤشر مباشر أعلى الهوية.
         val liveRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
@@ -249,7 +291,12 @@ class RoyalTVBroadcastOverlayService : Service() {
         liveRow.addView(liveDot)
 
         liveRow.addView(
-            makeText("مباشر", 12f, Color.WHITE, true),
+            makeText(
+                "مباشر",
+                12f,
+                Color.WHITE,
+                true
+            ),
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 dp(20)
@@ -264,7 +311,7 @@ class RoyalTVBroadcastOverlayService : Service() {
             )
         )
 
-        // الشعار والوقت والشريط في سطر واحد.
+        // الشعار والساعة والشريط في صف واحد.
         val mainRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -273,18 +320,25 @@ class RoyalTVBroadcastOverlayService : Service() {
 
         mainRow.addView(
             buildLogo(),
-            LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+            LinearLayout.LayoutParams(
+                dp(72),
+                dp(72)
+            ).apply {
                 marginEnd = dp(7)
             }
         )
 
-        // الوقت بلا خلفية أو إطار.
+        // الساعة داخل مستطيل شفاف بإطار ذهبي.
         timeView = makeText(
             "--:--",
             17f,
             GOLD,
             true
-        )
+        ).apply {
+            background = timeBackground()
+            setPadding(dp(10), 0, dp(10), 0)
+            gravity = Gravity.CENTER
+        }
 
         mainRow.addView(
             timeView,
@@ -296,7 +350,7 @@ class RoyalTVBroadcastOverlayService : Service() {
             }
         )
 
-        // شريط متدرج فيروزي/أخضر بإطار ذهبي.
+        // حاوية الشريط الإخباري.
         tickerContainer = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -307,8 +361,11 @@ class RoyalTVBroadcastOverlayService : Service() {
             setPadding(dp(10), 0, dp(10), 0)
         }
 
+        // النص مكرر لتسهيل استمرار حركة الأخبار.
         tickerView = makeText(
-            RoyalTVTickerManager.getText(),
+            tickerDisplayText(
+                RoyalTVTickerManager.getText()
+            ),
             14f,
             Color.WHITE,
             true
@@ -348,7 +405,7 @@ class RoyalTVBroadcastOverlayService : Service() {
             )
         )
 
-        // تفعيل حركة النص بعد قياس عرضه.
+        // إعادة تفعيل الحركة بعد اكتمال قياس النص.
         tickerView?.post {
             tickerView?.isSelected = false
             tickerView?.isSelected = true
@@ -357,6 +414,9 @@ class RoyalTVBroadcastOverlayService : Service() {
         return root
     }
 
+    /**
+     * إظهار الهوية فوق التطبيق الخارجي.
+     */
     private fun startOverlay() {
         if (overlayView != null) return
 
@@ -403,15 +463,24 @@ class RoyalTVBroadcastOverlayService : Service() {
 
         try {
             val view = buildOverlay()
+
             manager.addView(view, params)
             overlayView = view
 
             handler.removeCallbacks(refreshRunnable)
             handler.post(refreshRunnable)
 
-            Log.i(TAG, "ظهرت الهوية العائمة فوق التطبيق الخارجي")
+            Log.i(
+                TAG,
+                "ظهرت الهوية العائمة فوق التطبيق الخارجي"
+            )
         } catch (error: Exception) {
-            Log.e(TAG, "فشل إظهار الهوية العائمة", error)
+            Log.e(
+                TAG,
+                "فشل إظهار الهوية العائمة",
+                error
+            )
+
             removeOverlay()
 
             Toast.makeText(
@@ -424,6 +493,9 @@ class RoyalTVBroadcastOverlayService : Service() {
         }
     }
 
+    /**
+     * إزالة الهوية وإيقاف تحديثاتها.
+     */
     private fun removeOverlay() {
         handler.removeCallbacks(refreshRunnable)
 
@@ -439,9 +511,15 @@ class RoyalTVBroadcastOverlayService : Service() {
             try {
                 windowManager?.removeView(view)
             } catch (error: Exception) {
-                Log.w(TAG, "تعذر إزالة الهوية العائمة", error)
+                Log.w(
+                    TAG,
+                    "تعذر إزالة الهوية العائمة",
+                    error
+                )
             }
         }
+
+        Log.i(TAG, "تمت إزالة الهوية العائمة")
     }
 
     override fun onDestroy() {
