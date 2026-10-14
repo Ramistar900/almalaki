@@ -1329,66 +1329,68 @@ selectedSource == "موسيقى" -> {
 
                     Text(
                         text = "اختر مصدر البث",
-                        color = RoyalPearl,
-                        fontSize = 15.sp
-                    )
+                        
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(10.dp)
+) {
+    RoyalTVSourceTile(
+        "التطبيقات",
+        "اكتشاف تطبيقات الجهاز",
+        R.drawable.ic_royal_apps,
+        Modifier.weight(1f)
+    ) {
+        selectedSource = "التطبيقات"
+    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        RoyalTVSourceTile(
-                            "التطبيقات",
-                            "اكتشاف تطبيقات الجهاز",
-                            "▦",
-                            Modifier.weight(1f)
-                        ) {
-                            selectedSource = "التطبيقات"
-                        }
+    RoyalTVSourceTile(
+        "يوتيوب",
+        "YouTube Web",
+        R.drawable.ic_royal_youtube,
+        Modifier.weight(1f)
+    ) {
+        selectedSource = "يوتيوب"
+    }
+}
 
-                        RoyalTVSourceTile(
-                            "يوتيوب",
-                            "YouTube Web",
-                            "▶",
-                            Modifier.weight(1f)
-                        ) {
-                            selectedSource = "يوتيوب"
-                        }
-                    }
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(10.dp)
+) {
+    RoyalTVSourceTile(
+        "موسيقى",
+        "مكتبة الموسيقى",
+        R.drawable.ic_royal_music,
+        Modifier.weight(1f)
+    ) {
+        selectedSource = "موسيقى"
+    }
 
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        RoyalTVSourceTile(
-                            "موسيقى",
-                            "مكتبة الموسيقى",
-                            "♫",
-                            Modifier.weight(1f)
-                        ) {
-                            selectedSource = "موسيقى"
-                        }
+    RoyalTVSourceTile(
+        "الفيديو",
+        "مكتبة الصور والفيديو",
+        R.drawable.ic_royal_video,
+        Modifier.weight(1f)
+    ) {
+        selectedSource = "الفيديو"
+    }
+}
 
-                        RoyalTVSourceTile(
-                            "الفيديو",
-                            "مكتبة الصور والفيديو",
-                            "▣",
-                            Modifier.weight(1f)
-                        ) {
-                            selectedSource = "الفيديو"
-                        }
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.Center
+) {
+    RoyalTVSourceTile(
+        "بث الملكي",
+        "استقبال H.264",
+        R.drawable.ic_royal_cast,
+        Modifier.fillMaxWidth(0.5f)
+    ) {
+        incomingStreamActive = false
+        selectedSource = "بث الملكي"
+    }
+}
 
-                        RoyalTVSourceTile(
-                            "بث الملكي",
-                            "استقبال H.264",
-                            "LIVE",
-                            Modifier.weight(1f)
-                        ) {
-                            incomingStreamActive = false
-                            selectedSource = "بث الملكي"
-                        }
-                    
                     }
                 }
             }
