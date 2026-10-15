@@ -19,7 +19,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BasicMarquee
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -261,15 +260,20 @@ fun RoyalTVMusicPlayer(
         startTrack(next)
     }
 
-    LaunchedEffect(Unit) {
-        if (ContextCompat.checkSelfPermission(context, permissionName) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            refreshLibrary()
-        } else {
-            libraryMessage = "اسمح بالوصول إلى الموسيقى لتحميل المكتبة."
-        }
+    
+LaunchedEffect(Unit) {
+    if (
+        ContextCompat.checkSelfPermission(
+            context,
+            permissionName
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+        refreshLibrary()
+    } else {
+        permissionLauncher.launch(permissionName)
     }
+}
+
 
     LaunchedEffect(player, isPlaying) {
         while (player != null && isPlaying) {
