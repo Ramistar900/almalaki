@@ -987,64 +987,81 @@ Box(
                         Spacer(
                             Modifier.height(if (compact) 8.dp else 18.dp)
                         )
+Box(
+    modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(14.dp))
+        .background(Color.White.copy(alpha = 0.07f))
+        .border(
+            width = 1.dp,
+            color = Color.White.copy(alpha = 0.10f),
+            shape = RoundedCornerShape(14.dp)
+        )
+        .padding(
+            horizontal = 12.dp,
+            vertical = 5.dp
+        )
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Slider(
+            value = (
+                draggingPosition ?: positionMs.toFloat()
+            ).coerceIn(
+                0f,
+                durationMs.coerceAtLeast(1).toFloat()
+            ),
+            onValueChange = {
+                draggingPosition = it
+            },
+            onValueChangeFinished = {
+                draggingPosition?.let { target ->
+                    try {
+                        player?.seekTo(target.toInt())
+                        positionMs = target.toInt()
+                    } catch (_: Exception) {
+                        // تجاهل تعذر تغيير الموضع.
+                    }
+                }
 
-Slider(
-    value = (
-        draggingPosition ?: positionMs.toFloat()
-    ).coerceIn(
-        0f,
-        durationMs.coerceAtLeast(1).toFloat()
-    ),
-    onValueChange = {
-        draggingPosition = it
-    },
-    onValueChangeFinished = {
-        draggingPosition?.let { target ->
-            try {
-                player?.seekTo(target.toInt())
-                positionMs = target.toInt()
-            } catch (_: Exception) {
-                // تجاهل تعذر تغيير الموضع.
-            }
+                draggingPosition = null
+            },
+            valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
+            enabled = player != null,
+            colors = SliderDefaults.colors(
+                thumbColor = MusicGold,
+                activeTrackColor = MusicGold,
+                inactiveTrackColor = Color.White.copy(alpha = 0.30f),
+                disabledThumbColor = MusicGold.copy(alpha = 0.45f),
+                disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
+                disabledInactiveTrackColor = Color.White.copy(alpha = 0.15f)
+            )
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                musicTime(
+                    draggingPosition?.toInt() ?: positionMs
+                ),
+                color = MusicGold,
+                fontSize = 12.sp
+            )
+
+            Text(
+                musicTime(durationMs),
+                color = MusicPearl.copy(alpha = 0.75f),
+                fontSize = 12.sp
+            )
         }
-
-        draggingPosition = null
-    },
-    valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
-    enabled = player != null,
-    colors = SliderDefaults.colors(
-        thumbColor = MusicGold,
-        activeTrackColor = MusicGold,
-        inactiveTrackColor = Color.White.copy(alpha = 0.30f),
-        disabledThumbColor = MusicGold.copy(alpha = 0.45f),
-        disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
-        disabledInactiveTrackColor = Color.White.copy(alpha = 0.15f)
-    )
-)
-
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                musicTime(
-                                    draggingPosition?.toInt() ?: positionMs
-                                ),
-                                color = MusicPearl.copy(alpha = 0.65f),
-                                fontSize = 12.sp
-                            )
-
-                            Text(
-                                musicTime(durationMs),
-                                color = MusicPearl.copy(alpha = 0.65f),
-                                fontSize = 12.sp
-                            )
-                        }
-
-                        Spacer(
-                            Modifier.height(if (compact) 8.dp else 15.dp)
-                        )
+    }
+}
 
  
 Row(
