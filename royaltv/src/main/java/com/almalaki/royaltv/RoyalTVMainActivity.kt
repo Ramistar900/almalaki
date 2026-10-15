@@ -1266,7 +1266,14 @@ selectedSource == "موسيقى" -> {
         }
     )
 }
-
+selectedSource == "الفيديو" -> {
+    RoyalTVVideoLibrary(
+        modifier = Modifier.fillMaxSize(),
+        onBack = {
+            selectedSource = null
+        }
+    )
+}
 
             
             selectedSource != null -> {
