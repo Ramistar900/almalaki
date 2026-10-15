@@ -1,14 +1,13 @@
-
 package com.almalaki.royaltv
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,34 +21,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
 
@@ -76,7 +59,8 @@ private data class RoyalMusicTrack(
     val title: String,
     val artist: String,
     val uri: Uri,
-    val duration: Int
+    val duration: Int,
+    val albumArt: Uri?
 )
 
 private fun queryRoyalMusic(context: Context): List<RoyalMusicTrack> {
@@ -87,7 +71,8 @@ private fun queryRoyalMusic(context: Context): List<RoyalMusicTrack> {
         MediaStore.Audio.Media._ID,
         MediaStore.Audio.Media.TITLE,
         MediaStore.Audio.Media.ARTIST,
-        MediaStore.Audio.Media.DURATION
+        MediaStore.Audio.Media.DURATION,
+        MediaStore.Audio.Media.ALBUM_ID
     )
 
     try {
@@ -98,39 +83,58 @@ private fun queryRoyalMusic(context: Context): List<RoyalMusicTrack> {
             null,
             "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
         )?.use { cursor ->
-            val idColumn =
+            val idCol =
                 cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-            val titleColumn =
+            val titleCol =
                 cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-            val artistColumn =
+            val artistCol =
                 cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-            val durationColumn =
+            val durationCol =
                 cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val albumCol =
+                cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
 
             while (cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn)
-                val title = cursor.getString(titleColumn) ?: "مقطع صوتي"
-                val artist = cursor.getString(artistColumn)
-                    ?.takeUnless { it == "<unknown>" }
+                val id = cursor.getLong(idCol)
+
+                val title = cursor.getString(titleCol)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "مقطع صوتي"
+
+                val artist = cursor.getString(artistCol)
+                    ?.takeUnless {
+                        it == "<unknown>" || it.isBlank()
+                    }
                     ?: "فنان غير معروف"
-                val duration = cursor.getInt(durationColumn).coerceAtLeast(0)
-                val uri = Uri.withAppendedPath(collection, id.toString())
+
+                val duration =
+                    cursor.getInt(durationCol).coerceAtLeast(0)
+
+                val albumId = cursor.getLong(albumCol)
 
                 if (duration > 0) {
-                    result.add(
-                        RoyalMusicTrack(
-                            id = id,
-                            title = title,
-                            artist = artist,
-                            uri = uri,
-                            duration = duration
-                        )
+                    result += RoyalMusicTrack(
+                        id = id,
+                        title = title,
+                        artist = artist,
+                        uri = Uri.withAppendedPath(
+                            collection,
+                            id.toString()
+                        ),
+                        duration = duration,
+                        albumArt = if (albumId > 0L) {
+                            Uri.parse(
+                                "content://media/external/audio/albumart/$albumId"
+                            )
+                        } else {
+                            null
+                        }
                     )
                 }
             }
         }
     } catch (_: Exception) {
-        // تعالج الواجهة حالة عدم القدرة على قراءة المكتبة.
+        // تُعرض رسالة المكتبة بدل إيقاف التطبيق.
     }
 
     return result
@@ -151,27 +155,47 @@ fun RoyalTVMusicPlayer(
     liveAlpha: Float = 1f
 ) {
     val context = LocalContext.current
-    val preferences = remember {
-        context.getSharedPreferences("royal_music_preferences", Context.MODE_PRIVATE)
+
+    val prefs = remember {
+        context.getSharedPreferences(
+            "royal_music_preferences",
+            Context.MODE_PRIVATE
+        )
     }
 
-    var tracks by remember { mutableStateOf<List<RoyalMusicTrack>>(emptyList()) }
-    var selectedIndex by remember { mutableIntStateOf(-1) }
+    var tracks by remember {
+        mutableStateOf<List<RoyalMusicTrack>>(emptyList())
+    }
+
+    var selectedId by remember { mutableStateOf<Long?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var positionMs by remember { mutableIntStateOf(0) }
     var durationMs by remember { mutableIntStateOf(0) }
     var searchText by remember { mutableStateOf("") }
-    var showFavorites by remember { mutableStateOf(false) }
+
     var favorites by remember {
-        mutableStateOf(preferences.getStringSet("favorites", emptySet()) ?: emptySet())
+        mutableStateOf(
+            prefs.getStringSet("favorites", emptySet())?.toSet()
+                ?: emptySet()
+        )
     }
+
     var shuffleEnabled by remember { mutableStateOf(false) }
+
+    // 0 = إيقاف التكرار، 1 = تكرار الأغنية، 2 = تكرار القائمة
     var repeatMode by remember { mutableIntStateOf(0) }
+
+    var showLibrary by remember { mutableStateOf(false) }
+    var libraryTab by remember { mutableIntStateOf(0) }
+
+    var message by remember {
+        mutableStateOf("جارٍ تجهيز مكتبة الموسيقى")
+    }
+
+    var draggingPosition by remember { mutableStateOf<Float?>(null) }
     var completionCount by remember { mutableIntStateOf(0) }
     var handledCompletion by remember { mutableIntStateOf(0) }
-    var draggingPosition by remember { mutableStateOf<Float?>(null) }
-    var libraryMessage by remember { mutableStateOf("جارٍ تجهيز مكتبة الموسيقى") }
 
     val permissionName = if (Build.VERSION.SDK_INT >= 33) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -181,22 +205,25 @@ fun RoyalTVMusicPlayer(
 
     fun refreshLibrary() {
         tracks = queryRoyalMusic(context)
-        libraryMessage = if (tracks.isEmpty()) {
-            "لم نعثر على ملفات موسيقى. تأكد من وجود ملفات صوتية ومنح الإذن."
+
+        message = if (tracks.isEmpty()) {
+            "لم نعثر على ملفات موسيقى. تحقق من وجود الملفات ومنح الإذن."
         } else {
-            "تم العثور على ${tracks.size} مقطع صوتي"
+            "${tracks.size} مقطع صوتي متاح • المكتبة المحلية"
         }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            refreshLibrary()
-        } else {
-            libraryMessage = "يلزم السماح بالوصول إلى الموسيقى لعرض المكتبة."
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                refreshLibrary()
+            } else {
+                message =
+                    "يلزم السماح بالوصول إلى الموسيقى لعرض المكتبة."
+            }
         }
-    }
 
     fun startTrack(index: Int) {
         if (tracks.isEmpty()) return
@@ -210,105 +237,128 @@ fun RoyalTVMusicPlayer(
             isPlaying = false
             positionMs = 0
             durationMs = track.duration
-            selectedIndex = safeIndex
+            selectedId = track.id
 
-            val newPlayer = MediaPlayer.create(context, track.uri)
-            if (newPlayer == null) {
-                libraryMessage = "تعذّر تشغيل: ${track.title}"
+            val created = MediaPlayer.create(context, track.uri)
+
+            if (created == null) {
+                message = "تعذّر تشغيل ${track.title}"
                 return
             }
 
-            newPlayer.setOnCompletionListener {
+            created.setOnCompletionListener {
                 completionCount++
             }
-            newPlayer.isLooping = repeatMode == 1
-            newPlayer.start()
 
-            player = newPlayer
+            created.isLooping = repeatMode == 1
+            created.start()
+
+            player = created
             isPlaying = true
-            durationMs = newPlayer.duration.coerceAtLeast(0)
-            libraryMessage = "يعمل الآن: ${track.title}"
+            durationMs = created.duration.coerceAtLeast(0)
+            message = "يعمل الآن: ${track.title}"
         } catch (_: Exception) {
+            try {
+                player?.release()
+            } catch (_: Exception) {
+                // تجاهل خطأ تحرير المشغّل.
+            }
+
             player = null
             isPlaying = false
-            libraryMessage = "تعذّر تشغيل الملف الصوتي."
-            Toast.makeText(context, libraryMessage, Toast.LENGTH_SHORT).show()
+            message = "تعذّر تشغيل الملف الصوتي."
+
+            Toast.makeText(
+                context,
+                message,
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
     fun moveTrack(direction: Int) {
         if (tracks.isEmpty()) return
 
-        val next = when {
-            selectedIndex < 0 -> 0
-            shuffleEnabled && tracks.size > 1 -> {
-                var candidate = selectedIndex
-                repeat(4) {
-                    if (candidate == selectedIndex) {
-                        candidate = (tracks.indices).random()
-                    }
-                }
-                candidate
-            }
-            else -> {
-                val candidate = selectedIndex + direction
-                if (candidate < 0) tracks.lastIndex
-                else if (candidate > tracks.lastIndex) 0
-                else candidate
-            }
+        val currentIndex =
+            tracks.indexOfFirst { it.id == selectedId }
+
+        val nextIndex = if (shuffleEnabled && tracks.size > 1) {
+            (
+                tracks.indices
+                    .filter { it != currentIndex }
+                    .ifEmpty { tracks.indices.toList() }
+            ).random()
+        } else if (currentIndex < 0) {
+            0
+        } else {
+            (currentIndex + direction + tracks.size) % tracks.size
         }
-        startTrack(next)
+
+        startTrack(nextIndex)
     }
 
-    
-LaunchedEffect(Unit) {
-    if (
-        ContextCompat.checkSelfPermission(
-            context,
-            permissionName
-        ) == PackageManager.PERMISSION_GRANTED
-    ) {
-        refreshLibrary()
-    } else {
-        permissionLauncher.launch(permissionName)
-    }
-}
+    fun toggleFavorite() {
+        val id = selectedId?.toString() ?: return
+        val updated = favorites.toMutableSet()
 
+        if (!updated.add(id)) {
+            updated.remove(id)
+        }
+
+        favorites = updated.toSet()
+        prefs.edit().putStringSet("favorites", updated).apply()
+    }
+
+    LaunchedEffect(Unit) {
+        if (
+            ContextCompat.checkSelfPermission(
+                context,
+                permissionName
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            refreshLibrary()
+        } else {
+            permissionLauncher.launch(permissionName)
+        }
+    }
 
     LaunchedEffect(player, isPlaying) {
         while (player != null && isPlaying) {
             try {
-                positionMs = player?.currentPosition?.coerceAtLeast(0) ?: 0
-                durationMs = player?.duration?.coerceAtLeast(0) ?: 0
+                val activePlayer = player
+
+                if (activePlayer != null) {
+                    positionMs =
+                        activePlayer.currentPosition.coerceAtLeast(0)
+
+                    durationMs =
+                        activePlayer.duration.coerceAtLeast(0)
+                }
             } catch (_: Exception) {
                 isPlaying = false
             }
-            delay(400L)
+
+            delay(350L)
         }
     }
 
     LaunchedEffect(completionCount) {
         if (completionCount > handledCompletion) {
             handledCompletion = completionCount
-            when (repeatMode) {
-                1 -> {
-                    try {
-                        player?.seekTo(0)
-                        player?.start()
-                        isPlaying = true
-                        positionMs = 0
-                    } catch (_: Exception) {
-                        isPlaying = false
-                    }
-                }
-                2 -> moveTrack(1)
-                else -> {
-                    if (selectedIndex in 0 until tracks.lastIndex) {
-                        moveTrack(1)
-                    } else {
-                        isPlaying = false
-                        positionMs = durationMs
-                    }
+
+            if (repeatMode == 1) {
+                // عند تفعيل تكرار الأغنية، يتولى MediaPlayer التكرار.
+                positionMs = 0
+                isPlaying = player != null
+            } else {
+                val index =
+                    tracks.indexOfFirst { it.id == selectedId }
+
+                if (repeatMode == 2 || index < tracks.lastIndex) {
+                    moveTrack(1)
+                } else {
+                    isPlaying = false
+                    positionMs = durationMs
                 }
             }
         }
@@ -319,31 +369,66 @@ LaunchedEffect(Unit) {
             try {
                 player?.release()
             } catch (_: Exception) {
+                // تجاهل خطأ تحرير المشغّل عند الخروج.
             }
+
+            player = null
         }
     }
 
-    BackHandler { onBack() }
-
-    val currentTrack = tracks.getOrNull(selectedIndex)
-    val filteredTracks = tracks.filter { track ->
-        val matchesSearch =
-            track.title.contains(searchText, ignoreCase = true) ||
-            track.artist.contains(searchText, ignoreCase = true)
-        val matchesFavorite = !showFavorites || favorites.contains(track.id.toString())
-        matchesSearch && matchesFavorite
+    BackHandler {
+        if (showLibrary) {
+            showLibrary = false
+        } else {
+            onBack()
+        }
     }
 
-    val transition = rememberInfiniteTransition(label = "royal-disc")
-    val discRotation by transition.animateFloat(
+    val currentTrack = tracks.firstOrNull {
+        it.id == selectedId
+    }
+
+    val transition = rememberInfiniteTransition(
+        label = "royal-music-orbit"
+    )
+
+    val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(5000, easing = LinearEasing),
+            animation = tween(
+                durationMillis = 7000,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Restart
         ),
-        label = "disc-rotation"
+        label = "disc-spin"
     )
+
+    val pulse by transition.animateFloat(
+        initialValue = 0.75f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1100),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
+    val visibleTracks = tracks.filter { track ->
+        val matchesText =
+            track.title.contains(searchText, ignoreCase = true) ||
+                track.artist.contains(searchText, ignoreCase = true)
+
+        val matchesTab = when (libraryTab) {
+            1 -> favorites.contains(track.id.toString())
+            2 -> searchText.isBlank() ||
+                track.artist.contains(searchText, ignoreCase = true)
+            else -> true
+        }
+
+        matchesText && matchesTab
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -351,335 +436,130 @@ LaunchedEffect(Unit) {
             .background(
                 Brush.linearGradient(
                     listOf(
-                        Color(0xFF070A10),
-                        Color(0xFF14213A),
-                        Color(0xFF10332F),
-                        Color(0xFF080C12)
+                        Color(0xFF05070C),
+                        Color(0xFF101D32),
+                        Color(0xFF0B302C),
+                        Color(0xFF070A10)
                     )
                 )
             )
-            .padding(horizontal = 22.dp, vertical = 12.dp)
     ) {
         val compact = maxHeight < 430.dp
 
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        "ROYAL MUSIC",
-                        color = MusicGold,
-                        fontSize = if (compact) 12.sp else 15.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 3.sp
-                    )
-                    Text(
-                        "مكتبة الموسيقى",
-                        color = MusicPearl,
-                        fontSize = if (compact) 21.sp else 28.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-
-                MusicButton("رجوع", onClick = onBack)
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            Row(
+        if (showLibrary) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(18.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 26.dp, vertical = 18.dp)
             ) {
-                // منطقة القرص والمقطع الحالي
-                Column(
-                    modifier = Modifier
-                        .weight(0.9f)
-                        .fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(
-                                Brush.radialGradient(
-                                    listOf(
-                                        MusicEmerald.copy(alpha = 0.36f),
-                                        MusicBlue.copy(alpha = 0.6f),
-                                        MusicPanel
-                                    )
-                                )
-                            )
-                            .border(
-                                1.dp,
-                                MusicGold.copy(alpha = 0.45f),
-                                RoundedCornerShape(24.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val discSize = if (compact) 145.dp else 210.dp
-
-                        Box(
-                            modifier = Modifier
-                                .size(discSize)
-                                .rotate(if (isPlaying) discRotation else 0f)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        listOf(
-                                            Color(0xFF3D4653),
-                                            Color(0xFF0A0D13),
-                                            Color(0xFF252D39),
-                                            Color(0xFF080A0E)
-                                        )
-                                    )
-                                )
-                                .border(2.dp, MusicGold, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                repeat(5) { ring ->
-                                    Box(
-                                        Modifier
-                                            .padding(vertical = 3.dp)
-                                            .size((discSize.value - ring * 19).dp)
-                                            .border(
-                                                1.dp,
-                                                MusicPearl.copy(alpha = 0.10f),
-                                                CircleShape
-                                            )
-                                    )
-                                }
-                            }
-
-                            Box(
-                                Modifier
-                                    .size(if (compact) 48.dp else 64.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(MusicGold, Color(0xFFE7D29B))
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "♫",
-                                    color = MusicPanel,
-                                    fontSize = if (compact) 25.sp else 34.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-
+                    Column {
                         Text(
-                            if (isPlaying) "يعمل الآن" else "ROYAL AUDIO",
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 12.dp),
+                            "ROYAL MUSIC / LIBRARY",
                             color = MusicGold,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
                             letterSpacing = 2.sp
                         )
-                    }
 
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        currentTrack?.title ?: "اختر أغنية للبدء",
-                        color = MusicPearl,
-                        fontSize = if (compact) 16.sp else 21.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Text(
-                        currentTrack?.artist ?: "مكتبتك الموسيقية المحلية",
-                        color = MusicGold,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    val sliderValue = (
-                        draggingPosition ?: positionMs.toFloat()
-                    ).coerceIn(0f, durationMs.coerceAtLeast(1).toFloat())
-
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { draggingPosition = it },
-                        onValueChangeFinished = {
-                            draggingPosition?.let { target ->
-                                try {
-                                    val safe = target.toInt().coerceIn(
-                                        0,
-                                        durationMs.coerceAtLeast(0)
-                                    )
-                                    player?.seekTo(safe)
-                                    positionMs = safe
-                                } catch (_: Exception) {
-                                }
-                            }
-                            draggingPosition = null
-                        },
-                        valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
-                        enabled = player != null,
-                        colors = SliderDefaults.colors(
-                            thumbColor = MusicGold,
-                            activeTrackColor = MusicGold,
-                            inactiveTrackColor = MusicPearl.copy(alpha = 0.22f)
-                        )
-                    )
-
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
                         Text(
-                            musicTime(draggingPosition?.toInt() ?: positionMs),
-                            color = MusicPearl.copy(alpha = 0.7f),
-                            fontSize = 10.sp
-                        )
-                        Text(
-                            musicTime(durationMs),
-                            color = MusicPearl.copy(alpha = 0.7f),
-                            fontSize = 10.sp
-                        )
-                    }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        MusicButton("السابق", Modifier.weight(1f)) {
-                            moveTrack(-1)
-                        }
-                        MusicButton(
-                            if (isPlaying) "إيقاف مؤقت" else "تشغيل",
-                            Modifier.weight(1.3f),
-                            primary = true,
-                            enabled = player != null
-                        ) {
-                            try {
-                                val active = player
-                                if (active != null) {
-                                    if (active.isPlaying) {
-                                        active.pause()
-                                        isPlaying = false
-                                    } else {
-                                        if (positionMs >= durationMs && durationMs > 0) {
-                                            active.seekTo(0)
-                                            positionMs = 0
-                                        }
-                                        active.start()
-                                        isPlaying = true
-                                    }
-                                }
-                            } catch (_: Exception) {
-                            }
-                        }
-                        MusicButton("التالي", Modifier.weight(1f)) {
-                            moveTrack(1)
-                        }
-                    }
-
-                    Spacer(Modifier.height(5.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        MusicButton(
-                            if (shuffleEnabled) "عشوائي ✓" else "عشوائي",
-                            Modifier.weight(1f),
-                            active = shuffleEnabled
-                        ) {
-                            shuffleEnabled = !shuffleEnabled
-                        }
-
-                        MusicButton(
-                            when (repeatMode) {
-                                1 -> "تكرار الأغنية"
-                                2 -> "تكرار القائمة"
-                                else -> "التكرار: إيقاف"
-                            },
-                            Modifier.weight(1.5f),
-                            active = repeatMode != 0
-                        ) {
-                            repeatMode = (repeatMode + 1) % 3
-                            try {
-                                player?.isLooping = repeatMode == 1
-                            } catch (_: Exception) {
-                            }
-                        }
-
-                        MusicButton(
-                            if (currentTrack != null &&
-                                favorites.contains(currentTrack.id.toString())
-                            ) "♥" else "♡",
-                            Modifier.weight(0.6f),
-                            active = currentTrack != null &&
-                                favorites.contains(currentTrack.id.toString())
-                        ) {
-                            currentTrack?.let { track ->
-                                val id = track.id.toString()
-                                val updated = favorites.toMutableSet()
-                                if (updated.contains(id)) updated.remove(id)
-                                else updated.add(id)
-                                favorites = updated
-                                preferences.edit()
-                                    .putStringSet("favorites", updated)
-                                    .apply()
-                            }
-                        }
-                    }
-                }
-
-                // مكتبة الأغاني والبحث
-                Column(
-                    modifier = Modifier
-                        .weight(1.1f)
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(Color(0xD90B111D))
-                        .border(
-                            1.dp,
-                            MusicGold.copy(alpha = 0.30f),
-                            RoundedCornerShape(22.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            "مكتبتك",
+                            "مكتبة الموسيقى",
                             color = MusicPearl,
-                            fontSize = 19.sp,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
-                        MusicButton("تحديث", compact = true) {
-                            if (ContextCompat.checkSelfPermission(
+                    }
+
+                    MusicButton(
+                        "إغلاق المكتبة",
+                        onClick = { showLibrary = false }
+                    )
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF121D2D))
+                        .border(
+                            1.dp,
+                            MusicGold.copy(alpha = 0.5f),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "⌕",
+                        color = MusicGold,
+                        fontSize = 27.sp
+                    )
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Box(Modifier.weight(1f)) {
+                        if (searchText.isBlank()) {
+                            Text(
+                                "ابحث باسم الأغنية أو الفنان...",
+                                color = MusicPearl.copy(alpha = 0.5f),
+                                fontSize = 16.sp
+                            )
+                        }
+
+                        BasicTextField(
+                            value = searchText,
+                            onValueChange = { searchText = it },
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = MusicPearl,
+                                fontSize = 16.sp
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    MusicButton(
+                        "مسح",
+                        compact = true,
+                        onClick = { searchText = "" }
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MusicButton(
+                        "كل الأغاني",
+                        active = libraryTab == 0,
+                        onClick = { libraryTab = 0 }
+                    )
+
+                    MusicButton(
+                        "المفضلة ♥",
+                        active = libraryTab == 1,
+                        onClick = { libraryTab = 1 }
+                    )
+
+                    MusicButton(
+                        "الفنانون",
+                        active = libraryTab == 2,
+                        onClick = { libraryTab = 2 }
+                    )
+
+                    MusicButton(
+                        "تحديث",
+                        onClick = {
+                            if (
+                                ContextCompat.checkSelfPermission(
                                     context,
                                     permissionName
                                 ) == PackageManager.PERMISSION_GRANTED
@@ -689,258 +569,622 @@ LaunchedEffect(Unit) {
                                 permissionLauncher.launch(permissionName)
                             }
                         }
-                    }
+                    )
+                }
 
-                    Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(8.dp))
 
+                Text(
+                    message,
+                    color = MusicGold,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                if (visibleTracks.isEmpty()) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF182337))
-                            .border(
-                                1.dp,
-                                MusicGold.copy(alpha = 0.35f),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        if (searchText.isEmpty()) {
-                            Text(
-                                "ابحث باسم الأغنية أو الفنان…",
-                                color = MusicPearl.copy(alpha = 0.55f),
-                                fontSize = 12.sp
-                            )
-                        }
-                        BasicTextField(
-                            value = searchText,
-                            onValueChange = { searchText = it },
-                            singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                color = MusicPearl,
-                                fontSize = 13.sp
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                        Text(
+                            if (libraryTab == 1) {
+                                "لا توجد أغانٍ مفضلة بعد"
+                            } else {
+                                "لا توجد نتائج في المكتبة"
+                            },
+                            color = MusicPearl.copy(alpha = 0.7f),
+                            fontSize = 20.sp
                         )
                     }
+                  } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        items(
+                            items = visibleTracks,
+                            key = { it.id }
+                        ) { track ->
+                            val selected = track.id == selectedId
+                            val isFavorite =
+                                favorites.contains(track.id.toString())
 
-                    Spacer(Modifier.height(8.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MusicButton(
-                            "كل الأغاني",
-                            Modifier.weight(1f),
-                            active = !showFavorites,
-                            compact = true
-                        ) {
-                            showFavorites = false
-                        }
-                        MusicButton(
-                            "المفضلة",
-                            Modifier.weight(1f),
-                            active = showFavorites,
-                            compact = true
-                        ) {
-                            showFavorites = true
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        libraryMessage,
-                        color = MusicGold.copy(alpha = 0.9f),
-                        fontSize = 10.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Spacer(Modifier.height(6.dp))
-
-                    if (filteredTracks.isEmpty()) {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .padding(12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                if (showFavorites) {
-                                    "لا توجد أغانٍ مفضلة بعد"
-                                } else {
-                                    "لا توجد نتائج مطابقة"
-                                },
-                                color = MusicPearl.copy(alpha = 0.65f),
-                                textAlign = TextAlign.Center,
-                                fontSize = 13.sp
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            itemsIndexed(
-                                filteredTracks,
-                                key = { _, track -> track.id }
-                            ) { _, track ->
-                                val originalIndex = tracks.indexOfFirst {
-                                    it.id == track.id
-                                }
-                                val selected = selectedIndex >= 0 &&
-                                    tracks.getOrNull(selectedIndex)?.id == track.id
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(
-                                            if (selected) {
-                                                MusicGold.copy(alpha = 0.16f)
-                                            } else {
-                                                Color.White.copy(alpha = 0.035f)
-                                            }
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (selected) MusicGold.copy(alpha = 0.7f)
-                                            else Color.Transparent,
-                                            RoundedCornerShape(12.dp)
-                                        )
-                                        .clickable {
-                                            if (originalIndex >= 0) {
-                                                startTrack(originalIndex)
-                                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(13.dp))
+                                    .background(
+                                        if (selected) {
+                                            MusicGold.copy(alpha = 0.15f)
+                                        } else {
+                                            Color.White.copy(alpha = 0.045f)
                                         }
-                                        .padding(horizontal = 9.dp, vertical = 9.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        Modifier
-                                            .size(34.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(MusicBlue),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            if (selected && isPlaying) "♫" else "▶",
-                                            color = MusicGold,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (selected) MusicGold
+                                        else Color.White.copy(alpha = 0.06f),
+                                        RoundedCornerShape(13.dp)
+                                    )
+                                    .clickable {
+                                        val index =
+                                            tracks.indexOfFirst {
+                                                it.id == track.id
+                                            }
 
-                                    Spacer(Modifier.width(9.dp))
-
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            track.title,
-                                            color = if (selected) MusicGold else MusicPearl,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            track.artist,
-                                            color = MusicPearl.copy(alpha = 0.58f),
-                                            fontSize = 10.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                        if (index >= 0) {
+                                            startTrack(index)
+                                            showLibrary = false
+                                        }
                                     }
+                                    .padding(
+                                        horizontal = 12.dp,
+                                        vertical = 9.dp
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AlbumArtwork(
+                                    uri = track.albumArt,
+                                    modifier = Modifier.size(50.dp),
+                                    corner = 10.dp
+                                )
+
+                                Spacer(Modifier.width(12.dp))
+
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        track.title,
+                                        color = if (selected) MusicGold
+                                        else MusicPearl,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
 
                                     Text(
-                                        musicTime(track.duration),
+                                        track.artist,
                                         color = MusicPearl.copy(alpha = 0.65f),
-                                        fontSize = 10.sp
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+
+                                Text(
+                                    musicTime(track.duration),
+                                    color = MusicPearl.copy(alpha = 0.65f),
+                                    fontSize = 13.sp
+                                )
+
+                                Spacer(Modifier.width(12.dp))
+
+                                MusicButton(
+                                    if (isFavorite) "♥" else "♡",
+                                    compact = true,
+                                    active = isFavorite,
+                                    onClick = {
+                                        val updated =
+                                            favorites.toMutableSet()
+                                        val id = track.id.toString()
+
+                                        if (!updated.add(id)) {
+                                            updated.remove(id)
+                                        }
+
+                                        favorites = updated.toSet()
+                                        prefs.edit()
+                                            .putStringSet("favorites", updated)
+                                            .apply()
+                                    }
+                                )
                             }
                         }
                     }
                 }
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            // هوية ROYAL TV السفلية
-            Row(
+        } else {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF252B35))
-                    .border(
-                        1.dp,
-                        MusicGold.copy(alpha = 0.7f),
-                        RoundedCornerShape(10.dp)
+                    .fillMaxSize()
+                    .padding(
+                        horizontal = 28.dp,
+                        vertical = if (compact) 12.dp else 20.dp
                     )
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                Text(
-                    "الملكي",
-                    color = MusicGold,
-                    fontSize = if (compact) 14.sp else 18.sp,
-                    fontWeight = FontWeight.Black
-                )
-
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(MusicPanel)
-                        .padding(horizontal = 8.dp, vertical = 7.dp),
-                    contentAlignment = Alignment.CenterStart
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        tickerText.ifBlank { "أهلاً بكم في ROYAL TV" },
-                        color = MusicPearl,
-                        fontSize = if (compact) 9.sp else 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Column {
+                        Text(
+                            "ROYAL",
+                            color = MusicGold,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 5.sp
+                        )
+
+                        Text(
+                            "MUSIC SYSTEM",
+                            color = MusicPearl,
+                            fontSize = if (compact) 20.sp else 27.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 2.sp
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        MusicButton(
+                            "المكتبة  ☷",
+                            onClick = { showLibrary = true }
+                        )
+
+                        MusicButton(
+                              "رجوع",
+                            onClick = onBack
+                        )
+                    }
                 }
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        currentTime,
-                        color = MusicGold,
-                        fontSize = if (compact) 10.sp else 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        currentDate,
-                        color = MusicPearl,
-                        fontSize = if (compact) 7.sp else 9.sp,
-                        maxLines = 1
-                    )
-                }
+                Spacer(
+                    Modifier.height(if (compact) 8.dp else 16.dp)
+                )
 
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(Color(0xFF401820))
-                        .padding(horizontal = 7.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // القرص الرقمي والغطاء الفني
                     Box(
-                        Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFF4545).copy(alpha = liveAlpha))
-                    )
-                    Text(
-                        "مباشر",
-                        color = Color(0xFFFF6666),
-                        fontSize = if (compact) 9.sp else 11.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                        modifier = Modifier
+                            .weight(1.05f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(
+                                        Color(0xFF173C48),
+                                        Color(0xFF101D32),
+                                        Color(0xFF080C12)
+                                    )
+                                )
+                            )
+                            .border(
+                                1.dp,
+                                MusicGold.copy(alpha = 0.4f),
+                                RoundedCornerShape(28.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(if (compact) 190.dp else 285.dp)
+                                .rotate(if (isPlaying) rotation else 0f)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        listOf(
+                                            Color(0xFF435365),
+                                            Color(0xFF10151E),
+                                            Color(0xFF030508)
+                                        )
+                                    )
+                                )
+                                .border(
+                                    2.dp,
+                                    MusicGold.copy(alpha = 0.9f),
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            repeat(6) { ring ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(
+                                            (if (compact) 174 else 264).dp -
+                                                (ring * (if (compact) 23 else 35)).dp
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (ring % 2 == 0) {
+                                                MusicPearl.copy(alpha = 0.17f)
+                                            } else {
+                                                MusicGold.copy(alpha = 0.18f)
+                                            },
+                                            CircleShape
+                                        )
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(if (compact) 105.dp else 155.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF09111A))
+                                    .border(
+                                        2.dp,
+                                        MusicEmerald.copy(alpha = 0.8f),
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (currentTrack?.albumArt != null) {
+                                    AlbumArtwork(
+                                        uri = currentTrack.albumArt,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(7.dp),
+                                        corner = 100.dp
+                                    )
+                                } else {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            "♫",
+                                            color = MusicGold,
+                                            fontSize = if (compact) 36.sp else 54.sp,
+                                            fontWeight = FontWeight.Black
+                                        )
+
+                                        Text(
+                                            "ROYAL",
+                                            color = MusicPearl.copy(alpha = 0.7f),
+                                            fontSize = 10.sp,
+                                            letterSpacing = 2.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // موجات صوتية زخرفية
+        Row(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(
+                                    bottom = if (compact) 12.dp else 20.dp
+                                ),
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            repeat(23) { i ->
+                                val height =
+                                    (8 + ((i * 7 + (pulse * 13).toInt()) % 24)).dp
+
+                                Box(
+                                    modifier = Modifier
+                                        .width(4.dp)
+                                        .height(
+                                            if (isPlaying) height else 5.dp
+                                        )
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (i % 4 == 0) MusicGold
+                                            else MusicEmerald.copy(alpha = 0.9f)
+                                        )
+                                )
+                            }
+                        }
+
+                        Text(
+                            if (isPlaying) "●  PLAYING" else "◉  READY",
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 16.dp),
+                            color = if (isPlaying) MusicGold
+                            else MusicPearl.copy(alpha = 0.65f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp
+                        )
+                    }
+
+                    // معلومات الأغنية وأدوات التحكم
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            "NOW PLAYING",
+                            color = MusicGold,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 3.sp
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Text(
+                            currentTrack?.title ?: "اختر أغنيتك التالية",
+                            color = MusicPearl,
+                            fontSize = if (compact) 22.sp else 31.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Text(
+                            currentTrack?.artist ?: "مكتبة الموسيقى المحلية",
+                            color = MusicPearl.copy(alpha = 0.65f),
+                            fontSize = if (compact) 14.sp else 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(
+                            Modifier.height(if (compact) 8.dp else 18.dp)
+                        )
+
+                        Slider(
+                            value = (
+                                draggingPosition ?: positionMs.toFloat()
+                            ).coerceIn(
+                                0f,
+                                durationMs.coerceAtLeast(1).toFloat()
+                            ),
+                            onValueChange = {
+                                draggingPosition = it
+                            },
+                            onValueChangeFinished = {
+                                draggingPosition?.let { target ->
+                                    try {
+                                        player?.seekTo(target.toInt())
+                                        positionMs = target.toInt()
+                                    } catch (_: Exception) {
+                                        // تجاهل تعذر تغيير الموضع.
+                                    }
+                                }
+
+                                draggingPosition = null
+                            },
+                            valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
+                            enabled = player != null,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MusicGold,
+                                activeTrackColor = MusicGold,
+                                inactiveTrackColor =
+                                    MusicPearl.copy(alpha = 0.22f)
+                            )
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                musicTime(
+                                    draggingPosition?.toInt() ?: positionMs
+                                ),
+                                color = MusicPearl.copy(alpha = 0.65f),
+                                fontSize = 12.sp
+                            )
+
+                            Text(
+                                musicTime(durationMs),
+                                color = MusicPearl.copy(alpha = 0.65f),
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Spacer(
+                            Modifier.height(if (compact) 8.dp else 15.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            MusicButton(
+                                "|◀",
+                                Modifier.weight(1f),
+                                onClick = { moveTrack(-1) }
+                            )
+
+                            MusicButton(
+                                if (isPlaying) "Ⅱ  إيقاف" else "▶  تشغيل",
+                                               Modifier.weight(1.7f),
+                                primary = true,
+                                enabled = tracks.isNotEmpty(),
+                                onClick = {
+                                    try {
+                                        val active = player
+
+                                        if (active == null) {
+                                            if (tracks.isNotEmpty()) {
+                                                val index =
+                                                    if (selectedId == null) {
+                                                        0
+                                                    } else {
+                                                        tracks.indexOfFirst {
+                                                            it.id == selectedId
+                                                        }.coerceAtLeast(0)
+                                                    }
+
+                                                startTrack(index)
+                                            }
+                                        } else if (active.isPlaying) {
+                                            active.pause()
+                                            isPlaying = false
+                                        } else {
+                                            if (
+                                                durationMs > 0 &&
+                                                positionMs >= durationMs
+                                            ) {
+                                                active.seekTo(0)
+                                                positionMs = 0
+                                            }
+
+                                            active.start()
+                                            isPlaying = true
+                                        }
+                                    } catch (_: Exception) {
+                                        message = "تعذّر التحكم بالتشغيل."
+                                    }
+                                }
+                            )
+
+                            MusicButton(
+                                "▶|",
+                                Modifier.weight(1f),
+                                onClick = { moveTrack(1) }
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MusicButton(
+                                if (shuffleEnabled) "⤨ عشوائي ✓"
+                                else "⤨ عشوائي",
+                                Modifier.weight(1f),
+                                active = shuffleEnabled,
+                                onClick = {
+                                    shuffleEnabled = !shuffleEnabled
+                                }
+                            )
+
+                            MusicButton(
+                                when (repeatMode) {
+                                    1 -> "↻ تكرار الأغنية"
+                                    2 -> "↻ تكرار القائمة"
+                                    else -> "↻ التكرار: إيقاف"
+                                },
+                                Modifier.weight(1.5f),
+                                active = repeatMode != 0,
+                                onClick = {
+                                    repeatMode = (repeatMode + 1) % 3
+
+                                    try {
+                                        player?.isLooping = repeatMode == 1
+                                    } catch (_: Exception) {
+                                        // تجاهل تعذر تغيير التكرار.
+                                    }
+                                }
+                            )
+
+                            MusicButton(
+                                if (
+                                    currentTrack != null &&
+                                    favorites.contains(currentTrack.id.toString())
+                                ) {
+                                    "♥"
+                                } else {
+                                    "♡"
+                                },
+                                Modifier.weight(0.55f),
+                                active = currentTrack != null &&
+                                    favorites.contains(currentTrack.id.toString()),
+                                onClick = { toggleFavorite() }
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Text(
+                            message,
+                            color = MusicPearl.copy(alpha = 0.55f),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
+
+                // لا نرسم الهوية السفلية هنا؛ تبقى هوية ROYAL TV
+                // الأصلية في شاشة البث الأم ولا تتكرر داخل المشغّل.
             }
         }
+    }
+}
+
+@Composable
+private fun AlbumArtwork(
+    uri: Uri?,
+    modifier: Modifier = Modifier,
+    corner: androidx.compose.ui.unit.Dp = 12.dp
+) {
+    if (uri == null) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(corner))
+                .background(
+                    Brush.linearGradient(
+                        listOf(MusicBlue, MusicEmerald)
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "♫",
+                color = MusicGold,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+    } else {
+        AndroidView(
+            modifier = modifier
+                .clip(RoundedCornerShape(corner))
+                .background(MusicBlue),
+            factory = { ctx ->
+                ImageView(ctx).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setImageURI(uri)
+                }
+            },
+            update = { view ->
+                if (view.tag != uri.toString()) {
+                    view.tag = uri.toString()
+
+                    try {
+                        view.setImageURI(uri)
+                    } catch (_: Exception) {
+                        view.setImageDrawable(null)
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -954,39 +1198,53 @@ private fun MusicButton(
     compact: Boolean = false,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(10.dp)
-    Text(
-        text = label,
+    val shape = RoundedCornerShape(
+        if (compact) 10.dp else 13.dp
+    )
+
+    Box(
         modifier = modifier
+            .height(if (compact) 34.dp else 44.dp)
             .clip(shape)
             .background(
                 when {
                     !enabled -> Color.White.copy(alpha = 0.04f)
                     primary -> MusicGold
-                    active -> MusicEmerald.copy(alpha = 0.85f)
-                    else -> MusicBlue.copy(alpha = 0.92f)
+                    active -> MusicEmerald.copy(alpha = 0.88f)
+                    else -> MusicBlue.copy(alpha = 0.95f)
                 }
             )
             .border(
                 1.dp,
-                if (enabled) MusicGold.copy(alpha = 0.65f)
-                else MusicGold.copy(alpha = 0.18f),
+                if (enabled) {
+                    MusicGold.copy(
+                        alpha = if (active || primary) 0.9f else 0.45f
+                    )
+                } else {
+                    MusicGold.copy(alpha = 0.15f)
+                },
                 shape
             )
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(
-                horizontal = if (compact) 8.dp else 10.dp,
-                vertical = if (compact) 7.dp else 10.dp
-            ),
-        color = when {
-            !enabled -> MusicPearl.copy(alpha = 0.3f)
-            primary -> MusicPanel
-            else -> MusicPearl
-        },
-        fontSize = if (compact) 10.sp else 12.sp,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-    )
+            .clickable(
+                enabled = enabled,
+                onClick = onClick
+            )
+            .focusable(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = when {
+                !enabled -> MusicPearl.copy(alpha = 0.3f)
+                primary -> MusicPanel
+                else -> MusicPearl
+            },
+            fontSize = if (compact) 11.sp else 13.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+    }
 }
