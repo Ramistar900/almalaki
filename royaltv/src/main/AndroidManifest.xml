@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- الوصول إلى مكتبة الموسيقى -->
 <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- مكتبة الصور والفيديو في ROYAL TV -->
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
 <!-- دعم أجهزة Android 12 والإصدارات الأقدم -->
 <uses-permission
