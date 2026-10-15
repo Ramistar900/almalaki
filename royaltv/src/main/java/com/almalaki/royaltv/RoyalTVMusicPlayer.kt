@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.alpha
 import android.Manifest
 import android.content.Context
@@ -473,26 +476,23 @@ fun RoyalTVMusicPlayer(
     ) {
         val compact = maxHeight < 430.dp
         
-                Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            MusicSpectrum[spectrumStep].copy(
-                                alpha = 0.24f * pulse
-                            ),
-                            MusicSpectrum[
-                                (spectrumStep + 3) %
-                                    (MusicSpectrum.size - 1)
-                            ].copy(alpha = 0.12f * pulse),
-                            Color.Transparent
-                        ),
-                        radius = 950f
-                    )
-                )
-                .alpha(0.9f)
-        )
+Image(
+    painter = painterResource(
+        id = R.drawable.royal_music_nature
+    ),
+    contentDescription = null,
+    contentScale = ContentScale.Crop,
+    modifier = Modifier
+        .fillMaxSize()
+        .clip(RoundedCornerShape(18.dp))
+)
+
+Box(
+    modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black.copy(alpha = 0.42f))
+)
+
 
         if (showLibrary) {
             Column(
