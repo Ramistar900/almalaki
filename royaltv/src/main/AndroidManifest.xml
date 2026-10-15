@@ -5,6 +5,13 @@
         android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- الوصول إلى مكتبة الموسيقى -->
+<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+<!-- دعم أجهزة Android 12 والإصدارات الأقدم -->
+<uses-permission
+    android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
