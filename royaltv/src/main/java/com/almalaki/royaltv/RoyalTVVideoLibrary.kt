@@ -1,5 +1,11 @@
 package com.almalaki.royaltv
 
+import android.graphics.Bitmap
+import android.os.CancellationSignal
+import android.util.Size
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import android.Manifest
@@ -571,20 +577,69 @@ fun RoyalTVVideoLibrary(
                                     verticalArrangement =
                                         Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(100.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(VideoBlue),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "▶",
-                                            color = gold,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
-                                    }
+                                    
+val thumbnail by produceState<Bitmap?>(
+    initialValue = null,
+    key1 = video.uri
+) {
+    value = withContext(Dispatchers.IO) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                context.contentResolver.loadThumbnail(
+                    video.uri,
+                    Size(640, 360),
+                    CancellationSignal()
+                )
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+}
+
+Box(
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(120.dp)
+        .clip(RoundedCornerShape(10.dp))
+        .background(VideoBlue),
+    contentAlignment = Alignment.Center
+) {
+    if (thumbnail != null) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                ImageView(ctx).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                }
+            },
+            update = { imageView ->
+                imageView.setImageBitmap(thumbnail)
+            }
+        )
+    } else {
+        Text(
+            text = "▶",
+            color = gold,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+
+    Text(
+        text = "▶",
+        modifier = Modifier
+            .background(
+                VideoBlack.copy(alpha = 0.65f),
+                RoundedCornerShape(50)
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        color = gold,
+        fontWeight = FontWeight.ExtraBold
+    )
+}
+
 
                                     Text(
                                         text = video.title,
