@@ -1043,127 +1043,139 @@ Box(
                             Modifier.height(if (compact) 8.dp else 15.dp)
                         )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            MusicButton(
-                                "|◀",
-                                Modifier.weight(1f),
-                                onClick = { moveTrack(-1) }
-                            )
+ 
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(10.dp),
+    verticalAlignment = Alignment.CenterVertically
+) {
+    MusicButton(
+        "⏪",
+        Modifier.weight(1f),
+        onClick = { moveTrack(-1) }
+    )
 
-                            MusicButton(
-                                if (isPlaying) "Ⅱ  إيقاف" else "▶  تشغيل",
-                                               Modifier.weight(1.7f),
-                                primary = true,
-                                enabled = tracks.isNotEmpty(),
-                                onClick = {
-                                    try {
-                                        val active = player
+    MusicButton(
+        "🔂",
+        Modifier.weight(1f),
+        active = repeatMode == 1,
+        onClick = {
+            repeatMode = if (repeatMode == 1) 0 else 1
+            try {
+                player?.isLooping = repeatMode == 1
+            } catch (_: Exception) {
+            }
+        }
+    )
 
-                                        if (active == null) {
-                                            if (tracks.isNotEmpty()) {
-                                                val index =
-                                                    if (selectedId == null) {
-                                                        0
-                                                    } else {
-                                                        tracks.indexOfFirst {
-                                                            it.id == selectedId
-                                                        }.coerceAtLeast(0)
-                                                    }
+    MusicButton(
+        if (isPlaying) "⏸️" else "▶️",
+        Modifier.weight(1.2f),
+        primary = true,
+        enabled = tracks.isNotEmpty(),
+        onClick = {
+            try {
+                val active = player
 
-                                                startTrack(index)
-                                            }
-                                        } else if (active.isPlaying) {
-                                            active.pause()
-                                            isPlaying = false
-                                        } else {
-                                            if (
-                                                durationMs > 0 &&
-                                                positionMs >= durationMs
-                                            ) {
-                                                active.seekTo(0)
-                                                positionMs = 0
-                                            }
-
-                                            active.start()
-                                            isPlaying = true
-                                        }
-                                    } catch (_: Exception) {
-                                        message = "تعذّر التحكم بالتشغيل."
-                                    }
-                                }
-                            )
-
-                            MusicButton(
-                                "▶|",
-                                Modifier.weight(1f),
-                                onClick = { moveTrack(1) }
-                            )
+                if (active == null) {
+                    if (tracks.isNotEmpty()) {
+                        val index = if (selectedId == null) {
+                            0
+                        } else {
+                            tracks.indexOfFirst {
+                                it.id == selectedId
+                            }.coerceAtLeast(0)
                         }
+                        startTrack(index)
+                    }
+                } else if (active.isPlaying) {
+                    active.pause()
+                    isPlaying = false
+                } else {
+                    if (
+                        durationMs > 0 &&
+                        positionMs >= durationMs
+                    ) {
+                        active.seekTo(0)
+                        positionMs = 0
+                    }
+                    active.start()
+                    isPlaying = true
+                }
+            } catch (_: Exception) {
+                message = "تعذّر التحكم بالتشغيل."
+            }
+        }
+    )
 
-                        Spacer(Modifier.height(8.dp))
+    MusicButton(
+        "🔂",
+        Modifier.weight(1f),
+        onClick = { moveTrack(1) }
+    )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            MusicButton(
-                                if (shuffleEnabled) "⤨ عشوائي ✓"
-                                else "⤨ عشوائي",
-                                Modifier.weight(1f),
-                                active = shuffleEnabled,
-                                onClick = {
-                                    shuffleEnabled = !shuffleEnabled
-                                }
-                            )
+    MusicButton(
+        "⏩",
+        Modifier.weight(1f),
+        onClick = { moveTrack(1) }
+    )
+}
 
-                            MusicButton(
-                                when (repeatMode) {
-                                    1 -> "↻ تكرار الأغنية"
-                                    2 -> "↻ تكرار القائمة"
-                                    else -> "↻ التكرار: إيقاف"
-                                },
-                                Modifier.weight(1.5f),
-                                active = repeatMode != 0,
-                                onClick = {
-                                    repeatMode = (repeatMode + 1) % 3
+Spacer(Modifier.height(8.dp))
 
-                                    try {
-                                        player?.isLooping = repeatMode == 1
-                                    } catch (_: Exception) {
-                                        // تجاهل تعذر تغيير التكرار.
-                                    }
-                                }
-                            )
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically
+) {
+    MusicButton(
+        "🔀",
+        Modifier.weight(1f),
+        active = shuffleEnabled,
+        onClick = {
+            shuffleEnabled = !shuffleEnabled
+        }
+    )
 
-                            MusicButton(
-                                if (
-                                    currentTrack != null &&
-                                    favorites.contains(currentTrack.id.toString())
-                                ) {
-                                    "♥"
-                                } else {
-                                    "♡"
-                                },
-                                Modifier.weight(0.55f),
-                                active = currentTrack != null &&
-                                    favorites.contains(currentTrack.id.toString()),
-                                onClick = { toggleFavorite() }
-                            )
-                        }
+    MusicButton(
+        when (repeatMode) {
+            1 -> "🔂"
+            2 -> "🔁"
+            else -> "🔁"
+        },
+        Modifier.weight(1f),
+        active = repeatMode != 0,
+        onClick = {
+            repeatMode = (repeatMode + 1) % 3
+            try {
+                player?.isLooping = repeatMode == 1
+            } catch (_: Exception) {
+            }
+        }
+    )
 
-                        Spacer(Modifier.height(8.dp))
+    MusicButton(
+        if (
+            currentTrack != null &&
+            favorites.contains(currentTrack.id.toString())
+        ) "♥" else "♡",
+        Modifier.weight(1f),
+        active = currentTrack != null &&
+            favorites.contains(currentTrack.id.toString()),
+        onClick = { toggleFavorite() }
+    )
+}
 
-                        Text(
-                            message,
-                            color = MusicPearl.copy(alpha = 0.55f),
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+Spacer(Modifier.height(8.dp))
+
+Text(
+    message,
+    color = MusicPearl.copy(alpha = 0.55f),
+    fontSize = 11.sp,
+    maxLines = 1,
+    overflow = TextOverflow.Ellipsis
+)
+
                     }
                 }
 
