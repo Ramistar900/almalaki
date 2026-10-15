@@ -286,24 +286,30 @@ fun RoyalTVVideoLibrary(
         }
     }
 
+    
     fun goBack() {
         when {
             selectedVideo != null -> selectedVideo = null
+
             section == "معاينة" -> {
-                section = "الصور"
+                section = "شبكة الصور"
                 slideshowRunning = false
             }
+
             section == "الشرائح" -> {
                 slideshowRunning = false
                 section = "الرئيسية"
             }
+
             section != "الرئيسية" -> {
                 slideshowRunning = false
                 section = "الرئيسية"
             }
+
             else -> onBack()
         }
     }
+    
 
     BackHandler { goBack() }
 
@@ -468,11 +474,13 @@ fun RoyalTVVideoLibrary(
                                             gold.copy(alpha = 0.7f),
                                             RoundedCornerShape(18.dp)
                                         )
-                                        .clickable {
-                                            refreshLibrary()
-                                            section = "الصور"
-                                            selectedImageIndex = 0
-                                        }
+                                        
+.clickable {
+    refreshLibrary()
+    section = "شبكة الصور"
+    selectedImageIndex = 0
+}
+
                                         .padding(20.dp),
                                     verticalArrangement =
                                         Arrangement.spacedBy(10.dp)
@@ -672,8 +680,113 @@ Box(
                         }
                     }
                 }
+                
+                "شبكة الصور" -> {
+                    if (!canReadImages) {
+                        RoyalMediaEmptyState(
+                            message = "يلزم إذن الوصول إلى الصور",
+                            action = "منح الإذن",
+                            onAction = {
+                                permissionLauncher.launch(
+                                    royalMediaPermissionList()
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else if (images.isEmpty()) {
+                        RoyalMediaEmptyState(
+                            message = "لا توجد صور متاحة على الجهاز",
+                            action = "تحديث المكتبة",
+                            onAction = { refreshLibrary() },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                            columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(
+                                minSize = 150.dp
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(10.dp),
+                            verticalArrangement =
+                                Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(
+                                count = images.size,
+                                key = { index -> images[index].id }
+                            ) { index ->
+                                val image = images[index]
 
-                "الصور", "الشرائح" -> {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(panel)
+                                        .border(
+                                            1.dp,
+                                            gold.copy(alpha = 0.55f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable {
+                                            selectedImageIndex = index
+                                            section = "معاينة"
+                                        }
+                                        .padding(8.dp)
+                                ) {
+                                    AndroidView(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(110.dp)
+                                            .clip(
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .background(VideoBlue),
+                                        factory = { ctx ->
+                                            ImageView(ctx).apply {
+                                                scaleType =
+                                                    ImageView.ScaleType.CENTER_CROP
+                                            }
+                                        },
+                                        update = { imageView ->
+                                            val uriKey =
+                                                image.uri.toString()
+
+                                            if (imageView.tag != uriKey) {
+                                                imageView.tag = uriKey
+                                                imageView.setImageURI(
+                                                    image.uri
+                                                )
+                                            }
+                                        }
+                                    )
+
+                                    Spacer(
+                                        Modifier.height(8.dp)
+                                    )
+
+                                    Text(
+                                        text = image.title,
+                                        color = pearl,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Text(
+                                        text = "عرض الصورة  ◉",
+                                        color = gold,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+
+                "معاينة", "الشرائح" -> {
                     if (!canReadImages) {
                         RoyalMediaEmptyState(
                             message = "يلزم إذن الوصول إلى الصور",
