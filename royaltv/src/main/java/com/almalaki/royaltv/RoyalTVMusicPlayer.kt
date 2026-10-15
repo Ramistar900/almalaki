@@ -1,5 +1,6 @@
 package com.almalaki.royaltv
 
+import androidx.compose.ui.draw.alpha
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -53,6 +54,16 @@ private val MusicPearl = Color(0xFFDCE5EE)
 private val MusicBlue = Color(0xFF172B4D)
 private val MusicEmerald = Color(0xFF176B60)
 private val MusicPanel = Color(0xFF080C12)
+private val MusicSpectrum = listOf(
+    Color(0xFFFF3B5C),
+    Color(0xFFFF9D3D),
+    Color(0xFFFFE45E),
+    Color(0xFF42F59B),
+    Color(0xFF35D9FF),
+    Color(0xFF7067FF),
+    Color(0xFFE65CFF),
+    Color(0xFFFF3B5C)
+)
 
 private data class RoyalMusicTrack(
     val id: Long,
@@ -152,7 +163,8 @@ fun RoyalTVMusicPlayer(
     tickerText: String = "",
     currentTime: String = "--:--",
     currentDate: String = "",
-    liveAlpha: Float = 1f
+    liveAlpha: Float = 1f,
+    showIdentity: Boolean = false
 ) {
     val context = LocalContext.current
 
