@@ -64,16 +64,6 @@ private val MusicSpectrum = listOf(
     Color(0xFFE65CFF),
     Color(0xFFFF3B5C)
 )
-private val MusicSpectrum = listOf(
-    Color(0xFFFF3B5C),
-    Color(0xFFFF9D3D),
-    Color(0xFFFFE45E),
-    Color(0xFF42F59B),
-    Color(0xFF35D9FF),
-    Color(0xFF7067FF),
-    Color(0xFFE65CFF),
-    Color(0xFFFF3B5C)
-)
 
 private data class RoyalMusicTrack(
     val id: Long,
