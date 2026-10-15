@@ -205,6 +205,7 @@ private fun royalDurationLabel(durationMs: Long): String {
     }
 }
 
+
 @Composable
 fun RoyalTVVideoLibrary(
     modifier: Modifier = Modifier,
@@ -215,42 +216,23 @@ fun RoyalTVVideoLibrary(
     var canReadImages by remember {
         mutableStateOf(royalHasImagePermission(context))
     }
-
     var canReadVideos by remember {
         mutableStateOf(royalHasVideoPermission(context))
     }
-
     var images by remember {
         mutableStateOf<List<RoyalLocalMedia>>(emptyList())
     }
-
     var videos by remember {
         mutableStateOf<List<RoyalLocalMedia>>(emptyList())
     }
-
-    var section by remember {
-        mutableStateOf("الرئيسية")
-    }
-
-    var selectedImageIndex by remember {
-        mutableIntStateOf(0)
-    }
-
+    var section by remember { mutableStateOf("الرئيسية") }
+    var selectedImageIndex by remember { mutableIntStateOf(0) }
     var selectedVideo by remember {
         mutableStateOf<RoyalLocalMedia?>(null)
     }
-
-    var slideshowRunning by remember {
-        mutableStateOf(false)
-    }
-
-    var slideshowSeconds by remember {
-        mutableIntStateOf(5)
-    }
-
-    var fitImage by remember {
-        mutableStateOf(true)
-    }
+    var slideshowRunning by remember { mutableStateOf(false) }
+    var slideshowSeconds by remember { mutableIntStateOf(5) }
+    var fitImage by remember { mutableStateOf(true) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -293,7 +275,6 @@ fun RoyalTVVideoLibrary(
             images.isNotEmpty()
         ) {
             delay(slideshowSeconds * 1000L)
-
             selectedImageIndex =
                 (selectedImageIndex + 1) % images.size
         }
@@ -301,51 +282,53 @@ fun RoyalTVVideoLibrary(
 
     fun goBack() {
         when {
-            selectedVideo != null -> {
-                selectedVideo = null
-            }
-
+            selectedVideo != null -> selectedVideo = null
             section == "معاينة" -> {
                 section = "الصور"
                 slideshowRunning = false
             }
-
             section == "الشرائح" -> {
                 slideshowRunning = false
                 section = "الرئيسية"
             }
-
             section != "الرئيسية" -> {
                 slideshowRunning = false
                 section = "الرئيسية"
             }
-
             else -> onBack()
         }
     }
 
-    BackHandler {
-        goBack()
-    }
+    BackHandler { goBack() }
+
+    val gold = VideoGold
+    val pearl = VideoPearl
+    val panel = Color(0xFF111B2B)
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(VideoBlack)
-            .padding(10.dp)
+            .padding(horizontal = 22.dp, vertical = 14.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(bottom = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "ROYAL MEDIA",
-                color = VideoGold,
-                fontWeight = FontWeight.ExtraBold
-            )
+            Column {
+                Text(
+                    text = "ROYAL MEDIA",
+                    color = gold,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = "مكتبة الوسائط المحلية",
+                    color = pearl.copy(alpha = 0.68f)
+                )
+            }
 
             RoyalVideoButton(
                 text = "‹ رجوع",
@@ -368,7 +351,7 @@ fun RoyalTVVideoLibrary(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                color = VideoPearl,
+                color = pearl,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -385,11 +368,10 @@ fun RoyalTVVideoLibrary(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = "اسمح بالوصول إلى الصور والفيديو الموجودة على الجهاز",
-                        color = VideoPearl,
+                        text = "اسمح بالوصول إلى الصور والفيديو لعرض ملفات جهازك",
+                        color = pearl,
                         textAlign = TextAlign.Center
                     )
-
                     RoyalVideoButton(
                         text = "منح الإذن",
                         onClick = {
@@ -405,112 +387,268 @@ fun RoyalTVVideoLibrary(
                 "الرئيسية" -> {
                     Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxWidth()
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Spacer(Modifier.height(10.dp))
-
                         Text(
-                            text = "مكتبة الصور والفيديو",
-                            color = VideoPearl,
+                            text = "مكتبتك، بأسلوب ملكي",
+                            color = pearl,
                             fontWeight = FontWeight.ExtraBold
                         )
-
                         Text(
-                            text = "تشغيل الملفات المحلية دون إعادة ضغطها",
-                            color = VideoPearl.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
+                            text = "اختر محتواك المحلي واستمتع بالمشاهدة على الشاشة الكبيرة.",
+                            color = pearl.copy(alpha = 0.68f)
                         )
 
-                        RoyalVideoButton(
-                            text = "▧ معرض الصور (${images.size})",
-                            onClick = {
-                                section = "الصور"
-                                selectedImageIndex = 0
-                                refreshLibrary()
+                        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(16.dp),
+                            verticalArrangement =
+                                Arrangement.spacedBy(16.dp)
+                        ) {
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(panel)
+                                        .border(
+                                            1.dp,
+                                            gold.copy(alpha = 0.7f),
+                                            RoundedCornerShape(18.dp)
+                                        )
+                                        .clickable {
+                                            refreshLibrary()
+                                            section = "قائمة الفيديو"
+                                        }
+                                        .padding(20.dp),
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        text = "▶",
+                                        color = gold,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Text(
+                                        text = "مكتبة الفيديو",
+                                        color = pearl,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${videos.size} ملف فيديو",
+                                        color = gold
+                                    )
+                                    Text(
+                                        text = "فتح المكتبة  →",
+                                        color = pearl.copy(alpha = 0.8f)
+                                    )
+                                }
                             }
-                        )
 
-                        RoyalVideoButton(
-                            text = "▶ مكتبة الفيديو (${videos.size})",
-                            onClick = {
-                                section = "قائمة الفيديو"
-                                refreshLibrary()
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(panel)
+                                        .border(
+                                            1.dp,
+                                            gold.copy(alpha = 0.7f),
+                                            RoundedCornerShape(18.dp)
+                                        )
+                                        .clickable {
+                                            refreshLibrary()
+                                            section = "الصور"
+                                            selectedImageIndex = 0
+                                        }
+                                        .padding(20.dp),
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        text = "▧",
+                                        color = gold,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Text(
+                                        text = "معرض الصور",
+                                        color = pearl,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${images.size} صورة",
+                                        color = gold
+                                    )
+                                    Text(
+                                        text = "فتح المعرض  →",
+                                        color = pearl.copy(alpha = 0.8f)
+                                    )
+                                }
                             }
-                        )
+                        }
 
-                        RoyalVideoButton(
-                            text = "▤ عرض شرائح الصور",
-                            onClick = {
-                                section = "الشرائح"
-                                selectedImageIndex = 0
-                                slideshowRunning = true
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            RoyalVideoButton(
+                                text = "▤ عرض الشرائح",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    refreshLibrary()
+                                    selectedImageIndex = 0
+                                    section = "الشرائح"
+                                    slideshowRunning = true
+                                }
+                            )
+                            RoyalVideoButton(
+                                text = "↻ تحديث المكتبة",
+                                modifier = Modifier.weight(1f),
+                                onClick = { refreshLibrary() }
+                            )
+                        }
+                    }
+                }
+
+                "قائمة الفيديو" -> {
+                    if (!canReadVideos) {
+                        RoyalMediaEmptyState(
+                            message = "يلزم إذن الوصول إلى الفيديو",
+                            action = "منح الإذن",
+                            onAction = {
+                                permissionLauncher.launch(
+                                    royalMediaPermissionList()
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else if (videos.isEmpty()) {
+                        RoyalMediaEmptyState(
+                            message = "لا توجد فيديوهات متاحة على الجهاز",
+                            action = "تحديث المكتبة",
+                            onAction = { refreshLibrary() },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                            columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(
+                                minSize = 210.dp
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(12.dp),
+                            verticalArrangement =
+                                Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                count = videos.size,
+                                key = { index -> videos[index].id }
+                            ) { index ->
+                                val video = videos[index]
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(panel)
+                                        .border(
+                                            1.dp,
+                                            gold.copy(alpha = 0.45f),
+                                            RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            selectedVideo = video
+                                        }
+                                        .padding(14.dp),
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(100.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(VideoBlue),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "▶",
+                                            color = gold,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    }
+
+                                    Text(
+                                        text = video.title,
+                                        color = pearl,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement =
+                                            Arrangement.SpaceBetween,
+                                        verticalAlignment =
+                                            Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = royalDurationLabel(
+                                                video.durationMs
+                                            ),
+                                            color = gold
+                                        )
+                                        Text(
+                                            text = "تشغيل  ▶",
+                                            color = pearl
+                                        )
+                                    }
+                                }
                             }
-                        )
-
-                        RoyalVideoButton(
-                            text = "↻ تحديث المكتبة",
-                            onClick = { refreshLibrary() }
-                        )
+                        }
                     }
                 }
 
                 "الصور", "الشرائح" -> {
                     if (!canReadImages) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = "يلزم إذن الوصول إلى الصور",
-                                    color = VideoPearl,
-                                    textAlign = TextAlign.Center
+                        RoyalMediaEmptyState(
+                            message = "يلزم إذن الوصول إلى الصور",
+                            action = "منح الإذن",
+                            onAction = {
+                                permissionLauncher.launch(
+                                    royalMediaPermissionList()
                                 )
-
-                                RoyalVideoButton(
-                                    text = "منح الإذن",
-                                    onClick = {
-                                        permissionLauncher.launch(
-                                            royalMediaPermissionList()
-                                        )
-                                    }
-                                )
-                            }
-                        }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
                     } else if (images.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "لا توجد صور متاحة. حدّث المكتبة للتحقق مجددًا.",
-                                color = VideoPearl,
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                        RoyalMediaEmptyState(
+                            message = "لا توجد صور متاحة على الجهاز",
+                            action = "تحديث المكتبة",
+                            onAction = { refreshLibrary() },
+                            modifier = Modifier.weight(1f)
+                        )
                     } else {
                         val safeIndex = selectedImageIndex.coerceIn(
                             0,
                             images.lastIndex
                         )
-
                         val media = images[safeIndex]
 
                         AnimatedContent(
                             targetState = media.uri,
                             modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .weight(1f),
                             transitionSpec = {
                                 fadeIn() togetherWith fadeOut()
                             },
@@ -525,12 +663,8 @@ fun RoyalTVVideoLibrary(
                                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                                 ViewGroup.LayoutParams.MATCH_PARENT
                                             )
-
                                         scaleType =
                                             ImageView.ScaleType.FIT_CENTER
-
-                                        adjustViewBounds = true
-
                                         setBackgroundColor(
                                             android.graphics.Color.BLACK
                                         )
@@ -544,9 +678,7 @@ fun RoyalTVVideoLibrary(
                                             ImageView.ScaleType.CENTER_CROP
                                         }
 
-                                    if (
-                                        imageView.tag != imageUri.toString()
-                                    ) {
+                                    if (imageView.tag != imageUri.toString()) {
                                         imageView.tag = imageUri.toString()
                                         imageView.setImageURI(imageUri)
                                     }
@@ -558,8 +690,8 @@ fun RoyalTVVideoLibrary(
                             text = "${safeIndex + 1} / ${images.size} — ${media.title}",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 5.dp),
-                            color = VideoPearl,
+                                .padding(vertical = 6.dp),
+                            color = pearl,
                             textAlign = TextAlign.Center,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -581,7 +713,6 @@ fun RoyalTVVideoLibrary(
                                         }
                                 }
                             )
-
                             RoyalVideoButton(
                                 text = "التالي",
                                 modifier = Modifier.weight(1f),
@@ -590,47 +721,33 @@ fun RoyalTVVideoLibrary(
                                         (safeIndex + 1) % images.size
                                 }
                             )
+                            RoyalVideoButton(
+                                text = if (fitImage) "ملء الشاشة" else "احتواء",
+                                modifier = Modifier.weight(1f),
+                                onClick = { fitImage = !fitImage }
+                            )
                         }
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            RoyalVideoButton(
-                                text = if (fitImage) {
-                                    "ملء الشاشة"
-                                } else {
-                                    "احتواء الصورة"
-                                },
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    fitImage = !fitImage
-                                }
-                            )
-
-                            if (section == "الشرائح") {
+                        if (section == "الشرائح") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement =
+                                    Arrangement.spacedBy(10.dp)
+                            ) {
                                 RoyalVideoButton(
-                                    text = if (slideshowRunning) {
-                                        "إيقاف مؤقت"
-                                    } else {
-                                        "استئناف"
-                                    },
-                                    modifier = Modifier.weight(1f),
+                                    text = if (slideshowRunning) "إيقاف" else "استئناف",
                                     onClick = {
                                         slideshowRunning = !slideshowRunning
                                     }
                                 )
+                                Text(
+                                    text = "مدة الصورة: $slideshowSeconds ث",
+                                    color = gold
+                                )
                             }
-                        }
-
-                        if (section == "الشرائح") {
-                            Text(
-                                text = "مدة عرض الصورة: $slideshowSeconds ثانية",
-                                color = VideoGold,
-                                modifier = Modifier.padding(top = 5.dp)
-                            )
 
                             Slider(
                                 value = slideshowSeconds.toFloat(),
@@ -645,143 +762,48 @@ fun RoyalTVVideoLibrary(
                     }
                 }
 
-                
-                "قائمة الفيديو" -> {
-                    if (!canReadVideos) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = "يلزم إذن الوصول إلى الفيديو",
-                                    color = VideoPearl,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                RoyalVideoButton(
-                                    text = "منح الإذن",
-                                    onClick = {
-                                        permissionLauncher.launch(
-                                            royalMediaPermissionList()
-                                        )
-                                    }
-                                )
-                            }
-                        }
-                    } else if (videos.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "لم يتم العثور على فيديوهات متاحة.",
-                                color = VideoPearl,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
-                        
-                        
-LazyColumn(
-    modifier = Modifier
-        .weight(1f)
-        .fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(7.dp)
-) {
-    items(
-        items = videos,
-        key = { video -> video.id }
-    ) { video ->
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(9.dp))
-                .background(VideoBlue.copy(alpha = 0.65f))
-                .border(
-                    1.dp,
-                    VideoGold.copy(alpha = 0.45f),
-                    RoundedCornerShape(9.dp)
-                )
-                .clickable {
-                    selectedVideo = video
-                }
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = video.title,
-                    color = VideoPearl,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Text(
-                    text = royalDurationLabel(video.durationMs),
-                    color = VideoGold
-                )
-            }
-
-            Text(
-                text = "▶ تشغيل",
-                color = VideoGold,
-                modifier = Modifier.padding(start = 10.dp)
-            )
-        }
-    }
-}
-
-                    }
-                }
-
                 else -> {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "لا يوجد محتوى للعرض",
-                          color = VideoPearl
-                        )
-                    }
+                    RoyalMediaEmptyState(
+                        message = "لا يوجد محتوى للعرض",
+                        action = "العودة للرئيسية",
+                        onAction = { section = "الرئيسية" },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
+    }
+}
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+@Composable
+private fun RoyalMediaEmptyState(
+    message: String,
+    action: String,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "ROYAL",
-                color = VideoGold,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Text(
-                text = "● مباشر",
+                text = message,
                 color = VideoPearl,
-                fontWeight = FontWeight.SemiBold
+                textAlign = TextAlign.Center
+            )
+            RoyalVideoButton(
+                text = action,
+                onClick = onAction
             )
         }
     }
 }
+
+
 
 @Composable
 private fun keyVideoPlayer(
