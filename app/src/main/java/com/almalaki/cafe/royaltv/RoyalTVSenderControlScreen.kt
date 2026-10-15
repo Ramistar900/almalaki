@@ -147,13 +147,23 @@ fun RoyalTVSenderControlScreen(
             fontWeight = FontWeight.SemiBold
         )
 
-        Text(
-            text =
-                "أدخل عنوان IP لجهاز التلفزيون أو TV Box. " +
-                "يجب أن يكون الجهازان متصلين بالشبكة المحلية نفسها.",
-            color = SenderCream,
-            fontSize = 14.sp
-        )
+        
+Text(
+    text = "اكتشف شاشة ROYAL TV عبر Wi-Fi Direct، " +
+        "ثم اتصل بها ليُملأ عنوان IP تلقائيًا.",
+    color = SenderCream,
+    fontSize = 14.sp
+)
+
+RoyalTVSenderWiFiDirectPanel(
+    modifier = Modifier.fillMaxWidth(),
+    onReceiverHostFound = { host ->
+        receiverHost = host
+        isStarting = false
+        message = "تم تحديد عنوان الشاشة تلقائيًا: $host"
+    }
+)
+
 
         OutlinedTextField(
             value = receiverHost,
