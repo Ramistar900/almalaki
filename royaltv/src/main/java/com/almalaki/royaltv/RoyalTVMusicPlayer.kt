@@ -988,37 +988,40 @@ Box(
                             Modifier.height(if (compact) 8.dp else 18.dp)
                         )
 
-                        Slider(
-                            value = (
-                                draggingPosition ?: positionMs.toFloat()
-                            ).coerceIn(
-                                0f,
-                                durationMs.coerceAtLeast(1).toFloat()
-                            ),
-                            onValueChange = {
-                                draggingPosition = it
-                            },
-                            onValueChangeFinished = {
-                                draggingPosition?.let { target ->
-                                    try {
-                                        player?.seekTo(target.toInt())
-                                        positionMs = target.toInt()
-                                    } catch (_: Exception) {
-                                        // تجاهل تعذر تغيير الموضع.
-                                    }
-                                }
+Slider(
+    value = (
+        draggingPosition ?: positionMs.toFloat()
+    ).coerceIn(
+        0f,
+        durationMs.coerceAtLeast(1).toFloat()
+    ),
+    onValueChange = {
+        draggingPosition = it
+    },
+    onValueChangeFinished = {
+        draggingPosition?.let { target ->
+            try {
+                player?.seekTo(target.toInt())
+                positionMs = target.toInt()
+            } catch (_: Exception) {
+                // تجاهل تعذر تغيير الموضع.
+            }
+        }
 
-                                draggingPosition = null
-                            },
-                            valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
-                            enabled = player != null,
-                            colors = SliderDefaults.colors(
-                                thumbColor = MusicGold,
-                                activeTrackColor = MusicGold,
-                                inactiveTrackColor =
-                                    MusicPearl.copy(alpha = 0.22f)
-                            )
-                        )
+        draggingPosition = null
+    },
+    valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
+    enabled = player != null,
+    colors = SliderDefaults.colors(
+        thumbColor = MusicGold,
+        activeTrackColor = MusicGold,
+        inactiveTrackColor = Color.White.copy(alpha = 0.30f),
+        disabledThumbColor = MusicGold.copy(alpha = 0.45f),
+        disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
+        disabledInactiveTrackColor = Color.White.copy(alpha = 0.15f)
+    )
+)
+
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
