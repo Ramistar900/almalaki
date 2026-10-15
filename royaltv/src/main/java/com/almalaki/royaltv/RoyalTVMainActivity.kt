@@ -960,6 +960,9 @@ private fun BroadcastWindow(
                                 color = RoyalPearl.copy(alpha = 0.78f),
                                 textAlign = TextAlign.Center
                             )
+                            RoyalTVWiFiDirectHostPanel(
+                                 modifier = Modifier.fillMaxWidth()
+                          )
                         }
                     }
 
