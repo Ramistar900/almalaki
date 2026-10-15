@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -692,55 +691,54 @@ fun RoyalTVVideoLibrary(
                                 .weight(1f)
                                 .fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(7.dp)
-                        ) {
-                            items(
-                                items = videos,
-                                key = { it.id }
-                            ) { video ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(9.dp))
-                                        .background(
-                                            VideoBlue.copy(alpha = 0.65f)
-                                        )
-                                        .border(
-                                            1.dp,
-                                            VideoGold.copy(alpha = 0.45f),
-                                            RoundedCornerShape(9.dp)
-                                        )
-                                        .clickable {
-                                            selectedVideo = video
-                                        }
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(
-                                            text = video.title,
-                                            color = VideoPearl,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                        )
+                        {items(
+    count = videos.size,
+    key = { index -> videos[index].id }
+) { index ->
+    val video = videos[index]
 
-                                        Text(
-                                            text = royalDurationLabel(
-                                                video.durationMs
-                                            ),
-                                            color = VideoGold
-                                        )
-                                    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(9.dp))
+            .background(VideoBlue.copy(alpha = 0.65f))
+            .border(
+                1.dp,
+                VideoGold.copy(alpha = 0.45f),
+                RoundedCornerShape(9.dp)
+            )
+            .clickable {
+                selectedVideo = video
+            }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = video.title,
+                color = VideoPearl,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                                    Text(
-                                        text = "▶ تشغيل",
-                                        color = VideoGold,
-                                        modifier = Modifier.padding(start = 10.dp)
-                                    )
-                                }
-                            }
+            Text(
+                text = royalDurationLabel(video.durationMs),
+                color = VideoGold
+            )
+        }
+
+        Text(
+            text = "▶ تشغيل",
+            color = VideoGold,
+            modifier = Modifier.padding(start = 10.dp)
+        )
+    }
+                        }
+                        
                         }
                     }
                 }
