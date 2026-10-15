@@ -1236,6 +1236,7 @@ private fun AlbumArtwork(
     }
 }
 
+
 @Composable
 private fun MusicButton(
     label: String,
@@ -1244,11 +1245,16 @@ private fun MusicButton(
     active: Boolean = false,
     enabled: Boolean = true,
     compact: Boolean = false,
+    round: Boolean = false,
+    square: Boolean = false,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(
-        if (compact) 10.dp else 13.dp
-    )
+    val shape = when {
+        round -> CircleShape
+        square -> RoundedCornerShape(8.dp)
+        else -> RoundedCornerShape(if (compact) 10.dp else 13.dp)
+    }
+    
 
     Box(
         modifier = modifier
