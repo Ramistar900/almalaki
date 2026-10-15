@@ -64,6 +64,16 @@ private val MusicSpectrum = listOf(
     Color(0xFFE65CFF),
     Color(0xFFFF3B5C)
 )
+private val MusicSpectrum = listOf(
+    Color(0xFFFF3B5C),
+    Color(0xFFFF9D3D),
+    Color(0xFFFFE45E),
+    Color(0xFF42F59B),
+    Color(0xFF35D9FF),
+    Color(0xFF7067FF),
+    Color(0xFFE65CFF),
+    Color(0xFFFF3B5C)
+)
 
 private data class RoyalMusicTrack(
     val id: Long,
@@ -426,6 +436,13 @@ fun RoyalTVMusicPlayer(
         ),
         label = "pulse"
     )
+        val spectrumStep =
+        ((rotation / 45f).toInt() % (MusicSpectrum.size - 1))
+            .coerceIn(0, MusicSpectrum.size - 2)
+
+    val animatedSpectrum =
+        MusicSpectrum.drop(spectrumStep) +
+            MusicSpectrum.take(spectrumStep)
 
     val visibleTracks = tracks.filter { track ->
         val matchesText =
@@ -442,6 +459,7 @@ fun RoyalTVMusicPlayer(
         matchesText && matchesTab
     }
 
+    
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -455,8 +473,36 @@ fun RoyalTVMusicPlayer(
                     )
                 )
             )
+            .border(
+                width = 3.dp,
+                brush = Brush.sweepGradient(
+                    colors = animatedSpectrum
+                ),
+                shape = RoundedCornerShape(18.dp)
+            )
     ) {
         val compact = maxHeight < 430.dp
+        
+                Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            MusicSpectrum[spectrumStep].copy(
+                                alpha = 0.24f * pulse
+                            ),
+                            MusicSpectrum[
+                                (spectrumStep + 3) %
+                                    (MusicSpectrum.size - 1)
+                            ].copy(alpha = 0.12f * pulse),
+                            Color.Transparent
+                        ),
+                        radius = 950f
+                    )
+                )
+                .alpha(0.9f)
+        )
 
         if (showLibrary) {
             Column(
