@@ -233,6 +233,9 @@ fun RoyalTVVideoLibrary(
         mutableStateOf<List<RoyalLocalMedia>>(emptyList())
     }
     var section by remember { mutableStateOf("الرئيسية") }
+    var slideshowReturnSection by remember {
+    mutableStateOf("الرئيسية")
+    }
     var selectedImageIndex by remember { mutableIntStateOf(0) }
     var selectedVideo by remember {
         mutableStateOf<RoyalLocalMedia?>(null)
@@ -298,8 +301,8 @@ fun RoyalTVVideoLibrary(
             }
 
             section == "الشرائح" -> {
-                slideshowRunning = false
-                section = "الرئيسية"
+    slideshowRunning = false
+    section = slideshowReturnSection
             }
 
             section != "الرئيسية" -> {
@@ -513,15 +516,16 @@ fun RoyalTVVideoLibrary(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             RoyalVideoButton(
-                                text = "▤ عرض الشرائح",
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    refreshLibrary()
-                                    selectedImageIndex = 0
-                                    section = "الشرائح"
-                                    slideshowRunning = true
-                                }
-                            )
+    text = "▤ عرض الشرائح",
+    modifier = Modifier.weight(1f),
+    onClick = {
+        refreshLibrary()
+        selectedImageIndex = 0
+        slideshowReturnSection = "الرئيسية"
+        section = "الشرائح"
+        slideshowRunning = true
+    }
+)
                             RoyalVideoButton(
                                 text = "↻ تحديث المكتبة",
                                 modifier = Modifier.weight(1f),
