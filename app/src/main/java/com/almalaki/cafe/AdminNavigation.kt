@@ -98,6 +98,15 @@ fun AdminSidebar(
         ) {
             onSectionSelected(AdminSection.ACCOUNT_SETTINGS)
         }
+        
+        AdminMenuItem(
+            "📺",
+            "مركز تحكم ROYAL TV",
+            section == AdminSection.ROYAL_TV_CONTROL
+        ) {
+            onSectionSelected(AdminSection.ROYAL_TV_CONTROL)
+        }
+        
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -286,7 +295,6 @@ fun AdminHorizontalMenu(
                 onSectionSelected(AdminSection.TOP_PRODUCTS)
             }
         }
-
         item {
             AdminMenuItem(
                 "⚙",
@@ -296,7 +304,19 @@ fun AdminHorizontalMenu(
                 onSectionSelected(
                     AdminSection.ACCOUNT_SETTINGS
                 )
+        }
+            
+        
+        item {
+            AdminMenuItem(
+                "📺",
+                "مركز تحكم ROYAL TV",
+                section == AdminSection.ROYAL_TV_CONTROL
+            ) {
+                onSectionSelected(AdminSection.ROYAL_TV_CONTROL)
             }
         }
+        
     }
-}
+    }
+    
