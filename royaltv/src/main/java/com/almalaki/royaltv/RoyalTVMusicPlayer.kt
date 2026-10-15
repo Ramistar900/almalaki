@@ -1052,7 +1052,7 @@ Row(
     MusicButton(
         "⏪",
         Modifier.weight(1f),
-        "⏪",
+        onClick = { moveTrack(-1) }
     )
 
     MusicButton(
@@ -1117,7 +1117,7 @@ Row(
     MusicButton(
         "⏩",
         Modifier.weight(1f),
-         "⏩",
+         onClick = { moveTrack(1) }
     )
 }
 
