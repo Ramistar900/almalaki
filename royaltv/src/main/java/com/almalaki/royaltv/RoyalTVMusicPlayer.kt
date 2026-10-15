@@ -835,27 +835,15 @@ fun RoyalTVMusicPlayer(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(if (compact) 190.dp else 285.dp)
-                                .rotate(if (isPlaying) rotation else 0f)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        listOf(
-                                            Color(0xFF435365),
-                                            Color(0xFF10151E),
-                                            Color(0xFF030508)
-                                        )
-                                    )
-                                )
-                                .border(
-                                    2.dp,
-                                    MusicGold.copy(alpha = 0.9f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
+                    
+Box(
+    modifier = Modifier
+        .size(if (compact) 190.dp else 285.dp)
+        .rotate(if (isPlaying) rotation else 0f)
+        .clip(CircleShape),
+    contentAlignment = Alignment.Center
+) {
+    
                             repeat(6) { ring ->
                                 Box(
                                     modifier = Modifier
