@@ -94,20 +94,29 @@ fun RoyalTVSenderWiFiDirectPanel(
 
         try {
             manager.requestConnectionInfo(activeChannel) { info: WifiP2pInfo ->
-                if (info.groupFormed) {
-                    val host = info.groupOwnerAddress
-                        ?.hostAddress
-                        .orEmpty()
+                
+if (info.groupFormed) {
+    if (info.isGroupOwner) {
+        status =
+            "الهاتف أصبح مالك مجموعة الاتصال. " +
+                "أعد تهيئة Wi-Fi Direct من شاشة ROYAL TV " +
+                "ثم أعد الاتصال."
+    } else {
+        val host = info.groupOwnerAddress
+            ?.hostAddress
+            .orEmpty()
 
-                    if (host.isNotBlank()) {
-                        status = "تم الاتصال. عنوان شاشة ROYAL TV: $host"
-                        hostCallback.value.invoke(host)
-                    } else {
-                        status = "تم الاتصال، لكن عنوان الشاشة لم يظهر بعد."
-                    }
-                } else {
-                    status = "لم يكتمل الاتصال بعد. انتظر قليلًا."
-                }
+        if (host.isNotBlank()) {
+            status = "تم الاتصال. عنوان المجموعة: $host"
+            hostCallback.value.invoke(host)
+        } else {
+            status = "تم الاتصال، لكن عنوان المجموعة لم يظهر بعد."
+        }
+    }
+} else {
+    status = "لم يكتمل الاتصال بعد. انتظر قليلًا."
+}
+
             }
         } catch (_: SecurityException) {
             status = "تحقق من صلاحية الأجهزة القريبة أو الموقع."
