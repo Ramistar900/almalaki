@@ -914,6 +914,7 @@ Box(
     letterSpacing = 2.sp,
     textAlign = TextAlign.Center
 )
+                    }
 
                     // معلومات الأغنية وأدوات التحكم
                     Column(
