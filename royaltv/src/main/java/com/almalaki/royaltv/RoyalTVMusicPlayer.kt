@@ -901,82 +901,19 @@ Box(
         }
     }
 }
-    
-                            repeat(6) { ring ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(
-                                            (if (compact) 174 else 264).dp -
-                                                (ring * (if (compact) 23 else 35)).dp
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (ring % 2 == 0) {
-                                                MusicPearl.copy(alpha = 0.17f)
-                                            } else {
-                                                MusicGold.copy(alpha = 0.18f)
-                                            },
-                                            CircleShape
-                                        )
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(if (compact) 105.dp else 155.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF09111A))
-                                    .border(
-                                        2.dp,
-                                        MusicEmerald.copy(alpha = 0.8f),
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (currentTrack?.albumArt != null) {
-                                    AlbumArtwork(
-                                        uri = currentTrack.albumArt,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(7.dp),
-                                        corner = 100.dp
-                                    )
-                                } else {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            "♫",
-                                            color = MusicGold,
-                                            fontSize = if (compact) 36.sp else 54.sp,
-                                            fontWeight = FontWeight.Black
-                                        )
-
-                                        Text(
-                                            "ROYAL",
-                                            color = MusicPearl.copy(alpha = 0.7f),
-                                            fontSize = 10.sp,
-                                            letterSpacing = 2.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
 
                         Text(
-                            if (isPlaying) "●  PLAYING" else "◉  READY",
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 16.dp),
-                            color = if (isPlaying) MusicGold
-                            else MusicPearl.copy(alpha = 0.65f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 2.sp
-                        )
-                    }
+    if (isPlaying) "●  PLAYING" else "◉  READY",
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(top = 16.dp),
+    color = if (isPlaying) MusicGold
+    else MusicPearl.copy(alpha = 0.65f),
+    fontSize = 11.sp,
+    fontWeight = FontWeight.Bold,
+    letterSpacing = 2.sp,
+    textAlign = TextAlign.Center
+)
 
                     // معلومات الأغنية وأدوات التحكم
                     Column(
