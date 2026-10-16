@@ -353,17 +353,7 @@ Box(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = "ROYAL MEDIA",
-                    color = gold,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    text = "مكتبة الوسائط المحلية",
-                    color = pearl.copy(alpha = 0.68f)
-                )
-            }
+            
 
                         RoyalVideoButton(
                 text = "‹ رجوع",
@@ -427,15 +417,7 @@ Box(
                             .weight(1f),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Text(
-                            text = "مكتبتك، بأسلوب ملكي",
-                            color = pearl,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Text(
-                            text = "اختر محتواك المحلي واستمتع بالمشاهدة على الشاشة الكبيرة.",
-                            color = pearl.copy(alpha = 0.68f)
-                        )
+                    
 
                         androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                             columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
@@ -478,20 +460,6 @@ Image(
         .clip(RoundedCornerShape(12.dp)),
     contentScale = ContentScale.Crop
 )
-
-                                    Text(
-                                        text = "مكتبة الفيديو",
-                                        color = pearl,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${videos.size} ملف فيديو",
-                                        color = gold
-                                    )
-                                    Text(
-                                        text = "فتح المكتبة  →",
-                                        color = pearl.copy(alpha = 0.8f)
-                                    )
                                 }
                             }
 
@@ -529,20 +497,6 @@ Image(
         .clip(RoundedCornerShape(12.dp)),
     contentScale = ContentScale.Crop
 )
-
-                                    Text(
-                                        text = "معرض الصور",
-                                        color = pearl,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${images.size} صورة",
-                                        color = gold
-                                    )
-                                    Text(
-                                        text = "فتح المعرض  →",
-                                        color = pearl.copy(alpha = 0.8f)
-                                    )
                                 }
                             }
                         }
@@ -551,22 +505,11 @@ Image(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            RoyalVideoButton(
-    text = "▤ عرض الشرائح",
-    modifier = Modifier.weight(1f),
-    onClick = {
-        refreshLibrary()
-        selectedImageIndex = 0
-        slideshowReturnSection = "الرئيسية"
-        section = "الشرائح"
-        slideshowRunning = true
-    }
+                            
+                            RoyalVideoIconButton(
+    symbol = "↻",
+    onClick = { refreshLibrary() }
 )
-                            RoyalVideoButton(
-                                text = "↻ تحديث المكتبة",
-                                modifier = Modifier.weight(1f),
-                                onClick = { refreshLibrary() }
-                            )
                         }
                     }
                 }
@@ -742,7 +685,19 @@ Box(
                             modifier = Modifier.weight(1f)
                         )
                     } else {
-                        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+    RoyalVideoButton(
+        text = "▤ عرض الشرائح",
+        modifier = Modifier.fillMaxWidth(),
+        onClick = {
+            refreshLibrary()
+            selectedImageIndex = 0
+            slideshowReturnSection = "شبكة الصور"
+            section = "الشرائح"
+            slideshowRunning = true
+        }
+    )
+
+    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                             columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(
                                 minSize = 150.dp
                             ),
@@ -1003,6 +958,12 @@ AndroidView(
             }
         }
     }
+        RoyalTVBroadcastIdentity(
+    modifier = Modifier
+        .align(Alignment.BottomCenter)
+        .fillMaxWidth()
+        .height(60.dp)
+)
 }
 }
 
@@ -1111,6 +1072,33 @@ private fun RoyalVideoButton(
             fontWeight = FontWeight.SemiBold,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+@Composable
+private fun RoyalVideoIconButton(
+    symbol: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(50))
+            .background(VideoBlue.copy(alpha = 0.88f))
+            .border(
+                width = 1.dp,
+                color = VideoGold,
+                shape = RoundedCornerShape(50)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = symbol,
+            color = VideoGold,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
