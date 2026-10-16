@@ -61,6 +61,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+
 
 private val VideoGold = Color(0xFFB99A52)
 private val VideoPearl = Color(0xFFDCE5EE)
@@ -322,13 +326,26 @@ fun RoyalTVVideoLibrary(
     val pearl = VideoPearl
     val panel = Color(0xFF111B2B)
 
+    
+Box(
+    modifier = modifier.fillMaxSize()
+) {
+    Image(
+        painter = painterResource(
+            R.drawable.royal_video_library_bg
+        ),
+        contentDescription = null,
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop
+    )
+
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(VideoBlack)
             .padding(horizontal = 22.dp, vertical = 14.dp)
     ) {
         if (!immersiveImage) {
+            
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -449,11 +466,19 @@ fun RoyalTVVideoLibrary(
                                     verticalArrangement =
                                         Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Text(
-                                        text = "▶",
-                                        color = gold,
-                                        fontWeight = FontWeight.ExtraBold
-                                    )
+                                    
+Image(
+    painter = painterResource(
+        R.drawable.royal_video_library_videos
+    ),
+    contentDescription = "مكتبة الفيديو",
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(140.dp)
+        .clip(RoundedCornerShape(12.dp)),
+    contentScale = ContentScale.Crop
+)
+
                                     Text(
                                         text = "مكتبة الفيديو",
                                         color = pearl,
@@ -492,11 +517,19 @@ fun RoyalTVVideoLibrary(
                                     verticalArrangement =
                                         Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Text(
-                                        text = "▧",
-                                        color = gold,
-                                        fontWeight = FontWeight.ExtraBold
-                                    )
+                                    
+Image(
+    painter = painterResource(
+        R.drawable.royal_video_library_photos
+    ),
+    contentDescription = "معرض الصور",
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(140.dp)
+        .clip(RoundedCornerShape(12.dp)),
+    contentScale = ContentScale.Crop
+)
+
                                     Text(
                                         text = "معرض الصور",
                                         color = pearl,
@@ -970,6 +1003,7 @@ AndroidView(
             }
         }
     }
+}
 }
 
 @Composable
