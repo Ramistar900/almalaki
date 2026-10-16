@@ -830,40 +830,40 @@ Box(
                             },
                             label = "royal_image_transition"
                         ) { imageUri ->
-                            AndroidView(
-                                modifier = Modifier
-    .fillMaxSize()
-    .clickable {
-        immersiveImage = !immersiveImage
+                            
+AndroidView(
+    modifier = Modifier
+        .fillMaxSize()
+        .clickable {
+            immersiveImage = !immersiveImage
+        },
+    factory = { ctx ->
+        ImageView(ctx).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setBackgroundColor(
+                android.graphics.Color.BLACK
+            )
+        }
     },
-                                    ImageView(ctx).apply {
-                                        layoutParams =
-                                            ViewGroup.LayoutParams(
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                                ViewGroup.LayoutParams.MATCH_PARENT
-                                            )
-                                        scaleType =
-                                            ImageView.ScaleType.FIT_CENTER
-                                        setBackgroundColor(
-                                            android.graphics.Color.BLACK
-                                        )
-                                    }
-                                },
-                                update = { imageView ->
-                                    imageView.scaleType =
-                                        if (fitImage) {
-                                            ImageView.ScaleType.FIT_CENTER
-                                        } else {
-                                            ImageView.ScaleType.CENTER_CROP
-                                        }
+    update = { imageView ->
+        imageView.scaleType =
+            if (fitImage) {
+                ImageView.ScaleType.FIT_CENTER
+            } else {
+                ImageView.ScaleType.CENTER_CROP
+            }
 
-                                    if (imageView.tag != imageUri.toString()) {
-                                        imageView.tag = imageUri.toString()
-                                        imageView.setImageURI(imageUri)
-                                    }
-                                }
-                            )
-                        }
+        if (imageView.tag != imageUri.toString()) {
+            imageView.tag = imageUri.toString()
+            imageView.setImageURI(imageUri)
+        }
+    }
+)
+
 
                         
                         if (!immersiveImage) {
