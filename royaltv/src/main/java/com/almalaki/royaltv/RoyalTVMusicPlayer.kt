@@ -475,13 +475,24 @@ fun RoyalTVMusicPlayer(
             )
     ) {
         val compact = maxHeight < 430.dp
-        
+Image(
+    painter = painterResource(
+        id = R.drawable.royal_music_nature
+    ),
+    contentDescription = "خلفية الطبيعة",
+    modifier = Modifier
+        .fillMaxSize()
+        .clip(RoundedCornerShape(18.dp)),
+    contentScale = ContentScale.Crop
+)
+
 Box(
     modifier = Modifier
         .fillMaxSize()
         .clip(RoundedCornerShape(18.dp))
-        .background(Color(0xFF101D32))
+        .background(Color.Black.copy(alpha = 0.48f))
 )
+        
 
 Box(
     modifier = Modifier
@@ -839,6 +850,57 @@ Box(
         .clip(CircleShape),
     contentAlignment = Alignment.Center
 ) {
+    Image(
+        painter = painterResource(
+            id = R.drawable.royal_music_disc
+        ),
+        contentDescription = "قرص الموسيقى الملكي",
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop
+    )
+
+    Box(
+        modifier = Modifier
+            .size(if (compact) 100.dp else 148.dp)
+            .clip(CircleShape)
+            .background(Color(0xFF09111A))
+            .border(
+                2.dp,
+                MusicGold.copy(alpha = 0.85f),
+                CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (currentTrack?.albumArt != null) {
+            AlbumArtwork(
+                uri = currentTrack.albumArt,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(5.dp),
+                corner = 100.dp
+            )
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    "♫",
+                    color = MusicGold,
+                    fontSize = if (compact) 36.sp else 54.sp,
+                    fontWeight = FontWeight.Black
+                )
+
+                Text(
+                    "ROYAL TV",
+                    color = MusicPearl.copy(alpha = 0.7f),
+                    fontSize = 10.sp,
+                    letterSpacing = 2.sp
+                )
+            }
+        }
+    }
+}
     
                             repeat(6) { ring ->
                                 Box(
@@ -902,34 +964,6 @@ Box(
                             }
                         }
 
-                        // موجات صوتية زخرفية
-        Row(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(
-                                    bottom = if (compact) 12.dp else 20.dp
-                                ),
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            repeat(23) { i ->
-                                val height =
-                                    (8 + ((i * 7 + (pulse * 13).toInt()) % 24)).dp
-
-                                Box(
-                                    modifier = Modifier
-                                        .width(4.dp)
-                                        .height(
-                                            if (isPlaying) height else 5.dp
-                                        )
-                                        .clip(CircleShape)
-                                        .background(
-                                            if (i % 4 == 0) MusicGold
-                                            else MusicEmerald.copy(alpha = 0.9f)
-                                        )
-                                )
-                            }
-                        }
 
                         Text(
                             if (isPlaying) "●  PLAYING" else "◉  READY",
@@ -1025,14 +1059,14 @@ Box(
             },
             valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
             enabled = player != null,
-            colors = SliderDefaults.colors(
-                thumbColor = MusicGold,
-                activeTrackColor = MusicGold,
-                inactiveTrackColor = Color.White.copy(alpha = 0.30f),
-                disabledThumbColor = MusicGold.copy(alpha = 0.45f),
-                disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
-                disabledInactiveTrackColor = Color.White.copy(alpha = 0.15f)
-            )
+    colors = SliderDefaults.colors(
+    thumbColor = MusicGold,
+    activeTrackColor = MusicGold,
+    inactiveTrackColor = Color(0xFFB8C0CC),
+    disabledThumbColor = MusicGold.copy(alpha = 0.45f),
+    disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
+    disabledInactiveTrackColor = Color(0xFFB8C0CC)
+)
         )
 
         Row(
@@ -1059,21 +1093,22 @@ Box(
     }
 }
 
- 
-Row(
+ Row(
     modifier = Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(10.dp),
     verticalAlignment = Alignment.CenterVertically
 ) {
-    MusicButton(
-        "⏪",
-        Modifier.weight(1f),
+    MusicImageButton(
+        iconRes = R.drawable.royal_music_previous,
+        description = "الأغنية السابقة",
+        modifier = Modifier.weight(1f),
         onClick = { moveTrack(-1) }
     )
 
-    MusicButton(
-        "🔂",
-        Modifier.weight(1f),
+    MusicImageButton(
+        iconRes = R.drawable.royal_music_repeat_one,
+        description = "تكرار الأغنية الحالية",
+        modifier = Modifier.weight(1f),
         active = repeatMode == 1,
         onClick = {
             repeatMode = if (repeatMode == 1) 0 else 1
@@ -1084,9 +1119,14 @@ Row(
         }
     )
 
-    MusicButton(
-        if (isPlaying) "⏸️" else "▶️",
-        Modifier.weight(1.2f),
+    MusicImageButton(
+        iconRes = if (isPlaying) {
+            R.drawable.royal_music_pause
+        } else {
+            R.drawable.royal_music_play
+        },
+        description = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
+        modifier = Modifier.weight(1.2f),
         primary = true,
         enabled = tracks.isNotEmpty(),
         onClick = {
@@ -1124,16 +1164,11 @@ Row(
         }
     )
 
-    MusicButton(
-        "🔂",
-        Modifier.weight(1f),
+    MusicImageButton(
+        iconRes = R.drawable.royal_music_next,
+        description = "الأغنية التالية",
+        modifier = Modifier.weight(1f),
         onClick = { moveTrack(1) }
-    )
-
-    MusicButton(
-        "⏩",
-        Modifier.weight(1f),
-         onClick = { moveTrack(1) }
     )
 }
 
@@ -1144,27 +1179,25 @@ Row(
     horizontalArrangement = Arrangement.spacedBy(8.dp),
     verticalAlignment = Alignment.CenterVertically
 ) {
-    MusicButton(
-        "🔀",
-        Modifier.weight(1f),
+    MusicImageButton(
+        iconRes = R.drawable.royal_music_shuffle,
+        description = "تشغيل عشوائي",
+        modifier = Modifier.weight(1f),
         active = shuffleEnabled,
         onClick = {
             shuffleEnabled = !shuffleEnabled
         }
     )
 
-    MusicButton(
-        when (repeatMode) {
-            1 -> "🔂"
-            2 -> "🔁"
-            else -> "🔁"
-        },
-        Modifier.weight(1f),
-        active = repeatMode != 0,
+    MusicImageButton(
+        iconRes = R.drawable.royal_music_repeat,
+        description = "تكرار قائمة الأغاني",
+        modifier = Modifier.weight(1f),
+        active = repeatMode == 2,
         onClick = {
-            repeatMode = (repeatMode + 1) % 3
+            repeatMode = if (repeatMode == 2) 0 else 2
             try {
-                player?.isLooping = repeatMode == 1
+                player?.isLooping = false
             } catch (_: Exception) {
             }
         }
@@ -1181,6 +1214,7 @@ Row(
         onClick = { toggleFavorite() }
     )
 }
+    
 
 Spacer(Modifier.height(8.dp))
 
@@ -1248,6 +1282,61 @@ private fun AlbumArtwork(
                     }
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun MusicImageButton(
+    iconRes: Int,
+    description: String,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false,
+    active: Boolean = false,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    val shape = CircleShape
+
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(shape)
+            .background(
+                when {
+                    !enabled -> Color.White.copy(alpha = 0.04f)
+                    primary -> MusicGold.copy(alpha = 0.20f)
+                    active -> MusicEmerald.copy(alpha = 0.55f)
+                    else -> Color(0xFF101D32).copy(alpha = 0.80f)
+                }
+            )
+            .border(
+                width = if (primary) 2.dp else 1.dp,
+                color = when {
+                    !enabled -> MusicGold.copy(alpha = 0.20f)
+                    primary -> MusicGold
+                    active -> MusicGold.copy(alpha = 0.90f)
+                    else -> MusicGold.copy(alpha = 0.50f)
+                },
+                shape = shape
+            )
+            .clickable(
+                enabled = enabled,
+                onClick = onClick
+            )
+            .focusable(),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = iconRes),
+            contentDescription = description,
+            modifier = Modifier
+                .size(27.dp)
+                .then(
+                    if (enabled) Modifier
+                    else Modifier.alpha(0.35f)
+                ),
+            contentScale = ContentScale.Fit
         )
     }
 }
