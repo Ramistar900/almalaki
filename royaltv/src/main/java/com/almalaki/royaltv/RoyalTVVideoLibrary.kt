@@ -243,6 +243,7 @@ fun RoyalTVVideoLibrary(
     var slideshowRunning by remember { mutableStateOf(false) }
     var slideshowSeconds by remember { mutableIntStateOf(5) }
     var fitImage by remember { mutableStateOf(true) }
+    var immersiveImage by remember { mutableStateOf(false) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -327,6 +328,7 @@ fun RoyalTVVideoLibrary(
             .background(VideoBlack)
             .padding(horizontal = 22.dp, vertical = 14.dp)
     ) {
+        if (!immersiveImage) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -346,10 +348,11 @@ fun RoyalTVVideoLibrary(
                 )
             }
 
-            RoyalVideoButton(
+                        RoyalVideoButton(
                 text = "‹ رجوع",
                 onClick = { goBack() }
             )
+        }
         }
 
         if (selectedVideo != null) {
@@ -828,8 +831,11 @@ Box(
                             label = "royal_image_transition"
                         ) { imageUri ->
                             AndroidView(
-                                modifier = Modifier.fillMaxSize(),
-                                factory = { ctx ->
+                                modifier = Modifier
+    .fillMaxSize()
+    .clickable {
+        immersiveImage = !immersiveImage
+    },
                                     ImageView(ctx).apply {
                                         layoutParams =
                                             ViewGroup.LayoutParams(
@@ -859,49 +865,66 @@ Box(
                             )
                         }
 
-                        Text(
-                            text = "${safeIndex + 1} / ${images.size} — ${media.title}",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            color = pearl,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            RoyalVideoButton(
-                                text = "السابق",
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    selectedImageIndex =
-                                        if (safeIndex == 0) {
-                                            images.lastIndex
-                                        } else {
-                                            safeIndex - 1
-                                        }
-                                }
-                            )
-                            RoyalVideoButton(
-                                text = "التالي",
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    selectedImageIndex =
-                                        (safeIndex + 1) % images.size
-                                }
-                            )
-                            RoyalVideoButton(
-                                text = if (fitImage) "ملء الشاشة" else "احتواء",
-                                modifier = Modifier.weight(1f),
-                                onClick = { fitImage = !fitImage }
+                        
+                        if (!immersiveImage) {
+                            Text(
+                                text = "${safeIndex + 1} / ${images.size} — ${media.title}",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                color = pearl,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
+                        
 
-                        if (section == "الشرائح") {
+                        
+                        if (!immersiveImage) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement =
+                                    Arrangement.spacedBy(8.dp)
+                            ) {
+                                RoyalVideoButton(
+                                    text = "السابق",
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        selectedImageIndex =
+                                            if (safeIndex == 0) {
+                                                images.lastIndex
+                                            } else {
+                                                safeIndex - 1
+                                            }
+                                    }
+                                )
+
+                                RoyalVideoButton(
+                                    text = "التالي",
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        selectedImageIndex =
+                                            (safeIndex + 1) % images.size
+                                    }
+                                )
+
+                                RoyalVideoButton(
+                                    text = if (fitImage) {
+                                        "ملء الشاشة"
+                                    } else {
+                                        "احتواء"
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        fitImage = !fitImage
+                                    }
+                                )
+                            }
+                        }
+                        
+
+                        if (section == "الشرائح" && !immersiveImage) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
