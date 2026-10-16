@@ -476,15 +476,11 @@ fun RoyalTVMusicPlayer(
     ) {
         val compact = maxHeight < 430.dp
         
-Image(
-    painter = painterResource(
-        id = R.drawable.royal_music_nature
-    ),
-    contentDescription = null,
-    contentScale = ContentScale.Crop,
+Box(
     modifier = Modifier
         .fillMaxSize()
         .clip(RoundedCornerShape(18.dp))
+        .background(Color(0xFF101D32))
 )
 
 Box(
