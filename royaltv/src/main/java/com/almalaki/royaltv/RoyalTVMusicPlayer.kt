@@ -477,12 +477,10 @@ fun RoyalTVMusicPlayer(
         val compact = maxHeight < 430.dp
 Image(
     painter = painterResource(
-        id = R.drawable.royal_video_library_videos
+        id = R.drawable.royal_video_library_bg
     ),
-    contentDescription = "خلفية الطبيعة",
-    modifier = Modifier
-        .fillMaxSize()
-        .clip(RoundedCornerShape(18.dp)),
+    contentDescription = null,
+    modifier = Modifier.fillMaxSize(),
     contentScale = ContentScale.Crop
 )
 
@@ -1223,7 +1221,6 @@ private fun AlbumArtwork(
         )
     }
 }
-
 @Composable
 private fun MusicImageButton(
     iconRes: Int,
@@ -1236,46 +1233,66 @@ private fun MusicImageButton(
 ) {
     val shape = CircleShape
 
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .clip(shape)
-            .background(
-                when {
-                    !enabled -> Color.White.copy(alpha = 0.04f)
-                    primary -> MusicGold.copy(alpha = 0.20f)
-                    active -> MusicEmerald.copy(alpha = 0.55f)
-                    else -> Color(0xFF101D32).copy(alpha = 0.80f)
-                }
-            )
-            .border(
-                width = if (primary) 2.dp else 1.dp,
-                color = when {
-                    !enabled -> MusicGold.copy(alpha = 0.20f)
-                    primary -> MusicGold
-                    active -> MusicGold.copy(alpha = 0.90f)
-                    else -> MusicGold.copy(alpha = 0.50f)
-                },
-                shape = shape
-            )
-            .clickable(
-                enabled = enabled,
-                onClick = onClick
-            )
-            .focusable(),
+    BoxWithConstraints(
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = iconRes),
-            contentDescription = description,
+        // يتكيف حجم الزر مع المساحة المتاحة له.
+        val buttonSize = maxWidth
+            .coerceAtMost(maxHeight)
+            .coerceIn(48.dp, 88.dp)
+
+        Box(
             modifier = Modifier
-                .size(27.dp)
+                .size(buttonSize)
+                .clip(shape)
+                .background(
+                    when {
+                        !enabled ->
+                            Color.White.copy(alpha = 0.04f)
+
+                        primary ->
+                            MusicGold.copy(alpha = 0.18f)
+
+                        active ->
+                            MusicEmerald.copy(alpha = 0.35f)
+
+                        else ->
+                            Color.Transparent
+                    }
+                )
                 .then(
-                    if (enabled) Modifier
-                    else Modifier.alpha(0.35f)
-                ),
-            contentScale = ContentScale.Fit
-        )
+                    if (primary || active) {
+                        Modifier.border(
+                            width = 1.5.dp,
+                            color = MusicGold.copy(
+                                alpha = if (active) 0.95f else 0.85f
+                            ),
+                            shape = shape
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .clickable(
+                    enabled = enabled,
+                    onClick = onClick
+                )
+                .focusable(),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = description,
+                modifier = Modifier
+                    .fillMaxSize(0.70f)
+                    .then(
+                        if (enabled) Modifier
+                        else Modifier.alpha(0.35f)
+                    ),
+                contentScale = ContentScale.Fit
+            )
+        }
     }
 }
 
