@@ -477,7 +477,7 @@ fun RoyalTVMusicPlayer(
         val compact = maxHeight < 430.dp
 Image(
     painter = painterResource(
-        id = R.drawable.royal_music_nature
+        id = R.drawable.royal_video_library_videos
     ),
     contentDescription = "خلفية الطبيعة",
     modifier = Modifier
