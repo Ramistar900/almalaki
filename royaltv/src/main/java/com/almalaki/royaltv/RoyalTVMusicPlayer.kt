@@ -1,5 +1,6 @@
 package com.almalaki.royaltv
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -241,57 +242,63 @@ fun RoyalTVMusicPlayer(
                     "يلزم السماح بالوصول إلى الموسيقى لعرض المكتبة."
             }
         }
+        
+fun startTrack(index: Int) {
+    if (tracks.isEmpty()) return
 
-    fun startTrack(index: Int) {
-        if (tracks.isEmpty()) return
+    val safeIndex = index.coerceIn(0, tracks.lastIndex)
+    val track = tracks[safeIndex]
 
-        val safeIndex = index.coerceIn(0, tracks.lastIndex)
-        val track = tracks[safeIndex]
+    try {
+        val intent = Intent(
+            context,
+            RoyalTVMusicPlaybackService::class.java
+        ).apply {
+            action =
+                RoyalTVMusicPlaybackService.ACTION_START_PLAYLIST
 
-        try {
-            player?.release()
-            player = null
-            isPlaying = false
-            positionMs = 0
-            durationMs = track.duration
-            selectedId = track.id
+            putStringArrayListExtra(
+                RoyalTVMusicPlaybackService.EXTRA_URIS,
+                ArrayList(tracks.map { it.uri.toString() })
+            )
 
-            val created = MediaPlayer.create(context, track.uri)
+            putStringArrayListExtra(
+                RoyalTVMusicPlaybackService.EXTRA_TITLES,
+                ArrayList(tracks.map { it.title })
+            )
 
-            if (created == null) {
-                message = "تعذّر تشغيل ${track.title}"
-                return
-            }
+            putStringArrayListExtra(
+                RoyalTVMusicPlaybackService.EXTRA_ARTISTS,
+                ArrayList(tracks.map { it.artist })
+            )
 
-            created.setOnCompletionListener {
-                completionCount++
-            }
-
-            created.isLooping = repeatMode == 1
-            created.start()
-
-            player = created
-            isPlaying = true
-            durationMs = created.duration.coerceAtLeast(0)
-            message = "يعمل الآن: ${track.title}"
-        } catch (_: Exception) {
-            try {
-                player?.release()
-            } catch (_: Exception) {
-                // تجاهل خطأ تحرير المشغّل.
-            }
-
-            player = null
-            isPlaying = false
-            message = "تعذّر تشغيل الملف الصوتي."
-
-            Toast.makeText(
-                context,
-                message,
-                Toast.LENGTH_SHORT
-            ).show()
+            putExtra(
+                RoyalTVMusicPlaybackService.EXTRA_INDEX,
+                safeIndex
+            )
         }
+
+        androidx.core.content.ContextCompat.startForegroundService(
+            context,
+            intent
+        )
+
+        selectedId = track.id
+        positionMs = 0
+        durationMs = track.duration
+        isPlaying = true
+        message = "يعمل الآن: ${track.title}"
+    } catch (_: Exception) {
+        isPlaying = false
+        message = "تعذّر تشغيل الملف الصوتي."
+
+        Toast.makeText(
+            context,
+            message,
+            Toast.LENGTH_SHORT
+        ).show()
     }
+}
 
     fun moveTrack(direction: Int) {
         if (tracks.isEmpty()) return
@@ -1131,19 +1138,30 @@ Row(
         }
     )
 
-    MusicImageButton(
-        iconRes = R.drawable.royal_music_repeat_one,
-        description = "تكرار الأغنية الحالية",
-        modifier = Modifier.weight(1f),
-        active = repeatMode == 1,
-        onClick = {
-            repeatMode = if (repeatMode == 1) 0 else 1
-            try {
-                player?.isLooping = repeatMode == 1
-            } catch (_: Exception) {
-            }
+MusicImageButton(
+    iconRes = R.drawable.royal_music_repeat_one,
+    description = "تكرار الأغنية الحالية",
+    modifier = Modifier.weight(1f),
+    active = repeatMode == 1,
+    onClick = {
+        repeatMode = if (repeatMode == 1) 0 else 1
+
+        val intent = Intent(
+            context,
+            RoyalTVMusicPlaybackService::class.java
+        ).apply {
+            action =
+                RoyalTVMusicPlaybackService.ACTION_SET_REPEAT
+            putExtra(
+                RoyalTVMusicPlaybackService.EXTRA_REPEAT_ONE,
+                repeatMode == 1
+            )
         }
-    )
+
+        context.startService(intent)
+    }
+)
+
 
     MusicButton(
         if (
