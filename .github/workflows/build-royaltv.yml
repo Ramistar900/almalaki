@@ -1,3 +1,4 @@
+
 name: Build ROYAL TV APK
 
 on:
@@ -14,6 +15,7 @@ on:
       - 'gradlew'
       - 'gradlew.bat'
       - 'gradle/libs.versions.toml'
+      - '.github/workflows/build-royaltv.yml'
 
 jobs:
   build-royaltv:
@@ -46,9 +48,33 @@ jobs:
       - name: Build ROYAL TV Only
         run: gradle :royaltv:assembleDebug --no-daemon
 
+      - name: Audit ROYAL TV APK
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="royaltv/build/outputs/apk/debug/royaltv-debug.apk"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+
+          test -f "$APK"
+
+          echo "===== APK SHA-256 ====="
+          sha256sum "$APK"
+
+          echo "===== PACKAGE DETAILS ====="
+          "$AAPT" dump badging "$APK" | head -n 15
+
+          echo "===== DECLARED APK PERMISSIONS ====="
+          "$AAPT" dump permissions "$APK"
+
+          echo "===== SIGNATURE VERIFICATION ====="
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+
       - name: Upload ROYAL TV APK
         uses: actions/upload-artifact@v4
         with:
           name: ROYAL-TV-APK
           path: royaltv/build/outputs/apk/debug/royaltv-debug.apk
           if-no-files-found: error
+          
