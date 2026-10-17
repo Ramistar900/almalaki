@@ -1243,10 +1243,12 @@ private fun MusicImageButton(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        // يتكيف حجم الزر مع المساحة المتاحة له.
-        val buttonSize = maxWidth
-            .coerceAtMost(maxHeight)
-            .coerceIn(48.dp, 88.dp)
+        
+        // حجم متكيف مع مساحة الزر المتاحة.
+        val availableSize = maxWidth.coerceAtMost(maxHeight)
+        val buttonSize = (availableSize * 0.82f)
+            .coerceIn(32.dp, 88.dp)
+            
 
         Box(
             modifier = Modifier
@@ -1267,19 +1269,19 @@ private fun MusicImageButton(
                             Color.Transparent
                     }
                 )
+                
                 .then(
-                    if (primary || active) {
+                    if (active && !primary) {
                         Modifier.border(
                             width = 1.5.dp,
-                            color = MusicGold.copy(
-                                alpha = if (active) 0.95f else 0.85f
-                            ),
+                            color = MusicGold.copy(alpha = 0.95f),
                             shape = shape
                         )
                     } else {
                         Modifier
                     }
                 )
+                
                 .clickable(
                     enabled = enabled,
                     onClick = onClick
