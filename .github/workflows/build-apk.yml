@@ -56,6 +56,20 @@ jobs:
           test -s "$RUNNER_TEMP/almalaki-release.jks"
           echo "ALMALAKI_RELEASE_STORE_FILE=$RUNNER_TEMP/almalaki-release.jks" >> "$GITHUB_ENV"
 
+      - name: Verify Almalaki Release Keystore
+        env:
+          ALMALAKI_STORE_PASSWORD: ${{ secrets.ALMALAKI_STORE_PASSWORD }}
+          ALMALAKI_KEY_ALIAS: ${{ secrets.ALMALAKI_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -list -v \
+            -keystore "$RUNNER_TEMP/almalaki-release.jks" \
+            -storepass "$ALMALAKI_STORE_PASSWORD" \
+            -alias "$ALMALAKI_KEY_ALIAS" \
+            | grep -E 'Alias name:|Entry type:|SHA256:'
+
+
       - name: Build Almalaki Debug and Release
         env:
           ALMALAKI_STORE_PASSWORD: ${{ secrets.ALMALAKI_STORE_PASSWORD }}
