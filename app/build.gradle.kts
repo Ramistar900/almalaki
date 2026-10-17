@@ -4,6 +4,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val releaseStoreFile = System.getenv("ALMALAKI_RELEASE_STORE_FILE")
+val releaseStorePassword = System.getenv("ALMALAKI_STORE_PASSWORD")
+val releaseKeyAlias = System.getenv("ALMALAKI_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("ALMALAKI_KEY_PASSWORD")
+
 android {
     namespace = "com.almalaki.cafe"
     compileSdk = 35
@@ -14,6 +19,28 @@ android {
         targetSdk = 35
         versionCode = 2
         versionName = "1.1"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (
+                !releaseStoreFile.isNullOrBlank() &&
+                !releaseStorePassword.isNullOrBlank() &&
+                !releaseKeyAlias.isNullOrBlank() &&
+                !releaseKeyPassword.isNullOrBlank()
+            ) {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     compileOptions {
@@ -41,5 +68,4 @@ dependencies {
     implementation("io.ktor:ktor-client-android:3.2.1")
 
     implementation("androidx.window:window:1.4.0")
-
 }
