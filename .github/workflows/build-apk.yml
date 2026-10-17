@@ -14,6 +14,7 @@ on:
       - 'gradlew'
       - 'gradlew.bat'
       - 'gradle/libs.versions.toml'
+      - '.github/workflows/build-apk.yml'
 
 jobs:
   build-almalaki:
@@ -43,12 +44,37 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build Almalaki Only
-        run: gradle :app:assembleDebug --no-daemon
+      - name: Decode Almalaki Release Keystore
+        env:
+          ALMALAKI_KEYSTORE_BASE64: ${{ secrets.ALMALAKI_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ALMALAKI_KEYSTORE_BASE64"
+          printf '%s' "$ALMALAKI_KEYSTORE_BASE64" \
+            | base64 --decode > "$RUNNER_TEMP/almalaki-release.jks"
+          test -s "$RUNNER_TEMP/almalaki-release.jks"
+          echo "ALMALAKI_RELEASE_STORE_FILE=$RUNNER_TEMP/almalaki-release.jks" >> "$GITHUB_ENV"
 
-      - name: Upload Almalaki APK
+      - name: Build Almalaki Debug and Release
+        env:
+          ALMALAKI_STORE_PASSWORD: ${{ secrets.ALMALAKI_STORE_PASSWORD }}
+          ALMALAKI_KEY_ALIAS: ${{ secrets.ALMALAKI_KEY_ALIAS }}
+          ALMALAKI_KEY_PASSWORD: ${{ secrets.ALMALAKI_KEY_PASSWORD }}
+        run: |
+          gradle :app:assembleDebug :app:assembleRelease --no-daemon
+
+      - name: Upload Almalaki Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: Almalaki-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Upload Almalaki Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Almalaki-Release-APK
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          
