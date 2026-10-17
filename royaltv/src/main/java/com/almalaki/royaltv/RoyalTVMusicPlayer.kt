@@ -822,22 +822,8 @@ Box(
                     Box(
                         modifier = Modifier
                             .weight(1.05f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(
-                                Brush.radialGradient(
-                                    listOf(
-                                        Color(0xFF173C48),
-                                        Color(0xFF101D32),
-                                        Color(0xFF080C12)
-                                    )
-                                )
-                            )
-                            .border(
-                                1.dp,
-                                MusicGold.copy(alpha = 0.4f),
-                                RoundedCornerShape(28.dp)
-                            ),
+                            .fillMaxHeight(),
+                        
                         contentAlignment = Alignment.Center
                     ) {
                     
@@ -971,39 +957,54 @@ Box(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Slider(
-            value = (
-                draggingPosition ?: positionMs.toFloat()
-            ).coerceIn(
-                0f,
-                durationMs.coerceAtLeast(1).toFloat()
-            ),
-            onValueChange = {
-                draggingPosition = it
-            },
-            onValueChangeFinished = {
-                draggingPosition?.let { target ->
-                    try {
-                        player?.seekTo(target.toInt())
-                        positionMs = target.toInt()
-                    } catch (_: Exception) {
-                        // تجاهل تعذر تغيير الموضع.
-                    }
-                }
+        BoxWithConstraints(
+    modifier = Modifier.fillMaxWidth()
+) {
+    val progressThumbSize = (maxWidth * 0.018f)
+        .coerceIn(12.dp, 24.dp)
 
-                draggingPosition = null
-            },
-            valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
-            enabled = player != null,
-    colors = SliderDefaults.colors(
-    thumbColor = MusicGold,
-    activeTrackColor = MusicGold,
-    inactiveTrackColor = Color(0xFFB8C0CC),
-    disabledThumbColor = MusicGold.copy(alpha = 0.45f),
-    disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
-    disabledInactiveTrackColor = Color(0xFFB8C0CC)
-)
+    Slider(
+        value = (
+            draggingPosition ?: positionMs.toFloat()
+        ).coerceIn(
+            0f,
+            durationMs.coerceAtLeast(1).toFloat()
+        ),
+        onValueChange = {
+            draggingPosition = it
+        },
+        onValueChangeFinished = {
+            draggingPosition?.let { target ->
+                try {
+                    player?.seekTo(target.toInt())
+                    positionMs = target.toInt()
+                } catch (_: Exception) {
+                    // تجاهل تعذر تغيير الموضع.
+                }
+            }
+
+            draggingPosition = null
+        },
+        valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
+        enabled = player != null,
+        thumb = {
+            Box(
+                modifier = Modifier
+                    .size(progressThumbSize)
+                    .clip(CircleShape)
+                    .background(MusicGold)
+            )
+        },
+        colors = SliderDefaults.colors(
+            thumbColor = MusicGold,
+            activeTrackColor = MusicGold,
+            inactiveTrackColor = Color(0xFFB8C0CC),
+            disabledThumbColor = MusicGold.copy(alpha = 0.45f),
+            disabledActiveTrackColor = MusicGold.copy(alpha = 0.45f),
+            disabledInactiveTrackColor = Color(0xFFB8C0CC)
         )
+    )
+        }
 
         Row(
             modifier = Modifier
@@ -1029,32 +1030,20 @@ Box(
     }
 }
 
- Row(
+Row(
     modifier = Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.spacedBy(10.dp),
+    horizontalArrangement = Arrangement.spacedBy(6.dp),
     verticalAlignment = Alignment.CenterVertically
 ) {
+    // السابق: اتجاه السهمين إلى اليمين
     MusicImageButton(
-        iconRes = R.drawable.royal_music_previous,
+        iconRes = R.drawable.royal_music_next,
         description = "الأغنية السابقة",
         modifier = Modifier.weight(1f),
         onClick = { moveTrack(-1) }
     )
 
-    MusicImageButton(
-        iconRes = R.drawable.royal_music_repeat_one,
-        description = "تكرار الأغنية الحالية",
-        modifier = Modifier.weight(1f),
-        active = repeatMode == 1,
-        onClick = {
-            repeatMode = if (repeatMode == 1) 0 else 1
-            try {
-                player?.isLooping = repeatMode == 1
-            } catch (_: Exception) {
-            }
-        }
-    )
-
+    // تشغيل وإيقاف
     MusicImageButton(
         iconRes = if (isPlaying) {
             R.drawable.royal_music_pause
@@ -1062,7 +1051,7 @@ Box(
             R.drawable.royal_music_play
         },
         description = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
-        modifier = Modifier.weight(1.2f),
+        modifier = Modifier.weight(1f),
         primary = true,
         enabled = tracks.isNotEmpty(),
         onClick = {
@@ -1100,8 +1089,9 @@ Box(
         }
     )
 
+    // التالي: اتجاه السهمين إلى اليسار
     MusicImageButton(
-        iconRes = R.drawable.royal_music_next,
+        iconRes = R.drawable.royal_music_previous,
         description = "الأغنية التالية",
         modifier = Modifier.weight(1f),
         onClick = { moveTrack(1) }
@@ -1112,7 +1102,7 @@ Spacer(Modifier.height(8.dp))
 
 Row(
     modifier = Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically
 ) {
     MusicImageButton(
@@ -1139,18 +1129,32 @@ Row(
         }
     )
 
+    MusicImageButton(
+        iconRes = R.drawable.royal_music_repeat_one,
+        description = "تكرار الأغنية الحالية",
+        modifier = Modifier.weight(1f),
+        active = repeatMode == 1,
+        onClick = {
+            repeatMode = if (repeatMode == 1) 0 else 1
+            try {
+                player?.isLooping = repeatMode == 1
+            } catch (_: Exception) {
+            }
+        }
+    )
+
     MusicButton(
         if (
             currentTrack != null &&
             favorites.contains(currentTrack.id.toString())
         ) "♥" else "♡",
-        Modifier.weight(1f),
+        modifier = Modifier.weight(1f),
         active = currentTrack != null &&
             favorites.contains(currentTrack.id.toString()),
+        round = true,
         onClick = { toggleFavorite() }
     )
 }
-    
 
 Spacer(Modifier.height(8.dp))
 
