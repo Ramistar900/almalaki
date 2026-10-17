@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -159,6 +160,7 @@ private fun musicTime(milliseconds: Int): String {
     return "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoyalTVMusicPlayer(
     onBack: () -> Unit,
