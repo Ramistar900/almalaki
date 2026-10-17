@@ -46,6 +46,10 @@
     <!-- خدمات المقدمة -->
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE" />
+    
+    <uses-permission
+    android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
@@ -77,6 +81,11 @@
         <service
             android:name=".RoyalTVBroadcastOverlayService"
             android:exported="false" />
+        <!-- خدمة تشغيل الموسيقى في الخلفية -->
+<service
+    android:name=".RoyalTVMusicPlaybackService"
+    android:exported="false"
+    android:foregroundServiceType="mediaPlayback" />
 
         <!-- خدمة التقاط الشاشة -->
         <service
