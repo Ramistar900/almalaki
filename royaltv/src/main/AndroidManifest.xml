@@ -60,11 +60,11 @@
         android:name="android.hardware.wifi.direct"
         android:required="false" />
 
+    
     <application
         android:allowBackup="false"
-    android:icon="@mipmap/ic_launcher"
-    android:roundIcon="@mipmap/ic_launcher"
-    android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="ROYAL TV"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
@@ -72,6 +72,7 @@
         <activity
             android:name=".RoyalTVMainActivity"
             android:exported="true">
+            
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
