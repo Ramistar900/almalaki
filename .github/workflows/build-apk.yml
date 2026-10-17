@@ -55,7 +55,6 @@ jobs:
             | base64 --decode > "$RUNNER_TEMP/almalaki-release.jks"
           test -s "$RUNNER_TEMP/almalaki-release.jks"
           echo "ALMALAKI_RELEASE_STORE_FILE=$RUNNER_TEMP/almalaki-release.jks" >> "$GITHUB_ENV"
-
       - name: Verify Almalaki Release Keystore
         env:
           ALMALAKI_STORE_PASSWORD: ${{ secrets.ALMALAKI_STORE_PASSWORD }}
@@ -63,11 +62,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          keytool -list -v \
+          if [ -z "$ALMALAKI_STORE_PASSWORD" ]; then
+            echo "::error::ALMALAKI_STORE_PASSWORD is empty"
+            exit 1
+          fi
+          if [ -z "$ALMALAKI_KEY_ALIAS" ]; then
+            echo "::error::ALMALAKI_KEY_ALIAS is empty"
+            exit 1
+          fi
+          keytool -list \
             -keystore "$RUNNER_TEMP/almalaki-release.jks" \
             -storepass "$ALMALAKI_STORE_PASSWORD" \
-            -alias "$ALMALAKI_KEY_ALIAS" \
-            | grep -E 'Alias name:|Entry type:|SHA256:'
+            -alias "$ALMALAKI_KEY_ALIAS"
 
 
       - name: Build Almalaki Debug and Release
