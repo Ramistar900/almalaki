@@ -16,6 +16,27 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(
+                System.getenv("ROYALTV_RELEASE_STORE_FILE")
+                    ?: "royaltv-release.jks"
+            )
+            storePassword =
+                System.getenv("ROYALTV_STORE_PASSWORD") ?: ""
+            keyAlias =
+                System.getenv("ROYALTV_KEY_ALIAS") ?: ""
+            keyPassword =
+                System.getenv("ROYALTV_KEY_PASSWORD") ?: ""
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -31,7 +52,6 @@ android {
 }
 
 dependencies {
-implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
