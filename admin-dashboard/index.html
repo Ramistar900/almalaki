@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101019">
+  <title>لوحة تحكم الملكي | ROYAL</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101019;
+      --panel: #1b1b29;
+      --gold: #e6bd69;
+      --text: #f6f0e4;
+      --muted: #aaa9ba;
+      --border: #383548;
+      --danger: #ff8585;
+      --success: #77dfad;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at top, #29233a 0%, var(--bg) 65%);
+      color: var(--text);
+      font-family: system-ui, Arial, sans-serif;
+    }
+
+    main { max-width: 760px; margin: auto; }
+
+    header {
+      text-align: center;
+      padding: 25px 10px;
+    }
+
+    .logo {
+      color: var(--gold);
+      font-size: 29px;
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+
+    header p, .muted { color: var(--muted); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    h2 { font-size: 19px; margin-top: 0; }
+
+    label {
+      display: block;
+      margin: 14px 0 7px;
+      color: var(--muted);
+    }
+
+    input, select, button {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 10px;
+      font: inherit;
+    }
+
+    input, select {
+      color: var(--text);
+      background: #11111b;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 750;
+      border: 1px solid var(--gold);
+      color: #17131a;
+      background: var(--gold);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: transparent;
+      border-color: var(--border);
+    }
+
+    button:disabled { opacity: .55; cursor: wait; }
+
+    .hidden { display: none !important; }
+
+    .status {
+      padding: 12px;
+      border-radius: 10px;
+      background: #11111b;
+      color: var(--muted);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin-top: 14px;
+    }
+
+    .status.error { color: var(--danger); }
+    .status.success { color: var(--success); }
+
+    .app-title {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 21px;
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .switch-row input {
+      width: 22px;
+      min-height: 22px;
+      accent-color: var(--gold);
+    }
+
+    .switch-row label { margin: 0; color: var(--text); }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <header>
+    <div class="logo">ROYAL CONTROL</div>
+    <h1>لوحة تحكم الملكي</h1>
+    <p>إدارة تطبيق الملكي وROYAL TV من مكان واحد</p>
+  </header>
+
+  <section id="loginPanel" class="panel">
+    <h2>تسجيل دخول المالك</h2>
+
+    <form id="loginForm">
+      <label for="email">البريد الإلكتروني</label>
+      <input id="email" type="email" autocomplete="username"
+        required placeholder="البريد المسجل في Supabase">
+
+      <label for="password">كلمة المرور</label>
+      <input id="password" type="password"
+        autocomplete="current-password" required
+        placeholder="كلمة مرور حسابك">
+
+      <button id="loginButton" type="submit">تسجيل الدخول</button>
+    </form>
+
+    <div id="loginStatus" class="status" role="status">
+      سجّل الدخول بحسابك الموجود في Supabase.
+    </div>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="panel">
+      <h2>الحساب</h2>
+      <div id="accountEmail" class="muted"></div>
+      <button id="logoutButton" class="secondary" type="button">
+        تسجيل الخروج
+      </button>
+    </div>
+
+    <div class="panel">
+      <h2>اختيار التطبيق</h2>
+      <label for="appSelect">التطبيق الذي تريد إدارته</label>
+      <select id="appSelect">
+        <option value="almalaki">الملكي — Almalaki</option>
+        <option value="royaltv">ROYAL TV</option>
+      </select>
+    </div>
+
+    <div class="panel">
+      <div id="appTitle" class="app-title">الملكي</div>
+      <p class="muted">
+        هذه إعدادات عن بُعد فقط. لن تعمل أي ميزة إلا إذا كان التطبيق
+        نفسه يدعم قراءتها وتطبيقها.
+      </p>
+
+      <div class="switch-row">
+        <input id="maintenance" type="checkbox">
+        <label for="maintenance">وضع الصيانة</label>
+      </div>
+
+      <label for="featuresJson">إعدادات الميزات بصيغة JSON</label>
+      <textarea id="featuresJson" rows="8"
+        style="width:100%;padding:12px;border-radius:10px;
+        background:#11111b;color:#f6f0e4;border:1px solid #383548;
+        font:14px monospace;direction:ltr"
+        spellcheck="false">{}</textarea>
+
+      <button id="saveButton" type="button">حفظ الإعدادات</button>
+      <button id="reloadButton" class="secondary" type="button">
+        إعادة تحميل الإعدادات
+      </button>
+
+      <div id="settingsStatus" class="status" role="status">
+        اختر التطبيق لتحميل إعداداته.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>إدارة الإصدارات</h2>
+      <p class="muted">
+        لم يتم ربط البناء أو رفع APK أو النشر بعد. ستتم إضافة هذه
+        العمليات لاحقًا عبر GitHub Actions، مع مراجعة يدوية قبل النشر.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    ROYAL CONTROL · إدارة مستقلة للتطبيقين
+  </footer>
+</main>
+
+<script type="module">
+  import { createClient }
+    from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  // ضع رابط مشروعك ومفتاحه العام هنا.
+  // لا تستخدم service_role أو أي مفتاح سري في هذا الملف.
+  const SUPABASE_URL =
+    'https://duvxxskgdmgrtaleedqu.supabase.co';
+
+  const SUPABASE_ANON_KEY =
+    'sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd';
+
+  const loginPanel = document.getElementById('loginPanel');
+  const dashboard = document.getElementById('dashboard');
+  const loginForm = document.getElementById('loginForm');
+  const loginStatus = document.getElementById('loginStatus');
+  const settingsStatus = document.getElementById('settingsStatus');
+  const appSelect = document.getElementById('appSelect');
+  const maintenance = document.getElementById('maintenance');
+  const featuresJson = document.getElementById('featuresJson');
+  const saveButton = document.getElementById('saveButton');
+
+  let supabase = null;
+  let currentUser = null;
+  let settingsLoaded = false;
+
+  function showStatus(element, message, kind = '') {
+    element.textContent = message;
+    element.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function setBusy(button, busy, label) {
+    button.disabled = busy;
+    if (busy) {
+      button.dataset.oldLabel = button.textContent;
+      button.textContent = label;
+    } else {
+      button.textContent = button.dataset.oldLabel || label;
+    }
+  }
+
+  function validateConfig() {
+    if (
+      SUPABASE_ANON_KEY.includes('PASTE_') ||
+      !SUPABASE_URL.startsWith('https://')
+    ) {
+      throw new Error('أضف المفتاح العام لمشروع Supabase داخل الملف أولًا.');
+    }
+  }
+
+  async function verifyAdmin(user) {
+    const { data, error } = await supabase.rpc('is_dashboard_admin');
+
+    if (error) throw error;
+    if (data !== true) {
+      await supabase.auth.signOut();
+      throw new Error('هذا الحساب غير مخوّل لإدارة لوحة التحكم.');
+    }
+
+    currentUser = user;
+    document.getElementById('accountEmail').textContent =
+      user.email || 'حساب المالك';
+
+    loginPanel.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    await loadSettings();
+  }
+
+  async function loadSettings() {
+    settingsLoaded = false;
+    const appKey = appSelect.value;
+    document.getElementById('appTitle').textContent =
+      appKey === 'royaltv' ? 'ROYAL TV' : 'الملكي — Almalaki';
+
+    showStatus(settingsStatus, 'جارٍ تحميل الإعدادات...');
+
+    const { data, error } = await supabase
+      .from('app_remote_settings')
+      .select('settings')
+      .eq('app_key', appKey)
+      .maybeSingle();
+
+    if (error) {
+      showStatus(settingsStatus, 'تعذر تحميل الإعدادات: ' + error.message, 'error');
+      return;
+    }
+
+    const settings = data?.settings || {};
+    maintenance.checked = settings.maintenanceMode === true;
+
+    try {
+      featuresJson.value = JSON.stringify(settings.features || {}, null, 2);
+    } catch {
+      featuresJson.value = '{}';
+    }
+
+    settingsLoaded = true;
+    showStatus(settingsStatus, 'تم تحميل الإعدادات. يمكنك مراجعتها وتعديلها.', 'success');
+  }
+
+  async function saveSettings() {
+    if (!currentUser || !settingsLoaded) {
+      showStatus(settingsStatus, 'حمّل الإعدادات وتحقق من الحساب قبل الحفظ.', 'error');
+      return;
+    }
+
+    let features;
+    try {
+      features = JSON.parse(featuresJson.value);
+      if (
+        features === null ||
+        Array.isArray(features) ||
+        typeof features !== 'object'
+      ) {
+        throw new Error('يجب أن تكون الإعدادات كائن JSON.');
+      }
+    } catch (error) {
+      showStatus(settingsStatus, 'صيغة JSON غير صحيحة: ' + error.message, 'error');
+      return;
+    }
+
+    setBusy(saveButton, true, 'جارٍ الحفظ...');
+    try {
+      // نتحقق من صلاحية المالك مجددًا قبل الكتابة.
+      const { data: isAdmin, error: authError } =
+        await supabase.rpc('is_dashboard_admin');
+
+      if (authError) throw authError;
+      if (isAdmin !== true) throw new Error('انتهت صلاحية الوصول للوحة التحكم.');
+
+      const settings = {
+        features,
+        maintenanceMode: maintenance.checked
+      };
+
+      const { error } = await supabase
+        .from('app_remote_settings')
+        .upsert(
+          { app_key: appSelect.value, settings, updated_at: new Date().toISOString() },
+          { onConflict: 'app_key' }
+        );
+
+      if (error) throw error;
+
+      showStatus(settingsStatus, 'تم حفظ الإعدادات بنجاح.', 'success');
+    } catch (error) {
+      showStatus(settingsStatus, 'فشل الحفظ: ' + error.message, 'error');
+    } finally {
+      setBusy(saveButton, false, 'حفظ الإعدادات');
+    }
+  }
+
+  async function initialize() {
+    try {
+      validateConfig();
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
+      if (data.session?.user) {
+        try {
+          await verifyAdmin(data.session.user);
+        } catch (error) {
+          loginPanel.classList.remove('hidden');
+          dashboard.classList.add('hidden');
+          showStatus(loginStatus, error.message, 'error');
+        }
+      }
+    } catch (error) {
+      showStatus(loginStatus, error.message, 'error');
+    }
+  }
+
+  loginForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const button = document.getElementById('loginButton');
+    setBusy(button, true, 'جارٍ التحقق...');
+
+    try {
+      validateConfig();
+      if (!supabase) {
+        supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value
+      });
+
+      if (error) throw error;
+      await verifyAdmin(data.user);
+      showStatus(loginStatus, 'تم تسجيل الدخول بنجاح.', 'success');
+    } catch (error) {
+      showStatus(loginStatus, 'تعذر تسجيل الدخول: ' + error.message, 'error');
+    } finally {
+      setBusy(button, false, 'تسجيل الدخول');
+    }
+  });
+
+  appSelect.addEventListener('change', loadSettings);
+  saveButton.addEventListener('click', saveSettings);
+  document.getElementById('reloadButton').addEventListener('click', loadSettings);
+
+  document.getElementById('logoutButton').addEventListener('click', async () => {
+    if (supabase) await supabase.auth.signOut();
+    currentUser = null;
+    settingsLoaded = false;
+    dashboard.classList.add('hidden');
+    loginPanel.classList.remove('hidden');
+    showStatus(loginStatus, 'تم تسجيل الخروج.');
+  });
+
+  initialize();
+</script>
+</body>
+  </html>
+  
