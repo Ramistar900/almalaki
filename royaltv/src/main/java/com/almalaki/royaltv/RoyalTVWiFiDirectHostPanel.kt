@@ -1,10 +1,9 @@
 package com.almalaki.royaltv
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.net.wifi.p2p.WifiP2pInfo
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +34,9 @@ fun RoyalTVWiFiDirectHostPanel(
     val context = LocalContext.current
 
     var status by remember {
-        mutableStateOf("جهّز اتصال Wi-Fi Direct لربط هاتف المالك.")
+        mutableStateOf(
+            "جهّز اتصال Wi-Fi Direct لربط هاتف المالك."
+        )
     }
 
     var address by remember {
@@ -52,20 +53,34 @@ fun RoyalTVWiFiDirectHostPanel(
             override fun onConnectionInfoAvailable(
                 info: WifiP2pInfo
             ) {
-                if (info.groupFormed) {
+                if (!info.groupFormed) {
+                    address = ""
+                    status =
+                        "لم يكتمل الاتصال بعد. انتظر أو أعد المحاولة."
+                    return
+                }
+
+                if (info.isGroupOwner) {
                     val host = info.groupOwnerAddress
                         ?.hostAddress
                         .orEmpty()
 
-                    address = host
-
-                    status = if (info.isGroupOwner) {
-                        "جهاز ROYAL TV جاهز لاستقبال اتصال المرسل."
+                    if (host.isNotBlank()) {
+                        address = host
+                        status =
+                            "جهاز ROYAL TV جاهز لاستقبال اتصال المرسل."
                     } else {
-                        "اتصال Wi-Fi Direct قائم؛ تحقق من الجهاز المالك للمجموعة."
+                        address = ""
+                        status =
+                            "الشاشة مالكة المجموعة، لكن عنوانها لم يظهر بعد."
                     }
                 } else {
-                    status = "لم يكتمل الاتصال بعد. انتظر أو أعد المحاولة."
+                    // لا تعرض عنوان مالك المجموعة على أنه عنوان الشاشة.
+                    address = ""
+                    status =
+                        "تنبيه: الشاشة ليست مالكة مجموعة الاتصال. " +
+                        "أوقف الاتصال وأعد تهيئة Wi-Fi Direct " +
+                        "على شاشة ROYAL TV ثم أعد المحاولة."
                 }
             }
 
@@ -75,9 +90,11 @@ fun RoyalTVWiFiDirectHostPanel(
                 reason: String
             ) {
                 if (!success) {
-                    status = "عملية $operation لم تنجح: $reason"
+                    status =
+                        "عملية $operation لم تنجح: $reason"
                 } else if (operation == "createGroup") {
-                    status = "قُبل طلب إنشاء المجموعة؛ جارٍ انتظار جاهزيتها."
+                    status =
+                        "قُبل طلب إنشاء المجموعة؛ جارٍ انتظار جاهزيتها."
                     manager.requestConnectionInfo()
                 }
             }
@@ -86,7 +103,9 @@ fun RoyalTVWiFiDirectHostPanel(
                 enabled: Boolean
             ) {
                 if (!enabled) {
-                    status = "فعّل Wi-Fi من إعدادات جهاز الشاشة أولًا."
+                    address = ""
+                    status =
+                        "فعّل Wi-Fi من إعدادات جهاز الشاشة أولًا."
                 }
             }
         }
@@ -96,14 +115,16 @@ fun RoyalTVWiFiDirectHostPanel(
         address = ""
 
         if (!manager.initialize(listener)) {
-            status = "تعذّرت تهيئة Wi-Fi Direct. تحقق من الصلاحيات."
+            status =
+                "تعذّرت تهيئة Wi-Fi Direct. تحقق من الصلاحيات."
             return
         }
 
         status = "جارٍ إنشاء اتصال مباشر..."
 
         if (!manager.createGroup()) {
-            status = "تعذّر طلب إنشاء المجموعة. تحقق من Wi-Fi Direct."
+            status =
+                "تعذّر طلب إنشاء المجموعة. تحقق من Wi-Fi Direct."
         }
     }
 
@@ -120,7 +141,8 @@ fun RoyalTVWiFiDirectHostPanel(
             if (granted) {
                 startHost()
             } else {
-                status = "يجب السماح بصلاحية الأجهزة القريبة أو الموقع حسب إصدار Android."
+                status =
+                    "يجب السماح بصلاحية الأجهزة القريبة أو الموقع حسب إصدار Android."
             }
         }
 
@@ -169,7 +191,7 @@ fun RoyalTVWiFiDirectHostPanel(
 
         if (address.isNotBlank()) {
             Text(
-                text = "عنوان المجموعة: $address",
+                text = "عنوان مجموعة الاستقبال: $address",
                 color = Color(0xFFB99A52),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
