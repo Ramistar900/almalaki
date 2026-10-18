@@ -1,9 +1,9 @@
-
 -- ROYAL ADMIN DASHBOARD
--- Public settings contain feature flags only, never secrets.
+-- Only public feature flags and non-secret settings belong here.
 
 create table if not exists public.admin_users (
-    user_id uuid primary key references auth.users(id) on delete cascade,
+    user_id uuid primary key
+        references auth.users(id) on delete cascade,
     created_at timestamptz not null default now()
 );
 
@@ -17,7 +17,7 @@ create table if not exists public.app_remote_settings (
 alter table public.admin_users enable row level security;
 alter table public.app_remote_settings enable row level security;
 
--- Only authenticated users listed in admin_users can manage settings.
+-- Check whether the signed-in user is an approved administrator.
 create or replace function public.is_dashboard_admin()
 returns boolean
 language sql
@@ -34,12 +34,15 @@ $$;
 
 revoke all on function public.is_dashboard_admin() from public;
 grant execute on function public.is_dashboard_admin()
-    to anon, authenticated;
+    to authenticated;
 
--- The admin allowlist cannot be changed from the public client.
+-- Never allow public clients to manage the administrator allowlist.
 revoke all on public.admin_users from anon, authenticated;
 
--- App settings contain public feature flags, so apps can read them.
+-- Required table privileges; RLS still controls which rows are accessible.
+grant select on public.app_remote_settings to anon, authenticated;
+grant insert, update on public.app_remote_settings to authenticated;
+
 drop policy if exists "Public can read app settings"
     on public.app_remote_settings;
 
