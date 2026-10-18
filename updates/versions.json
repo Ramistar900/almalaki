@@ -7,9 +7,9 @@
     "releaseNotes": ""
   },
   "royaltv": {
-    "versionCode": 2,
-    "versionName": "1.1",
-    "downloadUrl": "https://github.com/Ramistar900/almalaki/releases/download/royaltv-v1.1/royaltv-release.apk",
-    "releaseNotes": "الإصدار 1.1: إضافة فحص التحديثات من داخل التطبيق."
+    "versionCode": 3,
+    "versionName": "1.2",
+    "downloadUrl": "https://github.com/Ramistar900/almalaki/releases/download/royaltv-v1.2/royaltv-release.apk",
+    "releaseNotes": "الإصدار 1.2: تحديث اختباري للتحقق من اكتشاف الإصدارات الجديدة."
   }
 }
