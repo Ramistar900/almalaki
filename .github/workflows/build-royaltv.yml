@@ -1,80 +1,115 @@
-
 name: Build ROYAL TV APK
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'royaltv/**'
-      - 'gradle/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'gradlew'
-      - 'gradlew.bat'
-      - 'gradle/libs.versions.toml'
-      - '.github/workflows/build-royaltv.yml'
+workflow_dispatch:
+push:
+branches:
+- main
+paths:
+- 'royaltv/'
+- 'gradle/'
+- 'build.gradle.kts'
+- 'settings.gradle.kts'
+- 'gradle.properties'
+- 'gradlew'
+- 'gradlew.bat'
+- 'gradle/libs.versions.toml'
+- '.github/workflows/build-royaltv.yml'
 
 jobs:
-  build-royaltv:
-    runs-on: ubuntu-latest
+build-royaltv:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: '17'
 
-      - name: Setup Android
-        uses: android-actions/setup-android@v4
-        with:
-          accept-android-sdk-licenses: true
+  - name: Setup Android
+    uses: android-actions/setup-android@v4
+    with:
+      accept-android-sdk-licenses: true
 
-      - name: Install Android SDK
-        run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+  - name: Install Android SDK
+    run: |
+      sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10.2'
+  - name: Setup Gradle
+    uses: gradle/actions/setup-gradle@v4
+    with:
+      gradle-version: '8.10.2'
 
-      - name: Build ROYAL TV Only
-        run: gradle :royaltv:assembleDebug --no-daemon
+  - name: Decode ROYAL TV Release Keystore
+    env:
+      ROYALTV_KEYSTORE_BASE64: ${{ secrets.ROYALTV_KEYSTORE_BASE64 }}
+    shell: bash
+    run: |
+      set -euo pipefail
+      test -n "$ROYALTV_KEYSTORE_BASE64"
+      printf '%s' "$ROYALTV_KEYSTORE_BASE64" \
+        | base64 --decode > "$RUNNER_TEMP/royaltv-release.jks"
+      test -s "$RUNNER_TEMP/royaltv-release.jks"
+      echo "ROYALTV_RELEASE_STORE_FILE=$RUNNER_TEMP/royaltv-release.jks" >> "$GITHUB_ENV"
 
-      - name: Audit ROYAL TV APK
-        shell: bash
-        run: |
-          set -euo pipefail
+  - name: Verify ROYAL TV Release Keystore
+    env:
+      ROYALTV_STORE_PASSWORD: ${{ secrets.ROYALTV_STORE_PASSWORD }}
+      ROYALTV_KEY_ALIAS: ${{ secrets.ROYALTV_KEY_ALIAS }}
+    shell: bash
+    run: |
+      set -euo pipefail
+      test -n "$ROYALTV_STORE_PASSWORD"
+      test -n "$ROYALTV_KEY_ALIAS"
+      keytool -list \
+        -keystore "$RUNNER_TEMP/royaltv-release.jks" \
+        -storepass "$ROYALTV_STORE_PASSWORD" \
+        -alias "$ROYALTV_KEY_ALIAS"
 
-          APK="royaltv/build/outputs/apk/debug/royaltv-debug.apk"
-          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
-          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+  - name: Build ROYAL TV Debug and Release
+    env:
+      ROYALTV_STORE_PASSWORD: ${{ secrets.ROYALTV_STORE_PASSWORD }}
+      ROYALTV_KEY_ALIAS: ${{ secrets.ROYALTV_KEY_ALIAS }}
+      ROYALTV_KEY_PASSWORD: ${{ secrets.ROYALTV_KEY_PASSWORD }}
+    run: gradle :royaltv:assembleDebug :royaltv:assembleRelease --no-daemon
 
-          test -f "$APK"
+  - name: Audit ROYAL TV Debug APK
+    shell: bash
+    run: |
+      set -euo pipefail
+      APK="royaltv/build/outputs/apk/debug/royaltv-debug.apk"
+      AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+      APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+      test -s "$APK"
+      echo "===== DEBUG APK SHA-256 ====="
+      sha256sum "$APK"
+      echo "===== PACKAGE DETAILS ====="
+      "$AAPT" dump badging "$APK" | head -n 15
+      echo "===== DEBUG SIGNATURE VERIFICATION ====="
+      "$APKSIGNER" verify --verbose --print-certs "$APK"
 
-          echo "===== APK SHA-256 ====="
-          sha256sum "$APK"
+  - name: Verify ROYAL TV Release APK Signature
+    shell: bash
+    run: |
+      set -euo pipefail
+      APK="royaltv/build/outputs/apk/release/royaltv-release.apk"
+      test -s "$APK"
+      "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
 
-          echo "===== PACKAGE DETAILS ====="
-          "$AAPT" dump badging "$APK" | head -n 15
+  - name: Upload ROYAL TV Debug APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: ROYAL-TV-APK
+      path: royaltv/build/outputs/apk/debug/royaltv-debug.apk
+      if-no-files-found: error
 
-          echo "===== DECLARED APK PERMISSIONS ====="
-          "$AAPT" dump permissions "$APK"
-
-          echo "===== SIGNATURE VERIFICATION ====="
-          "$APKSIGNER" verify --verbose --print-certs "$APK"
-
-      - name: Upload ROYAL TV APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ROYAL-TV-APK
-          path: royaltv/build/outputs/apk/debug/royaltv-debug.apk
-          if-no-files-found: error
-          
+  - name: Upload ROYAL TV Signed Release APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: ROYAL-TV-Release-APK
+      path: royaltv/build/outputs/apk/release/royaltv-release.apk
+      if-no-files-found: error
