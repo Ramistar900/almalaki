@@ -83,6 +83,15 @@ jobs:
           ALMALAKI_KEY_PASSWORD: ${{ secrets.ALMALAKI_KEY_PASSWORD }}
         run: |
           gradle :app:assembleDebug :app:assembleRelease --no-daemon
+          
+      - name: Verify Almalaki Release APK Signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          
 
       - name: Upload Almalaki Debug APK
         uses: actions/upload-artifact@v4
