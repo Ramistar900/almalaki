@@ -1,6 +1,6 @@
 name: Build ROYAL TV APK
 
-on:
+'on':
 workflow_dispatch:
 push:
 branches:
@@ -51,8 +51,7 @@ steps:
     run: |
       set -euo pipefail
       test -n "$ROYALTV_KEYSTORE_BASE64"
-      printf '%s' "$ROYALTV_KEYSTORE_BASE64" \
-        | base64 --decode > "$RUNNER_TEMP/royaltv-release.jks"
+      printf '%s' "$ROYALTV_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/royaltv-release.jks"
       test -s "$RUNNER_TEMP/royaltv-release.jks"
       echo "ROYALTV_RELEASE_STORE_FILE=$RUNNER_TEMP/royaltv-release.jks" >> "$GITHUB_ENV"
 
