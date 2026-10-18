@@ -123,6 +123,8 @@ class RoyalTVMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+                RoyalTVUpdateChecker.check(this)
                 
         /*
          * بدء استقبال أوامر ROYAL TV.
