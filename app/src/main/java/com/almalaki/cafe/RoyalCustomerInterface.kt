@@ -707,7 +707,7 @@ fun RoyalShinyLogo(
  * الشريط العلوي
  * ============================================================
  */
- Composable
+ @Composable
 private fun RoyalTopBar(
     isDarkMode: Boolean,
     onMenuClick: () -> Unit
