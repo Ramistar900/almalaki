@@ -1,4 +1,3 @@
-
 name: Stage APK Builds as Draft Releases
 
 on:
@@ -15,7 +14,7 @@ permissions:
 
 jobs:
   stage-draft:
-    name: Create unpublished APK draft
+    name: Create or refresh the app draft
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
@@ -35,14 +34,14 @@ jobs:
           case "$WORKFLOW_NAME" in
             "Build Almalaki APK")
               echo "artifact=Almalaki-Release-APK" >> "$GITHUB_OUTPUT"
-              echo "tag=almalaki-build-$RUN_ID" >> "$GITHUB_OUTPUT"
-              echo "title=Almalaki build $RUN_ID" >> "$GITHUB_OUTPUT"
+              echo "tag=almalaki-latest-draft" >> "$GITHUB_OUTPUT"
+              echo "title=Almalaki staged build $RUN_ID" >> "$GITHUB_OUTPUT"
               echo "filename=almalaki-release.apk" >> "$GITHUB_OUTPUT"
               ;;
             "Build ROYAL TV APK")
               echo "artifact=ROYAL-TV-Release-APK" >> "$GITHUB_OUTPUT"
-              echo "tag=royaltv-build-$RUN_ID" >> "$GITHUB_OUTPUT"
-              echo "title=ROYAL TV build $RUN_ID" >> "$GITHUB_OUTPUT"
+              echo "tag=royaltv-latest-draft" >> "$GITHUB_OUTPUT"
+              echo "title=ROYAL TV staged build $RUN_ID" >> "$GITHUB_OUTPUT"
               echo "filename=royaltv-release.apk" >> "$GITHUB_OUTPUT"
               ;;
             *)
@@ -53,7 +52,7 @@ jobs:
 
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
 
-      - name: Download signed release APK artifact
+      - name: Download signed APK
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.event.workflow_run.id }}
@@ -62,6 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/apk-release"
+
           gh run download "$RUN_ID" \
             --repo "$GITHUB_REPOSITORY" \
             --name "$ARTIFACT" \
@@ -71,7 +71,33 @@ jobs:
             -type f -name '*.apk' | wc -l)"
           test "$count" -eq 1
 
-      - name: Create unpublished GitHub Release
+      - name: Replace previous staging draft only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG" \
+            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+
+            IS_DRAFT="$(gh release view "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json isDraft --jq '.isDraft')"
+
+            if [ "$IS_DRAFT" != "true" ]; then
+              echo "Refusing to replace a published release: $TAG"
+              exit 1
+            fi
+
+            gh release delete "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --cleanup-tag \
+              --yes
+          fi
+
+      - name: Create latest unpublished APK draft
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
@@ -85,6 +111,7 @@ jobs:
           APK="$(find "$RUNNER_TEMP/apk-release" \
             -type f -name '*.apk' -print -quit)"
           test -n "$APK"
+
           mv "$APK" "$RUNNER_TEMP/$FILENAME"
 
           gh release create "$TAG" \
@@ -93,5 +120,5 @@ jobs:
             --target "$SOURCE_SHA" \
             --draft \
             --title "$TITLE" \
-            --notes "Automatically staged after a successful signed release build. Manual review and publication required."
+            --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
             
