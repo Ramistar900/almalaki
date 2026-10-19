@@ -8,7 +8,8 @@ import androidx.compose.ui.draw.alpha
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -52,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.delay
 
 private val MusicGold = Color(0xFFB99A52)
 private val MusicPearl = Color(0xFFDCE5EE)
@@ -186,7 +186,6 @@ fun RoyalTVMusicPlayer(
     }
 
     var selectedId by remember { mutableStateOf<Long?>(null) }
-    var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var positionMs by remember { mutableIntStateOf(0) }
     var durationMs by remember { mutableIntStateOf(0) }
@@ -212,8 +211,6 @@ fun RoyalTVMusicPlayer(
     }
 
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
-    var completionCount by remember { mutableIntStateOf(0) }
-    var handledCompletion by remember { mutableIntStateOf(0) }
 
     val permissionName = if (Build.VERSION.SDK_INT >= 33) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -387,16 +384,64 @@ fun startTrack(index: Int) {
             }
         }
     }
+    DisposableEffect(context, tracks) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?
+            ) {
+                if (
+                    intent?.action !=
+                    RoyalTVMusicPlaybackService.ACTION_STATE
+                ) return
 
-    DisposableEffect(Unit) {
+                val index = intent.getIntExtra(
+                    RoyalTVMusicPlaybackService.EXTRA_STATE_INDEX,
+                    -1
+                )
+
+                selectedId = tracks.getOrNull(index)?.id
+
+                positionMs = intent.getIntExtra(
+                    RoyalTVMusicPlaybackService.EXTRA_STATE_POSITION,
+                    0
+                ).coerceAtLeast(0)
+
+                durationMs = intent.getIntExtra(
+                    RoyalTVMusicPlaybackService.EXTRA_STATE_DURATION,
+                    0
+                ).coerceAtLeast(0)
+
+                isPlaying = intent.getBooleanExtra(
+                    RoyalTVMusicPlaybackService.EXTRA_STATE_PLAYING,
+                    false
+                )
+
+                repeatMode = intent.getIntExtra(
+                    RoyalTVMusicPlaybackService.EXTRA_STATE_REPEAT_MODE,
+                    repeatMode
+                ).coerceIn(0, 2)
+
+                tracks.getOrNull(index)?.let { track ->
+                    message = "يعمل الآن: ${track.title}"
+                }
+            }
+        }
+
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(
+                RoyalTVMusicPlaybackService.ACTION_STATE
+            ),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+
         onDispose {
             try {
-                player?.release()
+                context.unregisterReceiver(receiver)
             } catch (_: Exception) {
-                // تجاهل خطأ تحرير المشغّل عند الخروج.
             }
-
-            player = null
         }
     }
 
@@ -982,20 +1027,35 @@ Box(
         onValueChange = {
             draggingPosition = it
         },
+                onValueChange = {
+            draggingPosition = it
+        },
         onValueChangeFinished = {
             draggingPosition?.let { target ->
                 try {
-                    player?.seekTo(target.toInt())
+                    val intent = Intent(
+                        context,
+                        RoyalTVMusicPlaybackService::class.java
+                    ).apply {
+                        action =
+                            RoyalTVMusicPlaybackService.ACTION_SEEK
+                        putExtra(
+                            RoyalTVMusicPlaybackService.EXTRA_SEEK_POSITION,
+                            target.toInt().coerceAtLeast(0)
+                        )
+                    }
+
+                    context.startService(intent)
                     positionMs = target.toInt()
                 } catch (_: Exception) {
-                    // تجاهل تعذر تغيير الموضع.
+                    message = "تعذّر تغيير موضع الأغنية."
                 }
             }
 
             draggingPosition = null
         },
         valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
-        enabled = player != null,
+        enabled = durationMs > 0,
         thumb = {
             Box(
                 modifier = Modifier
@@ -1064,39 +1124,26 @@ Row(
         primary = true,
         enabled = tracks.isNotEmpty(),
         onClick = {
-            try {
-                val active = player
-
-                if (active == null) {
-                    if (tracks.isNotEmpty()) {
-                        val index = if (selectedId == null) {
-                            0
-                        } else {
-                            tracks.indexOfFirst {
-                                it.id == selectedId
-                            }.coerceAtLeast(0)
-                        }
-                        startTrack(index)
-                    }
-                } else if (active.isPlaying) {
-                    active.pause()
-                    isPlaying = false
-                } else {
-                    if (
-                        durationMs > 0 &&
-                        positionMs >= durationMs
-                    ) {
-                        active.seekTo(0)
-                        positionMs = 0
-                    }
-                    active.start()
-                    isPlaying = true
-                }
-            } catch (_: Exception) {
-                message = "تعذّر التحكم بالتشغيل."
-            }
+    if (selectedId == null) {
+        if (tracks.isNotEmpty()) {
+            startTrack(0)
         }
-    )
+    } else {
+        val intent = Intent(
+            context,
+            RoyalTVMusicPlaybackService::class.java
+        ).apply {
+            action =
+                RoyalTVMusicPlaybackService.ACTION_TOGGLE
+        }
+
+        try {
+            context.startService(intent)
+        } catch (_: Exception) {
+            message = "تعذّر التحكم بالتشغيل."
+        }
+    }
+        }
 
     // التالي: اتجاه السهمين إلى اليسار
     MusicImageButton(
@@ -1130,11 +1177,27 @@ Row(
         modifier = Modifier.weight(1f),
         active = repeatMode == 2,
         onClick = {
-            repeatMode = if (repeatMode == 2) 0 else 2
-            try {
-                player?.isLooping = false
-            } catch (_: Exception) {
-            }
+    val nextMode = if (repeatMode == 2) 0 else 2
+
+    val intent = Intent(
+        context,
+        RoyalTVMusicPlaybackService::class.java
+    ).apply {
+        action =
+            RoyalTVMusicPlaybackService.ACTION_SET_REPEAT_MODE
+
+        putExtra(
+            RoyalTVMusicPlaybackService.EXTRA_REPEAT_MODE,
+            nextMode
+        )
+    }
+
+    try {
+        context.startService(intent)
+        repeatMode = nextMode
+    } catch (_: Exception) {
+        message = "تعذّر تغيير وضع التكرار."
+    }
         }
     )
 
@@ -1144,23 +1207,28 @@ MusicImageButton(
     modifier = Modifier.weight(1f),
     active = repeatMode == 1,
     onClick = {
-        repeatMode = if (repeatMode == 1) 0 else 1
+    val nextMode = if (repeatMode == 1) 0 else 1
 
-        val intent = Intent(
-            context,
-            RoyalTVMusicPlaybackService::class.java
-        ).apply {
-            action =
-                RoyalTVMusicPlaybackService.ACTION_SET_REPEAT
-            putExtra(
-                RoyalTVMusicPlaybackService.EXTRA_REPEAT_ONE,
-                repeatMode == 1
-            )
-        }
+    val intent = Intent(
+        context,
+        RoyalTVMusicPlaybackService::class.java
+    ).apply {
+        action =
+            RoyalTVMusicPlaybackService.ACTION_SET_REPEAT_MODE
 
-        context.startService(intent)
+        putExtra(
+            RoyalTVMusicPlaybackService.EXTRA_REPEAT_MODE,
+            nextMode
+        )
     }
-)
+
+    try {
+        context.startService(intent)
+        repeatMode = nextMode
+    } catch (_: Exception) {
+        message = "تعذّر تغيير وضع التكرار."
+    }
+    }
 
 
     MusicButton(
