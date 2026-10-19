@@ -343,47 +343,6 @@ fun startTrack(index: Int) {
         }
     }
 
-    LaunchedEffect(player, isPlaying) {
-        while (player != null && isPlaying) {
-            try {
-                val activePlayer = player
-
-                if (activePlayer != null) {
-                    positionMs =
-                        activePlayer.currentPosition.coerceAtLeast(0)
-
-                    durationMs =
-                        activePlayer.duration.coerceAtLeast(0)
-                }
-            } catch (_: Exception) {
-                isPlaying = false
-            }
-
-            delay(350L)
-        }
-    }
-
-    LaunchedEffect(completionCount) {
-        if (completionCount > handledCompletion) {
-            handledCompletion = completionCount
-
-            if (repeatMode == 1) {
-                // عند تفعيل تكرار الأغنية، يتولى MediaPlayer التكرار.
-                positionMs = 0
-                isPlaying = player != null
-            } else {
-                val index =
-                    tracks.indexOfFirst { it.id == selectedId }
-
-                if (repeatMode == 2 || index < tracks.lastIndex) {
-                    moveTrack(1)
-                } else {
-                    isPlaying = false
-                    positionMs = durationMs
-                }
-            }
-        }
-    }
     DisposableEffect(context, tracks) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(
@@ -1017,7 +976,7 @@ Box(
     val progressThumbSize = (maxWidth * 0.018f)
         .coerceIn(12.dp, 24.dp)
 
-    Slider(
+        Slider(
         value = (
             draggingPosition ?: positionMs.toFloat()
         ).coerceIn(
@@ -1025,9 +984,6 @@ Box(
             durationMs.coerceAtLeast(1).toFloat()
         ),
         onValueChange = {
-            draggingPosition = it
-        },
-                onValueChange = {
             draggingPosition = it
         },
         onValueChangeFinished = {
