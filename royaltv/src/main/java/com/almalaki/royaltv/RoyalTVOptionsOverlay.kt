@@ -1,5 +1,7 @@
 package com.almalaki.royaltv
 
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -93,9 +95,14 @@ title = "الحفظ والاستعادة",
 description = "خيارات حفظ إعدادات ROYAL TV"
 ),
 RoyalOption(
-icon = "📺",
-title = HOME_SCREEN_BROADCAST_TITLE,
-description = "مشاركة الشاشة بعد موافقة Android"
+    icon = "📺",
+    title = HOME_SCREEN_BROADCAST_TITLE,
+    description = "مشاركة الشاشة بعد موافقة Android"
+),
+RoyalOption(
+    icon = "📤",
+    title = "مشاركة التطبيق",
+    description = "شارك رابط تنزيل ROYAL TV الرسمي"
 )
 )
 
@@ -107,6 +114,7 @@ onRequestHomeScreenBroadcast: () -> Unit = {}
 var menuOpen by remember {
 mutableStateOf(false)
 }
+val context = LocalContext.current
 
 var selectedOption by remember {
     mutableStateOf<RoyalOption?>(null)
@@ -264,11 +272,34 @@ Box(
                                 selectedOption = option
 
                                 if (
-                                    option.title ==
-                                    HOME_SCREEN_BROADCAST_TITLE
-                                ) {
-                                    menuOpen = false
-                                    onRequestHomeScreenBroadcast()
+    option.title == HOME_SCREEN_BROADCAST_TITLE
+) {
+    menuOpen = false
+    onRequestHomeScreenBroadcast()
+} else if (option.title == "مشاركة التطبيق") {
+    menuOpen = false
+
+    val downloadUrl =
+        "https://github.com/Ramistar900/almalaki/releases/download/royaltv-v1.3/royaltv-release.apk"
+
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(
+            Intent.EXTRA_SUBJECT,
+            "تنزيل ROYAL TV"
+        )
+        putExtra(
+            Intent.EXTRA_TEXT,
+            "حمّل تطبيق ROYAL TV من الرابط الرسمي:\n$downloadUrl"
+        )
+    }
+
+    context.startActivity(
+        Intent.createChooser(
+            shareIntent,
+            "مشاركة ROYAL TV"
+        )
+    )
                                 }
                             }
                             .padding(12.dp),
