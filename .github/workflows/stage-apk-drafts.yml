@@ -60,6 +60,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           mkdir -p "$RUNNER_TEMP/apk-release"
 
           gh run download "$RUN_ID" \
@@ -67,9 +68,13 @@ jobs:
             --name "$ARTIFACT" \
             --dir "$RUNNER_TEMP/apk-release"
 
-          count="$(find "$RUNNER_TEMP/apk-release" \
+          COUNT="$(find "$RUNNER_TEMP/apk-release" \
             -type f -name '*.apk' | wc -l)"
-          test "$count" -eq 1
+
+          if [ "$COUNT" -ne 1 ]; then
+            echo "Expected exactly one APK, found $COUNT"
+            exit 1
+          fi
 
       - name: Replace previous staging draft only
         env:
@@ -110,15 +115,10 @@ jobs:
 
           APK="$(find "$RUNNER_TEMP/apk-release" \
             -type f -name '*.apk' -print -quit)"
+
           test -n "$APK"
 
           mv "$APK" "$RUNNER_TEMP/$FILENAME"
 
-          gh release create "$TAG" \
-            "$RUNNER_TEMP/$FILENAME" \
-            --repo "$GITHUB_REPOSITORY" \
-  
-            --draft \
-            --title "$TITLE" \
-            --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
-            
+          gh release create "$TAG" "$RUNNER_TEMP/$FILENAME" --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --draft --title "$TITLE" --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
+          
