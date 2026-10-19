@@ -1,0 +1,97 @@
+
+name: Stage APK Builds as Draft Releases
+
+on:
+  workflow_run:
+    workflows:
+      - Build Almalaki APK
+      - Build ROYAL TV APK
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  stage-draft:
+    name: Create unpublished APK draft
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Select application and artifact
+        id: release
+        shell: bash
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          case "$WORKFLOW_NAME" in
+            "Build Almalaki APK")
+              echo "artifact=Almalaki-Release-APK" >> "$GITHUB_OUTPUT"
+              echo "tag=almalaki-build-$RUN_ID" >> "$GITHUB_OUTPUT"
+              echo "title=Almalaki build $RUN_ID" >> "$GITHUB_OUTPUT"
+              echo "filename=almalaki-release.apk" >> "$GITHUB_OUTPUT"
+              ;;
+            "Build ROYAL TV APK")
+              echo "artifact=ROYAL-TV-Release-APK" >> "$GITHUB_OUTPUT"
+              echo "tag=royaltv-build-$RUN_ID" >> "$GITHUB_OUTPUT"
+              echo "title=ROYAL TV build $RUN_ID" >> "$GITHUB_OUTPUT"
+              echo "filename=royaltv-release.apk" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported workflow: $WORKFLOW_NAME"
+              exit 1
+              ;;
+          esac
+
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Download signed release APK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          ARTIFACT: ${{ steps.release.outputs.artifact }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/apk-release"
+          gh run download "$RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$ARTIFACT" \
+            --dir "$RUNNER_TEMP/apk-release"
+
+          count="$(find "$RUNNER_TEMP/apk-release" \
+            -type f -name '*.apk' | wc -l)"
+          test "$count" -eq 1
+
+      - name: Create unpublished GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          TITLE: ${{ steps.release.outputs.title }}
+          SOURCE_SHA: ${{ steps.release.outputs.source_sha }}
+          FILENAME: ${{ steps.release.outputs.filename }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="$(find "$RUNNER_TEMP/apk-release" \
+            -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          mv "$APK" "$RUNNER_TEMP/$FILENAME"
+
+          gh release create "$TAG" \
+            "$RUNNER_TEMP/$FILENAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_SHA" \
+            --draft \
+            --title "$TITLE" \
+            --notes "Automatically staged after a successful signed release build. Manual review and publication required."
+            
