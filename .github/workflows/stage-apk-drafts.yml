@@ -60,7 +60,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           mkdir -p "$RUNNER_TEMP/apk-release"
 
           gh run download "$RUN_ID" \
@@ -96,10 +95,19 @@ jobs:
               exit 1
             fi
 
+            # Delete only the unpublished draft for the selected app.
+            # Do not use --cleanup-tag when the tag reference may be missing.
             gh release delete "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
-              --cleanup-tag \
               --yes
+
+            # Delete the tag only if GitHub confirms that it exists.
+            if gh api \
+              "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" \
+              >/dev/null 2>&1; then
+              gh api --method DELETE \
+                "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG"
+            fi
           fi
 
       - name: Create latest unpublished APK draft
@@ -117,8 +125,12 @@ jobs:
             -type f -name '*.apk' -print -quit)"
 
           test -n "$APK"
-
           mv "$APK" "$RUNNER_TEMP/$FILENAME"
 
-          gh release create "$TAG" "$RUNNER_TEMP/$FILENAME" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title "$TITLE" --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
-          
+          gh release create "$TAG" "$RUNNER_TEMP/$FILENAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --draft \
+            --title "$TITLE" \
+            --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
+            
