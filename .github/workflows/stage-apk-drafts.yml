@@ -34,7 +34,7 @@ jobs:
           case "$WORKFLOW_NAME" in
             "Build Almalaki APK")
               echo "artifact=Almalaki-Release-APK" >> "$GITHUB_OUTPUT"
-              echo "tag=almalaki-latest-draft" >> "$GITHUB_OUTPUT"
+              echo "tag=almalaki-auto-staging-draft" >> "$GITHUB_OUTPUT"
               echo "title=Almalaki staged build $RUN_ID" >> "$GITHUB_OUTPUT"
               echo "filename=almalaki-release.apk" >> "$GITHUB_OUTPUT"
               ;;
