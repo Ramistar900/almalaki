@@ -121,6 +121,46 @@ fun RoyalCustomerInterface(
         } else {
             RoyalCream
         }
+        
+    val spectrumTransition =
+        rememberInfiniteTransition(
+            label = "royal_customer_rgb"
+        )
+
+    val spectrumShift by
+        spectrumTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = 14000,
+                        easing = LinearEasing
+                    ),
+                    repeatMode = RepeatMode.Reverse
+                ),
+            label = "royal_customer_rgb_shift"
+        )
+
+    val animatedBackground =
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFF08070B),
+                Color(0xFF512568),
+                Color(0xFF007F76),
+                Color(0xFFD4AF37),
+                Color(0xFF08070B)
+            ),
+            start = Offset(
+                spectrumShift * 900f,
+                0f
+            ),
+            end = Offset(
+                900f - spectrumShift * 600f,
+                1200f
+            )
+        )
+        
 
     ModalNavigationDrawer(
 
@@ -215,8 +255,8 @@ fun RoyalCustomerInterface(
                 Modifier
                     .fillMaxSize()
                     .background(
-                        backgroundColor
-                    )
+    animatedBackground
+)
         ) {
 
             /*
