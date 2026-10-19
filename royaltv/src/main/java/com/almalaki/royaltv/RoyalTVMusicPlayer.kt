@@ -1144,6 +1144,7 @@ Row(
         }
     }
         }
+        )
 
     // التالي: اتجاه السهمين إلى اليسار
     MusicImageButton(
@@ -1229,6 +1230,7 @@ MusicImageButton(
         message = "تعذّر تغيير وضع التكرار."
     }
     }
+    )
 
 
     MusicButton(
