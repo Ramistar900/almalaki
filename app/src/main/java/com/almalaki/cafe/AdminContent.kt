@@ -229,14 +229,28 @@ if (section == AdminSection.ROYAL_TV_CONTROL) {
                     )
                 }
             }
-            AdminSection.INTERFACE_SETTINGS -> {
+            
+AdminSection.INTERFACE_SETTINGS -> {
     item {
-        AdminInterfaceSettings(
-            context = context,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AdminInterfaceSettings(
+                context = context,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            HorizontalDivider()
+
+            AdminCustomerSections(
+                accessToken = accessToken,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
-            }
+}
+
             
             AdminSection.TV_SETTINGS -> Unit
 
