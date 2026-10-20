@@ -712,6 +712,8 @@ fun RoyalShinyLogo(
  @Composable
 private fun RoyalTopBar(
     isDarkMode: Boolean,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     onMenuClick: () -> Unit
 ) {
     var isFocused by remember {
