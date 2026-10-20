@@ -205,16 +205,18 @@ var invoiceTotalAmount by remember {
             matchesCategory && matchesSearch
         }
 
+        
         RoyalCustomerInterface(
-    isDarkMode = darkMode,
-    newsText = interfaceSettings.newsText,
-    onOwnerLogin = onOwner,
-    onSettings = {
-        showCustomerSettings = true
-        searchQuery = searchQuery,
-onSearchQueryChange = { searchQuery = it },
-    }
-) {
+            isDarkMode = darkMode,
+            newsText = interfaceSettings.newsText,
+            onOwnerLogin = onOwner,
+            onSettings = {
+                showCustomerSettings = true
+            },
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it }
+        ) {
+            
     Column(
         Modifier
             .fillMaxSize()
