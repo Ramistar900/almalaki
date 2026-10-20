@@ -275,14 +275,14 @@ fun RoyalCustomerInterface(
             ) {
 
                 RoyalTopBar(
-                    isDarkMode
-                ) {
-
-                    scope.launch {
-                        drawerState.open()
-                    }
-
-                    onMenuClick()
+    isDarkMode = isDarkMode,
+    searchQuery = searchQuery,
+    onSearchQueryChange = onSearchQueryChange
+) {
+    scope.launch {
+        drawerState.open()
+    }
+    onMenuClick()
                 }
 
                 RoyalTitleFrame(
