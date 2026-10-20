@@ -211,6 +211,8 @@ var invoiceTotalAmount by remember {
     onOwnerLogin = onOwner,
     onSettings = {
         showCustomerSettings = true
+        searchQuery = searchQuery,
+onSearchQueryChange = { searchQuery = it },
     }
 ) {
     Column(
