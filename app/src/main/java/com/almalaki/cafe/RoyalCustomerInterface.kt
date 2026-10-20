@@ -106,6 +106,8 @@ fun RoyalCustomerInterface(
     onOwnerLogin: () -> Unit = {},
     onSettings: () -> Unit = {},
     onMenuClick: () -> Unit = {},
+  searchQuery: String = "",
+onSearchQueryChange: (String) -> Unit = {},
     content: @Composable () -> Unit
 ) {
 
