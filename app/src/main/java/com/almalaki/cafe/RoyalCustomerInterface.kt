@@ -709,7 +709,8 @@ fun RoyalShinyLogo(
  * الشريط العلوي
  * ============================================================
  */
- @Composable
+ 
+@Composable
 private fun RoyalTopBar(
     isDarkMode: Boolean,
     searchQuery: String,
@@ -721,30 +722,27 @@ private fun RoyalTopBar(
     }
 
     val background =
-        if (isDarkMode) {
-            RoyalCard
-        } else {
-            Color.White
-        }
+        if (isDarkMode) RoyalCard else Color.White
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(background)
-                .padding(
-                    horizontal = 8.dp,
-                    vertical = 8.dp
-                )
+    val searchTextColor =
+        if (isDarkMode) RoyalCream else RoyalDarkText
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(background)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-
-        IconButton(
-            onClick = onMenuClick,
-
-            modifier =
-                Modifier
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(42.dp)
+        ) {
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .size(48.dp)
+                    .size(42.dp)
                     .onFocusChanged {
                         isFocused = it.isFocused
                     }
@@ -752,55 +750,92 @@ private fun RoyalTopBar(
                     .then(
                         if (isFocused) {
                             Modifier.border(
-                                width = 2.dp,
-                                color = RoyalGold,
-                                shape = RoundedCornerShape(14.dp)
+                                2.dp,
+                                RoyalGold,
+                                RoundedCornerShape(12.dp)
                             )
                         } else {
                             Modifier
                         }
                     )
-        ) {
-
-            Icon(
-                Icons.Default.Menu,
-
-                "القائمة",
-
-                tint =
-                    if (isFocused) {
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "القائمة",
+                    tint = if (isFocused) {
                         RoyalGoldLight
                     } else {
                         RoyalGold
                     },
+                    modifier = Modifier.size(28.dp)
+                )
+            }
 
-                modifier =
-                    Modifier.size(32.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(start = 38.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RoyalActiveLogo(size = 32.dp)
+
+                Spacer(Modifier.width(6.dp))
+
+                RoyalShinyLogo()
+            }
         }
 
-        Row(
-            modifier =
-                Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 55.dp),
+        Spacer(Modifier.height(5.dp))
 
-            verticalAlignment =
-                Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(34.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    if (isDarkMode) {
+                        Color.White.copy(alpha = 0.06f)
+                    } else {
+                        Color.Black.copy(alpha = 0.04f)
+                    }
+                )
+                .border(
+                    1.dp,
+                    RoyalGold.copy(alpha = 0.75f),
+                    RoundedCornerShape(12.dp)
+                )
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+            contentAlignment = Alignment.CenterStart
         ) {
-
-            RoyalActiveLogo(
-                size = 42.dp
+            androidx.compose.foundation.text.BasicTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = searchTextColor,
+                    fontSize = 12.sp
+                ),
+                cursorBrush = Brush.solidColor(RoyalGold),
+                decorationBox = { innerTextField ->
+                    Box(
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (searchQuery.isEmpty()) {
+                            Text(
+                                text = "ابحث عن منتج...",
+                                color = RoyalGray,
+                                fontSize = 12.sp
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
             )
-
-            Spacer(
-                Modifier.width(8.dp)
-            )
-
-            RoyalShinyLogo()
         }
     }
 }
+
 
 /*
  * ============================================================
