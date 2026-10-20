@@ -16,6 +16,13 @@ name: Build ROYAL TV APK
       - 'gradle/libs.versions.toml'
       - '.github/workflows/build-royaltv.yml'
 
+permissions:
+  contents: write
+
+concurrency:
+  group: royaltv-versioned-build
+  cancel-in-progress: false
+
 jobs:
   build-royaltv:
     runs-on: ubuntu-latest
@@ -69,6 +76,78 @@ jobs:
             -storepass "$ROYALTV_STORE_PASSWORD" \
             -alias "$ROYALTV_KEY_ALIAS"
 
+      - name: Prepare next ROYAL TV version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import pathlib
+          import re
+
+          path = pathlib.Path("royaltv/build.gradle.kts")
+          content = path.read_text(encoding="utf-8")
+
+          code_match = re.search(
+              r'(?m)^(\s*versionCode\s*=\s*)(\d+)\s*$',
+              content
+          )
+          name_match = re.search(
+              r'(?m)^(\s*versionName\s*=\s*)"([^"]+)"\s*$',
+              content
+          )
+
+          if not code_match or not name_match:
+              raise SystemExit(
+                  "Could not safely find versionCode and versionName."
+              )
+
+          old_code = int(code_match.group(2))
+          old_name = name_match.group(2)
+          parts = old_name.split(".")
+
+          if len(parts) < 2 or not all(part.isdigit() for part in parts):
+              raise SystemExit(
+                  f"Unsupported versionName format: {old_name}"
+              )
+
+          parts[1] = str(int(parts[1]) + 1)
+
+          if len(parts) > 2:
+              parts[2:] = ["0"] * (len(parts) - 2)
+
+          new_name = ".".join(parts)
+          new_code = old_code + 1
+
+          content = re.sub(
+              r'(?m)^(\s*versionCode\s*=\s*)\d+\s*$',
+              lambda match: match.group(1) + str(new_code),
+              content,
+              count=1
+          )
+
+          content = re.sub(
+              r'(?m)^(\s*versionName\s*=\s*)"[^"]+"\s*$',
+              lambda match: match.group(1) + '"' + new_name + '"',
+              content,
+              count=1
+          )
+
+          path.write_text(content, encoding="utf-8")
+
+          with open(
+              __import__("os").environ["GITHUB_OUTPUT"],
+              "a",
+              encoding="utf-8"
+          ) as output:
+              output.write(f"new_version={new_name}\n")
+              output.write(f"new_code={new_code}\n")
+
+          print(f"ROYAL TV version: {old_name} -> {new_name}")
+          print(f"ROYAL TV versionCode: {old_code} -> {new_code}")
+          PY
+
       - name: Build ROYAL TV Debug and Release
         env:
           ROYALTV_STORE_PASSWORD: ${{ secrets.ROYALTV_STORE_PASSWORD }}
@@ -83,6 +162,7 @@ jobs:
           APK="royaltv/build/outputs/apk/debug/royaltv-debug.apk"
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+
           test -s "$APK"
           echo "===== DEBUG APK SHA-256 ====="
           sha256sum "$APK"
@@ -112,3 +192,25 @@ jobs:
           name: ROYAL-TV-Release-APK
           path: royaltv/build/outputs/apk/release/royaltv-release.apk
           if-no-files-found: error
+
+      - name: Save version after successful build
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.new_version }}
+          NEW_CODE: ${{ steps.version.outputs.new_code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add royaltv/build.gradle.kts
+
+          if git diff --cached --quiet; then
+            echo "No version change to save."
+            exit 1
+          fi
+
+          git commit -m "chore(royaltv): bump version to $NEW_VERSION ($NEW_CODE)"
+          git push origin HEAD:main
+          
