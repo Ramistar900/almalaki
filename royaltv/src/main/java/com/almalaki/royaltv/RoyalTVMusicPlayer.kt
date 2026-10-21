@@ -211,6 +211,7 @@ fun RoyalTVMusicPlayer(
     }
 
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
+    var spectrumData by remember { mutableStateOf(ByteArray(0)) }
 
     val permissionName = if (Build.VERSION.SDK_INT >= 33) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -349,8 +350,21 @@ fun startTrack(index: Int) {
                 context: Context?,
                 intent: Intent?
             ) {
+                                if (intent == null) return
+
                 if (
-                    intent?.action !=
+                    intent.action ==
+                    RoyalTVMusicPlaybackService.ACTION_SPECTRUM
+                ) {
+                    spectrumData =
+                        intent.getByteArrayExtra(
+                            RoyalTVMusicPlaybackService.EXTRA_SPECTRUM
+                        )?.copyOf() ?: ByteArray(0)
+                    return
+                }
+
+                if (
+                    intent.action !=
                     RoyalTVMusicPlaybackService.ACTION_STATE
                 ) return
 
@@ -387,14 +401,21 @@ fun startTrack(index: Int) {
             }
         }
 
+        
         ContextCompat.registerReceiver(
             context,
             receiver,
-            IntentFilter(
-                RoyalTVMusicPlaybackService.ACTION_STATE
-            ),
+            IntentFilter().apply {
+                addAction(
+                    RoyalTVMusicPlaybackService.ACTION_STATE
+                )
+                addAction(
+                    RoyalTVMusicPlaybackService.ACTION_SPECTRUM
+                )
+            },
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        
 
         onDispose {
             try {
