@@ -816,7 +816,7 @@ private fun RoyalTopBar(
                     color = searchTextColor,
                     fontSize = 12.sp
                 ),
-                cursorBrush = Brush.solidColor(RoyalGold),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(RoyalGold),
                 decorationBox = { innerTextField ->
                     Box(
                         contentAlignment = Alignment.CenterStart
