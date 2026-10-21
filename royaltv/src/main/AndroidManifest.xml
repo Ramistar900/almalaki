@@ -5,6 +5,7 @@
         android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- الوصول إلى مكتبة الموسيقى -->
 <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <!-- مكتبة الصور والفيديو في ROYAL TV -->
