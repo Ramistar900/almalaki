@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 private val MusicGold = Color(0xFFB99A52)
 private val MusicPearl = Color(0xFFDCE5EE)
@@ -930,11 +932,78 @@ Box(
     fontSize = 11.sp,
     fontWeight = FontWeight.Bold,
     letterSpacing = 2.sp,
+    
     textAlign = TextAlign.Center
 )
+
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth(0.78f)
+                            .height(38.dp)
+                            .align(Alignment.BottomCenter)
+                    ) {
+                        val bars = 32
+                        val gap = 3.dp.toPx()
+                        val barWidth =
+                            (size.width - gap * (bars - 1)) / bars
+
+                        for (i in 0 until bars) {
+                            val dataIndex =
+                                if (spectrumData.isNotEmpty()) {
+                                    (i * spectrumData.size / bars)
+                                        .coerceIn(
+                                            0,
+                                            spectrumData.lastIndex
+                                        )
+                                } else {
+                                    0
+                                }
+
+                            val raw =
+                                if (spectrumData.isNotEmpty()) {
+                                    kotlin.math.abs(
+                                        spectrumData[dataIndex].toInt()
+                                    ) / 128f
+                                } else {
+                                    0f
+                                }
+
+                            val amplitude =
+                                if (isPlaying && spectrumData.isNotEmpty()) {
+                                    (raw * 0.85f + 0.12f)
+                                        .coerceIn(0.12f, 1f)
+                                } else {
+                                    0.08f
+                                }
+
+                            val barHeight = size.height * amplitude
+                            val x = i * (barWidth + gap)
+                            val y = (size.height - barHeight) / 2f
+
+                            drawRoundRect(
+                                color = MusicSpectrum[
+                                    i % MusicSpectrum.size
+                                ].copy(
+                                    alpha = if (isPlaying) 0.95f else 0.25f
+                                ),
+                                topLeft = androidx.compose.ui.geometry.Offset(
+                                    x,
+                                    y
+                                ),
+                                size = androidx.compose.ui.geometry.Size(
+                                    barWidth,
+                                    barHeight
+                                ),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                                    barWidth / 2f
+                                )
+                            )
+                        }
+                    }
                     }
 
                     // معلومات الأغنية وأدوات التحكم
+                    
                     Column(
                         modifier = Modifier
                             .weight(1f)
