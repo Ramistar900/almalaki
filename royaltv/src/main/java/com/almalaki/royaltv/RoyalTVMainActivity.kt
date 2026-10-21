@@ -693,11 +693,9 @@ BroadcastWindow(
     currentTime = currentTime,
     currentDate = currentDate,
     onToggleFullscreen = {
-        fullscreen = false
-        selectedSourceState = selectedSourceState,
-        selectedAppState = selectedAppState,
-    },
-    modifier = Modifier.fillMaxSize()
+    fullscreen = false
+},
+modifier = Modifier.fillMaxSize()
 )
 
 
@@ -748,6 +746,8 @@ BroadcastWindow(
                         BroadcastWindow(
                             liveAlpha = liveAlpha,
                             fullscreen = false,
+                            selectedSourceState = selectedSourceState,
+                            selectedAppState = selectedAppState,
                             displayState = displayState,
                             tickerText = tickerText,
                             currentTime = currentTime,
