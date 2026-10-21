@@ -68,4 +68,5 @@ dependencies {
     implementation("io.ktor:ktor-client-android:3.2.1")
 
     implementation("androidx.window:window:1.4.0")
+    implementation("com.google.zxing:core:3.5.3")
 }
