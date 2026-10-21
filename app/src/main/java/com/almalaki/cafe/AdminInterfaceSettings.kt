@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -610,6 +611,11 @@ fun AdminInterfaceSettings(
             saved.bottomLogoPath
         )
     }
+    var textLogoConfig by remember {
+    mutableStateOf(
+        RoyalTextLogoSettings.load(context)
+    )
+    }
 
     var logoLibrary by remember {
         mutableStateOf(
@@ -906,6 +912,81 @@ fun AdminInterfaceSettings(
                     )
                 }
             }
+            Spacer(Modifier.height(8.dp))
+
+Text(
+    text = "✨ إعدادات الشعار النصي المتحرك",
+    color = AdminGold,
+    fontSize = 18.sp
+)
+
+OutlinedTextField(
+    value = textLogoConfig.text,
+    onValueChange = {
+        textLogoConfig = textLogoConfig.copy(text = it)
+    },
+    modifier = Modifier.fillMaxWidth(),
+    label = { Text("اسم الشعار النصي") },
+    singleLine = true
+)
+
+Text(
+    text = "اختر نمط الخط",
+    color = AdminCream,
+    fontSize = 14.sp
+)
+
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+) {
+    Button(
+        onClick = {
+            textLogoConfig = textLogoConfig.copy(
+                style = RoyalTextLogoStyle.CLASSIC_CALLIGRAPHY
+            )
+        },
+        modifier = Modifier.weight(1f)
+    ) {
+        Text(
+            if (textLogoConfig.style ==
+                RoyalTextLogoStyle.CLASSIC_CALLIGRAPHY
+            ) "✓ كلاسيكي" else "كلاسيكي"
+        )
+    }
+
+    Button(
+        onClick = {
+            textLogoConfig = textLogoConfig.copy(
+                style = RoyalTextLogoStyle.MODERN_SIGNATURE
+            )
+        },
+        modifier = Modifier.weight(1f)
+    ) {
+        Text(
+            if (textLogoConfig.style ==
+                RoyalTextLogoStyle.MODERN_SIGNATURE
+            ) "✓ توقيع حديث" else "توقيع حديث"
+        )
+    }
+}
+
+Text(
+    text = "حجم الخط: ${textLogoConfig.fontSizeSp}",
+    color = AdminCream,
+    fontSize = 14.sp
+)
+
+Slider(
+    value = textLogoConfig.fontSizeSp.toFloat(),
+    onValueChange = { size ->
+        textLogoConfig = textLogoConfig.copy(
+            fontSizeSp = size.toInt().coerceIn(16, 56)
+        )
+    },
+    valueRange = 16f..56f,
+    steps = 39
+)
 
             OutlinedTextField(
                 value = newsText,
@@ -935,6 +1016,10 @@ fun AdminInterfaceSettings(
                         topLogoPath = topLogoPath,
                         bottomLogoPath = bottomLogoPath
                     )
+                    RoyalTextLogoSettings.save(
+                    context = context,
+                    config = textLogoConfig
+                    )
 
                     logoLibrary =
                         loadRoyalLogoLibrary(
@@ -947,7 +1032,7 @@ fun AdminInterfaceSettings(
                         )
 
                     message =
-                        "تم حفظ إعدادات الواجهة ومكتبة الشعارات بنجاح ✓"
+    "تم حفظ إعدادات الواجهة والشعار النصي ومكتبة الشعارات بنجاح ✔️"
                 },
 
                 modifier =
