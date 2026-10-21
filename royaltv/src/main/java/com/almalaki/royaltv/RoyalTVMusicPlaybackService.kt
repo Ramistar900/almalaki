@@ -309,19 +309,80 @@ class RoyalTVMusicPlaybackService : Service() {
     }
 
     
-private fun releasePlayer() {
-    stopVisualizer()
-    handler.removeCallbacks(stateTicker)
+    private fun startVisualizer(audioSessionId: Int) {
+        stopVisualizer()
 
-    try {
-        player?.setOnCompletionListener(null)
-        player?.release()
-    } catch (_: Exception) {
+        if (
+            checkSelfPermission(
+                android.Manifest.permission.RECORD_AUDIO
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        try {
+            val effect = Visualizer(audioSessionId)
+            effect.captureSize = Visualizer.getCaptureSizeRange()[1]
+
+            effect.setDataCaptureListener(
+                object : Visualizer.OnDataCaptureListener {
+                    override fun onWaveFormDataCapture(
+                        visualizer: Visualizer?,
+                        waveform: ByteArray?,
+                        samplingRate: Int
+                    ) = Unit
+
+                    override fun onFftDataCapture(
+                        visualizer: Visualizer?,
+                        fft: ByteArray?,
+                        samplingRate: Int
+                    ) {
+                        if (fft == null) return
+
+                        val intent = Intent(ACTION_SPECTRUM).apply {
+                            setPackage(packageName)
+                            putExtra(EXTRA_SPECTRUM, fft)
+                        }
+
+                        sendBroadcast(intent)
+                    }
+                },
+                (Visualizer.getMaxCaptureRate() / 2).coerceAtLeast(1),
+                false,
+                true
+            )
+
+            visualizer = effect
+            effect.enabled = true
+        } catch (_: Exception) {
+            stopVisualizer()
+        }
     }
 
-    player = null
-    broadcastState()
-}
+    private fun stopVisualizer() {
+        try {
+            visualizer?.enabled = false
+            visualizer?.release()
+        } catch (_: Exception) {
+        }
+
+        visualizer = null
+    }
+
+    private fun releasePlayer() {
+        stopVisualizer()
+        handler.removeCallbacks(stateTicker)
+
+        try {
+            player?.setOnCompletionListener(null)
+            player?.release()
+        } catch (_: Exception) {
+        }
+
+        player = null
+        broadcastState()
+    }
+    
 
 
     private fun createNotificationChannel() {
