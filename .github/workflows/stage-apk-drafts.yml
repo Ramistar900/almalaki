@@ -129,7 +129,7 @@ jobs:
 
           gh release create "$TAG" "$RUNNER_TEMP/$FILENAME" \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
+            --target "$SOURCE_SHA" \
             --draft \
             --title "$TITLE" \
             --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
