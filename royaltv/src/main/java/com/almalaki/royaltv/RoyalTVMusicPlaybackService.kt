@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.media.MediaPlayer
+import android.media.audiofx.Visualizer
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -35,6 +36,9 @@ class RoyalTVMusicPlaybackService : Service() {
             "com.almalaki.royaltv.music.SEEK"
         const val ACTION_STATE =
             "com.almalaki.royaltv.music.STATE"
+        const val ACTION_SPECTRUM =
+            "com.almalaki.royaltv.music.SPECTRUM"
+        const val EXTRA_SPECTRUM = "music_spectrum"
 
         const val EXTRA_URIS = "music_uris"
         const val EXTRA_TITLES = "music_titles"
@@ -54,6 +58,7 @@ class RoyalTVMusicPlaybackService : Service() {
     }
 
     private var player: MediaPlayer? = null
+    private var visualizer: Visualizer? = null
     private var uris = arrayListOf<String>()
     private var titles = arrayListOf<String>()
     private var artists = arrayListOf<String>()
@@ -206,6 +211,7 @@ class RoyalTVMusicPlaybackService : Service() {
             }
 
             created.start()
+            startVisualizer(created.audioSessionId)
             scheduleStateBroadcast()
             broadcastState()
             updateNotification()
@@ -302,18 +308,21 @@ class RoyalTVMusicPlaybackService : Service() {
         sendBroadcast(stateIntent)
     }
 
-    private fun releasePlayer() {
-        handler.removeCallbacks(stateTicker)
+    
+private fun releasePlayer() {
+    stopVisualizer()
+    handler.removeCallbacks(stateTicker)
 
-        try {
-            player?.setOnCompletionListener(null)
-            player?.release()
-        } catch (_: Exception) {
-        }
-
-        player = null
-        broadcastState()
+    try {
+        player?.setOnCompletionListener(null)
+        player?.release()
+    } catch (_: Exception) {
     }
+
+    player = null
+    broadcastState()
+}
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
