@@ -456,6 +456,13 @@ private fun RoyalTVChannelScreen(
     var fullscreen by remember {
         mutableStateOf(false)
     }
+    val selectedSourceState = remember {
+    mutableStateOf<String?>(null)
+}
+
+val selectedAppState = remember {
+    mutableStateOf<RoyalTVInstalledApp?>(null)
+}
 
     /*
      * تحديث الوقت والتاريخ كل ثانية.
@@ -679,12 +686,16 @@ LaunchedEffect(adsImageUris) {
 BroadcastWindow(
     liveAlpha = liveAlpha,
     fullscreen = true,
+    selectedSourceState = selectedSourceState,
+    selectedAppState = selectedAppState,
     displayState = displayState,
     tickerText = tickerText,
     currentTime = currentTime,
     currentDate = currentDate,
     onToggleFullscreen = {
         fullscreen = false
+        selectedSourceState = selectedSourceState,
+        selectedAppState = selectedAppState,
     },
     modifier = Modifier.fillMaxSize()
 )
@@ -847,6 +858,8 @@ BroadcastWindow(
 private fun BroadcastWindow(
     liveAlpha: Float,
     fullscreen: Boolean,
+    selectedSourceState: androidx.compose.runtime.MutableState<String?>,
+    selectedAppState: androidx.compose.runtime.MutableState<RoyalTVInstalledApp?>,
     displayState: RoyalTVState,
     tickerText: String,
     currentTime: String,
@@ -854,13 +867,8 @@ private fun BroadcastWindow(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedSource by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    var selectedApp by remember {
-        mutableStateOf<RoyalTVInstalledApp?>(null)
-    }
+    var selectedSource by selectedSourceState
+    var selectedApp by selectedAppState
     
     var incomingStreamActive by remember {
         mutableStateOf(false)
