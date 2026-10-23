@@ -61,6 +61,9 @@ if (showCustomerSettings) {
     var products by remember {
         mutableStateOf<List<Product>>(emptyList())
     }
+    var customerSections by remember {
+    mutableStateOf<List<CustomerSection>>(emptyList())
+    }
 
     var loading by remember {
         mutableStateOf(true)
@@ -136,16 +139,23 @@ var invoiceTotalAmount by remember {
     }
 
     LaunchedEffect(Unit) {
-        Thread {
-            try {
-                products = loadProducts()
-            } catch (e: Exception) {
-                message =
-                    e.message ?: "تعذر تحميل المنتجات."
-            }
+    Thread {
+        try {
+            products = loadProducts()
+        } catch (e: Exception) {
+            message = e.message
+                ?: "تعذر تحميل المنتجات."
+        }
 
-            loading = false
-        }.start()
+        try {
+            customerSections = loadCustomerSections()
+        } catch (_: Exception) {
+            // إذا تعذر تحميل إعدادات الأقسام،
+            // تبقى المنتجات ظاهرة كالمعتاد.
+        }
+
+        loading = false
+    }.start()
     }
 
     val background =
@@ -183,27 +193,63 @@ var invoiceTotalAmount by remember {
         }
 
     /*
-     * المنتجات بعد تطبيق البحث والتصنيف
-     */
-    val filteredProducts =
-        products.filter { product ->
+ * تحديد التصنيفات الظاهرة بحسب إعدادات المالك
+ */
+val sectionCategoryNames =
+    customerSections
+        .flatMap { it.categoryNames }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .toSet()
 
-            val matchesCategory =
-                selectedCategory == "الكل" ||
-                    product.category.trim() == selectedCategory
+val enabledSectionCategoryNames =
+    customerSections
+        .filter { it.enabled }
+        .flatMap { it.categoryNames }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .toSet()
 
-            val query =
-                searchQuery.trim()
+val visibleProducts =
+    products.filter { product ->
+        val category = product.category.trim()
 
-            val matchesSearch =
-                query.isEmpty() ||
-                    product.name.contains(
-                        query,
-                        ignoreCase = true
-                    )
+        category !in sectionCategoryNames ||
+            category in enabledSectionCategoryNames
+    }
 
-            matchesCategory && matchesSearch
-        }
+/*
+ * التصنيفات المتاحة للعميل
+ */
+val categories =
+    remember(visibleProducts) {
+        listOf("الكل") +
+            visibleProducts
+                .map { it.category.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+    }
+
+/*
+ * المنتجات بعد تطبيق البحث والتصنيف والإخفاء
+ */
+val filteredProducts =
+    visibleProducts.filter { product ->
+        val matchesCategory =
+            selectedCategory == "الكل" ||
+                product.category.trim() == selectedCategory
+
+        val query = searchQuery.trim()
+
+        val matchesSearch =
+            query.isEmpty() ||
+                product.name.contains(
+                    query,
+                    ignoreCase = true
+                )
+
+        matchesCategory && matchesSearch
+    }
 
         
         RoyalCustomerInterface(
