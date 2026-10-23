@@ -211,7 +211,8 @@ jobs:
             exit 1
           fi
 
-          git commit -m "chore(royaltv): bump version to $NEW_VERSION ($NEW_CODE)"
-git pull --rebase origin main
-git push origin HEAD:main
+          git commit -m "chore(royaltv):
+      bump version to $NEW_VERSION ($NEW_CODE)"
+          git pull --rebase origin main
+          git push origin HEAD:main
           
