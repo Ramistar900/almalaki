@@ -1,5 +1,6 @@
 package com.almalaki.royaltv
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.ImageView
@@ -462,6 +463,21 @@ private fun RoyalTVChannelScreen(
 
 val selectedAppState = remember {
     mutableStateOf<RoyalTVInstalledApp?>(null)
+}
+BackHandler {
+    when {
+        selectedAppState.value != null -> {
+            selectedAppState.value = null
+        }
+
+        selectedSourceState.value != null -> {
+            selectedSourceState.value = null
+        }
+
+        else -> {
+            // نبقى في الشاشة الرئيسية بدل الخروج بضغطة واحدة.
+        }
+    }
 }
 
     /*
