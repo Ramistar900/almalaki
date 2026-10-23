@@ -192,31 +192,6 @@ var invoiceTotalAmount by remember {
                     .distinct()
         }
 
-    /*
- * تحديد التصنيفات الظاهرة بحسب إعدادات المالك
- */
-val sectionCategoryNames =
-    customerSections
-        .flatMap { it.categoryNames }
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toSet()
-
-val enabledSectionCategoryNames =
-    customerSections
-        .filter { it.enabled }
-        .flatMap { it.categoryNames }
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .toSet()
-
-val visibleProducts =
-    products.filter { product ->
-        val category = product.category.trim()
-
-        category !in sectionCategoryNames ||
-            category in enabledSectionCategoryNames
-    }
 
 /*
  * التصنيفات المتاحة للعميل
