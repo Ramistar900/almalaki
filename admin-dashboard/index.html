@@ -95,6 +95,48 @@
 
     button:disabled { opacity: .55; cursor: wait; }
 
+    
+.release-review-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 14px;
+  background: #141420;
+}
+
+.release-review-item code {
+  direction: ltr;
+  overflow-wrap: anywhere;
+}
+
+a.release-link {
+  display: block;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  color: var(--gold);
+  text-align: center;
+  text-decoration: none;
+  font-weight: 750;
+}
+
+a.release-link:focus,
+a.release-link:hover {
+  background: #29233a;
+  outline-offset: 3px;
+}
+
+.release-warning {
+  margin: 16px 0 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #80633a;
+  color: #f3d59b;
+  background: #211c18;
+}
+    
+
     .hidden { display: none !important; }
 
     .status {
@@ -230,6 +272,45 @@
         اضغط «فحص حالة البناء» لعرض آخر النتائج.
       </div>
     </div>
+
+    
+<div class="panel">
+  <h2>مراجعة مسودات الإصدارات</h2>
+  <p class="muted">
+    افتح مسودة التطبيق لمراجعة ملف APK وتفاصيل الإصدار.
+    النشر النهائي يتطلب قرارًا يدويًا داخل GitHub.
+  </p>
+
+  <div class="release-review-item">
+    <div class="app-title">الملكي — Almalaki</div>
+    <p class="muted">
+      المسودة: <code>almalaki-auto-staging-draft</code>
+    </p>
+    <a class="release-link"
+       href="https://github.com/Ramistar900/almalaki/releases/edit/almalaki-auto-staging-draft"
+       target="_blank" rel="noopener noreferrer">
+      فتح مسودة Almalaki في GitHub
+    </a>
+  </div>
+
+  <div class="release-review-item">
+    <div class="app-title">ROYAL TV</div>
+    <p class="muted">
+      المسودة: <code>royaltv-latest-draft</code>
+    </p>
+    <a class="release-link"
+       href="https://github.com/Ramistar900/almalaki/releases/edit/royaltv-latest-draft"
+       target="_blank" rel="noopener noreferrer">
+      فتح مسودة ROYAL TV في GitHub
+    </a>
+  </div>
+
+  <p class="release-warning">
+    لن يُنشر الإصدار بمجرد فتح المسودة. لا تضغط
+    «Publish release» إلا بعد مراجعة APK وموافقتك النهائية.
+  </p>
+</div>
+    
     
     
   </section>
