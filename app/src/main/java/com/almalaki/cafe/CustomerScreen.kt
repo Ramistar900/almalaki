@@ -180,51 +180,69 @@ var invoiceTotalAmount by remember {
     val totalItems =
         cart.values.sum()
 
+    
     /*
-     * استخراج التصنيفات الموجودة فعليًا في المنتجات
+     * تحديد التصنيفات الظاهرة بحسب إعدادات المالك
+     */
+    val sectionCategoryNames =
+        customerSections
+            .flatMap { it.categoryNames }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+
+    val enabledSectionCategoryNames =
+        customerSections
+            .filter { it.enabled }
+            .flatMap { it.categoryNames }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+
+    /*
+     * إخفاء منتجات الأقسام المعطلة عن العميل
+     */
+    val visibleProducts =
+        products.filter { product ->
+            val category = product.category.trim()
+
+            category !in sectionCategoryNames ||
+                category in enabledSectionCategoryNames
+        }
+
+    /*
+     * التصنيفات المتاحة للعميل
      */
     val categories =
-        remember(products) {
+        remember(visibleProducts) {
             listOf("الكل") +
-                products
+                visibleProducts
                     .map { it.category.trim() }
                     .filter { it.isNotEmpty() }
                     .distinct()
         }
 
+    /*
+     * المنتجات بعد تطبيق البحث والتصنيف والإخفاء
+     */
+    val filteredProducts =
+        visibleProducts.filter { product ->
+            val matchesCategory =
+                selectedCategory == "الكل" ||
+                    product.category.trim() == selectedCategory
 
-/*
- * التصنيفات المتاحة للعميل
- */
-val categories =
-    remember(visibleProducts) {
-        listOf("الكل") +
-            visibleProducts
-                .map { it.category.trim() }
-                .filter { it.isNotEmpty() }
-                .distinct()
-    }
+            val query = searchQuery.trim()
 
-/*
- * المنتجات بعد تطبيق البحث والتصنيف والإخفاء
- */
-val filteredProducts =
-    visibleProducts.filter { product ->
-        val matchesCategory =
-            selectedCategory == "الكل" ||
-                product.category.trim() == selectedCategory
+            val matchesSearch =
+                query.isEmpty() ||
+                    product.name.contains(
+                        query,
+                        ignoreCase = true
+                    )
 
-        val query = searchQuery.trim()
-
-        val matchesSearch =
-            query.isEmpty() ||
-                product.name.contains(
-                    query,
-                    ignoreCase = true
-                )
-
-        matchesCategory && matchesSearch
-    }
+            matchesCategory && matchesSearch
+        }
+        
 
         
         RoyalCustomerInterface(
