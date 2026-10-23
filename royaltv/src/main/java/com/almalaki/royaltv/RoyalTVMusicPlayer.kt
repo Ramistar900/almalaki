@@ -993,59 +993,68 @@ Box(
     }
 
 for (i in 0 until bars) {
-    // حساب شدة التردد من زوج FFT الحقيقي والتخيلي
     val raw =
         if (binCount > 0 && spectrumData.isNotEmpty()) {
-            val bin = 1 +
-                (i * (binCount - 1) /
-                    (bars - 1).coerceAtLeast(1))
+            val maxBin = binCount.coerceAtLeast(1)
 
-            val realIndex = bin * 2
-            val imaginaryIndex = realIndex + 1
+            val startBin = Math.pow(
+                maxBin.toDouble(),
+                i.toDouble() / bars
+            ).toInt().coerceIn(1, maxBin)
 
-            if (imaginaryIndex < spectrumData.size) {
-                kotlin.math.hypot(
-                    spectrumData[realIndex].toDouble(),
-                    spectrumData[imaginaryIndex].toDouble()
-                ).toFloat() / 128f
-            } else {
-                0f
+            val endBin = Math.ceil(
+                Math.pow(
+                    maxBin.toDouble(),
+                    (i + 1).toDouble() / bars
+                )
+            ).toInt().coerceIn(startBin, maxBin)
+
+            var peak = 0f
+
+            for (bin in startBin..endBin) {
+                val realIndex = bin * 2
+                val imaginaryIndex = realIndex + 1
+
+                if (imaginaryIndex < spectrumData.size) {
+                    val magnitude = kotlin.math.hypot(
+                        spectrumData[realIndex].toDouble(),
+                        spectrumData[imaginaryIndex].toDouble()
+                    ).toFloat() / 128f
+
+                    if (magnitude > peak) {
+                        peak = magnitude
+                    }
+                }
             }
+
+            kotlin.math.sqrt(peak.coerceIn(0f, 1f))
         } else {
             0f
         }
 
-                            val amplitude =
-                                if (isPlaying && spectrumData.isNotEmpty()) {
-                                    (raw * 0.85f + 0.12f)
-                                        .coerceIn(0.12f, 1f)
-                                } else {
-                                    0.08f
-                                }
+    val amplitude =
+        if (isPlaying && spectrumData.isNotEmpty()) {
+            (raw * 0.85f + 0.12f).coerceIn(0.12f, 1f)
+        } else {
+            0.08f
+        }
 
-                            val barHeight = size.height * amplitude
-                            val x = i * (barWidth + gap)
-                            val y = (size.height - barHeight) / 2f
+    val barHeight = size.height * amplitude
+    val x = i * (barWidth + gap)
+    val y = (size.height - barHeight) / 2f
 
-                            drawRoundRect(
-                                color = MusicSpectrum[
-                                    i % MusicSpectrum.size
-                                ].copy(
-                                    alpha = if (isPlaying) 0.95f else 0.25f
-                                ),
-                                topLeft = androidx.compose.ui.geometry.Offset(
-                                    x,
-                                    y
-                                ),
-                                size = androidx.compose.ui.geometry.Size(
-                                    barWidth,
-                                    barHeight
-                                ),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
-                                    barWidth / 2f
-                                )
-                            )
-                        }
+    drawRoundRect(
+        color = MusicSpectrum[i % MusicSpectrum.size].copy(
+            alpha = if (isPlaying) 0.95f else 0.25f
+        ),
+        topLeft = androidx.compose.ui.geometry.Offset(x, y),
+        size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+            barWidth / 2f
+        )
+    )
+}
+
                     }
                     }
 
