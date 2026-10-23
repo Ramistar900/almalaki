@@ -861,7 +861,7 @@ private fun RoyalTitleFrame(
                 .fillMaxWidth()
                 .padding(
                     horizontal = 16.dp,
-                    vertical = 8.dp
+                    vertical = 3.dp
                 )
                 .clip(
                     RoundedCornerShape(18.dp)
@@ -873,8 +873,8 @@ private fun RoyalTitleFrame(
                 )
                 .background(background)
                 .padding(
-                    horizontal = 16.dp,
-                    vertical = 13.dp
+                    horizontal = 10.dp,
+                    vertical = 5.dp
                 ),
 
         contentAlignment =
@@ -887,9 +887,9 @@ private fun RoyalTitleFrame(
         ) {
 
             Text(
-                "قائمة Royal",
+                "القائمة menu",
                 color = RoyalGold,
-                fontSize = 25.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
 
@@ -898,14 +898,14 @@ private fun RoyalTitleFrame(
             )
 
             Text(
-                "طعمٌ يستحق التجربة",
+                "طعمٌ يستحقُ التجربة",
                 color =
                     if (isDarkMode) {
                         RoyalGoldLight
                     } else {
                         RoyalDarkText
                     },
-                fontSize = 13.sp
+                fontSize = 11.sp
             )
         }
     }
