@@ -294,22 +294,9 @@ var invoiceTotalAmount by remember {
         )
 
         Spacer(
-            modifier = Modifier.height(10.dp)
+            modifier = Modifier.height(7.dp)
         )
 
-        /*
-         * البحث
-         */
-        ProductSearchBox(
-            query = searchQuery,
-            onQueryChange = {
-                searchQuery = it
-            }
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
 
         /*
          * التصنيفات
