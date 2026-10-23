@@ -257,15 +257,14 @@ var invoiceTotalAmount by remember {
         ) {
             
     Column(
-        Modifier
-            .fillMaxSize()
-            .background(background)
-            .padding(
-                start = 14.dp,
-                end = 14.dp,
-                top = 18.dp
-            )
-        ) {
+    Modifier
+        .fillMaxSize()
+        .padding(
+            start = 14.dp,
+            end = 14.dp,
+            top = 18.dp
+        )
+) {
 
         
 
