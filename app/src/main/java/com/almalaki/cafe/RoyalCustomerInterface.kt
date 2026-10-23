@@ -253,13 +253,26 @@ onSearchQueryChange: (String) -> Unit = {},
     ) {
 
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-    animatedBackground
-)
-        ) {
+    modifier = Modifier.fillMaxSize()
+) {
+    Image(
+        painter = painterResource(
+            id = R.drawable.royal_customer_background
+        ),
+        contentDescription = null,
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Color.Black.copy(alpha = 0.08f)
+            )
+    )
+
+    
 
             /*
              * =================================================
