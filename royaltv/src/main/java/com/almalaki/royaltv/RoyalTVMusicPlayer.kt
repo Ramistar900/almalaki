@@ -985,26 +985,35 @@ Box(
                         val barWidth =
                             (size.width - gap * (bars - 1)) / bars
 
-                        for (i in 0 until bars) {
-                            val dataIndex =
-                                if (spectrumData.isNotEmpty()) {
-                                    (i * spectrumData.size / bars)
-                                        .coerceIn(
-                                            0,
-                                            spectrumData.lastIndex
-                                        )
-                                } else {
-                                    0
-                                }
+                        val binCount =
+    if (spectrumData.size > 2) {
+        (spectrumData.size - 2) / 2
+    } else {
+        0
+    }
 
-                            val raw =
-                                if (spectrumData.isNotEmpty()) {
-                                    kotlin.math.abs(
-                                        spectrumData[dataIndex].toInt()
-                                    ) / 128f
-                                } else {
-                                    0f
-                                }
+for (i in 0 until bars) {
+    // حساب شدة التردد من زوج FFT الحقيقي والتخيلي
+    val raw =
+        if (binCount > 0 && spectrumData.isNotEmpty()) {
+            val bin = 1 +
+                (i * (binCount - 1) /
+                    (bars - 1).coerceAtLeast(1))
+
+            val realIndex = bin * 2
+            val imaginaryIndex = realIndex + 1
+
+            if (imaginaryIndex < spectrumData.size) {
+                kotlin.math.hypot(
+                    spectrumData[realIndex].toDouble(),
+                    spectrumData[imaginaryIndex].toDouble()
+                ).toFloat() / 128f
+            } else {
+                0f
+            }
+        } else {
+            0f
+        }
 
                             val amplitude =
                                 if (isPlaying && spectrumData.isNotEmpty()) {
