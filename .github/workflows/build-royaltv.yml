@@ -212,5 +212,6 @@ jobs:
           fi
 
           git commit -m "chore(royaltv): bump version to $NEW_VERSION ($NEW_CODE)"
-          git push origin HEAD:main
+git pull --rebase origin main
+git push origin HEAD:main
           
