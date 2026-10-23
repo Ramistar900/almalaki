@@ -214,6 +214,18 @@ fun RoyalTVMusicPlayer(
 
     var draggingPosition by remember { mutableStateOf<Float?>(null) }
     var spectrumData by remember { mutableStateOf(ByteArray(0)) }
+    var pendingSpectrumTrackIndex by remember {
+    mutableIntStateOf(-1)
+}
+
+var spectrumPermissionResolved by remember {
+    mutableStateOf(
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+    )
+}
 
     val permissionName = if (Build.VERSION.SDK_INT >= 33) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -242,12 +254,27 @@ fun RoyalTVMusicPlayer(
                     "يلزم السماح بالوصول إلى الموسيقى لعرض المكتبة."
             }
         }
+        val spectrumPermissionLauncher =
+    rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        spectrumPermissionResolved = true
+    }
         
 fun startTrack(index: Int) {
     if (tracks.isEmpty()) return
 
     val safeIndex = index.coerceIn(0, tracks.lastIndex)
-    val track = tracks[safeIndex]
+
+if (!spectrumPermissionResolved) {
+    pendingSpectrumTrackIndex = safeIndex
+    spectrumPermissionLauncher.launch(
+        Manifest.permission.RECORD_AUDIO
+    )
+    return
+}
+
+val track = tracks[safeIndex]
 
     try {
         val intent = Intent(
@@ -297,6 +324,17 @@ fun startTrack(index: Int) {
             message,
             Toast.LENGTH_SHORT
         ).show()
+    }
+}
+LaunchedEffect(
+    pendingSpectrumTrackIndex,
+    spectrumPermissionResolved
+) {
+    val pendingIndex = pendingSpectrumTrackIndex
+
+    if (pendingIndex >= 0 && spectrumPermissionResolved) {
+        pendingSpectrumTrackIndex = -1
+        startTrack(pendingIndex)
     }
 }
 
