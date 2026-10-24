@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.Canvas
@@ -855,55 +856,45 @@ private fun RoyalTopBar(
  * إطار قائمة Royal
  * ============================================================
  */
+ 
 @Composable
 private fun RoyalTitleFrame(
     isDarkMode: Boolean
 ) {
-
-    val background =
-        if (isDarkMode) {
-            RoyalBlack
-        } else {
-            RoyalCream
-        }
-
     Box(
-
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 16.dp,
-                    vertical = 3.dp
-                )
-                .clip(
-                    RoundedCornerShape(18.dp)
-                )
-                .border(
-                    1.5.dp,
-                    RoyalGold,
-                    RoundedCornerShape(18.dp)
-                )
-                .background(background)
-                .padding(
-                    horizontal = 10.dp,
-                    vertical = 5.dp
-                ),
-
-        contentAlignment =
-            Alignment.Center
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 16.dp,
+                vertical = 3.dp
+            )
+            .aspectRatio(4f),
+        contentAlignment = Alignment.Center
     ) {
+        Image(
+            painter = painterResource(
+                id = R.drawable.royal_customer_banner
+            ),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
 
         Column(
+            modifier = Modifier
+                .fillMaxWidth(0.62f),
             horizontalAlignment =
-                Alignment.CenterHorizontally
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.Center
         ) {
-
             Text(
-                "القائمة menu",
-                color = RoyalGold,
+                text = "القائمة",
+                color = RoyalGoldLight,
                 fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
 
             Spacer(
@@ -911,18 +902,16 @@ private fun RoyalTitleFrame(
             )
 
             Text(
-                "طعمٌ يستحقُ التجربة",
-                color =
-                    if (isDarkMode) {
-                        RoyalGoldLight
-                    } else {
-                        RoyalDarkText
-                    },
-                fontSize = 11.sp
+                text = "طعمٌ يستحقُ التجربة",
+                color = RoyalGoldLight,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
         }
     }
 }
+
 
 /*
  * ============================================================
