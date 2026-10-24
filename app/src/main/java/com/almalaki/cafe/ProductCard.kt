@@ -305,7 +305,7 @@ fun ProductCard(
                 }
 
                 Spacer(
-                    modifier = Modifier.height(3.dp)
+                    modifier = Modifier.height(1.dp)
                 )
 
                 // اسم المنتج والتصنيف في سطر واحد
@@ -354,7 +354,7 @@ fun ProductCard(
                 )
 
                 Spacer(
-                    modifier = Modifier.height(3.dp)
+                    modifier = Modifier.height(1.dp)
                 )
 
                 // السلة: الإضافة أو أزرار الكمية
