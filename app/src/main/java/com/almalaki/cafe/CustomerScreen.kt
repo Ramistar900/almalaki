@@ -251,47 +251,27 @@ var invoiceTotalAmount by remember {
             },
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it }
-        ) {
-            
+        ) {        
     Column(
     Modifier
         .fillMaxSize()
         .padding(
             start = 14.dp,
-            end = 14.dp,
-            top = 18.dp
+            end = 14.dp
         )
 ) {
-
-        
 
         Spacer(
             modifier = Modifier.height(10.dp)
         )
 
-        /*
-         * خط ذهبي فاخر
-         */
-        HorizontalDivider(
-            color = Gold.copy(alpha = 0.35f),
-            thickness = 1.dp
-        )
-
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
-
-        /*
-         * عنوان قسم المنتجات
-         */
-        RoyalPremiumSectionTitle(
-            title = "منتجاتنا",
-            subtitle = "اختر ما يناسب ذوقك"
-        )
-
-        Spacer(
-            modifier = Modifier.height(7.dp)
-        )
+    /*
+ * خط ذهبي فاخر بدون مسافات إضافية
+ */
+HorizontalDivider(
+    color = Gold.copy(alpha = 0.35f),
+    thickness = 1.dp
+)
 
         /*
          * عرض المنتجات مجمّعة حسب التصنيف
