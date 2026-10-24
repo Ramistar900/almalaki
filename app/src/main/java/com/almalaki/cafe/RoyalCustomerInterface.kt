@@ -104,6 +104,7 @@ private const val GENERIC_LOGO_TURN_MS = 2_400
 fun RoyalCustomerInterface(
     isDarkMode: Boolean = true,
     newsText: String = "أهلاً بكم في Royal Coffee — طعمٌ يستحق التجربة",
+  showCartBanner: Boolean = false,
     onOwnerLogin: () -> Unit = {},
     onSettings: () -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -325,21 +326,29 @@ onSearchQueryChange: (String) -> Unit = {},
              *
              * لا توجد خلفية هنا.
              */
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-            ) {
+            Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.BottomCenter)
+) {
 
-                RoyalBottomBar(
-                    newsText
-                )
-            }
-        }
+    if (showCartBanner) {
+        Image(
+            painter = painterResource(
+                id = R.drawable.royal_cart_banner
+            ),
+            contentDescription = "بنر سلة التسوق",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            contentScale = ContentScale.Crop
+        )
     }
-}
 
+    RoyalBottomBar(
+        newsText
+    )
+            }
 /*
  * ============================================================
  * الشعار النشط
