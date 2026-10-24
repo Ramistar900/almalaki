@@ -332,19 +332,6 @@ onSearchQueryChange: (String) -> Unit = {},
         .align(Alignment.BottomCenter)
 ) {
 
-    if (showCartBanner) {
-        Image(
-            painter = painterResource(
-                id = R.drawable.royal_cart_banner
-            ),
-            contentDescription = "بنر سلة التسوق",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp),
-            contentScale = ContentScale.Crop
-        )
-    }
-
     RoyalBottomBar(
         newsText
     )
