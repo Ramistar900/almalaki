@@ -1,5 +1,8 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -468,6 +471,20 @@ HorizontalDivider(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
             ) {
+                Image(
+    painter = painterResource(
+        id = R.drawable.royal_cart_banner
+    ),
+    contentDescription = "بنر سلة التسوق",
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(76.dp),
+    contentScale = ContentScale.Crop
+)
+
+Spacer(
+    modifier = Modifier.height(6.dp)
+)
 
                 Row(
                     modifier =
