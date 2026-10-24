@@ -335,7 +335,7 @@ fun ProductCard(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(125.dp)
+                            .height(100.dp)
                             .clip(
                                 RoundedCornerShape(
                                     14.dp
