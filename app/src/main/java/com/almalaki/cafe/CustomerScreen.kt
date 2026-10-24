@@ -210,40 +210,37 @@ var invoiceTotalAmount by remember {
                 category in enabledSectionCategoryNames
         }
 
+
     /*
      * التصنيفات المتاحة للعميل
      */
     val categories =
         remember(visibleProducts) {
-            listOf("الكل") +
-                visibleProducts
-                    .map { it.category.trim() }
-                    .filter { it.isNotEmpty() }
-                    .distinct()
-        }
-
-    /*
-     * المنتجات بعد تطبيق البحث والتصنيف والإخفاء
-     */
-    val filteredProducts =
-        visibleProducts.filter { product ->
-            val matchesCategory =
-                selectedCategory == "الكل" ||
-                    product.category.trim() == selectedCategory
-
-            val query = searchQuery.trim()
-
-            val matchesSearch =
-                query.isEmpty() ||
-                    product.name.contains(
-                        query,
-                        ignoreCase = true
-                    )
-
-            matchesCategory && matchesSearch
+            visibleProducts
+                .map { it.category.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
         }
         
 
+    /*
+     * المنتجات بعد تطبيق البحث والإخفاء
+     */
+    val filteredProducts =
+        visibleProducts.filter { product ->
+            val query = searchQuery.trim()
+
+            query.isEmpty() ||
+                product.name.contains(
+                    query,
+                    ignoreCase = true
+                ) ||
+                product.category.contains(
+                    query,
+                    ignoreCase = true
+                )
+        }
+        
         
         RoyalCustomerInterface(
             isDarkMode = darkMode,
@@ -296,27 +293,11 @@ var invoiceTotalAmount by remember {
             modifier = Modifier.height(7.dp)
         )
 
-
         /*
-         * التصنيفات
+         * عرض المنتجات مجمّعة حسب التصنيف
          */
-        ProductCategoryRow(
-            categories = categories,
-            selectedCategory = selectedCategory,
-            onCategorySelected = {
-                selectedCategory = it
-            }
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
         when {
 
-            /*
-             * التحميل
-             */
             loading -> {
                 Box(
                     Modifier
@@ -329,12 +310,9 @@ var invoiceTotalAmount by remember {
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment =
-                                Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            CircularProgressIndicator(
-                                color = Gold
-                            )
+                            CircularProgressIndicator(color = Gold)
 
                             Spacer(
                                 modifier = Modifier.height(10.dp)
@@ -350,9 +328,6 @@ var invoiceTotalAmount by remember {
                 }
             }
 
-            /*
-             * خطأ تحميل المنتجات
-             */
             message.isNotEmpty() -> {
                 Box(
                     Modifier
@@ -365,13 +340,9 @@ var invoiceTotalAmount by remember {
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment =
-                                Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-
-                            RoyalPremiumBadge(
-                                text = "تنبيه"
-                            )
+                            RoyalPremiumBadge(text = "تنبيه")
 
                             Spacer(
                                 modifier = Modifier.height(10.dp)
@@ -387,9 +358,6 @@ var invoiceTotalAmount by remember {
                 }
             }
 
-            /*
-             * لا توجد نتائج
-             */
             filteredProducts.isEmpty() -> {
                 Box(
                     Modifier
@@ -402,29 +370,21 @@ var invoiceTotalAmount by remember {
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment =
-                                Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-
-                            RoyalPremiumBadge(
-                                text = "لا توجد نتائج"
-                            )
+                            RoyalPremiumBadge(text = "لا توجد نتائج")
 
                             Spacer(
                                 modifier = Modifier.height(10.dp)
                             )
 
                             Text(
-                                text =
-                                    if (searchQuery.trim().isNotEmpty()) {
-                                        "لم نجد منتجًا يطابق بحثك."
-                                    } else {
-                                        "لا توجد منتجات في هذا التصنيف."
-                                    },
-                                color =
-                                    textColor.copy(
-                                        alpha = 0.75f
-                                    ),
+                                text = if (searchQuery.trim().isNotEmpty()) {
+                                    "لم نجد منتجًا يطابق بحثك."
+                                } else {
+                                    "لا توجد منتجات في القائمة."
+                                },
+                                color = textColor.copy(alpha = 0.75f),
                                 fontSize = 14.sp
                             )
                         }
@@ -432,88 +392,93 @@ var invoiceTotalAmount by remember {
                 }
             }
 
-            /*
-             * قائمة المنتجات
-             */
             else -> {
-
                 BoxWithConstraints(
                     Modifier.weight(1f)
                 ) {
+                    val columns = when {
+                        maxWidth < 600.dp -> 3
+                        maxWidth < 900.dp -> 4
+                        maxWidth < 1400.dp -> 5
+                        else -> 6
+                    }
 
-                    val columns =
-                        when {
-                            maxWidth < 600.dp -> 2
-                            maxWidth < 900.dp -> 3
-                            maxWidth < 1400.dp -> 4
-                            else -> 5
-                        }
+                    val groupedProducts = filteredProducts
+                        .groupBy { it.category.trim() }
+                        .toList()
 
                     LazyVerticalGrid(
-                        columns =
-                            GridCells.Fixed(columns),
-
-                        modifier =
-                            Modifier.fillMaxSize(),
-
-                        contentPadding =
-                            PaddingValues(
-                                top = 2.dp,
-                                bottom = 12.dp
-                            ),
-
-                        horizontalArrangement =
-                            Arrangement.spacedBy(10.dp),
-
-                        verticalArrangement =
-                            Arrangement.spacedBy(10.dp)
+                        columns = GridCells.Fixed(columns),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = 2.dp,
+                            bottom = 12.dp
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        groupedProducts.forEach { (category, categoryProducts) ->
 
-                        items(
-                            filteredProducts,
-                            key = { it.id }
-                        ) { product ->
+                            item(
+                                key = "category_$category",
+                                span = {
+                                    androidx.compose.foundation.lazy.grid.GridItemSpan(
+                                        maxLineSpan
+                                    )
+                                }
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp, bottom = 2.dp)
+                                ) {
+                                    Text(
+                                        text = category.ifBlank {
+                                            "منتجات أخرى"
+                                        },
+                                        color = Gold,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(
+                                            vertical = 4.dp
+                                        )
+                                    )
 
-                            ProductCard(
-                                product = product,
+                                    HorizontalDivider(
+                                        color = Gold.copy(alpha = 0.45f),
+                                        thickness = 1.dp
+                                    )
+                                }
+                            }
 
-                                quantity =
-                                    cart[product.id] ?: 0,
-
-                                onAdd = {
-                                    val old =
-                                        cart[product.id] ?: 0
-
-                                    cart =
-                                        cart +
-                                            (
-                                                product.id
-                                                    to old + 1
-                                            )
-                                },
-
-                                onRemove = {
-                                    val old =
-                                        cart[product.id] ?: 0
-
-                                    cart =
-                                        if (old <= 1) {
+                            items(
+                                categoryProducts,
+                                key = { it.id }
+                            ) { product ->
+                                ProductCard(
+                                    product = product,
+                                    quantity = cart[product.id] ?: 0,
+                                    onAdd = {
+                                        val old = cart[product.id] ?: 0
+                                        cart = cart + (product.id to old + 1)
+                                    },
+                                    onRemove = {
+                                        val old = cart[product.id] ?: 0
+                                        cart = if (old <= 1) {
                                             cart - product.id
                                         } else {
-                                            cart +
-                                                (
-                                                    product.id
-                                                        to old - 1
-                                                )
+                                            cart + (product.id to old - 1)
                                         }
-                                }
-                            )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-
+        
+        
         /*
          * بطاقة السلة
          */
