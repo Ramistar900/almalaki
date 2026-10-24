@@ -1,3 +1,4 @@
+
 package com.almalaki.cafe
 
 import android.view.KeyEvent
@@ -239,11 +240,11 @@ fun ProductCard(
                     )
                 }
 
-                // صورة المنتج بإطار ذهبي
+                // صورة المنتج بإطار ذهبي — الارتفاع الجديد 96dp
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(66.dp)
+                        .height(96.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(
                             Brush.verticalGradient(
@@ -307,30 +308,41 @@ fun ProductCard(
                     modifier = Modifier.height(3.dp)
                 )
 
-                // اسم المنتج
-                Text(
-                    text = product.name,
-                    color = Cream,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
-
-                // تصنيف المنتج
-                if (product.category.isNotBlank()) {
+                // اسم المنتج والتصنيف في سطر واحد
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = product.category,
-                        color = goldLight.copy(alpha = 0.72f),
-                        fontSize = 9.sp,
+                        text = product.name,
+                        color = Cream,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center
                     )
+
+                    if (product.category.isNotBlank()) {
+                        Spacer(
+                            modifier = Modifier.size(4.dp)
+                        )
+
+                        Text(
+                            text = product.category,
+                            color = goldLight.copy(alpha = 0.72f),
+                            fontSize = 9.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
 
-                // السعر
+                // السعر — دون تغيير الوظيفة
                 Text(
                     text = formatPrice(product.price),
                     color = goldLight,
@@ -371,10 +383,10 @@ fun ProductCard(
                         )
                     ) {
                         Text(
-                            text = "＋ سلة",
-                            fontSize = 10.sp,
+                            text = "إضافة إلى السلة",
+                            fontSize = 9.sp,
                             maxLines = 1,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 } else {
