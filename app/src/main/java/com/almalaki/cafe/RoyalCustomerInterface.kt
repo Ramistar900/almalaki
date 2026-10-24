@@ -891,7 +891,7 @@ private fun RoyalTitleFrame(
             Text(
                 text = "القائمة",
                 color = RoyalGoldLight,
-                fontSize = 20.sp,
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
