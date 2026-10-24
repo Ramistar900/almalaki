@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -462,114 +463,105 @@ HorizontalDivider(
         
         
         /*
-         * بطاقة السلة
+         * =================================================
+         * بطاقة السلة — صورة خلفية ومحتوى واحد
+         * =================================================
          */
         if (totalItems > 0) {
 
-            RoyalPremiumCard(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .height(88.dp)
+                    .clip(
+                        androidx.compose.foundation.shape
+                            .RoundedCornerShape(16.dp)
+                    )
             ) {
-                
 
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
+                // صورة البنر كخلفية للبطاقة نفسها
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.royal_cart_banner
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
 
-                    horizontalArrangement =
-                        Arrangement.SpaceBetween,
-
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                // طبقة داكنة خفيفة لقراءة النص بوضوح
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Color.Black.copy(alpha = 0.48f)
+                        )
+                        .padding(
+                            horizontal = 12.dp,
+                            vertical = 8.dp
+                        )
                 ) {
 
-                    Column(
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween,
+                        verticalAlignment =
+                            Alignment.CenterVertically
                     ) {
 
-                        Row(
-                            verticalAlignment =
-                                Alignment.CenterVertically
+                        Column(
+                            modifier = Modifier.weight(1f)
                         ) {
 
                             Text(
-                                text = "🛒",
-                                fontSize = 18.sp
+                                text = "🛒  $totalItems منتجات",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
                             )
 
                             Spacer(
-                                modifier =
-                                    Modifier.padding(
-                                        horizontal = 3.dp
-                                    )
+                                modifier = Modifier.height(4.dp)
                             )
 
                             Text(
-                                text =
-                                    "$totalItems منتجات",
-                                color = Cream,
-                                fontSize = 14.sp,
-                                fontWeight =
-                                    FontWeight.Medium
+                                text = "المبلغ المطلوب",
+                                color = GoldLight,
+                                fontSize = 12.sp
+                            )
+
+                            Text(
+                                text = formatPrice(totalAmount),
+                                color = Gold,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
 
-                        Spacer(
-                            modifier = Modifier.height(5.dp)
-                        )
-
-                        Text(
-                            text = "المبلغ المطلوب",
-                            color =
-                                GoldLight.copy(
-                                    alpha = 0.72f
-                                ),
-                            fontSize = 12.sp
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(2.dp)
-                        )
-
-                        Text(
-                            text =
-                                formatPrice(totalAmount),
-                            color = Gold,
-                            fontSize = 19.sp,
-                            fontWeight =
-                                FontWeight.SemiBold
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            showCart = true
-                        },
-
-                        colors =
-                            ButtonDefaults.buttonColors(
+                        Button(
+                            onClick = {
+                                showCart = true
+                            },
+                            colors = ButtonDefaults.buttonColors(
                                 containerColor = Gold,
                                 contentColor = Black
                             ),
-
-                        shape =
-                            androidx.compose.foundation.shape
-                                .RoundedCornerShape(14.dp)
-                    ) {
-                        Text(
-                            text = "عرض السلة 🛒",
-                            fontWeight =
-                                FontWeight.SemiBold
-                        )
+                            shape =
+                                androidx.compose.foundation.shape
+                                    .RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "عرض السلة",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
         }
-
-        }
-    }
+        
 
     /*
      * نافذة السلة
