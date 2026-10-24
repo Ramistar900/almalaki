@@ -248,6 +248,7 @@ var invoiceTotalAmount by remember {
         RoyalCustomerInterface(
             isDarkMode = darkMode,
             newsText = interfaceSettings.newsText,
+            showCartBanner = totalItems > 0,
             onOwnerLogin = onOwner,
             onSettings = {
                 showCustomerSettings = true
@@ -471,20 +472,7 @@ HorizontalDivider(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
             ) {
-                Image(
-    painter = painterResource(
-        id = R.drawable.royal_cart_banner
-    ),
-    contentDescription = "بنر سلة التسوق",
-    modifier = Modifier
-        .fillMaxWidth()
-        .height(76.dp),
-    contentScale = ContentScale.Crop
-)
-
-Spacer(
-    modifier = Modifier.height(6.dp)
-)
+                
 
                 Row(
                     modifier =
