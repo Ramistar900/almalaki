@@ -261,9 +261,7 @@ var invoiceTotalAmount by remember {
         )
 ) {
 
-        Spacer(
-            modifier = Modifier.height(10.dp)
-        )
+
 
     /*
  * خط ذهبي فاخر بدون مسافات إضافية
