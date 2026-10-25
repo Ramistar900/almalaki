@@ -348,7 +348,7 @@ onSearchQueryChange: (String) -> Unit = {},
                     )
                 }
             }
-            
+        }  
     }
 }
 /*
