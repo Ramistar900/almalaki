@@ -1213,23 +1213,14 @@ fun RoyalNewsTicker(
          * الشريط نفسه.
          */
         Box(
-            modifier = modifier
-                .height(22.dp)
-                .clip(
-                    RoundedCornerShape(50)
-                )
-                .background(
-                    Color(0xFF111111)
-                )
-                .border(
-                    width = 1.dp,
-                    color = RoyalGold,
-                    shape = RoundedCornerShape(50)
-                )
-                .clipToBounds()
-                .onSizeChanged { size ->
-                    containerWidth = size.width
-                }
+            
+modifier = modifier
+    .height(22.dp)
+    .clipToBounds()
+    .onSizeChanged { size ->
+        containerWidth = size.width
+    }
+    
         ) {
 
             /*
