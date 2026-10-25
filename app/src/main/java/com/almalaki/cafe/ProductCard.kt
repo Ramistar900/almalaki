@@ -130,11 +130,12 @@ fun ProductCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .paint(
-                    painter = painterResource(
-                        id = R.drawable.royal_product_card_bg
-                    ),
-                    contentScale = ContentScale.Crop
-                )
+    painter = painterResource(
+        id = R.drawable.royal_product_card_bg
+    ),
+    sizeToIntrinsics = false,
+    contentScale = ContentScale.Crop
+)
                 .background(
                     Brush.verticalGradient(
                         listOf(
