@@ -327,7 +327,7 @@ onSearchQueryChange: (String) -> Unit = {},
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(102.dp)
+                    .height(105.dp)
                     .align(Alignment.BottomCenter)
             ) {
                 Image(
