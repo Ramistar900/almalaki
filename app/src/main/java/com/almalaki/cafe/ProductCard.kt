@@ -1,5 +1,9 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.paint
+import androidx.compose.ui.graphics.drawscope.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.CircleShape
 import android.view.KeyEvent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -116,14 +120,20 @@ fun ProductCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xFF191919),
-                            Color(0xFF090909)
-                        )
-                    )
-                )
+                .paint(
+    painter = painterResource(
+        id = R.drawable.royal_product_card_bg
+    ),
+    contentScale = ContentScale.Crop
+)
+.background(
+    Brush.verticalGradient(
+        listOf(
+            Color(0x66191919),
+            Color(0x99090909)
+        )
+    )
+)
                 .border(
                     width = if (isFocused) 2.dp else 1.dp,
                     brush = if (isFocused) {
@@ -232,11 +242,16 @@ fun ProductCard(
                         )
                     ) {
                         Text(
-                            text = "شراء",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
+    text = "شراء",
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(27.dp),
+    color = gold,
+    fontSize = 11.sp,
+    fontWeight = FontWeight.Bold,
+    textAlign = TextAlign.Center,
+    maxLines = 1
+)
                     }
 
                     Row(
@@ -293,7 +308,7 @@ fun SmallCartButton(
                 minHeight = 0.dp
             ),
         contentPadding = PaddingValues(0.dp),
-        shape = RoundedCornerShape(5.dp),
+        shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFFD4AF37),
             contentColor = Color(0xFF17130A)
