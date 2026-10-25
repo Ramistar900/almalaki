@@ -232,7 +232,7 @@ fun ProductCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1.35f)
+                        .aspectRatio(1.8f)
                         .clip(RoundedCornerShape(7.dp))
                         .background(
                             Brush.verticalGradient(
@@ -303,7 +303,7 @@ fun ProductCard(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFFF5EEDC))
+                                .background(Color(0xFF006400))
                                 .padding(
                                     horizontal = 5.dp,
                                     vertical = 4.dp
