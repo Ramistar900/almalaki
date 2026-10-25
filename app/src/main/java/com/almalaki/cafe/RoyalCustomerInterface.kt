@@ -317,28 +317,31 @@ onSearchQueryChange: (String) -> Unit = {},
                 }
             }
 
+            
             /*
              * =================================================
-             * الشريط السفلي
+             * الشريط السفلي مع البنر الملكي
              * =================================================
-             *
-             * موضوع فوق المحتوى بدل أن يأخذ مساحة مستقلة.
-             *
-             * لا توجد خلفية هنا.
              */
-            Column(
-    modifier = Modifier
-        .fillMaxWidth()
-        .align(Alignment.BottomCenter)
-) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            ) {
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.royal_bottom_banner
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
+                    contentScale = ContentScale.FillBounds
+                )
 
-    RoyalBottomBar(
-        newsText
-    )
+                RoyalBottomBar(
+                    newsText
+                )
             }
-              }
-    }
-}
+            
 /*
  * ============================================================
  * الشعار النشط
