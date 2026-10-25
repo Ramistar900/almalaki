@@ -14,15 +14,14 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,7 +43,6 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,35 +62,36 @@ fun ProductCard(
         mutableStateOf(false)
     }
 
-    // اللمعان الملكي المتحرك
+    // حركة اللمعان الذهبي حول البطاقة كاملة
     val infiniteTransition =
-        rememberInfiniteTransition(
-            label = "royal_shine"
-        )
+        rememberInfiniteTransition(label = "royal_card_border")
 
-    val shinePosition by
-        infiniteTransition.animateFloat(
-            initialValue = -1.2f,
-            targetValue = 1.2f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 2600,
-                    easing = LinearEasing
-                ),
-                repeatMode = RepeatMode.Restart
+    val shinePosition by infiniteTransition.animateFloat(
+        initialValue = -1.2f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 2600,
+                easing = LinearEasing
             ),
-            label = "shine_position"
-        )
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "royal_border_shine"
+    )
 
-    // ألوان الملكي الأصلية
     val royalBlack = Color(0xFF050505)
     val royalBlack2 = Color(0xFF0B090D)
     val royalPurple = Color(0xFF21142F)
     val royalPurpleDark = Color(0xFF120B19)
     val royalBronze = Color(0xFF6E4D18)
+
     val goldDark = Color(0xFF8C6B16)
     val gold = Color(0xFFD4AF37)
     val goldLight = Color(0xFFFFE9A3)
+
+    val productGreen = Color(0xFF39E875)
+    val currencyGreen = Color(0xFF39E875)
+    val priceBlack = Color(0xFF111111)
 
     val cardBackground = Brush.verticalGradient(
         colors = listOf(
@@ -102,35 +101,35 @@ fun ProductCard(
         )
     )
 
+    // هذا التدرج مخصص للإطار الخارجي، وليس إطار الصورة.
     val animatedBorder = Brush.linearGradient(
         colors = listOf(
             goldDark,
             gold,
             goldLight,
-            Color.White.copy(alpha = 0.95f),
-            gold,
+            Color.White,
+            goldLight,
             royalBronze,
             goldDark
         ),
         start = androidx.compose.ui.geometry.Offset(
-            x = shinePosition * 900f,
-            y = 0f
+            x = shinePosition * 700f,
+            y = shinePosition * 250f
         ),
         end = androidx.compose.ui.geometry.Offset(
-            x = shinePosition * 900f + 500f,
-            y = 500f
+            x = shinePosition * 700f + 500f,
+            y = shinePosition * 250f + 350f
         )
     )
 
     val innerShine = Brush.horizontalGradient(
         colors = listOf(
             Color.Transparent,
-            gold.copy(alpha = 0.05f),
-            Color.Transparent,
+            gold.copy(alpha = 0.035f),
             Color.Transparent
         ),
-        startX = shinePosition * 700f,
-        endX = shinePosition * 700f + 500f
+        startX = shinePosition * 500f,
+        endX = shinePosition * 500f + 400f
     )
 
     Card(
@@ -157,37 +156,38 @@ fun ProductCard(
                 }
             }
             .focusable(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(13.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
         )
     ) {
+        // الإطار الذهبي الخارجي يطابق حدود البطاقة
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
                     brush = cardBackground,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(13.dp)
                 )
                 .border(
-                    width = if (isFocused) 3.dp else 2.dp,
+                    width = if (isFocused) 2.dp else 1.5.dp,
                     brush = if (isFocused) {
                         Brush.linearGradient(
                             colors = listOf(
+                                Color.White,
                                 goldLight,
                                 gold,
-                                Color.White.copy(alpha = 0.95f),
-                                goldLight
+                                Color.White
                             )
                         )
                     } else {
                         animatedBorder
                     },
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(13.dp)
                 )
-                .padding(4.dp)
+                .padding(5.dp)
         ) {
-            // خلفية البطاقة المخصصة
+            // خلفية البطاقة الملكية
             Image(
                 painter = painterResource(
                     id = R.drawable.royal_product_card_bg
@@ -195,27 +195,27 @@ fun ProductCard(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(13.dp)),
+                    .clip(RoundedCornerShape(9.dp)),
                 contentScale = ContentScale.Crop
             )
 
-            // طبقة داكنة خفيفة للمحافظة على وضوح النصوص
+            // طبقة داكنة لتحسين وضوح المحتوى
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        color = Color.Black.copy(alpha = 0.28f),
-                        shape = RoundedCornerShape(13.dp)
+                        color = Color.Black.copy(alpha = 0.34f),
+                        shape = RoundedCornerShape(9.dp)
                     )
             )
 
-            // اللمعة الداخلية
+            // لمعة خفيفة داخل البطاقة
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         brush = innerShine,
-                        shape = RoundedCornerShape(13.dp)
+                        shape = RoundedCornerShape(9.dp)
                     )
             )
 
@@ -223,54 +223,17 @@ fun ProductCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = 2.dp,
-                        vertical = 1.dp
+                        horizontal = 3.dp,
+                        vertical = 3.dp
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // التاج الملكي
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(19.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "━━━━",
-                        color = gold.copy(alpha = 0.55f),
-                        fontSize = 7.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.size(3.dp)
-                    )
-
-                    Text(
-                        text = "♛",
-                        color = goldLight,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Serif
-                    )
-
-                    Spacer(
-                        modifier = Modifier.size(3.dp)
-                    )
-
-                    Text(
-                        text = "━━━━",
-                        color = gold.copy(alpha = 0.55f),
-                        fontSize = 7.sp
-                    )
-                }
-
-                // صورة المنتج مربعة بإطار ذهبي
+                // صورة المنتج، من دون تاج أو زخارف
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(10.dp))
+                        .aspectRatio(1.35f)
+                        .clip(RoundedCornerShape(7.dp))
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
@@ -278,17 +241,6 @@ fun ProductCard(
                                     Color(0xFF080808)
                                 )
                             )
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    goldLight.copy(alpha = 0.8f),
-                                    gold.copy(alpha = 0.25f),
-                                    goldDark.copy(alpha = 0.8f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(10.dp)
                         )
                         .padding(2.dp)
                 ) {
@@ -308,111 +260,145 @@ fun ProductCard(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment =
-                                    Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "♛",
-                                    color = gold,
-                                    fontSize = 18.sp
-                                )
-
-                                Text(
-                                    text = "Royal",
-                                    color = goldLight,
-                                    fontSize = 15.sp,
-                                    fontFamily = FontFamily.Cursive,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                            Text(
+                                text = product.name,
+                                color = goldLight,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
 
-                Spacer(
-                    modifier = Modifier.height(1.dp)
-                )
-
-                // اسم المنتج والتصنيف
+                // الاسم والسعر يساراً، والشراء وأزرار الكمية يميناً
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 2.dp),
-                    horizontalArrangement = Arrangement.Center,
+                        .padding(
+                            top = 7.dp,
+                            bottom = 2.dp
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = product.name,
-                        color = Cream,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center
-                    )
-
-                    if (product.category.isNotBlank()) {
-                        Spacer(
-                            modifier = Modifier.size(4.dp)
-                        )
-
+                    // الطرف الأيسر: اسم المنتج والسعر تحته
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.Start,
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
                         Text(
-                            text = product.category,
-                            color = goldLight.copy(alpha = 0.72f),
-                            fontSize = 9.sp,
-                            maxLines = 1,
+                            text = product.name,
+                            color = productGreen,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Start
                         )
+
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFF5EEDC))
+                                .padding(
+                                    horizontal = 5.dp,
+                                    vertical = 4.dp
+                                ),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Text(
+                                text = "%,.0f".format(product.price),
+                                color = priceBlack,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+
+                            Text(
+                                text = "ل.س",
+                                color = currencyGreen,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
                     }
-                }
 
-                // السعر
-                Text(
-                    text = formatPrice(product.price),
-                    color = goldLight,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
+                    // الطرف الأيمن: زر شراء وتحته ناقص والكمية وزائد
+                    Column(
+                        modifier = Modifier.weight(0.92f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                AppSounds.productClick(context)
+                                onAdd()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(29.dp)
+                                .defaultMinSize(
+                                    minWidth = 0.dp,
+                                    minHeight = 0.dp
+                                ),
+                            contentPadding = PaddingValues(
+                                horizontal = 4.dp,
+                                vertical = 0.dp
+                            ),
+                            shape = RoundedCornerShape(7.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = gold,
+                                contentColor = Color(0xFF111111)
+                            )
+                        ) {
+                            Text(
+                                text = "شراء",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
 
-                Spacer(
-                    modifier = Modifier.height(1.dp)
-                )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SmallCartButton(
+                                text = "−",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    AppSounds.productClick(context)
+                                    onRemove()
+                                }
+                            )
 
-                // زر شراء فقط؛ يضيف المنتج إلى السلة الحالية
-                Button(
-                    onClick = {
-                        AppSounds.productClick(context)
-                        onAdd()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .defaultMinSize(
-                            minWidth = 0.dp,
-                            minHeight = 0.dp
-                        ),
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 2.dp,
-                            vertical = 0.dp
-                        ),
-                    shape = RoundedCornerShape(9.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = gold,
-                        contentColor = Black
-                    )
-                ) {
-                    Text(
-                        text = "شراء",
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        fontWeight = FontWeight.Bold
-                    )
+                            Text(
+                                text = quantity.toString(),
+                                modifier = Modifier.weight(0.8f),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1
+                            )
+
+                            SmallCartButton(
+                                text = "+",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    AppSounds.productClick(context)
+                                    onAdd()
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -422,27 +408,27 @@ fun ProductCard(
 @Composable
 fun SmallCartButton(
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .size(30.dp)
+        modifier = modifier
+            .height(28.dp)
             .defaultMinSize(
                 minWidth = 0.dp,
                 minHeight = 0.dp
             ),
-        contentPadding =
-            androidx.compose.foundation.layout.PaddingValues(0.dp),
-        shape = RoundedCornerShape(9.dp),
+        contentPadding = PaddingValues(0.dp),
+        shape = RoundedCornerShape(7.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Gold,
-            contentColor = Black
+            containerColor = Color(0xFFD4AF37),
+            contentColor = Color(0xFF111111)
         )
     ) {
         Text(
             text = text,
-            fontSize = 19.sp,
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1
         )
