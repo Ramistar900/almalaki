@@ -323,11 +323,14 @@ onSearchQueryChange: (String) -> Unit = {},
              * الشريط السفلي مع البنر الملكي
              * =================================================
              */
+            
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(100.dp)
                     .align(Alignment.BottomCenter)
             ) {
+              
                 Image(
                     painter = painterResource(
                         id = R.drawable.royal_bottom_banner
