@@ -203,48 +203,11 @@ fun ProductCard(
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // التاج الملكي
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(19.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "━━━━",
-                        color = gold.copy(alpha = 0.55f),
-                        fontSize = 7.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.size(3.dp)
-                    )
-
-                    Text(
-                        text = "♛",
-                        color = goldLight,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Serif
-                    )
-
-                    Spacer(
-                        modifier = Modifier.size(3.dp)
-                    )
-
-                    Text(
-                        text = "━━━━",
-                        color = gold.copy(alpha = 0.55f),
-                        fontSize = 7.sp
-                    )
-                }
-
-                // صورة المنتج بإطار ذهبي — الارتفاع الجديد 96dp
+                // صورة المنتج بإطار ذهبي — ارتفاع مضغوط للبطاقات
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(96.dp)
+                        .height(82.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(
                             Brush.verticalGradient(
