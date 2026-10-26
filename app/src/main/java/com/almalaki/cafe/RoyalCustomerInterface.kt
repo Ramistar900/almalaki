@@ -286,36 +286,35 @@ onSearchQueryChange: (String) -> Unit = {},
              * لذلك المنتجات تستمر خلفه ولا توجد
              * مساحة سوداء منفصلة أسفله.
              */
-            Column(
-                modifier =
-                    Modifier.fillMaxSize()
-            ) {
-
-                RoyalTopBar(
-    isDarkMode = isDarkMode,
-    searchQuery = searchQuery,
-    onSearchQueryChange = onSearchQueryChange
-) {
-    scope.launch {
-        drawerState.open()
-    }
-    onMenuClick()
-                }
-
-                RoyalTitleFrame(
-                    isDarkMode
-                )
 Box(
-    modifier =
-        Modifier
-            .weight(1f)
-            .fillMaxWidth()
-            .padding(bottom = 102.dp)
+    modifier = Modifier.fillMaxSize()
 ) {
-    content()
-}
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        RoyalTopBar(
+            isDarkMode = isDarkMode,
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange
+        ) {
+            scope.launch {
+                drawerState.open()
+            }
+            onMenuClick()
+        }
 
-            
+        RoyalTitleFrame(isDarkMode)
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(bottom = 102.dp)
+        ) {
+            content()
+        }
+    }
+
             /*
              * =================================================
              * الشريط السفلي مع البنر الملكي
