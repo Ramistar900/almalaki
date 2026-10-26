@@ -310,63 +310,93 @@ fun ProductCard(
     }
 }
 
-
 @Composable
 fun SmallCartButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Button(
-        onClick = onClick,
+    val glintTransition =
+        rememberInfiniteTransition(label = "cart_button_glint")
+
+    // ومضة سريعة، ثم انتظار خمس ثوانٍ قبل تكرارها.
+    val glint by glintTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = androidx.compose.animation.core.keyframes {
+                durationMillis = 5450
+                1f at 0
+                1f at 5000
+                -1f at 5001
+                1f at 5450
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "cart_button_glint_position"
+    )
+
+    val gold = Color(0xFFD4AF37)
+    val goldLight = Color(0xFFFFE9A3)
+
+    Box(
         modifier = modifier
-            .height(29.dp)
-            .aspectRatio(1f)
-            .defaultMinSize(
-                minWidth = 0.dp,
-                minHeight = 0.dp
-            )
-            .shadow(
-                elevation = 3.dp,
-                shape = CircleShape,
-                ambientColor = Color(0xFFD4AF37),
-                spotColor = Color(0xFFD4AF37)
-            )
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(Color(0xFF032817))
             .border(
-                width = 2.dp,
+                width = 1.5.dp,
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         Color(0xFFFFF0A8),
-                        Color(0xFFD4AF37),
+                        gold,
                         Color(0xFF8A6415),
-                        Color(0xFFFFE9A3)
+                        goldLight
                     )
                 ),
                 shape = CircleShape
-            ),
-        contentPadding = PaddingValues(0.dp),
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = darkGreenButtonColor(),
-            contentColor = Color(0xFFFFE9A3)
-        )
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
+        // لمعة بلورية تمر فوق الدائرة.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.White.copy(alpha = 0.55f),
+                            goldLight.copy(alpha = 0.85f),
+                            Color.Transparent
+                        ),
+                        start = Offset(glint * 42f, -8f),
+                        end = Offset(glint * 42f + 18f, 40f)
+                    )
+                )
+        )
+
         Text(
             text = text,
-            fontSize = 19.sp,
+            color = goldLight,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Black,
             maxLines = 1,
             textAlign = TextAlign.Center,
             style = TextStyle(
                 shadow = Shadow(
-                    color = Color(0xFFFFE9A3),
+                    color = goldLight,
                     offset = Offset(0f, 0f),
-                    blurRadius = 3f
+                    blurRadius = 2f
                 )
             )
         )
     }
 }
+
+
 
 private fun darkGreenButtonColor(): Color =
     Color(0xFF032817)
