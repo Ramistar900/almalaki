@@ -311,6 +311,7 @@ onSearchQueryChange: (String) -> Unit = {},
                         Modifier
                             .weight(1f)
                             .fillMaxWidth()
+                            .padding(bottom = 102.dp)
                 ) {
 
                     content()
@@ -327,7 +328,7 @@ onSearchQueryChange: (String) -> Unit = {},
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(105.dp)
+                    .height(102.dp)
                     .align(Alignment.BottomCenter)
             ) {
                 Image(
