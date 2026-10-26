@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -523,7 +525,7 @@ var invoiceTotalAmount by remember {
         
         /*
          * =================================================
-         * بطاقة السلة — صورة خلفية ومحتوى واحد
+         * بطاقة السلة — ترتيب داخل البنر الأصلي
          * =================================================
          */
         if (totalItems > 0) {
@@ -539,7 +541,7 @@ var invoiceTotalAmount by remember {
                     )
             ) {
 
-                // صورة البنر كخلفية للبطاقة نفسها
+                // الحفاظ على صورة البنر الأصلية
                 Image(
                     painter = painterResource(
                         id = R.drawable.royal_cart_banner
@@ -549,72 +551,124 @@ var invoiceTotalAmount by remember {
                     contentScale = ContentScale.Crop
                 )
 
-                // طبقة داكنة خفيفة لقراءة النص بوضوح
+                // المحتوى فوق الصورة، دون حذفها
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Color.Black.copy(alpha = 0.48f)
+                            Color.Black.copy(alpha = 0.30f)
                         )
                         .padding(
                             horizontal = 12.dp,
-                            vertical = 8.dp
+                            vertical = 5.dp
                         )
                 ) {
 
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement =
-                            Arrangement.SpaceBetween,
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
-                        Column(
-                            modifier = Modifier.weight(1f)
+                        // الأعلى: السلة داخل إطار ذهبي وعدد المنتجات
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
 
-                            Text(
-                                text = "🛒  $totalItems منتجات",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .border(
+                                        width = 1.5.dp,
+                                        color = Gold,
+                                        shape = androidx.compose.foundation.shape
+                                            .RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "🛒",
+                                    fontSize = 17.sp
+                                )
+                            }
 
                             Spacer(
-                                modifier = Modifier.height(4.dp)
+                                modifier = Modifier.width(8.dp)
                             )
 
                             Text(
-                                text = "المبلغ المطلوب",
-                                color = GoldLight,
-                                fontSize = 12.sp
-                            )
-
-                            Text(
-                                text = formatPrice(totalAmount),
-                                color = Gold,
-                                fontSize = 18.sp,
+                                text = "$totalItems منتجات",
+                                color = Color.White,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
 
-                        Button(
-                            onClick = {
-                                showCart = true
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Gold,
-                                contentColor = Black
-                            ),
-                            shape =
-                                androidx.compose.foundation.shape
-                                    .RoundedCornerShape(12.dp)
+                        // الأسفل: المبلغ داخل إطار وزر أنحف
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "عرض السلة",
-                                fontWeight = FontWeight.SemiBold
-                            )
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+
+                                Text(
+                                    text = "المبلغ المطلوب",
+                                    color = GoldLight,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .border(
+                                            width = 1.5.dp,
+                                            color = Gold,
+                                            shape = androidx.compose.foundation.shape
+                                                .RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(
+                                            horizontal = 8.dp,
+                                            vertical = 1.dp
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = formatPrice(totalAmount),
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    showCart = true
+                                },
+                                modifier = Modifier.height(30.dp),
+                                contentPadding = PaddingValues(
+                                    horizontal = 10.dp,
+                                    vertical = 0.dp
+                                ),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Gold,
+                                    contentColor = Black
+                                ),
+                                shape = androidx.compose.foundation.shape
+                                    .RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = " عرض المشتريات ",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
