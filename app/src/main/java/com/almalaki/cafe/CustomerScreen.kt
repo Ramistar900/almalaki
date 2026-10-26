@@ -1,5 +1,16 @@
 package com.almalaki.cafe
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.LocalDrink
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
@@ -231,9 +242,10 @@ var invoiceTotalAmount by remember {
      * المنتجات بعد تطبيق البحث والإخفاء
      */
     val filteredProducts =
-        visibleProducts.filter { product ->
-            val query = searchQuery.trim()
+    visibleProducts.filter { product ->
+        val query = searchQuery.trim()
 
+        val matchesSearch =
             query.isEmpty() ||
                 product.name.contains(
                     query,
@@ -243,7 +255,13 @@ var invoiceTotalAmount by remember {
                     query,
                     ignoreCase = true
                 )
-        }
+
+        val matchesCategory =
+            selectedCategory == "الكل" ||
+                product.category.trim() == selectedCategory
+
+        matchesSearch && matchesCategory
+    }
         
         
         RoyalCustomerInterface(
@@ -267,15 +285,60 @@ var invoiceTotalAmount by remember {
 ) {
 
 
-
     /*
- * خط ذهبي فاخر بدون مسافات إضافية
- */
-HorizontalDivider(
-    color = Gold.copy(alpha = 0.35f),
-    thickness = 1.dp
-)
+     * أزرار التصنيفات بتصميم ملكي
+     */
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(
+                rememberScrollState()
+            )
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val categoryItems = listOf("الكل") + categories
 
+        categoryItems.forEach { category ->
+            val isSelected = selectedCategory == category
+
+            OutlinedButton(
+                onClick = {
+                    selectedCategory = category
+                },
+                shape = RoundedCornerShape(24.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    Gold
+                ),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (isSelected) {
+                        Color(0xFFEFE5D0)
+                    } else {
+                        Color(0xFFF8F4EA)
+                    },
+                    contentColor = Color(0xFF24452F)
+                ),
+                contentPadding = PaddingValues(
+                    horizontal = 16.dp,
+                    vertical = 8.dp
+                )
+            ) {
+                Text(
+                    text = category,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
+            }
+        }
+    }
+
+    HorizontalDivider(
+        color = Gold.copy(alpha = 0.35f),
+        thickness = 1.dp
+    )
+    
         /*
          * عرض المنتجات مجمّعة حسب التصنيف
          */
