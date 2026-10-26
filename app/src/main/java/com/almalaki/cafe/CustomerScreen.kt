@@ -453,9 +453,9 @@ var invoiceTotalAmount by remember {
                         columns = GridCells.Fixed(columns),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            top = 2.dp,
-                            bottom = 12.dp
-                        ),
+                         top = 2.dp,
+                         bottom = 120.dp
+                     ),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
