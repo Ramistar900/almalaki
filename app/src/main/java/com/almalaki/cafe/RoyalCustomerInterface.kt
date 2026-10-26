@@ -305,17 +305,15 @@ onSearchQueryChange: (String) -> Unit = {},
                 RoyalTitleFrame(
                     isDarkMode
                 )
-
-                Box(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                ) {
-
-                    content()
-                }
-            }
+Box(
+    modifier =
+        Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .padding(bottom = 102.dp)
+) {
+    content()
+}
 
             
             /*
