@@ -286,39 +286,35 @@ onSearchQueryChange: (String) -> Unit = {},
              * لذلك المنتجات تستمر خلفه ولا توجد
              * مساحة سوداء منفصلة أسفله.
              */
-            Column(
-                modifier =
-                    Modifier.fillMaxSize()
-            ) {
-
-                RoyalTopBar(
-    isDarkMode = isDarkMode,
-    searchQuery = searchQuery,
-    onSearchQueryChange = onSearchQueryChange
+Box(
+    modifier = Modifier.fillMaxSize()
 ) {
-    scope.launch {
-        drawerState.open()
-    }
-    onMenuClick()
-                }
-
-                RoyalTitleFrame(
-                    isDarkMode
-                )
-
-                Box(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(bottom = 102.dp)
-                ) {
-
-                    content()
-                }
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        RoyalTopBar(
+            isDarkMode = isDarkMode,
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange
+        ) {
+            scope.launch {
+                drawerState.open()
             }
+            onMenuClick()
+        }
 
-            
+        RoyalTitleFrame(isDarkMode)
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(bottom = 102.dp)
+        ) {
+            content()
+        }
+    }
+
             /*
              * =================================================
              * الشريط السفلي مع البنر الملكي
@@ -351,6 +347,7 @@ onSearchQueryChange: (String) -> Unit = {},
             }
         }  
     }
+}
 }
 /*
  * ============================================================
@@ -1214,14 +1211,23 @@ fun RoyalNewsTicker(
          * الشريط نفسه.
          */
         Box(
-            
-modifier = modifier
-    .height(22.dp)
-    .clipToBounds()
-    .onSizeChanged { size ->
-        containerWidth = size.width
-    }
-    
+            modifier = modifier
+                .height(22.dp)
+                .clip(
+                    RoundedCornerShape(50)
+                )
+                .background(
+                    Color(0xFF111111)
+                )
+                .border(
+                    width = 1.dp,
+                    color = RoyalGold,
+                    shape = RoundedCornerShape(50)
+                )
+                .clipToBounds()
+                .onSizeChanged { size ->
+                    containerWidth = size.width
+                }
         ) {
 
             /*
