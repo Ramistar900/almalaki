@@ -155,15 +155,16 @@ fun ProductCard(
                     },
                     shape = RoundedCornerShape(10.dp)
                 )
-                .padding(4.dp),
+                .padding(5.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // صورة المنتج الأصلية محفوظة
+            // مساحة صورة أوضح مع زوايا ناعمة، مع إبقاء مصدر الصورة كما هو.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(82.dp)
+                    .height(96.dp)
+                    .clip(RoundedCornerShape(7.dp))
                     .background(Color(0xFFE9DFC8)),
                 contentAlignment = Alignment.Center
             ) {
@@ -187,8 +188,8 @@ fun ProductCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        top = 5.dp,
-                        bottom = 1.dp
+                        top = 7.dp,
+                        bottom = 2.dp
                     ),
                 horizontalArrangement =
                     Arrangement.spacedBy(5.dp),
