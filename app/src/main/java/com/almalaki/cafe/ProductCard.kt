@@ -207,7 +207,7 @@ fun ProductCard(
                     Text(
                         text = product.name,
                         color = productGreen,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -222,15 +222,15 @@ fun ProductCard(
                         Text(
                             text = "%,.0f".format(product.price),
                             color = priceText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             maxLines = 1
                         )
 
                         Text(
                             text = "ل.س",
                             color = productGreen,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1
                         )
