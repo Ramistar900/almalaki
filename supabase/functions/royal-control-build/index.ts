@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://ramistar900.github.io",
+  "Vary": "Origin",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -18,7 +19,7 @@ const WORKFLOWS = {
 } as const;
 
 type AppName = keyof typeof WORKFLOWS;
-type ActionName = "status" | "dispatch";
+type ActionName = "status";
 
 function respond(
   status: number,
@@ -92,7 +93,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const action = body.action;
     const app = body.app;
 
-    if (action !== "status" && action !== "dispatch") {
+    if (action !== "status") {
       return respond(400, { error: "Unsupported action" });
     }
 
@@ -149,33 +150,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         })),
       });
     }
-
-    // Dispatch is an actual build request. It always targets main.
-    const response = await fetch(`${apiBase}/dispatches`, {
-      method: "POST",
-      headers: {
-        ...githubHeaders,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ref: "main" }),
-    });
-
-    if (!response.ok) {
-      return respond(502, {
-        error: "GitHub rejected the build request",
-        githubStatus: response.status,
-      });
-    }
-
-    return respond(200, {
-      success: true,
-      app,
-      workflow,
-      branch: "main",
-      message: "Build request accepted by GitHub",
-    });
   } catch {
     return respond(500, { error: "Unexpected server error" });
   }
 });
-      
