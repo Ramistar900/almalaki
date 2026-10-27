@@ -90,6 +90,15 @@ object RoyalTVVideoSessionManager {
                         Log.i(TAG, "Video session listening on $port")
                     }
 
+                    override fun onServerStopped() {
+                        synchronized(lock) {
+                            // اسمح بإنشاء مستقبل جديد إذا انتهى هذا الخادم.
+                            started = false
+                            receiver = null
+                        }
+                        Log.w(TAG, "Video receiver stopped; it can restart on next attach")
+                    }
+
                     override fun onClientConnected() {
                         synchronized(lock) {
                             senderConnected = true
