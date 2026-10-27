@@ -1594,61 +1594,8 @@ selectedSource == "الفيديو" -> {
         RoyalTVNotificationOverlay(Modifier.fillMaxSize())
 
         
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .clip(RoundedCornerShape(9.dp))
-                .background(Color.Black.copy(alpha = 0.38f))
-                .border(
-                    width = 1.dp,
-                    color = RoyalGold.copy(alpha = 0.65f),
-                    shape = RoundedCornerShape(9.dp)
-                )
-                .padding(
-                    horizontal = 10.dp,
-                    vertical = 6.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            
-            RoyalTVBroadcastSignal()
-            
+        // تمت إزالة مربع «مباشر» وإشارة البث وزر ↙/ملء الشاشة حسب الطلب.
 
-            Text(
-                text = "مباشر",
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        
-
-        
-        
-        
-        if (fullscreenButtonVisible) {
-            Text(
-                text = if (fullscreen) "↙" else "⛶",
-                modifier = Modifier
-                    .align(
-                        if (fullscreen) {
-                            Alignment.BottomStart
-                        } else {
-                            Alignment.BottomEnd
-                        }
-                    )
-                    .padding(12.dp)
-                    .clickable {
-                        onToggleFullscreen()
-                    }
-                    .padding(4.dp),
-                color = Color.White,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
         
         
     }
