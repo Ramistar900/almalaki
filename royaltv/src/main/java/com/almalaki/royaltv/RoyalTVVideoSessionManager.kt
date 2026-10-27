@@ -48,8 +48,9 @@ object RoyalTVVideoSessionManager {
         val connected: Boolean
 
         synchronized(lock) {
-            config = latestConfigPacket?.copyOf()
             connected = senderConnected
+            // لا نعيد تهيئة قديمة بعد انقطاع المرسل.
+            config = if (connected) latestConfigPacket?.copyOf() else null
         }
 
         if (connected) {
@@ -90,7 +91,9 @@ object RoyalTVVideoSessionManager {
                     }
 
                     override fun onClientConnected() {
-                        senderConnected = true
+                        synchronized(lock) {
+                            senderConnected = true
+                        }
                         listeners.forEach { listener ->
                             safely { listener.onSenderConnected() }
                         }
@@ -119,7 +122,10 @@ object RoyalTVVideoSessionManager {
                     }
 
                     override fun onClientDisconnected() {
-                        senderConnected = false
+                        synchronized(lock) {
+                            senderConnected = false
+                            latestConfigPacket = null
+                        }
                         listeners.forEach { listener ->
                             safely { listener.onSenderDisconnected() }
                         }
