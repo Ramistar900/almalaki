@@ -83,6 +83,13 @@ class RoyalTVVideoPacketReceiver(
 
                                 try {
                                     receivePackets(client)
+                                } catch (error: Exception) {
+                                    if (running.get()) {
+                                        reportError(
+                                            error.message
+                                                ?: "انقطع تدفق حزم الفيديو"
+                                        )
+                                    }
                                 } finally {
                                     clientSocket = null
                                     listener.onClientDisconnected()
