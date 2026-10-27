@@ -283,60 +283,7 @@ var invoiceTotalAmount by remember {
 ) {
 
 
-    /*
-     * أزرار التصنيفات بتصميم ملكي
-     */
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(
-                rememberScrollState()
-            )
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val categoryItems = listOf("الكل") + categories
 
-        categoryItems.forEach { category ->
-            val isSelected = selectedCategory == category
-
-            OutlinedButton(
-                onClick = {
-                    selectedCategory = category
-                },
-                shape = RoundedCornerShape(24.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    Gold
-                ),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (isSelected) {
-                        Color(0xFFEFE5D0)
-                    } else {
-                        Color(0xFFF8F4EA)
-                    },
-                    contentColor = Color(0xFF24452F)
-                ),
-                contentPadding = PaddingValues(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
-            ) {
-                Text(
-                    text = category,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp
-                )
-            }
-        }
-    }
-
-    HorizontalDivider(
-        color = Gold.copy(alpha = 0.35f),
-        thickness = 1.dp
-    )
-    
         /*
          * عرض المنتجات مجمّعة حسب التصنيف
          */
@@ -440,6 +387,8 @@ var invoiceTotalAmount by remember {
                 BoxWithConstraints(
                     Modifier.weight(1f)
                 ) {
+                    // ارتفاع تقريبي مطابق لبنر الاسم، لتبقى التصنيفات تحته.
+                    val titleBannerHeight = (maxWidth / 2.6f) + 6.dp
                     val columns = when {
                         maxWidth < 600.dp -> 3
                         maxWidth < 900.dp -> 4
@@ -455,7 +404,7 @@ var invoiceTotalAmount by remember {
                         columns = GridCells.Fixed(columns),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                         top = 2.dp,
+                         top = titleBannerHeight + 62.dp,
                          bottom = 120.dp
                      ),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -517,6 +466,48 @@ var invoiceTotalAmount by remember {
                                 )
                             }
                         }
+                    }
+
+                    // التصنيفات ثابتة فوق الشبكة؛ تمر البطاقات خلفها عند التمرير.
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                            .padding(top = titleBannerHeight)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val categoryItems = listOf("الكل") + categories
+                            categoryItems.forEach { category ->
+                                val isSelected = selectedCategory == category
+                                OutlinedButton(
+                                    onClick = { selectedCategory = category },
+                                    shape = RoundedCornerShape(24.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Gold),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = if (isSelected) Color(0xFFEFE5D0) else Color(0xFFF8F4EA),
+                                        contentColor = Color(0xFF24452F)
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = category,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
+                        HorizontalDivider(
+                            color = Gold.copy(alpha = 0.35f),
+                            thickness = 1.dp
+                        )
                     }
                 }
             }
