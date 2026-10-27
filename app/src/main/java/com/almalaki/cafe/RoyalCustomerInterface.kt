@@ -753,7 +753,6 @@ private fun RoyalTopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(background)
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Box(
