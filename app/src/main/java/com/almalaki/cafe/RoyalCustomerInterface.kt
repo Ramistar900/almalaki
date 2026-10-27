@@ -304,15 +304,25 @@ Box(
             onMenuClick()
         }
 
-        RoyalTitleFrame(isDarkMode)
-
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(bottom = 102.dp)
         ) {
-            content()
+            // يبقى المحتوى قابلاً للتمرير تحت بنر اسم القائمة.
+            Box(modifier = Modifier.fillMaxSize()) {
+                content()
+            }
+
+            // طبقة ثابتة أعلى المحتوى؛ لا تغيّر صورة البنر أو نصوصه.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+            ) {
+                RoyalTitleFrame(isDarkMode)
+            }
         }
     }
 
