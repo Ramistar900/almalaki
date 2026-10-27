@@ -2,6 +2,7 @@ package com.almalaki.royaltv
 
 import android.util.Log
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * يدير جلسة استقبال فيديو ROYAL TV بصورة مستقلة عن نافذة العرض.
@@ -26,6 +27,7 @@ object RoyalTVVideoSessionManager {
 
     private val listeners = CopyOnWriteArrayList<Listener>()
     private val lock = Any()
+    private val restartScheduled = AtomicBoolean(false)
 
     @Volatile
     private var receiver: RoyalTVVideoPacketReceiver? = null
@@ -96,7 +98,8 @@ object RoyalTVVideoSessionManager {
                             started = false
                             receiver = null
                         }
-                        Log.w(TAG, "Video receiver stopped; it can restart on next attach")
+                        Log.w(TAG, "Video receiver stopped; scheduling a safe restart")
+                        scheduleRestartIfNeeded()
                     }
 
                     override fun onClientConnected() {
@@ -151,6 +154,33 @@ object RoyalTVVideoSessionManager {
 
             receiver = created
             created.start()
+        }
+    }
+
+    /**
+     * يعيد تشغيل مستقبل TCP إذا توقف بينما ما زالت نافذة العرض مسجلة.
+     * تأخير قصير يمنح الخادم السابق وقتًا لإغلاق المنفذ، مع منع تكرار مهام الإعادة.
+     */
+    private fun scheduleRestartIfNeeded() {
+        if (listeners.isEmpty() || !restartScheduled.compareAndSet(false, true)) {
+            return
+        }
+
+        Thread({
+            try {
+                Thread.sleep(1500)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            } finally {
+                restartScheduled.set(false)
+            }
+
+            if (listeners.isNotEmpty()) {
+                startIfNeeded()
+            }
+        }, "RoyalTV-Video-Restart").apply {
+            isDaemon = true
+            start()
         }
     }
 
