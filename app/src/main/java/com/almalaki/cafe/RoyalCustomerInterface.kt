@@ -68,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -657,76 +658,72 @@ private fun RoyalGeneric3DLogo(
 fun RoyalShinyLogo(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
 
-    val transition =
-        rememberInfiniteTransition(
-            label = "royal_logo_shine"
-        )
+    val logoConfig = remember(context) {
+        RoyalTextLogoSettings.load(context)
+    }
 
-    val shinePosition by
-        transition.animateFloat(
+    val transition = rememberInfiniteTransition(
+        label = "royal_logo_shine"
+    )
 
-            initialValue = -1f,
-            targetValue = 2f,
+    val shinePosition by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                3000,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "royal_logo_shine_position"
+    )
 
-            animationSpec =
-                infiniteRepeatable(
-                    animation =
-                        tween(
-                            3000,
-                            easing = LinearEasing
-                        ),
-                    repeatMode =
-                        RepeatMode.Restart
-                ),
+    val brush = Brush.linearGradient(
+        colors = listOf(
+            RoyalGoldDark,
+            RoyalGold,
+            RoyalGoldLight,
+            Color.White,
+            RoyalGoldLight,
+            RoyalGold,
+            RoyalGoldDark
+        ),
+        start = Offset(shinePosition * 500f, 0f),
+        end = Offset(shinePosition * 500f + 260f, 0f)
+    )
 
-            label = "royal_logo_shine_position"
-        )
+    val logoFontFamily = when (logoConfig.style) {
+        RoyalTextLogoStyle.CLASSIC_CALLIGRAPHY ->
+            RoyalFontFamilies.libreBodoni
 
-    val brush =
-        Brush.linearGradient(
+        RoyalTextLogoStyle.MODERN_SIGNATURE ->
+            RoyalFontFamilies.courgette
+    }
 
-            colors =
-                listOf(
-                    RoyalGoldDark,
-                    RoyalGold,
-                    RoyalGoldLight,
-                    Color.White,
-                    RoyalGoldLight,
-                    RoyalGold,
-                    RoyalGoldDark
-                ),
+    val logoFontStyle = when (logoConfig.style) {
+        RoyalTextLogoStyle.CLASSIC_CALLIGRAPHY ->
+            FontStyle.Italic
 
-            start =
-                Offset(
-                    shinePosition * 500f,
-                    0f
-                ),
-
-            end =
-                Offset(
-                    shinePosition * 500f + 260f,
-                    0f
-                )
-        )
+        RoyalTextLogoStyle.MODERN_SIGNATURE ->
+            FontStyle.Normal
+    }
 
     Text(
-
-        text = "Royal Coffee",
-
+        text = logoConfig.text,
         modifier = modifier,
-
-        style =
-            TextStyle(
-                brush = brush,
-                fontSize = 27.sp,
-                fontWeight = FontWeight.Bold
-            ),
-
+        style = TextStyle(
+            brush = brush,
+            fontFamily = logoFontFamily,
+            fontStyle = logoFontStyle,
+            fontSize = logoConfig.fontSizeSp.sp,
+            fontWeight = FontWeight.Normal
+        ),
         textAlign = TextAlign.Center
     )
 }
-
 /*
  * ============================================================
  * الشريط العلوي
