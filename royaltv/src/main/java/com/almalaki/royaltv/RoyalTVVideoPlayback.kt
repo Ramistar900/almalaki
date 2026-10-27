@@ -79,7 +79,7 @@ fun RoyalTVVideoPlaybackLayer(
 private class RoyalTVVideoPlaybackController(
     private val surface: Surface,
     private val onStreamingChanged: (Boolean) -> Unit
-) : AutoCloseable, RoyalTVVideoPacketReceiver.Listener {
+) : AutoCloseable, RoyalTVVideoSessionManager.Listener {
 
     companion object {
         private const val TAG = "RoyalTVVideoPlayback"
@@ -91,9 +91,6 @@ private class RoyalTVVideoPlaybackController(
 
     private val closed = AtomicBoolean(false)
 
-    private val receiver =
-        RoyalTVVideoPacketReceiver(this)
-
     @Volatile
     private var decoder: MediaCodec? = null
 
@@ -102,18 +99,12 @@ private class RoyalTVVideoPlaybackController(
 
     fun start() {
         if (!closed.get()) {
-            receiver.start()
+            // يسجّل نافذة العرض فقط؛ لا يملك مستقبل TCP ولا يغلقه.
+            RoyalTVVideoSessionManager.attach(this)
         }
     }
 
-    override fun onServerStarted(port: Int) {
-        Log.i(TAG, "Video receiver listening on port $port")
-    }
-
-    override fun onClientConnected() {
-        Log.i(TAG, "Sender connected")
-    }
-
+    @Synchronized
     override fun onVideoPacket(
         data: ByteArray,
         presentationTimeUs: Long,
@@ -272,7 +263,12 @@ private class RoyalTVVideoPlaybackController(
         }
     }
 
-    override fun onClientDisconnected() {
+    override fun onSenderConnected() {
+        Log.i(TAG, "Sender connected")
+    }
+
+    @Synchronized
+    override fun onSenderDisconnected() {
         releaseDecoder()
 
         if (streaming) {
@@ -304,10 +300,12 @@ private class RoyalTVVideoPlaybackController(
         }
     }
 
+    @Synchronized
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
 
-        receiver.close()
+        // فصل العرض فقط؛ تظل جلسة TCP جاهزة للاتصال التالي.
+        RoyalTVVideoSessionManager.detach(this)
         releaseDecoder()
 
         if (streaming) {
