@@ -1,6 +1,8 @@
 package com.almalaki.royaltv
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.ImageView
@@ -122,6 +124,25 @@ private val demoProducts = listOf(
 
 class RoyalTVMainActivity : ComponentActivity() {
 
+    private val remoteExitRequested =
+        androidx.compose.runtime.mutableStateOf(false)
+
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (
+            event.action == android.view.KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0 &&
+            event.keyCode in setOf(
+                android.view.KeyEvent.KEYCODE_ESCAPE,
+                android.view.KeyEvent.KEYCODE_BUTTON_B
+            )
+        ) {
+            remoteExitRequested.value = true
+            return true
+        }
+
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -230,6 +251,10 @@ class RoyalTVMainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 RoyalTVChannelScreen(
+                    remoteExitRequested = remoteExitRequested.value,
+                    onRemoteExitHandled = {
+                        remoteExitRequested.value = false
+                    },
                     onRequestHomeScreenBroadcast = {
                         screenCapturePermissionLauncher.launch(
                             projectionManager.createScreenCaptureIntent()
@@ -272,7 +297,9 @@ class RoyalTVMainActivity : ComponentActivity() {
 
 @Composable
 private fun RoyalTVChannelScreen(
-    onRequestHomeScreenBroadcast: () -> Unit
+    onRequestHomeScreenBroadcast: () -> Unit,
+    remoteExitRequested: Boolean,
+    onRemoteExitHandled: () -> Unit
 ) {
         val context = LocalContext.current
 
@@ -464,7 +491,12 @@ private fun RoyalTVChannelScreen(
 val selectedAppState = remember {
     mutableStateOf<RoyalTVInstalledApp?>(null)
 }
-BackHandler {
+
+var showExitDialog by remember {
+    mutableStateOf(false)
+}
+
+val handleBackOrExit: () -> Unit = {
     when {
         selectedAppState.value != null -> {
             selectedAppState.value = null
@@ -474,10 +506,25 @@ BackHandler {
             selectedSourceState.value = null
         }
 
+        fullscreen -> {
+            fullscreen = false
+        }
+
         else -> {
-            // نبقى في الشاشة الرئيسية بدل الخروج بضغطة واحدة.
+            showExitDialog = true
         }
     }
+}
+
+LaunchedEffect(remoteExitRequested) {
+    if (remoteExitRequested) {
+        handleBackOrExit()
+        onRemoteExitHandled()
+    }
+}
+
+BackHandler {
+    handleBackOrExit()
 }
 
     /*
@@ -864,7 +911,56 @@ modifier = Modifier.fillMaxSize()
             RoyalTVOptionsOverlay(
                 modifier = Modifier.fillMaxSize(),
                 onRequestHomeScreenBroadcast =
-                    onRequestHomeScreenBroadcast
+                    onRequestHomeScreenBroadcast,
+                onRequestExit = {
+                    showExitDialog = true
+                }
+            )
+        }
+
+        if (showExitDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showExitDialog = false
+                },
+                title = {
+                    Text(
+                        text = "الخروج من القناة",
+                        color = RoyalGold
+                    )
+                },
+                text = {
+                    Text(
+                        text = "هل تريد الخروج من القناة؟",
+                        color = RoyalPearl
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showExitDialog = false
+                            (context as? android.app.Activity)?.finish()
+                        }
+                    ) {
+                        Text(
+                            text = "نعم",
+                            color = RoyalGold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showExitDialog = false
+                        }
+                    ) {
+                        Text(
+                            text = "لا",
+                            color = RoyalPearl
+                        )
+                    }
+                },
+                containerColor = RoyalCharcoal
             )
         }
     }
