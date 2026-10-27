@@ -134,17 +134,30 @@ private class RoyalTVVideoPlaybackController(
 
             val inputBuffer =
                 activeDecoder.getInputBuffer(inputIndex)
-                    ?: return
 
-            inputBuffer.clear()
-
-            if (data.size > inputBuffer.remaining()) {
+            if (inputBuffer == null) {
+                // أعد خانة الإدخال إلى MediaCodec بدل تركها محجوزة.
                 activeDecoder.queueInputBuffer(
                     inputIndex,
                     0,
                     0,
                     presentationTimeUs,
-                    MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                    0
+                )
+                Log.w(TAG, "Decoder input buffer unavailable")
+                return
+            }
+
+            inputBuffer.clear()
+
+            if (data.size > inputBuffer.remaining()) {
+                // إسقاط هذه الحزمة فقط؛ لا ننهي جلسة فك الترميز كلها.
+                activeDecoder.queueInputBuffer(
+                    inputIndex,
+                    0,
+                    0,
+                    presentationTimeUs,
+                    0
                 )
 
                 Log.e(
