@@ -1,6 +1,8 @@
 package com.almalaki.royaltv
 
 import android.graphics.SurfaceTexture
+import android.os.Handler
+import android.os.Looper
 import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
@@ -20,8 +22,21 @@ fun RoyalTVVideoPlaybackLayer(
     modifier: Modifier = Modifier,
     onStreamingChanged: (Boolean) -> Unit
 ) {
-    val callback = remember(onStreamingChanged) {
-        onStreamingChanged
+    val mainHandler = remember {
+        Handler(Looper.getMainLooper())
+    }
+
+    // تصل حزم الفيديو من خيط الشبكة؛ نفّذ تحديثات الواجهة على الخيط الرئيسي.
+    val callback = remember(onStreamingChanged, mainHandler) {
+        { isStreaming: Boolean ->
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                onStreamingChanged(isStreaming)
+            } else {
+                mainHandler.post {
+                    onStreamingChanged(isStreaming)
+                }
+            }
+        }
     }
 
     AndroidView(
