@@ -874,7 +874,7 @@ private fun RoyalTitleFrame(
                 vertical = 3.dp
             )
             // زيادة ارتفاع بنر اسم القائمة حتى تبقى النصوص داخله بوضوح.
-            .aspectRatio(3.4f),
+            .aspectRatio(2.6f),
         contentAlignment = Alignment.Center
     ) {
         Image(
