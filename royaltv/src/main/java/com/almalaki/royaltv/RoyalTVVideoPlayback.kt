@@ -27,7 +27,7 @@ fun RoyalTVVideoPlaybackLayer(
     }
 
     // تصل حزم الفيديو من خيط الشبكة؛ نفّذ تحديثات الواجهة على الخيط الرئيسي.
-    val callback = remember(onStreamingChanged, mainHandler) {
+    val callback: (Boolean) -> Unit = remember(onStreamingChanged, mainHandler) {
         { isStreaming: Boolean ->
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 onStreamingChanged(isStreaming)
@@ -35,6 +35,7 @@ fun RoyalTVVideoPlaybackLayer(
                 mainHandler.post {
                     onStreamingChanged(isStreaming)
                 }
+                Unit
             }
         }
     }
