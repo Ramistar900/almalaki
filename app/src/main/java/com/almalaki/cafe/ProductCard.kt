@@ -188,13 +188,13 @@ fun ProductCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        top = 7.dp,
-                        bottom = 2.dp
+                        top = 8.dp,
+                        bottom = 3.dp
                     ),
                 horizontalArrangement =
-                    Arrangement.spacedBy(5.dp),
+                    Arrangement.spacedBy(6.dp),
                 verticalAlignment =
-                    Alignment.CenterVertically
+                    Alignment.Top
             ) {
 
                 // اسم المنتج والسعر
