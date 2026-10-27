@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -760,6 +761,13 @@ private fun RoyalTopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .paint(
+                painter = painterResource(
+                    id = R.drawable.royal_customer_top_banner
+                ),
+                sizeToIntrinsics = false,
+                contentScale = ContentScale.FillBounds
+            )
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Box(
