@@ -1608,7 +1608,7 @@ selectedSource == "الفيديو" -> {
                     )
                     .padding(16.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color.Black.copy(alpha = 0.58f))
+                    // خلفية الزر شفافة حسب الطلب.
                     .border(
                         width = 2.dp,
                         color = RoyalGold,
