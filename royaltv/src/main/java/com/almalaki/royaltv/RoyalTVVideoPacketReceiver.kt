@@ -28,6 +28,7 @@ class RoyalTVVideoPacketReceiver(
 
     interface Listener {
         fun onServerStarted(port: Int)
+        fun onServerStopped()
         fun onClientConnected()
         fun onVideoPacket(
             data: ByteArray,
@@ -115,6 +116,11 @@ class RoyalTVVideoPacketReceiver(
             } finally {
                 serverSocket = null
                 running.set(false)
+                try {
+                    listener.onServerStopped()
+                } catch (error: Exception) {
+                    Log.e(TAG, "Failed to notify server shutdown", error)
+                }
             }
         }, "RoyalTV-Video-Receiver").apply {
             isDaemon = true
