@@ -109,7 +109,8 @@ RoyalOption(
 @Composable
 fun RoyalTVOptionsOverlay(
 modifier: Modifier = Modifier,
-onRequestHomeScreenBroadcast: () -> Unit = {}
+onRequestHomeScreenBroadcast: () -> Unit = {},
+onRequestExit: () -> Unit = {}
 ) {
 var menuOpen by remember {
 mutableStateOf(false)
@@ -411,6 +412,40 @@ Box(
 
         Text(
             text = "خيارات",
+            color = OptionsGold,
+            fontSize = 12.sp
+        )
+    }
+
+    // زر خروج مستقل عن قائمة الخيارات.
+    Row(
+        modifier = Modifier
+            .align(Alignment.TopStart)
+            .padding(8.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(OptionsBlack)
+            .border(
+                width = 1.5.dp,
+                color = OptionsGold,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable {
+                onRequestExit()
+            }
+            .padding(
+                horizontal = 12.dp,
+                vertical = 9.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = "⏻",
+            color = OptionsGold,
+            fontSize = 20.sp
+        )
+        Text(
+            text = "خروج",
             color = OptionsGold,
             fontSize = 12.sp
         )
