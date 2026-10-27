@@ -12,8 +12,8 @@ android {
         applicationId = "com.almalaki.royaltv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 16
-versionName = "1.15"
+        versionCode = 17
+versionName = "1.16"
     }
 
     signingConfigs {
