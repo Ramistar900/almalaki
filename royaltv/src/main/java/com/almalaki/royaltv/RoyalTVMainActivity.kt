@@ -1594,7 +1594,39 @@ selectedSource == "الفيديو" -> {
         RoyalTVNotificationOverlay(Modifier.fillMaxSize())
 
         
-        // تمت إزالة مربع «مباشر» وإشارة البث وزر ↙/ملء الشاشة حسب الطلب.
+        // مربع «مباشر» وإشارة البث محذوفان؛ زر ملء الشاشة محفوظ ومكبّر.
+        if (fullscreenButtonVisible) {
+            Text(
+                text = if (fullscreen) "↙" else "⛶",
+                modifier = Modifier
+                    .align(
+                        if (fullscreen) {
+                            Alignment.BottomStart
+                        } else {
+                            Alignment.BottomEnd
+                        }
+                    )
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.Black.copy(alpha = 0.58f))
+                    .border(
+                        width = 2.dp,
+                        color = RoyalGold,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .clickable {
+                        onToggleFullscreen()
+                    }
+                    .padding(
+                        horizontal = 20.dp,
+                        vertical = 12.dp
+                    ),
+                color = RoyalPearl,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
 
         
         
