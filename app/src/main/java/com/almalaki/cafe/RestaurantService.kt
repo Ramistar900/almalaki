@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONArray
@@ -156,6 +157,7 @@ fun RestaurantJoinScreen(
     darkMode: Boolean,
     onRestaurantSelected: (RestaurantStore) -> Unit
 ) {
+    val context = LocalContext.current
     var code by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -229,11 +231,7 @@ fun RestaurantJoinScreen(
                         try {
                             val store = resolveRestaurantCode(submittedCode)
                             Handler(Looper.getMainLooper()).post {
-                                saveSelectedRestaurant(
-                                    /* context is captured below by local composition */
-                                    RestaurantJoinContext.current,
-                                    store
-                                )
+                                saveSelectedRestaurant(context, store)
                                 loading = false
                                 onRestaurantSelected(store)
                             }
