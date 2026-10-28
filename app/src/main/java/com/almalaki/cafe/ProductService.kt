@@ -20,21 +20,38 @@ data class Product(
     val imageUrl: String
 )
 
-fun loadProducts(restaurantId: String? = null): List<Product> {
-
-    val url = URL(
-        "$SUPABASE_URL/rest/v1/products" +
+fun loadProducts(
+    restaurantId: String? = null,
+    restaurantCode: String? = null,
+    accessToken: String? = null
+): List<Product> {
+    val useCodeLookup = !restaurantCode.isNullOrBlank()
+    val url = if (useCodeLookup) {
+        URL("$SUPABASE_URL/rest/v1/rpc/get_restaurant_products")
+    } else {
+        URL(
+            "$SUPABASE_URL/rest/v1/products" +
                 "?select=id,name,category,price,image_url" +
                 "&order=id.asc" +
                 (restaurantId?.let {
                     "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
                 } ?: "")
-    )
+        )
+    }
 
     val connection =
         url.openConnection() as HttpURLConnection
 
-    connection.requestMethod = "GET"
+    connection.requestMethod = if (useCodeLookup) "POST" else "GET"
+    connection.doOutput = useCodeLookup
+
+    if (useCodeLookup) {
+        connection.setRequestProperty("Content-Type", "application/json")
+        val body = JSONObject().put("p_code", restaurantCode).toString()
+        connection.outputStream.use {
+            it.write(body.toByteArray(Charsets.UTF_8))
+        }
+    }
 
     connection.setRequestProperty(
         "apikey",
@@ -43,7 +60,7 @@ fun loadProducts(restaurantId: String? = null): List<Product> {
 
     connection.setRequestProperty(
         "Authorization",
-        "Bearer $SUPABASE_KEY"
+        "Bearer ${accessToken?.takeIf { it.isNotBlank() } ?: SUPABASE_KEY}"
     )
 
     val code = connection.responseCode
