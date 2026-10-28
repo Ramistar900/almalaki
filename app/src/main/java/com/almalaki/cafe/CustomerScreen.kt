@@ -70,8 +70,23 @@ var customerProfile by remember(context) {
 var customerOrderHistory by remember(context) {
     mutableStateOf(loadRoyalCustomerOrders(context))
 }
+var activeRestaurant by remember(context) {
+    mutableStateOf(loadRoyalActiveRestaurant(context))
+}
+var linkedRestaurants by remember(context) {
+    mutableStateOf(loadRoyalLinkedRestaurants(context))
+}
 var showCustomerAccount by remember {
     mutableStateOf(false)
+}
+var showRestaurantLinks by remember {
+    mutableStateOf(false)
+}
+var restaurantLinkLoading by remember {
+    mutableStateOf(false)
+}
+var restaurantLinkMessage by remember {
+    mutableStateOf("")
 }
 var showCustomerOrders by remember {
     mutableStateOf(false)
@@ -174,24 +189,39 @@ var invoiceTotalAmount by remember {
         mutableStateOf("الكل")
     }
 
-    LaunchedEffect(Unit) {
-    Thread {
-        try {
-            products = loadProducts()
-        } catch (e: Exception) {
-            message = e.message
-                ?: "تعذر تحميل المنتجات."
-        }
-
-        try {
-            customerSections = loadCustomerSections()
-        } catch (_: Exception) {
-            // إذا تعذر تحميل إعدادات الأقسام،
-            // تبقى المنتجات ظاهرة كالمعتاد.
-        }
-
-        loading = false
-    }.start()
+    LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode) {
+        loading = true
+        message = ""
+        Thread {
+            try {
+                val loadedProducts = if (
+                    activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID
+                ) {
+                    loadProducts()
+                } else {
+                    loadProductsForRestaurantCode(activeRestaurant.joinCode)
+                }
+                val loadedSections = try {
+                    if (activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID) {
+                        loadCustomerSections()
+                    } else {
+                        loadCustomerSectionsForRestaurantCode(activeRestaurant.joinCode)
+                    }
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                products = loadedProducts
+                customerSections = loadedSections
+                cart = emptyMap()
+                selectedCategory = "الكل"
+            } catch (e: Exception) {
+                products = emptyList()
+                customerSections = emptyList()
+                message = e.message ?: "تعذر تحميل منتجات المطعم."
+            } finally {
+                loading = false
+            }
+        }.start()
     }
 
     val background =
@@ -827,7 +857,8 @@ val invoiceTotalSnapshot = totalAmount
                                         type,
                                         totalAmount,
                                         products,
-                                        cart
+                                        cart,
+                                        restaurantId = activeRestaurant.id
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
@@ -912,6 +943,49 @@ if (showCustomerAccount) {
             saveRoyalCustomerProfile(context, profile)
             customerProfile = profile
             showCustomerAccount = false
+        },
+        onManageRestaurants = {
+            showCustomerAccount = false
+            linkedRestaurants = loadRoyalLinkedRestaurants(context)
+            activeRestaurant = loadRoyalActiveRestaurant(context)
+            restaurantLinkMessage = ""
+            showRestaurantLinks = true
+        }
+    )
+}
+
+if (showRestaurantLinks) {
+    RoyalRestaurantLinksDialog(
+        isDarkMode = darkMode,
+        activeRestaurant = activeRestaurant,
+        restaurants = linkedRestaurants,
+        loading = restaurantLinkLoading,
+        message = restaurantLinkMessage,
+        onLink = { code ->
+            if (!restaurantLinkLoading) {
+                restaurantLinkLoading = true
+                restaurantLinkMessage = ""
+                Thread {
+                    try {
+                        val linked = linkRoyalRestaurant(context, code)
+                        linkedRestaurants = loadRoyalLinkedRestaurants(context)
+                        activeRestaurant = linked
+                        restaurantLinkMessage = "تم الربط بنجاح."
+                    } catch (e: Exception) {
+                        restaurantLinkMessage = e.message ?: "تعذر ربط المطعم."
+                    } finally {
+                        restaurantLinkLoading = false
+                    }
+                }.start()
+            }
+        },
+        onSelect = { restaurant ->
+            selectRoyalRestaurant(context, restaurant)
+            activeRestaurant = restaurant
+            restaurantLinkMessage = ""
+        },
+        onDismiss = {
+            if (!restaurantLinkLoading) showRestaurantLinks = false
         }
     )
 }
