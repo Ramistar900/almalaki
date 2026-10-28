@@ -1228,17 +1228,7 @@ fun RoyalNewsTicker(
         Box(
             modifier = modifier
                 .height(22.dp)
-                .clip(
-                    RoundedCornerShape(50)
-                )
-                .background(
-                    Color(0xFF111111)
-                )
-                .border(
-                    width = 1.dp,
-                    color = RoyalGold,
-                    shape = RoundedCornerShape(50)
-                )
+                // خلفية البنر الأصلية ظاهرة خلف النص؛ دون صندوق أو إطار منفصل.
                 .clipToBounds()
                 .onSizeChanged { size ->
                     containerWidth = size.width
@@ -1481,15 +1471,6 @@ fun RoyalBottomBar(
         }
     }
 
-    val date =
-        remember(now) {
-
-            SimpleDateFormat(
-                "EEEE d/M/yyyy",
-                Locale("ar")
-            ).format(now)
-        }
-
     Row(
         modifier =
             Modifier
@@ -1526,51 +1507,14 @@ fun RoyalBottomBar(
             Modifier.width(5.dp)
         )
 
-        // ─────────────────────────
-        // التاريخ + الساعة
-        // ─────────────────────────
-
-        Column(
-            modifier =
-                Modifier.width(82.dp),
-
-            horizontalAlignment =
-                Alignment.CenterHorizontally,
-
-            verticalArrangement =
-                Arrangement.Bottom
+        // الساعة فقط؛ حذف التاريخ نهائيًا مع الإبقاء على تحديث الوقت كل ثانية.
+        RoyalShinyInfoBox(
+            Modifier
+                .width(82.dp)
+                .height(30.dp),
+            transparentBackground = true
         ) {
-
-            Text(
-                text = date,
-
-                color = RoyalGold,
-
-                fontSize = 9.sp,
-
-                fontWeight =
-                    FontWeight.Medium,
-
-                maxLines = 1
-            )
-
-            Spacer(
-                Modifier.height(2.dp)
-            )
-
-            RoyalShinyInfoBox(
-                Modifier
-                    .width(68.dp)
-                    .height(25.dp),
-
-                transparentBackground = true
-
-            ) {
-
-                RoyalLiveDateTime(
-                    now
-                )
-            }
+            RoyalLiveDateTime(now)
         }
 
         Spacer(
