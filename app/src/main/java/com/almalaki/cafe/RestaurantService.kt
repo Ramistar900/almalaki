@@ -155,7 +155,8 @@ fun clearSelectedRestaurant(context: Context) {
 @Composable
 fun RestaurantJoinScreen(
     darkMode: Boolean,
-    onRestaurantSelected: (RestaurantStore) -> Unit
+    onRestaurantSelected: (RestaurantStore) -> Unit,
+    onOwnerLogin: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var code by remember { mutableStateOf("") }
@@ -222,6 +223,17 @@ fun RestaurantJoinScreen(
                     fontSize = 13.sp
                 )
             }
+            Button(
+                onClick = onOwnerLogin,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = gold
+                )
+            ) {
+                Text("دخول المالك")
+            }
+
             Button(
                 onClick = {
                     loading = true
