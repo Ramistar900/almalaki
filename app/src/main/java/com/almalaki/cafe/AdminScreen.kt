@@ -134,7 +134,7 @@ val imagePicker = rememberLauncherForActivityResult(
 
 fun refreshProducts() {
     Thread {
-        try { products = loadProducts() }
+        try { products = loadProducts(accessToken = accessToken) }
         catch (e: Exception) { message = e.message ?: "تعذر تحميل المنتجات." }
     }.start()
 }
@@ -216,7 +216,7 @@ fun refreshDashboard() {
     loadingDashboard = true
     Thread {
         try {
-            val currentProducts = loadProducts()
+            val currentProducts = loadProducts(accessToken = accessToken)
             val currentOrders = loadAdminOrders(accessToken)
             val completedOrders = currentOrders.filter { it.status.equals("completed", ignoreCase = true) }
             products = currentProducts
@@ -416,7 +416,7 @@ Column(
                     selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن."; section = AdminSection.PRODUCTS
                 },
                 onDeleteProduct = { product -> Thread {
-                    try { deleteProduct(accessToken, product.id); products = loadProducts(); message = "تم حذف المنتج بنجاح ✅" }
+                    try { deleteProduct(accessToken, product.id); products = loadProducts(accessToken = accessToken); message = "تم حذف المنتج بنجاح ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." }
                 }.start() },
                 onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId,
@@ -484,7 +484,7 @@ Column(
                     selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن."; section = AdminSection.PRODUCTS
                 },
                 onDeleteProduct = { product -> Thread {
-                    try { deleteProduct(accessToken, product.id); products = loadProducts(); message = "تم حذف المنتج بنجاح ✅" }
+                    try { deleteProduct(accessToken, product.id); products = loadProducts(accessToken = accessToken); message = "تم حذف المنتج بنجاح ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." }
                 }.start() },
                 onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId,
