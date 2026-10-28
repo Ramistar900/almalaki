@@ -809,6 +809,9 @@ private fun RoyalTopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // يمنع صورة البنر العلوي من التمدد خارج مساحة عناصره.
+            .height(93.dp)
+            .clipToBounds()
             .paint(
                 painter = painterResource(
                     id = R.drawable.royal_customer_top_banner
