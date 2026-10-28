@@ -113,6 +113,10 @@ var loadingDashboard by remember { mutableStateOf(false) }
 var loadingArchive by remember { mutableStateOf(false) }
 var accountEmail by remember { mutableStateOf("") }
 var loadingAccount by remember { mutableStateOf(false) }
+var ownerRestaurant by remember { mutableStateOf<OwnerRestaurantDetails?>(null) }
+var loadingOwnerRestaurant by remember { mutableStateOf(false) }
+var savingOwnerRestaurant by remember { mutableStateOf(false) }
+var ownerRestaurantMessage by remember { mutableStateOf("") }
 var orderAlertVisible by remember { mutableStateOf(false) }
 var highlightedOrderId by remember { mutableStateOf<Long?>(null) }
 var orderAlertMessage by remember { mutableStateOf("🔔 يوجد طلب جديد") }
@@ -161,6 +165,51 @@ fun refreshArchive() {
         try { archivedOrders = loadArchivedOrders(accessToken) }
         catch (e: Exception) { message = e.message ?: "تعذر تحميل الأرشيف." }
         finally { loadingArchive = false }
+    }.start()
+}
+
+fun refreshOwnerRestaurant() {
+    loadingOwnerRestaurant = true
+    ownerRestaurantMessage = ""
+    Thread {
+        try {
+            val result = loadOwnedRestaurant(accessToken)
+            Handler(Looper.getMainLooper()).post {
+                ownerRestaurant = result
+                if (result == null) ownerRestaurantMessage = "هذا الحساب لا يملك مطعمًا حتى الآن."
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                ownerRestaurantMessage = e.message ?: "تعذر تحميل بيانات المطعم."
+            }
+        } finally {
+            Handler(Looper.getMainLooper()).post {
+                loadingOwnerRestaurant = false
+            }
+        }
+    }.start()
+}
+
+fun createOwnerRestaurant(name: String) {
+    savingOwnerRestaurant = true
+    ownerRestaurantMessage = ""
+    Thread {
+        try {
+            val created = createOwnedRestaurant(accessToken, name)
+            Handler(Looper.getMainLooper()).post {
+                ownerRestaurant = created
+                ownerRestaurantMessage = "تم إنشاء المطعم والرمز الدائم بنجاح."
+                message = "تم تجهيز هوية المطعم بنجاح ✅"
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                ownerRestaurantMessage = e.message ?: "تعذر إنشاء المطعم."
+            }
+        } finally {
+            Handler(Looper.getMainLooper()).post {
+                savingOwnerRestaurant = false
+            }
+        }
     }.start()
 }
 
@@ -338,7 +387,7 @@ fun openSection(target: AdminSection) {
         AdminSection.PRODUCTS -> refreshProducts()
         AdminSection.ORDERS -> refreshOrders()
         AdminSection.ARCHIVE -> refreshArchive()
-        AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
+        AdminSection.ACCOUNT_SETTINGS -> { refreshAccount(); refreshOwnerRestaurant() }
         AdminSection.INTERFACE_SETTINGS -> Unit
         AdminSection.TV_SETTINGS -> Unit
         AdminSection.ROYAL_TV -> Unit
@@ -406,6 +455,12 @@ Column(
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
                 loadingDashboard = loadingDashboard, accountEmail = accountEmail, loadingAccount = loadingAccount,
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
+                ownerRestaurant = ownerRestaurant,
+                loadingOwnerRestaurant = loadingOwnerRestaurant,
+                savingOwnerRestaurant = savingOwnerRestaurant,
+                ownerRestaurantMessage = ownerRestaurantMessage,
+                onRefreshOwnerRestaurant = ::refreshOwnerRestaurant,
+                onCreateOwnerRestaurant = ::createOwnerRestaurant,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
                 accessToken = accessToken, context = context, onNameChange = { name = it },
@@ -474,6 +529,12 @@ Column(
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
                 loadingDashboard = loadingDashboard, accountEmail = accountEmail, loadingAccount = loadingAccount,
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
+                ownerRestaurant = ownerRestaurant,
+                loadingOwnerRestaurant = loadingOwnerRestaurant,
+                savingOwnerRestaurant = savingOwnerRestaurant,
+                ownerRestaurantMessage = ownerRestaurantMessage,
+                onRefreshOwnerRestaurant = ::refreshOwnerRestaurant,
+                onCreateOwnerRestaurant = ::createOwnerRestaurant,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
                 accessToken = accessToken, context = context, onNameChange = { name = it },
