@@ -26,7 +26,8 @@ fun createOrder(
     fulfillmentType: String,
     totalAmount: Double,
     products: List<Product>,
-    cart: Map<Int, Int>
+    cart: Map<Int, Int>,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
 ): OrderResult {
 
     if (cart.isEmpty()) {
@@ -69,13 +70,15 @@ fun createOrder(
         customerPhone = customerPhone,
         deliveryAddress = deliveryAddress,
         fulfillmentType = fulfillmentType,
-        totalAmount = totalAmount
+        totalAmount = totalAmount,
+        restaurantId = restaurantId
     )
 
     insertOrderItems(
         orderId = orderId,
         products = products,
-        cart = cart
+        cart = cart,
+        restaurantId = restaurantId
     )
 
     return OrderResult(orderNumber)
@@ -115,7 +118,8 @@ private fun insertOrder(
     customerPhone: String,
     deliveryAddress: String,
     fulfillmentType: String,
-    totalAmount: Double
+    totalAmount: Double,
+    restaurantId: String
 ) {
 
     val url = URL(
@@ -193,6 +197,11 @@ private fun insertOrder(
             "new"
         )
 
+        body.put(
+            "restaurant_id",
+            restaurantId
+        )
+
         connection.outputStream.use { output ->
 
             output.write(
@@ -228,7 +237,8 @@ private fun insertOrder(
 private fun insertOrderItems(
     orderId: Long,
     products: List<Product>,
-    cart: Map<Int, Int>
+    cart: Map<Int, Int>,
+    restaurantId: String
 ) {
 
     val jsonArray = JSONArray()
@@ -270,6 +280,11 @@ private fun insertOrderItems(
             item.put(
                 "item_total",
                 product.price * quantity
+            )
+
+            item.put(
+                "restaurant_id",
+                restaurantId
             )
 
             jsonArray.put(item)
