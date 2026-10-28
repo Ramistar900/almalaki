@@ -108,7 +108,7 @@ fun saveProduct(
                 onMessage("تم تعديل المنتج بنجاح ✅")
             }
 
-            onProductsLoaded(loadProducts())
+            onProductsLoaded(loadProducts(accessToken = accessToken))
             onClear()
         } catch (e: Exception) {
             onMessage(e.message ?: "حدث خطأ أثناء الحفظ.")
