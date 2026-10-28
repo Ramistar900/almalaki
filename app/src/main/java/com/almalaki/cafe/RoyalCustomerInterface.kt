@@ -395,7 +395,7 @@ Box(
                     onAccountClick = onAccountClick,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .offset(y = 7.dp)
+                        .offset(y = 15.dp)
                 )
 
                 Box(
@@ -810,13 +810,12 @@ fun RoyalTopBar(
             .fillMaxWidth()
             .height(93.dp)
             .clipToBounds()
-            .padding(horizontal = 8.dp)
     ) {
-        // صورة البنر العلوي تخص منطقة الشعار فقط ولا تمتد خلف البحث.
+        // البنر العلوي يمتد بعرض الواجهة وينتهي قريباً من مربع البحث.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(47.dp)
+                .height(53.dp)
                 .paint(
                     painter = painterResource(
                         id = R.drawable.royal_customer_top_banner
@@ -830,7 +829,7 @@ fun RoyalTopBar(
                 onClick = onMenuClick,
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 2.dp)
+                    .padding(start = 8.dp)
                     .size(40.dp)
                     .onFocusChanged {
                         isFocused = it.isFocused
@@ -869,11 +868,12 @@ fun RoyalTopBar(
         }
 
         // نزول بسيط للبحث بين البنر العلوي وبنر القائمة دون تداخل.
-        Spacer(Modifier.height(7.dp))
+        Spacer(Modifier.height(3.dp))
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 8.dp)
                 .height(35.dp)
                 .clip(RoundedCornerShape(11.dp))
                 .background(Color(0xFF06452F))
