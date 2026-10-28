@@ -49,7 +49,13 @@ fun AdminContent(
     onRefreshArchive: () -> Unit,
     onOrderStatus: (Long, String) -> Unit,
     onDeleteOrder: (Long) -> Unit,
-    highlightedOrderId: Long? = null
+    highlightedOrderId: Long? = null,
+    ownerRestaurant: OwnerRestaurantDetails? = null,
+    loadingOwnerRestaurant: Boolean = false,
+    savingOwnerRestaurant: Boolean = false,
+    ownerRestaurantMessage: String = "",
+    onRefreshOwnerRestaurant: () -> Unit = {},
+    onCreateOwnerRestaurant: (String) -> Unit = {}
 ) {
         if (section == AdminSection.TV_SETTINGS) {
     AdminTVSettingsScreen(
@@ -219,6 +225,17 @@ if (section == AdminSection.ROYAL_TV_CONTROL) {
             }
 
             AdminSection.ACCOUNT_SETTINGS -> {
+                item {
+                    RestaurantOwnerSettingsCard(
+                        restaurant = ownerRestaurant,
+                        loading = loadingOwnerRestaurant,
+                        saving = savingOwnerRestaurant,
+                        message = ownerRestaurantMessage,
+                        onRefresh = onRefreshOwnerRestaurant,
+                        onCreate = onCreateOwnerRestaurant
+                    )
+                }
+
                 item {
                     AccountSettingsScreen(
                         currentEmail = accountEmail,
