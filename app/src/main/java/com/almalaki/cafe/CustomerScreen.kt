@@ -177,14 +177,14 @@ var invoiceTotalAmount by remember {
     LaunchedEffect(activeStore.id) {
     Thread {
         try {
-            products = loadProducts(activeStore.id)
+            products = loadProducts(activeStore.id, activeStore.joinCode)
         } catch (e: Exception) {
             message = e.message
                 ?: "تعذر تحميل المنتجات."
         }
 
         try {
-            customerSections = loadCustomerSections(activeStore.id)
+            customerSections = loadCustomerSections(activeStore.id, activeStore.joinCode)
         } catch (_: Exception) {
             // إذا تعذر تحميل إعدادات الأقسام،
             // تبقى المنتجات ظاهرة كالمعتاد.
