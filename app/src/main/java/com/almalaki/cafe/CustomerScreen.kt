@@ -79,6 +79,9 @@ var linkedRestaurants by remember(context) {
 var showCustomerAccount by remember {
     mutableStateOf(false)
 }
+var showCustomerProfileEditor by remember {
+    mutableStateOf(false)
+}
 var showRestaurantLinks by remember {
     mutableStateOf(false)
 }
@@ -840,19 +843,29 @@ if (showInvoice) {
 
 
 if (showCustomerAccount) {
+    RoyalCustomerAccountPortal(
+        isDarkMode = darkMode,
+        onDismiss = { showCustomerAccount = false },
+        onCustomerDetails = {
+            customerProfile = loadRoyalCustomerProfile(context)
+            showCustomerAccount = false
+            showCustomerProfileEditor = true
+        }
+    )
+}
+
+if (showCustomerProfileEditor) {
     RoyalCustomerAccountDialog(
         isDarkMode = darkMode,
         profile = customerProfile,
-        onDismiss = {
-            showCustomerAccount = false
-        },
+        onDismiss = { showCustomerProfileEditor = false },
         onSave = { profile ->
             saveRoyalCustomerProfile(context, profile)
             customerProfile = profile
-            showCustomerAccount = false
+            showCustomerProfileEditor = false
         },
         onManageRestaurants = {
-            showCustomerAccount = false
+            showCustomerProfileEditor = false
             linkedRestaurants = loadRoyalLinkedRestaurants(context)
             activeRestaurant = loadRoyalActiveRestaurant(context)
             restaurantLinkMessage = ""
