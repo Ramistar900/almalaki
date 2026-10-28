@@ -825,6 +825,7 @@ var invoiceTotalAmount by remember {
                     }
 
                     else -> {
+val selectedRestaurantId = activeRestaurant.id
 val invoiceItemsSnapshot =
     products.mapNotNull { product ->
         val quantity = cart[product.id] ?: 0
@@ -857,7 +858,7 @@ val invoiceTotalSnapshot = totalAmount
                                         totalAmount,
                                         products,
                                         cart,
-                                        restaurantId = activeRestaurant.id
+                                        restaurantId = selectedRestaurantId
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
