@@ -108,7 +108,7 @@ fun RestaurantOwnerSettingsCard(
                 }
             } else {
                 Text(
-                    text = "اسم المطعم: \${restaurant.name}",
+                    text = "اسم المطعم: ${restaurant.name}",
                     color = AdminCream,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
