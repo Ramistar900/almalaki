@@ -246,7 +246,13 @@ fun RoyalCustomerSettings(
              * ------------------------------------------------
              */
             item {
+                RoyalSettingsSectionHeading(
+                    title = "التخصيص والقراءة",
+                    subtitle = "اختر الخطوط التي تناسبك"
+                )
+            }
 
+            item {
                 RoyalFontSettingsInfoCard(
                     cardColor = cardColor,
                     primaryText = primaryText,
@@ -369,6 +375,14 @@ fun RoyalCustomerSettings(
              * QR ومشاركة التطبيق
              * ------------------------------------------------
              */
+            item {
+                Spacer(Modifier.height(4.dp))
+                RoyalSettingsSectionHeading(
+                    title = "مشاركة التطبيق",
+                    subtitle = "شارك التطبيق أو افتح خيارات التثبيت"
+                )
+            }
+
             item {
                 CustomerAppSharing(
                     isDarkMode = isDarkMode
@@ -715,6 +729,45 @@ private fun RoyalFontChoiceCard(
 
     maxLines = 1
 )
+        }
+    }
+}
+
+
+@Composable
+private fun RoyalSettingsSectionHeading(
+    title: String,
+    subtitle: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(34.dp)
+                .background(
+                    Color(0xFFD4AF37),
+                    RoundedCornerShape(4.dp)
+                )
+        )
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                text = title,
+                color = Color(0xFFD4AF37),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                color = Color(0xFF8C877B),
+                fontSize = 11.sp
+            )
         }
     }
 }
