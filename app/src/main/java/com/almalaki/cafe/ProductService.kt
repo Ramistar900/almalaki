@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 
 private const val SUPABASE_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
@@ -19,12 +20,15 @@ data class Product(
     val imageUrl: String
 )
 
-fun loadProducts(): List<Product> {
+fun loadProducts(restaurantId: String? = null): List<Product> {
 
     val url = URL(
         "$SUPABASE_URL/rest/v1/products" +
                 "?select=id,name,category,price,image_url" +
-                "&order=id.asc"
+                "&order=id.asc" +
+                (restaurantId?.let {
+                    "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
+                } ?: "")
     )
 
     val connection =
@@ -104,7 +108,8 @@ fun addProduct(
     name: String,
     category: String,
     price: Double,
-    imageUrl: String
+    imageUrl: String,
+    restaurantId: String? = null
 ) {
 
     val url = URL(
@@ -164,6 +169,10 @@ fun addProduct(
                 "description",
                 name.trim()
             )
+
+            if (!restaurantId.isNullOrBlank()) {
+                put("restaurant_id", restaurantId)
+            }
         }.toString()
 
     connection.outputStream.use {
@@ -197,11 +206,16 @@ fun addProduct(
 
 fun deleteProduct(
     accessToken: String,
-    id: Int
+    id: Int,
+    restaurantId: String? = null
 ) {
 
+    val tenantFilter = restaurantId?.takeIf { it.isNotBlank() }?.let {
+        "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
+    }.orEmpty()
+
     val url = URL(
-        "$SUPABASE_URL/rest/v1/products?id=eq.$id"
+        "$SUPABASE_URL/rest/v1/products?id=eq.$id$tenantFilter"
     )
 
     val connection =
