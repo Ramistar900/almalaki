@@ -140,14 +140,16 @@ fun ProductCard(
                 .fillMaxWidth()
                 .background(cream)
                 .border(
-                    width = 2.dp,
+                    width = if (isFocused) 3.dp else 2.dp,
                     brush = if (isFocused) {
                         Brush.linearGradient(
                             listOf(
                                 Color.White,
+                                Color(0xFFFFF4C2),
                                 goldLight,
-                                Color(0xFF0A6B3B),
-                                gold
+                                Color(0xFF16A05A),
+                                gold,
+                                Color.White
                             )
                         )
                     } else {
