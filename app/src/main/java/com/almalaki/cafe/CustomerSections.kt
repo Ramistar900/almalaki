@@ -93,15 +93,28 @@ private fun customerSectionsRequest(
 }
 
 /** تحميل إعدادات الأقسام المشتركة من Supabase. */
-fun loadCustomerSections(restaurantId: String? = null): List<CustomerSection> {
+fun loadCustomerSections(
+    restaurantId: String? = null,
+    restaurantCode: String? = null
+): List<CustomerSection> {
+    val useCodeLookup = !restaurantCode.isNullOrBlank()
     val response = customerSectionsRequest(
-        method = "GET",
-        path = "customer_sections" +
-            "?select=section_key,title,category_names,enabled,sort_order" +
-            "&order=sort_order.asc" +
-            (restaurantId?.let {
-                "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
-            } ?: "")
+        method = if (useCodeLookup) "POST" else "GET",
+        path = if (useCodeLookup) {
+            "rpc/get_restaurant_sections"
+        } else {
+            "customer_sections" +
+                "?select=section_key,title,category_names,enabled,sort_order" +
+                "&order=sort_order.asc" +
+                (restaurantId?.let {
+                    "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
+                } ?: "")
+        },
+        body = if (useCodeLookup) {
+            JSONObject().put("p_code", restaurantCode).toString()
+        } else {
+            null
+        }
     )
 
     val json = JSONArray(response)
