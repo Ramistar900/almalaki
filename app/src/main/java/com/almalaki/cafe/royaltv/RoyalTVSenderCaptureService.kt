@@ -67,6 +67,9 @@ class RoyalTVSenderCaptureService : Service() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val reconnectScheduled = AtomicBoolean(false)
 
+    @Volatile
+    private var reconnectRunnable: Runnable? = null
+
     private val projectionCallback =
         object : MediaProjection.Callback() {
             override fun onStop() {
@@ -493,6 +496,7 @@ class RoyalTVSenderCaptureService : Service() {
      * يعيد محاولة اتصال المرسل بمستقبل ROYAL TV بعد انقطاع الشبكة.
      * لا ينشئ ناقلًا جديدًا ولا يغيّر بروتوكول الحزم، ويتوقف عند إيقاف البث.
      */
+    @Synchronized
     private fun scheduleVideoReconnect(
         activeTransport: RoyalTVVideoPacketTransport,
         host: String,
@@ -506,14 +510,22 @@ class RoyalTVSenderCaptureService : Service() {
             return
         }
 
-        mainHandler.postDelayed({
-            reconnectScheduled.set(false)
+        lateinit var reconnectTask: Runnable
+        reconnectTask = Runnable {
+            // لا تسمح لمهمة قديمة بتغيير حالة مهمة إعادة اتصال أحدث.
+            if (reconnectRunnable === reconnectTask) {
+                reconnectRunnable = null
+                reconnectScheduled.set(false)
+            }
 
             if (!stopping && transport === activeTransport) {
                 Log.i(TAG, "Retrying video connection to $host:$port")
                 activeTransport.connect(host, port)
             }
-        }, 2000L)
+        }
+
+        reconnectRunnable = reconnectTask
+        mainHandler.postDelayed(reconnectTask, 2000L)
     }
 
     private fun copyBuffer(source: ByteBuffer): ByteArray {
@@ -593,6 +605,11 @@ class RoyalTVSenderCaptureService : Service() {
     private fun stopStreaming() {
         if (stopping) return
         stopping = true
+
+        // ألغِ أي إعادة اتصال مؤجلة عند إيقاف البث، حتى لا تؤثر في جلسة جديدة.
+        reconnectRunnable?.let(mainHandler::removeCallbacks)
+        reconnectRunnable = null
+        reconnectScheduled.set(false)
 
         val activeDisplay = virtualDisplay
         val activeEncoder = encoder
