@@ -82,6 +82,14 @@ if (showCustomerSettings) {
         isDarkMode = darkMode,
         onBack = {
             showCustomerSettings = false
+        },
+        onAccountClick = {
+            customerProfile = loadRoyalCustomerProfile(context)
+            showCustomerAccount = true
+        },
+        onOrdersClick = {
+            customerOrderHistory = loadRoyalCustomerOrders(context)
+            showCustomerOrders = true
         }
     )
     return
