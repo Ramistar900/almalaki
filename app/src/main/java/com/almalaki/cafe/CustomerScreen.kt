@@ -475,8 +475,6 @@ var invoiceTotalAmount by remember {
                         )
                     }
                 }
-            }
-        }
         
         
         /*
