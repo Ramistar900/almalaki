@@ -87,6 +87,8 @@ fun RoyalCustomerSettings(
         mutableStateOf(savedEnglishFont)
     }
 
+    var expandedSection by remember { mutableStateOf<String?>(null) }
+
     /*
      * --------------------------------------------------------
      * ألوان واجهة ROYAL.
@@ -231,318 +233,189 @@ fun RoyalCustomerSettings(
          * ====================================================
          */
         LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(
-                        horizontal = 14.dp
-                    ),
-
-            verticalArrangement =
-                Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-
             item {
-                RoyalSettingsSectionHeading(
-                    title = "الحساب والبيانات",
-                    subtitle = "حدّث بياناتك الشخصية بسهولة",
-                    glyph = "◎"
-                )
-            }
-
-            item {
-                RoyalSettingsActionCard(
-                    glyph = "◎",
+                RoyalSettingsCompactRow(
                     title = "حسابي",
-                    subtitle = "الاسم ورقم الهاتف والعنوان وطريقة الاستلام",
+                    glyph = "◎",
                     isDarkMode = isDarkMode,
+                    expanded = false,
                     onClick = {
                         onBack()
                         onAccountClick()
                     }
                 )
             }
-
             item {
-                RoyalSettingsSectionHeading(
-                    title = "الطلبات والمشتريات",
-                    subtitle = "ارجع إلى تفاصيل طلباتك السابقة",
-                    glyph = "▤"
-                )
-            }
-
-            item {
-                RoyalSettingsActionCard(
-                    glyph = "▤",
+                RoyalSettingsCompactRow(
                     title = "طلباتي وفواتيري",
-                    subtitle = "عرض سجل الطلبات المحفوظ على هذا الجهاز",
+                    glyph = "▤",
                     isDarkMode = isDarkMode,
+                    expanded = false,
                     onClick = {
                         onBack()
                         onOrdersClick()
                     }
                 )
             }
-
-            /*
-             * ------------------------------------------------
-             * التخصيص والقراءة
-             * ------------------------------------------------
-             */
             item {
-                RoyalSettingsSectionHeading(
-                    title = "التخصيص والقراءة",
-                    subtitle = "اختر الخطوط التي تناسبك",
-                    glyph = "Aa"
-                )
-            }
-
-            item {
-                RoyalFontSettingsInfoCard(
-                    cardColor = cardColor,
-                    primaryText = primaryText,
-                    secondaryText = secondaryText,
-                    gold = gold,
-                    goldLight = goldLight
-                )
-            }
-
-            /*
-             * ------------------------------------------------
-             * عنوان العربية
-             * ------------------------------------------------
-             */
-            item {
-
-                Text(
-                    text = "الخط العربي",
-
-                    modifier =
-                        Modifier.padding(
-                            top = 6.dp,
-                            bottom = 2.dp
-                        ),
-
-                    color = gold,
-
-                    fontSize = 17.sp,
-
-                    fontWeight =
-                        FontWeight.Bold
-                )
-            }
-
-            /*
-             * ------------------------------------------------
-             * الخطوط العربية
-             * ------------------------------------------------
-             */
-            items(
-                items = arabicFonts,
-                key = {
-                    it.id.name
-                }
-            ) { font ->
-
-                RoyalFontChoiceCard(
-                    font = font,
-                    selected =
-                        selectedArabicFont ==
-                            font.id,
+                RoyalSettingsCompactRow(
+                    title = "خط التطبيق",
+                    glyph = "Aa",
                     isDarkMode = isDarkMode,
-                    primaryText = primaryText,
-                    secondaryText = secondaryText,
-                    gold = gold,
-                    goldLight = goldLight,
+                    expanded = expandedSection == "fonts",
                     onClick = {
-                        selectedArabicFont =
-                            font.id
+                        expandedSection = if (expandedSection == "fonts") null else "fonts"
                     }
                 )
             }
-
-            /*
-             * ------------------------------------------------
-             * عنوان الإنجليزية
-             * ------------------------------------------------
-             */
-            item {
-
-                Text(
-                    text = "الخط الإنجليزي",
-
-                    modifier =
-                        Modifier.padding(
-                            top = 10.dp,
-                            bottom = 2.dp
-                        ),
-
-                    color = gold,
-
-                    fontSize = 17.sp,
-
-                    fontWeight =
-                        FontWeight.Bold
-                )
-            }
-
-            /*
-             * ------------------------------------------------
-             * الخطوط الإنجليزية
-             * ------------------------------------------------
-             */
-            items(
-                items = englishFonts,
-                key = {
-                    it.id.name
+            if (expandedSection == "fonts") {
+                item {
+                    RoyalFontSettingsInfoCard(
+                        cardColor = cardColor,
+                        primaryText = primaryText,
+                        secondaryText = secondaryText,
+                        gold = gold,
+                        goldLight = goldLight
+                    )
                 }
-            ) { font ->
-
-                RoyalFontChoiceCard(
-                    font = font,
-                    selected =
-                        selectedEnglishFont ==
-                            font.id,
-                    isDarkMode = isDarkMode,
-                    primaryText = primaryText,
-                    secondaryText = secondaryText,
-                    gold = gold,
-                    goldLight = goldLight,
-                    onClick = {
-                        selectedEnglishFont =
-                            font.id
-                    }
-                )
-            }
-            
-            item {
-                Spacer(Modifier.height(4.dp))
-                RoyalSettingsSectionHeading(
-                    title = "الإشعارات والأخبار",
-                    subtitle = "ابقَ مطّلعًا على أخبار المطعم",
-                    glyph = "◉"
-                )
-            }
-
-            item {
-                RoyalSettingsInfoCard(
-                    glyph = "◉",
-                    title = "أخبار المطعم",
-                    message = "تظهر رسائل وأخبار المطعم عبر الشريط الإخباري في الواجهة الرئيسية.",
-                    isDarkMode = isDarkMode
-                )
-            }
-
-            item {
-                RoyalSettingsSectionHeading(
-                    title = "الخصوصية والأمان",
-                    subtitle = "معلومات واضحة حول بياناتك",
-                    glyph = "◇"
-                )
-            }
-
-            item {
-                RoyalSettingsInfoCard(
-                    glyph = "◇",
-                    title = "بياناتك على جهازك",
-                    message = "يحفظ التطبيق بيانات الملف الشخصي وسجل الطلبات محليًا على هذا الجهاز. يمكنك مراجعة بيانات حسابك من قسم «حسابي».",
-                    isDarkMode = isDarkMode
-                )
-            }
-
-            /*
-             * ------------------------------------------------
-             * المساعدة ومشاركة التطبيق
-             * ------------------------------------------------
-             */
-            item {
-                Spacer(Modifier.height(4.dp))
-                RoyalSettingsSectionHeading(
-                    title = "المساعدة ومعلومات التطبيق",
-                    subtitle = "شارك تطبيق الملكي واحتفظ برابط أحدث إصدار",
-                    glyph = "ⓘ"
-                )
-            }
-
-            item {
-                RoyalSettingsInfoCard(
-                    glyph = "ⓘ",
-                    title = "تطبيق الملكي",
-                    message = "واجهة العميل لعرض قائمة المطعم وإرسال الطلبات ومتابعة سجلها.",
-                    isDarkMode = isDarkMode
-                )
-            }
-
-            item {
-                CustomerAppSharing(
-                    isDarkMode = isDarkMode
-                )
-            }
-            
-
-            /*
-             * ------------------------------------------------
-             * زر تطبيق
-             * ------------------------------------------------
-             */
-            item {
-
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
-
-                Button(
-                    onClick = {
-
-                        /*
-                         * حفظ الخط العربي.
-                         */
-                        RoyalFontManager.setArabicFont(
-                            selectedArabicFont
-                        )
-
-                        /*
-                         * حفظ الخط الإنجليزي.
-                         */
-                        RoyalFontManager.setEnglishFont(
-                            selectedEnglishFont
-                        )
-
-                        /*
-                         * الرجوع بعد الحفظ.
-                         */
-                        onBack()
-                    },
-
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-
-                    shape =
-                        RoundedCornerShape(16.dp),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
+                item {
+                    Text(
+                        text = "الخط العربي",
+                        modifier = Modifier.padding(top = 3.dp, bottom = 1.dp),
+                        color = gold,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                items(items = arabicFonts, key = { "ar_${it.id.name}" }) { font ->
+                    RoyalFontChoiceCard(
+                        font = font,
+                        selected = selectedArabicFont == font.id,
+                        isDarkMode = isDarkMode,
+                        primaryText = primaryText,
+                        secondaryText = secondaryText,
+                        gold = gold,
+                        goldLight = goldLight,
+                        onClick = { selectedArabicFont = font.id }
+                    )
+                }
+                item {
+                    Text(
+                        text = "الخط الإنجليزي",
+                        modifier = Modifier.padding(top = 5.dp, bottom = 1.dp),
+                        color = gold,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                items(items = englishFonts, key = { "en_${it.id.name}" }) { font ->
+                    RoyalFontChoiceCard(
+                        font = font,
+                        selected = selectedEnglishFont == font.id,
+                        isDarkMode = isDarkMode,
+                        primaryText = primaryText,
+                        secondaryText = secondaryText,
+                        gold = gold,
+                        goldLight = goldLight,
+                        onClick = { selectedEnglishFont = font.id }
+                    )
+                }
+                item {
+                    Button(
+                        onClick = {
+                            RoyalFontManager.setArabicFont(selectedArabicFont)
+                            RoyalFontManager.setEnglishFont(selectedEnglishFont)
+                            expandedSection = null
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(15.dp),
+                        colors = ButtonDefaults.buttonColors(
                             containerColor = gold,
                             contentColor = Color.Black
                         )
-                ) {
-
-                    Text(
-                        text = "تطبيق",
-
-                        fontSize = 16.sp,
-
-                        fontWeight =
-                            FontWeight.Bold
+                    ) {
+                        Text("حفظ الخطوط", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            item {
+                RoyalSettingsCompactRow(
+                    title = "الأخبار والإشعارات",
+                    glyph = "◉",
+                    isDarkMode = isDarkMode,
+                    expanded = expandedSection == "news",
+                    onClick = {
+                        expandedSection = if (expandedSection == "news") null else "news"
+                    }
+                )
+            }
+            if (expandedSection == "news") {
+                item {
+                    RoyalSettingsInfoCard(
+                        glyph = "◉",
+                        title = "أخبار المطعم",
+                        message = "تظهر رسائل وأخبار المطعم عبر الشريط الإخباري في الواجهة الرئيسية.",
+                        isDarkMode = isDarkMode
                     )
                 }
-
-                Spacer(
-                    modifier =
-                        Modifier.height(24.dp)
+            }
+            item {
+                RoyalSettingsCompactRow(
+                    title = "الخصوصية والأمان",
+                    glyph = "◇",
+                    isDarkMode = isDarkMode,
+                    expanded = expandedSection == "privacy",
+                    onClick = {
+                        expandedSection = if (expandedSection == "privacy") null else "privacy"
+                    }
+                )
+            }
+            if (expandedSection == "privacy") {
+                item {
+                    RoyalSettingsInfoCard(
+                        glyph = "◇",
+                        title = "بياناتك على جهازك",
+                        message = "يحفظ التطبيق بيانات الملف الشخصي وسجل الطلبات محليًا على هذا الجهاز. يمكنك مراجعة بيانات حسابك من قسم «حسابي».",
+                        isDarkMode = isDarkMode
+                    )
+                }
+            }
+            item {
+                RoyalSettingsCompactRow(
+                    title = "معلومات التطبيق ومشاركته",
+                    glyph = "ⓘ",
+                    isDarkMode = isDarkMode,
+                    expanded = expandedSection == "sharing",
+                    onClick = {
+                        expandedSection = if (expandedSection == "sharing") null else "sharing"
+                    }
+                )
+            }
+            if (expandedSection == "sharing") {
+                item {
+                    RoyalSettingsInfoCard(
+                        glyph = "ⓘ",
+                        title = "تطبيق الملكي",
+                        message = "واجهة العميل لعرض قائمة المطعم وإرسال الطلبات ومتابعة سجلها.",
+                        isDarkMode = isDarkMode
+                    )
+                }
+                item {
+                    CustomerAppSharing(isDarkMode = isDarkMode)
+                }
+            }
+            item {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "اضغط على أي خيار لعرض تفاصيله",
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 18.dp),
+                    color = secondaryText,
+                    fontSize = 11.sp
                 )
             }
         }
@@ -823,6 +696,58 @@ private fun RoyalFontChoiceCard(
     }
 }
 
+
+@Composable
+private fun RoyalSettingsCompactRow(
+    title: String,
+    glyph: String,
+    isDarkMode: Boolean,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    val gold = Color(0xFFD4AF37)
+    val cardColor = if (isDarkMode) Color(0xFF111111) else Color.White
+    val primaryText = if (isDarkMode) Color.White else Color(0xFF171717)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(cardColor, RoundedCornerShape(16.dp))
+            .border(1.dp, gold.copy(alpha = if (expanded) 0.75f else 0.35f), RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(38.dp)
+                .height(38.dp)
+                .background(Color(0xFF123529), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = glyph,
+                color = Color(0xFFFFE9A3),
+                fontSize = if (glyph == "Aa") 16.sp else 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            color = primaryText,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = if (expanded) "⌃" else "‹",
+            color = gold,
+            fontSize = 25.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 
 @Composable
 private fun RoyalSettingsSectionHeading(
