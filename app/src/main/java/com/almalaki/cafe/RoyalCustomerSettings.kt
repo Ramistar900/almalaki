@@ -22,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,7 +52,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun RoyalCustomerSettings(
     isDarkMode: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onChangeRestaurant: (() -> Unit)? = null
 ) {
 
     /*
@@ -364,6 +366,28 @@ fun RoyalCustomerSettings(
                 )
             }
             
+            /*
+             * ------------------------------------------------
+             * تغيير المطعم المرتبط بالجهاز
+             * ------------------------------------------------
+             */
+            item {
+                if (onChangeRestaurant != null) {
+                    OutlinedButton(
+                        onClick = onChangeRestaurant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text(
+                            text = "تغيير المطعم / رمز المطعم",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
             /*
              * ------------------------------------------------
              * QR ومشاركة التطبيق
