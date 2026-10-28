@@ -334,6 +334,8 @@ class RoyalTVVideoPacketTransport(
             return false
         }
 
+        var failedSocket: Socket? = null
+
         return try {
             synchronized(outputLock) {
                 val socket = activeSocket
@@ -348,6 +350,8 @@ class RoyalTVVideoPacketTransport(
                     return@synchronized false
                 }
 
+                failedSocket = socket
+
                 output.writeInt(data.size)
                 output.writeLong(presentationTimeUs)
                 output.writeInt(flags)
@@ -361,6 +365,11 @@ class RoyalTVVideoPacketTransport(
                 "sendVideoPacket",
                 e.message ?: "تعذر إرسال حزمة الفيديو"
             )
+
+            // أغلق الاتصال المعطوب لإيقاظ قارئ الحزم وإطلاق onDisconnected،
+            // حتى يتمكن المرسل من جدولة إعادة الاتصال تلقائيًا.
+            failedSocket?.let { disconnectSocket(it) }
+
             false
         }
     }
