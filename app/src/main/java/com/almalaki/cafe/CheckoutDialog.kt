@@ -71,11 +71,22 @@ fun CheckoutDialog(
     ) -> Unit
 ) {
     val context = LocalContext.current
+    val savedCustomerProfile = remember(context) {
+        loadRoyalCustomerProfile(context)
+    }
 
-    var customerName by remember { mutableStateOf("") }
-    var customerPhone by remember { mutableStateOf("") }
-    var deliveryAddress by remember { mutableStateOf("") }
-    var fulfillmentType by remember { mutableStateOf("داخل المحل") }
+    var customerName by remember(savedCustomerProfile) {
+        mutableStateOf(savedCustomerProfile.name)
+    }
+    var customerPhone by remember(savedCustomerProfile) {
+        mutableStateOf(savedCustomerProfile.phone)
+    }
+    var deliveryAddress by remember(savedCustomerProfile) {
+        mutableStateOf(savedCustomerProfile.address)
+    }
+    var fulfillmentType by remember(savedCustomerProfile) {
+        mutableStateOf(savedCustomerProfile.fulfillmentType)
+    }
 
     LaunchedEffect(successOrderNumber) {
         if (successOrderNumber.isNotEmpty()) {
