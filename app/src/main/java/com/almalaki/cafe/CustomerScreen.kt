@@ -67,7 +67,8 @@ fun CustomerScreen(
             darkMode = darkMode,
             onRestaurantSelected = { store ->
                 selectedStore = store
-            }
+            },
+            onOwnerLogin = onOwner
         )
         return
     }
