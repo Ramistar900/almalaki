@@ -393,7 +393,9 @@ Box(
                     onCartClick = onCartClick,
                     onOrdersClick = onOrdersClick,
                     onAccountClick = onAccountClick,
-                    modifier = Modifier.align(Alignment.TopCenter)
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = 7.dp)
                 )
 
                 Box(
@@ -790,7 +792,7 @@ fun RoyalShinyLogo(
  */
  
 @Composable
-private fun RoyalTopBar(
+fun RoyalTopBar(
     isDarkMode: Boolean,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -800,37 +802,36 @@ private fun RoyalTopBar(
         mutableStateOf(false)
     }
 
-    val background =
-        if (isDarkMode) RoyalCard else Color.White
-
     val searchTextColor =
         if (isDarkMode) RoyalCream else RoyalDarkText
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // يمنع صورة البنر العلوي من التمدد خارج مساحة عناصره.
             .height(93.dp)
             .clipToBounds()
-            .paint(
-                painter = painterResource(
-                    id = R.drawable.royal_customer_top_banner
-                ),
-                sizeToIntrinsics = false,
-                contentScale = ContentScale.FillBounds
-            )
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp)
     ) {
+        // صورة البنر العلوي تخص منطقة الشعار فقط ولا تمتد خلف البحث.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(42.dp)
+                .height(47.dp)
+                .paint(
+                    painter = painterResource(
+                        id = R.drawable.royal_customer_top_banner
+                    ),
+                    sizeToIntrinsics = false,
+                    contentScale = ContentScale.FillBounds
+                ),
+            contentAlignment = Alignment.Center
         ) {
             IconButton(
                 onClick = onMenuClick,
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .size(42.dp)
+                    .padding(start = 2.dp)
+                    .size(40.dp)
                     .onFocusChanged {
                         isFocused = it.isFocused
                     }
@@ -850,12 +851,8 @@ private fun RoyalTopBar(
                 Icon(
                     imageVector = Icons.Default.Menu,
                     contentDescription = "القائمة",
-                    tint = if (isFocused) {
-                        RoyalGoldLight
-                    } else {
-                        RoyalGold
-                    },
-                    modifier = Modifier.size(28.dp)
+                    tint = if (isFocused) RoyalGoldLight else RoyalGold,
+                    modifier = Modifier.size(27.dp)
                 )
             }
 
@@ -866,31 +863,25 @@ private fun RoyalTopBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 RoyalActiveLogo(size = 32.dp)
-
                 Spacer(Modifier.width(6.dp))
-
                 RoyalShinyLogo()
             }
         }
 
-        Spacer(Modifier.height(5.dp))
+        // نزول بسيط للبحث بين البنر العلوي وبنر القائمة دون تداخل.
+        Spacer(Modifier.height(7.dp))
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(34.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    if (isDarkMode) {
-                        Color.White.copy(alpha = 0.06f)
-                    } else {
-                        Color.Black.copy(alpha = 0.04f)
-                    }
-                )
+                .height(35.dp)
+                .clip(RoundedCornerShape(11.dp))
+                .background(Color(0xFF06452F))
+                .background(Color.Black.copy(alpha = 0.06f))
                 .border(
                     1.dp,
-                    RoyalGold.copy(alpha = 0.75f),
-                    RoundedCornerShape(12.dp)
+                    RoyalGold.copy(alpha = 0.90f),
+                    RoundedCornerShape(11.dp)
                 )
                 .padding(horizontal = 10.dp, vertical = 5.dp),
             contentAlignment = Alignment.CenterStart
@@ -912,7 +903,7 @@ private fun RoyalTopBar(
                         if (searchQuery.isEmpty()) {
                             Text(
                                 text = "ابحث عن منتج...",
-                                color = RoyalGray,
+                                color = Color(0xFFD0D8D1),
                                 fontSize = 12.sp
                             )
                         }
@@ -1605,14 +1596,14 @@ private fun RoyalCustomerNavigationAction(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .size(13.dp)
+                        .size(17.dp)
                         .background(RoyalCustomerNavBadge, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (cartCount > 99) "99+" else cartCount.toString(),
                         color = Color.White,
-                        fontSize = 7.sp,
+                        fontSize = 8.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
