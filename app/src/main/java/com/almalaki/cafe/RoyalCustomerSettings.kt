@@ -51,7 +51,9 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun RoyalCustomerSettings(
     isDarkMode: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onAccountClick: () -> Unit = {},
+    onOrdersClick: () -> Unit = {}
 ) {
 
     /*
@@ -197,7 +199,7 @@ fun RoyalCustomerSettings(
             Column {
 
                 Text(
-                    text = "🔤 خط النظام",
+                    text = "إعدادات الملكي",
 
                     color = gold,
 
@@ -214,7 +216,7 @@ fun RoyalCustomerSettings(
 
                 Text(
                     text =
-                        "اختيار الخط المستخدم في واجهة التطبيق",
+                        "حسابك وطلباتك وتفضيلاتك في مكان واحد",
 
                     color = secondaryText,
 
@@ -240,15 +242,58 @@ fun RoyalCustomerSettings(
                 Arrangement.spacedBy(12.dp)
         ) {
 
+            item {
+                RoyalSettingsSectionHeading(
+                    title = "الحساب والبيانات",
+                    subtitle = "حدّث بياناتك الشخصية بسهولة",
+                    glyph = "◎"
+                )
+            }
+
+            item {
+                RoyalSettingsActionCard(
+                    glyph = "◎",
+                    title = "حسابي",
+                    subtitle = "الاسم ورقم الهاتف والعنوان وطريقة الاستلام",
+                    isDarkMode = isDarkMode,
+                    onClick = {
+                        onBack()
+                        onAccountClick()
+                    }
+                )
+            }
+
+            item {
+                RoyalSettingsSectionHeading(
+                    title = "الطلبات والمشتريات",
+                    subtitle = "ارجع إلى تفاصيل طلباتك السابقة",
+                    glyph = "▤"
+                )
+            }
+
+            item {
+                RoyalSettingsActionCard(
+                    glyph = "▤",
+                    title = "طلباتي وفواتيري",
+                    subtitle = "عرض سجل الطلبات المحفوظ على هذا الجهاز",
+                    isDarkMode = isDarkMode,
+                    onClick = {
+                        onBack()
+                        onOrdersClick()
+                    }
+                )
+            }
+
             /*
              * ------------------------------------------------
-             * شرح النظام
+             * التخصيص والقراءة
              * ------------------------------------------------
              */
             item {
                 RoyalSettingsSectionHeading(
                     title = "التخصيص والقراءة",
-                    subtitle = "اختر الخطوط التي تناسبك"
+                    subtitle = "اختر الخطوط التي تناسبك",
+                    glyph = "Aa"
                 )
             }
 
@@ -370,16 +415,61 @@ fun RoyalCustomerSettings(
                 )
             }
             
+            item {
+                Spacer(Modifier.height(4.dp))
+                RoyalSettingsSectionHeading(
+                    title = "الإشعارات والأخبار",
+                    subtitle = "ابقَ مطّلعًا على أخبار المطعم",
+                    glyph = "◉"
+                )
+            }
+
+            item {
+                RoyalSettingsInfoCard(
+                    glyph = "◉",
+                    title = "أخبار المطعم",
+                    message = "تظهر رسائل وأخبار المطعم عبر الشريط الإخباري في الواجهة الرئيسية.",
+                    isDarkMode = isDarkMode
+                )
+            }
+
+            item {
+                RoyalSettingsSectionHeading(
+                    title = "الخصوصية والأمان",
+                    subtitle = "معلومات واضحة حول بياناتك",
+                    glyph = "◇"
+                )
+            }
+
+            item {
+                RoyalSettingsInfoCard(
+                    glyph = "◇",
+                    title = "بياناتك على جهازك",
+                    message = "يحفظ التطبيق بيانات الملف الشخصي وسجل الطلبات محليًا على هذا الجهاز. يمكنك مراجعة بيانات حسابك من قسم «حسابي».",
+                    isDarkMode = isDarkMode
+                )
+            }
+
             /*
              * ------------------------------------------------
-             * QR ومشاركة التطبيق
+             * المساعدة ومشاركة التطبيق
              * ------------------------------------------------
              */
             item {
                 Spacer(Modifier.height(4.dp))
                 RoyalSettingsSectionHeading(
-                    title = "مشاركة التطبيق",
-                    subtitle = "شارك التطبيق أو افتح خيارات التثبيت"
+                    title = "المساعدة ومعلومات التطبيق",
+                    subtitle = "شارك تطبيق الملكي واحتفظ برابط أحدث إصدار",
+                    glyph = "ⓘ"
+                )
+            }
+
+            item {
+                RoyalSettingsInfoCard(
+                    glyph = "ⓘ",
+                    title = "تطبيق الملكي",
+                    message = "واجهة العميل لعرض قائمة المطعم وإرسال الطلبات ومتابعة سجلها.",
+                    isDarkMode = isDarkMode
                 )
             }
 
@@ -737,24 +827,38 @@ private fun RoyalFontChoiceCard(
 @Composable
 private fun RoyalSettingsSectionHeading(
     title: String,
-    subtitle: String
+    subtitle: String,
+    glyph: String = "✦"
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 6.dp, bottom = 2.dp),
+            .padding(top = 8.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .width(4.dp)
-                .height(34.dp)
+                .width(42.dp)
+                .height(42.dp)
                 .background(
-                    Color(0xFFD4AF37),
-                    RoundedCornerShape(4.dp)
+                    Color(0xFF123529),
+                    RoundedCornerShape(14.dp)
                 )
-        )
-        Spacer(Modifier.width(10.dp))
+                .border(
+                    1.dp,
+                    Color(0xFFD4AF37).copy(alpha = 0.45f),
+                    RoundedCornerShape(14.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = glyph,
+                color = Color(0xFFFFE9A3),
+                fontSize = if (glyph == "Aa") 16.sp else 21.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(11.dp))
         Column {
             Text(
                 text = title,
@@ -767,6 +871,127 @@ private fun RoyalSettingsSectionHeading(
                 text = subtitle,
                 color = Color(0xFF8C877B),
                 fontSize = 11.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoyalSettingsActionCard(
+    glyph: String,
+    title: String,
+    subtitle: String,
+    isDarkMode: Boolean,
+    onClick: () -> Unit
+) {
+    val gold = Color(0xFFD4AF37)
+    val cardColor = if (isDarkMode) Color(0xFF111111) else Color.White
+    val primaryText = if (isDarkMode) Color.White else Color(0xFF171717)
+    val secondaryText = if (isDarkMode) Color(0xFFBDBDBD) else Color(0xFF555555)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(cardColor, RoundedCornerShape(17.dp))
+            .border(1.dp, gold.copy(alpha = 0.42f), RoundedCornerShape(17.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(43.dp)
+                .height(43.dp)
+                .background(
+                    if (isDarkMode) Color(0xFF18372C) else Color(0xFFFFF3CD),
+                    RoundedCornerShape(13.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = glyph,
+                color = gold,
+                fontSize = if (glyph == "Aa") 17.sp else 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(13.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = primaryText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = subtitle,
+                color = secondaryText,
+                fontSize = 11.sp,
+                lineHeight = 16.sp
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "‹",
+            color = gold,
+            fontSize = 29.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun RoyalSettingsInfoCard(
+    glyph: String,
+    title: String,
+    message: String,
+    isDarkMode: Boolean
+) {
+    val gold = Color(0xFFD4AF37)
+    val cardColor = if (isDarkMode) Color(0xFF111111) else Color.White
+    val primaryText = if (isDarkMode) Color.White else Color(0xFF171717)
+    val secondaryText = if (isDarkMode) Color(0xFFBDBDBD) else Color(0xFF555555)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(cardColor, RoundedCornerShape(17.dp))
+            .border(1.dp, gold.copy(alpha = 0.28f), RoundedCornerShape(17.dp))
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .width(38.dp)
+                .height(38.dp)
+                .background(
+                    if (isDarkMode) Color(0xFF18372C) else Color(0xFFFFF3CD),
+                    RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = glyph,
+                color = gold,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = primaryText,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                text = message,
+                color = secondaryText,
+                fontSize = 12.sp,
+                lineHeight = 19.sp
             )
         }
     }
