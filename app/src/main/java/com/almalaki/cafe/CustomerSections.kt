@@ -95,7 +95,8 @@ private fun customerSectionsRequest(
 /** تحميل إعدادات الأقسام المشتركة من Supabase. */
 fun loadCustomerSections(
     restaurantId: String? = null,
-    restaurantCode: String? = null
+    restaurantCode: String? = null,
+    accessToken: String? = null
 ): List<CustomerSection> {
     val useCodeLookup = !restaurantCode.isNullOrBlank()
     val response = customerSectionsRequest(
@@ -110,6 +111,7 @@ fun loadCustomerSections(
                     "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
                 } ?: "")
         },
+        accessToken = accessToken,
         body = if (useCodeLookup) {
             JSONObject().put("p_code", restaurantCode).toString()
         } else {
