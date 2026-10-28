@@ -282,7 +282,7 @@ class RoyalTVSenderCaptureService : Service() {
                         TAG,
                         "Video disconnected: $reason"
                     )
-                    scheduleVideoReconnect(videoTransport, host, port)
+                    transport?.let { active -> scheduleVideoReconnect(active, host, port) }
                 }
 
                 override fun onVideoPacket(
