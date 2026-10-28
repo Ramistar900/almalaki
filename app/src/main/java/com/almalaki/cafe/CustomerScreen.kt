@@ -398,6 +398,13 @@ var invoiceTotalAmount by remember {
                         maxWidth < 1400.dp -> 5
                         else -> 6
                     }
+                    // احسب أبعاد كبسولات التصنيفات ضمن نطاق BoxWithConstraints.
+                    val compactCategories = maxWidth < 480.dp
+                    val categoryPillWidth = if (compactCategories) {
+                        ((maxWidth - 36.dp) / 4f).coerceIn(78.dp, 118.dp)
+                    } else {
+                        ((maxWidth - 40.dp) / 4.15f).coerceIn(150.dp, 320.dp)
+                    }
 
                     val groupedProducts = filteredProducts
                         .groupBy { it.category.trim() }
@@ -487,12 +494,6 @@ var invoiceTotalAmount by remember {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val categoryItems = (listOf("الكل") + categories.filterNot { it == "الكل" }).distinct()
-                            val compactCategories = maxWidth < 480.dp
-                            val categoryPillWidth = if (compactCategories) {
-                                ((maxWidth - 36.dp) / 4f).coerceIn(78.dp, 118.dp)
-                            } else {
-                                ((maxWidth - 40.dp) / 4.15f).coerceIn(150.dp, 320.dp)
-                            }
                             categoryItems.forEach { category ->
                                 RoyalCategoryPill(
                                     category = category,
