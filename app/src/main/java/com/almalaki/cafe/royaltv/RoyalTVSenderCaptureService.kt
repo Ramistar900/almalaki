@@ -21,6 +21,7 @@ import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicBoolean
 
 class RoyalTVSenderCaptureService : Service() {
 
@@ -64,6 +65,7 @@ class RoyalTVSenderCaptureService : Service() {
     private val codecConfigLock = Any()
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val reconnectScheduled = AtomicBoolean(false)
 
     private val projectionCallback =
         object : MediaProjection.Callback() {
@@ -280,6 +282,7 @@ class RoyalTVSenderCaptureService : Service() {
                         TAG,
                         "Video disconnected: $reason"
                     )
+                    scheduleVideoReconnect(videoTransport, host, port)
                 }
 
                 override fun onVideoPacket(
@@ -298,6 +301,9 @@ class RoyalTVSenderCaptureService : Service() {
                         TAG,
                         "$operation: $reason"
                     )
+                    if (operation == "connect") {
+                        scheduleVideoReconnect(videoTransport, host, port)
+                    }
                 }
             }
         )
@@ -479,6 +485,33 @@ class RoyalTVSenderCaptureService : Service() {
             TAG,
             "Capture started: ${width}x$height -> $host:$port"
         )
+    }
+
+    /**
+     * يعيد محاولة اتصال المرسل بمستقبل ROYAL TV بعد انقطاع الشبكة.
+     * لا ينشئ ناقلًا جديدًا ولا يغيّر بروتوكول الحزم، ويتوقف عند إيقاف البث.
+     */
+    private fun scheduleVideoReconnect(
+        activeTransport: RoyalTVVideoPacketTransport,
+        host: String,
+        port: Int
+    ) {
+        if (
+            stopping ||
+            transport !== activeTransport ||
+            !reconnectScheduled.compareAndSet(false, true)
+        ) {
+            return
+        }
+
+        mainHandler.postDelayed({
+            reconnectScheduled.set(false)
+
+            if (!stopping && transport === activeTransport) {
+                Log.i(TAG, "Retrying video connection to $host:$port")
+                activeTransport.connect(host, port)
+            }
+        }, 2000L)
     }
 
     private fun copyBuffer(source: ByteBuffer): ByteArray {
