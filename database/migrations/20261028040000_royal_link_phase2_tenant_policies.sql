@@ -356,6 +356,13 @@ using (
     and private.is_active_restaurant(restaurant_id)
 );
 
+drop policy if exists "Restaurant owners can read their sections" on public.customer_sections;
+create policy "Restaurant owners can read their sections"
+on public.customer_sections
+for select
+to authenticated
+using (private.is_restaurant_owner(restaurant_id));
+
 drop policy if exists "customer_sections_owner_insert" on public.customer_sections;
 create policy "Restaurant owners can insert their sections"
 on public.customer_sections
