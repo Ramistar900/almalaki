@@ -15,6 +15,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -324,14 +326,13 @@ fun SmallCartButton(
 
     // ومضة سريعة، ثم انتظار خمس ثوانٍ قبل تكرارها.
     val glint by glintTransition.animateFloat(
-        initialValue = 1f,
+        initialValue = -1f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = androidx.compose.animation.core.keyframes {
                 durationMillis = 5450
-                1f at 0
-                1f at 5000
-                -1f at 5001
+                -1f at 0
+                -1f at 5000
                 1f at 5450
             },
             repeatMode = RepeatMode.Restart
@@ -363,23 +364,39 @@ fun SmallCartButton(
         contentAlignment = Alignment.Center
     ) {
         // لمعة بلورية تمر فوق الدائرة.
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .matchParentSize()
                 .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.55f),
-                            goldLight.copy(alpha = 0.85f),
-                            Color.Transparent
-                        ),
-                        start = Offset(glint * 42f, -8f),
-                        end = Offset(glint * 42f + 18f, 40f)
+        ) {
+            // احسب مسار اللمعة من أبعاد الدائرة الفعلية بالبكسل،
+            // حتى تعبر الزر كله على الهواتف ذات كثافات الشاشة المختلفة.
+            val buttonWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+            val buttonHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
+            val shineStartX = glint * buttonWidthPx / 2f
+
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.55f),
+                                goldLight.copy(alpha = 0.85f),
+                                Color.Transparent,
+                                Color.Transparent
+                            ),
+                            start = Offset(shineStartX, -buttonHeightPx * 0.2f),
+                            end = Offset(
+                                shineStartX + buttonWidthPx,
+                                buttonHeightPx * 1.2f
+                            )
+                        )
                     )
-                )
-        )
+            )
+        }
 
         Text(
             text = text,
