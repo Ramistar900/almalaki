@@ -280,9 +280,14 @@ var invoiceTotalAmount by remember {
      * التصنيفات المتاحة للعميل
      */
     val categories =
-        remember(visibleProducts) {
-            visibleProducts
-                .map { it.category.trim() }
+        remember(visibleProducts, customerSections) {
+            // اعرض التصنيفات المفعّلة من إعدادات المطعم حتى لو لم توجد منتجات بعد.
+            val configuredCategories = customerSections
+                .filter { it.enabled }
+                .flatMap { it.categoryNames }
+            val productCategories = visibleProducts.map { it.category }
+            (configuredCategories + productCategories)
+                .map { it.trim() }
                 .filter { it.isNotEmpty() }
                 .distinct()
         }
