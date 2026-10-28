@@ -186,7 +186,8 @@ fun RoyalCustomerAccountDialog(
     isDarkMode: Boolean,
     profile: RoyalCustomerProfile,
     onDismiss: () -> Unit,
-    onSave: (RoyalCustomerProfile) -> Unit
+    onSave: (RoyalCustomerProfile) -> Unit,
+    onManageRestaurants: () -> Unit
 ) {
     val panelColor = if (isDarkMode) CustomerRoyalBlack else Color.White
     val primaryText = if (isDarkMode) Color.White else CustomerRoyalText
@@ -224,6 +225,17 @@ fun RoyalCustomerAccountDialog(
                     color = secondaryText,
                     fontSize = 13.sp
                 )
+
+                TextButton(
+                    onClick = onManageRestaurants,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "مطاعمي المرتبطة وتبديل المطعم",
+                        color = CustomerRoyalGold,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 OutlinedTextField(
                     value = name,
