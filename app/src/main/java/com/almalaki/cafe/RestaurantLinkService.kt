@@ -119,7 +119,7 @@ fun loadCustomerSectionsForRestaurantCode(code: String): List<CustomerSection> {
             val categoriesJson = item.optJSONArray("category_names") ?: JSONArray()
             val categories = buildList {
                 for (j in 0 until categoriesJson.length()) {
-                    categoriesJson.optString(j).trim().takeIf { it.isNotEmpty() }?.let(::add)
+                    categoriesJson.optString(j).trim().takeIf { it.isNotEmpty() }?.let { add(it) }
                 }
             }
             add(CustomerSection(
