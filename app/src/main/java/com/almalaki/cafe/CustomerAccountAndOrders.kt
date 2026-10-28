@@ -437,3 +437,183 @@ fun RoyalCustomerOrdersDialog(
         }
     )
 }
+
+
+private enum class RoyalAccountPage {
+    HOME, REGISTER_METHODS, SIGN_IN, EMAIL_REGISTER, FACEBOOK, WHATSAPP
+}
+
+/**
+ * بوابة الحساب المستقلة. لا تدّعي نجاح المصادقة قبل تهيئة مزوّد تسجيل الدخول.
+ */
+@Composable
+fun RoyalCustomerAccountPortal(
+    isDarkMode: Boolean,
+    onDismiss: () -> Unit,
+    onCustomerDetails: () -> Unit
+) {
+    var page by remember { mutableStateOf(RoyalAccountPage.HOME) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var statusMessage by remember { mutableStateOf("") }
+
+    val panelColor = if (isDarkMode) CustomerRoyalBlack else Color.White
+    val primaryText = if (isDarkMode) Color.White else CustomerRoyalText
+    val secondaryText = if (isDarkMode) Color(0xFFBDBDBD) else CustomerRoyalMuted
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = panelColor,
+        title = {
+            Text(
+                text = when (page) {
+                    RoyalAccountPage.HOME -> "حسابي"
+                    RoyalAccountPage.REGISTER_METHODS -> "إنشاء حساب"
+                    RoyalAccountPage.SIGN_IN -> "الدخول إلى حسابي"
+                    RoyalAccountPage.EMAIL_REGISTER -> "التسجيل بالبريد الإلكتروني"
+                    RoyalAccountPage.FACEBOOK -> "الربط عبر Facebook"
+                    RoyalAccountPage.WHATSAPP -> "الربط عبر WhatsApp"
+                },
+                color = CustomerRoyalGold,
+                fontSize = 21.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 430.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                when (page) {
+                    RoyalAccountPage.HOME -> {
+                        Text(
+                            "مرحبًا بك في حساب الملكي. اختر ما تريد دون ازدحام الخيارات.",
+                            color = secondaryText,
+                            fontSize = 13.sp
+                        )
+                        AccountPortalButton("إنشاء حساب", primaryText) {
+                            statusMessage = ""
+                            page = RoyalAccountPage.REGISTER_METHODS
+                        }
+                        AccountPortalButton("الدخول إلى حسابي", primaryText) {
+                            statusMessage = ""
+                            page = RoyalAccountPage.SIGN_IN
+                        }
+                        AccountPortalButton("بيانات العميل والمطاعم المرتبطة", primaryText) {
+                            onCustomerDetails()
+                        }
+                    }
+                    RoyalAccountPage.REGISTER_METHODS -> {
+                        Text("اختر وسيلة التسجيل؛ ستظهر تفاصيل الوسيلة في صفحة مستقلة.", color = secondaryText, fontSize = 13.sp)
+                        AccountPortalButton("البريد الإلكتروني", primaryText) {
+                            email = ""; password = ""; statusMessage = ""
+                            page = RoyalAccountPage.EMAIL_REGISTER
+                        }
+                        AccountPortalButton("Facebook", primaryText) {
+                            statusMessage = "تسجيل Facebook غير مفعّل بعد. يلزم إعداد مزوّد OAuth والتحقق من إعداداته قبل استخدامه."
+                            page = RoyalAccountPage.FACEBOOK
+                        }
+                        AccountPortalButton("WhatsApp", primaryText) {
+                            statusMessage = "ربط WhatsApp غير مفعّل بعد. يلزم إعداد تحقق رسمي لرقم الهاتف؛ لن نعتبر مجرد إدخال الرقم تسجيلًا موثّقًا."
+                            page = RoyalAccountPage.WHATSAPP
+                        }
+                    }
+                    RoyalAccountPage.SIGN_IN -> {
+                        Text("تسجيل الدخول يحتاج إلى حساب موثّق. واجهة المصادقة لم تُربط بالخادم بعد.", color = secondaryText, fontSize = 13.sp)
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it; statusMessage = "" },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("البريد الإلكتروني") }
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it; statusMessage = "" },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("كلمة المرور") }
+                        )
+                        Text("لم يتم إرسال بياناتك أو تسجيل الدخول. سيُفعّل ذلك بعد ربط Supabase Auth والتحقق من إعداداته.", color = secondaryText, fontSize = 12.sp)
+                    }
+                    RoyalAccountPage.EMAIL_REGISTER -> {
+                        Text("أنشئ حسابًا ببريدك الإلكتروني. هذه شاشة تجهيز فقط، ولم يتم إنشاء حساب أو إرسال بيانات للخادم.", color = secondaryText, fontSize = 13.sp)
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it; statusMessage = "" },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("البريد الإلكتروني") }
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it; statusMessage = "" },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("كلمة المرور") }
+                        )
+                        Text("لن يتم تفعيل زر التسجيل الفعلي قبل ربط المصادقة الآمنة والتحقق من تأكيد البريد وسياسة كلمات المرور.", color = secondaryText, fontSize = 12.sp)
+                    }
+                    RoyalAccountPage.FACEBOOK,
+                    RoyalAccountPage.WHATSAPP -> {
+                        Text(statusMessage, color = secondaryText, fontSize = 13.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                when (page) {
+                    RoyalAccountPage.HOME -> onDismiss()
+                    RoyalAccountPage.REGISTER_METHODS,
+                    RoyalAccountPage.SIGN_IN -> page = RoyalAccountPage.HOME
+                    RoyalAccountPage.EMAIL_REGISTER,
+                    RoyalAccountPage.FACEBOOK,
+                    RoyalAccountPage.WHATSAPP -> page = RoyalAccountPage.REGISTER_METHODS
+                }
+            }) {
+                Text(
+                    if (page == RoyalAccountPage.HOME) "إغلاق" else "رجوع",
+                    color = CustomerRoyalGold,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            if (page != RoyalAccountPage.HOME) {
+                TextButton(onClick = onDismiss) {
+                    Text("إغلاق", color = secondaryText)
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun AccountPortalButton(
+    label: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = CustomerRoyalGold.copy(alpha = 0.7f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(vertical = 3.dp)
+    ) {
+        Text(
+            text = label,
+            color = textColor,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp
+        )
+    }
+}
