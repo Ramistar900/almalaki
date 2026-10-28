@@ -1547,7 +1547,7 @@ private fun RoyalCustomerNavigationActions(
             modifier = modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .padding(horizontal = 18.dp),
+                .padding(horizontal = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1593,7 +1593,7 @@ private fun RoyalCustomerNavigationAction(
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(27.dp),
+            modifier = Modifier.size(25.dp),
             contentAlignment = Alignment.Center
         ) {
             RoyalCustomerNavigationIcon(
@@ -1605,14 +1605,14 @@ private fun RoyalCustomerNavigationAction(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .size(16.dp)
+                        .size(13.dp)
                         .background(RoyalCustomerNavBadge, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (cartCount > 99) "99+" else cartCount.toString(),
                         color = Color.White,
-                        fontSize = 8.sp,
+                        fontSize = 7.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
