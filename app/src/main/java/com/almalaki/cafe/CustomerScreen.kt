@@ -971,7 +971,8 @@ if (showRestaurantLinks) {
                         linkedRestaurants = loadRoyalLinkedRestaurants(context)
                         selectedCategory = "الكل"
                         activeRestaurant = linked
-                        restaurantLinkMessage = "تم الربط بنجاح."
+                        restaurantLinkMessage = ""
+                        showRestaurantLinks = false
                     } catch (e: Exception) {
                         restaurantLinkMessage = e.message ?: "تعذر ربط المطعم."
                     } finally {
@@ -986,6 +987,7 @@ if (showRestaurantLinks) {
             cart = emptyMap()
             activeRestaurant = restaurant
             restaurantLinkMessage = ""
+            showRestaurantLinks = false
         },
         onDismiss = {
             if (!restaurantLinkLoading) showRestaurantLinks = false
