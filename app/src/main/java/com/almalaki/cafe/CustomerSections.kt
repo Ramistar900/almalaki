@@ -93,12 +93,15 @@ private fun customerSectionsRequest(
 }
 
 /** تحميل إعدادات الأقسام المشتركة من Supabase. */
-fun loadCustomerSections(): List<CustomerSection> {
+fun loadCustomerSections(restaurantId: String? = null): List<CustomerSection> {
     val response = customerSectionsRequest(
         method = "GET",
         path = "customer_sections" +
             "?select=section_key,title,category_names,enabled,sort_order" +
-            "&order=sort_order.asc"
+            "&order=sort_order.asc" +
+            (restaurantId?.let {
+                "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
+            } ?: "")
     )
 
     val json = JSONArray(response)
@@ -135,7 +138,8 @@ fun loadCustomerSections(): List<CustomerSection> {
 /** إضافة قسم أو تحديث إعداداته باستخدام جلسة المالك. */
 fun saveCustomerSection(
     accessToken: String,
-    section: CustomerSection
+    section: CustomerSection,
+    restaurantId: String? = null
 ) {
     require(accessToken.isNotBlank()) {
         "جلسة المالك غير متوفرة."
@@ -156,6 +160,9 @@ fun saveCustomerSection(
         put("category_names", categories)
         put("enabled", section.enabled)
         put("sort_order", section.sortOrder)
+        if (!restaurantId.isNullOrBlank()) {
+            put("restaurant_id", restaurantId)
+        }
     }.toString()
 
     customerSectionsRequest(
@@ -171,7 +178,8 @@ fun saveCustomerSection(
 fun setCustomerSectionEnabled(
     accessToken: String,
     sectionKey: String,
-    enabled: Boolean
+    enabled: Boolean,
+    restaurantId: String? = null
 ) {
     require(accessToken.isNotBlank()) {
         "جلسة المالك غير متوفرة."
@@ -188,7 +196,10 @@ fun setCustomerSectionEnabled(
 
     customerSectionsRequest(
         method = "PATCH",
-        path = "customer_sections?section_key=eq.$encodedKey",
+        path = "customer_sections?section_key=eq.$encodedKey" +
+            (restaurantId?.let {
+                "&restaurant_id=eq.${URLEncoder.encode(it, "UTF-8")}"
+            } ?: ""),
         accessToken = accessToken,
         body = body,
         prefer = "return=minimal"
