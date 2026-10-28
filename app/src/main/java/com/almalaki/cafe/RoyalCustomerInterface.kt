@@ -195,27 +195,58 @@ onSearchQueryChange: (String) -> Unit = {},
                     }
             ) {
 
-                Spacer(
-                    Modifier.height(28.dp)
-                )
+                Spacer(Modifier.height(22.dp))
 
-                RoyalShinyLogo(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 20.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(Color(0xFF0A4935), Color(0xFF071F19))
                             )
-                )
+                        )
+                        .border(
+                            1.dp,
+                            RoyalGold.copy(alpha = 0.75f),
+                            RoundedCornerShape(22.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    RoyalShinyLogo(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(7.dp))
+                    Text(
+                        text = "مركز الخيارات",
+                        color = Color(0xFFFFE5A0),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "إدارة حسابك وتفضيلات التطبيق",
+                        color = Color.White.copy(alpha = 0.78f),
+                        fontSize = 11.sp
+                    )
+                }
 
-                Spacer(
-                    Modifier.height(30.dp)
+                Spacer(Modifier.height(22.dp))
+
+                Text(
+                    text = "الحساب والإدارة",
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                    color = RoyalGold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
 
                 RoyalDrawerItem(
                     RoyalIcon.PROFILE,
                     "دخول المالك",
-                    isDarkMode
+                    isDarkMode,
+                    subtitle = "إدارة المطعم والمنتجات والطلبات"
                 ) {
 
                     scope.launch {
@@ -228,7 +259,8 @@ onSearchQueryChange: (String) -> Unit = {},
                 RoyalDrawerItem(
                     RoyalIcon.SETTINGS,
                     "الإعدادات",
-                    isDarkMode
+                    isDarkMode,
+                    subtitle = "الخطوط ومشاركة التطبيق"
                 ) {
 
                     scope.launch {
@@ -963,6 +995,7 @@ private fun RoyalDrawerItem(
     icon: RoyalIcon,
     title: String,
     isDarkMode: Boolean,
+    subtitle: String? = null,
     onClick: () -> Unit
 ) {
     var isFocused by remember {
@@ -1023,15 +1056,31 @@ private fun RoyalDrawerItem(
             onClick = {}
         )
 
-        Spacer(
-            modifier = Modifier.width(14.dp)
-        )
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+            Text(
+                text = title,
+                color = textColor,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (subtitle != null) {
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = subtitle,
+                    color = if (isDarkMode) Color(0xFFBDBDBD) else Color(0xFF777064),
+                    fontSize = 11.sp,
+                    maxLines = 2
+                )
+            }
+        }
 
         Text(
-            text = title,
-            color = textColor,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Medium
+            text = "‹",
+            color = RoyalGold,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
