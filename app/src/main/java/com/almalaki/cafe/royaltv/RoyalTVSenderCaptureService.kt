@@ -302,7 +302,9 @@ class RoyalTVSenderCaptureService : Service() {
                         "$operation: $reason"
                     )
                     if (operation == "connect") {
-                        scheduleVideoReconnect(videoTransport, host, port)
+                        transport?.let { active ->
+                            scheduleVideoReconnect(active, host, port)
+                        }
                     }
                 }
             }
