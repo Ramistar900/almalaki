@@ -213,7 +213,6 @@ var invoiceTotalAmount by remember {
                 products = loadedProducts
                 customerSections = loadedSections
                 cart = emptyMap()
-                selectedCategory = "الكل"
             } catch (e: Exception) {
                 products = emptyList()
                 customerSections = emptyList()
@@ -969,6 +968,7 @@ if (showRestaurantLinks) {
                     try {
                         val linked = linkRoyalRestaurant(context, code)
                         linkedRestaurants = loadRoyalLinkedRestaurants(context)
+                        selectedCategory = "الكل"
                         activeRestaurant = linked
                         restaurantLinkMessage = "تم الربط بنجاح."
                     } catch (e: Exception) {
@@ -981,6 +981,8 @@ if (showRestaurantLinks) {
         },
         onSelect = { restaurant ->
             selectRoyalRestaurant(context, restaurant)
+            selectedCategory = "الكل"
+            cart = emptyMap()
             activeRestaurant = restaurant
             restaurantLinkMessage = ""
         },
