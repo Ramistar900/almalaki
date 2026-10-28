@@ -64,6 +64,18 @@ val interfaceSettings = remember {
 var showCustomerSettings by remember {
     mutableStateOf(false)
 }
+var customerProfile by remember(context) {
+    mutableStateOf(loadRoyalCustomerProfile(context))
+}
+var customerOrderHistory by remember(context) {
+    mutableStateOf(loadRoyalCustomerOrders(context))
+}
+var showCustomerAccount by remember {
+    mutableStateOf(false)
+}
+var showCustomerOrders by remember {
+    mutableStateOf(false)
+}
 
 if (showCustomerSettings) {
     RoyalCustomerSettings(
@@ -269,6 +281,18 @@ var invoiceTotalAmount by remember {
             isDarkMode = darkMode,
             newsText = interfaceSettings.newsText,
             showCartBanner = totalItems > 0,
+            cartCount = totalItems,
+            onCartClick = {
+                showCart = true
+            },
+            onOrdersClick = {
+                customerOrderHistory = loadRoyalCustomerOrders(context)
+                showCustomerOrders = true
+            },
+            onAccountClick = {
+                customerProfile = loadRoyalCustomerProfile(context)
+                showCustomerAccount = true
+            },
             onOwnerLogin = onOwner,
             onSettings = {
                 showCustomerSettings = true
@@ -799,15 +823,38 @@ val invoiceTotalSnapshot = totalAmount
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
-invoiceCustomerName = name
-invoiceCustomerPhone = phone
-invoiceFulfillmentType = type
-invoiceDeliveryAddress = address
-invoiceItems = invoiceItemsSnapshot
-invoiceTotalAmount = invoiceTotalSnapshot
+                                invoiceCustomerName = name
+                                invoiceCustomerPhone = phone
+                                invoiceFulfillmentType = type
+                                invoiceDeliveryAddress = address
+                                invoiceItems = invoiceItemsSnapshot
+                                invoiceTotalAmount = invoiceTotalSnapshot
 
-orderSuccessNumber = result.orderNumber
-cart = emptyMap()
+                                val savedProfile = RoyalCustomerProfile(
+                                    name = name,
+                                    phone = phone,
+                                    address = address,
+                                    fulfillmentType = type
+                                )
+                                saveRoyalCustomerProfile(context, savedProfile)
+                                customerProfile = savedProfile
+
+                                saveRoyalCustomerOrder(
+                                    context,
+                                    RoyalCustomerOrderRecord(
+                                        orderNumber = result.orderNumber,
+                                        customerName = name,
+                                        customerPhone = phone,
+                                        address = address,
+                                        fulfillmentType = type,
+                                        totalAmount = invoiceTotalSnapshot,
+                                        items = invoiceItemsSnapshot
+                                    )
+                                )
+                                customerOrderHistory = loadRoyalCustomerOrders(context)
+
+                                orderSuccessNumber = result.orderNumber
+                                cart = emptyMap()
 
 showCheckout = false
 showInvoice = true
@@ -841,6 +888,32 @@ if (showInvoice) {
         totalAmount = invoiceTotalAmount,
         onClose = {
             showInvoice = false
+        }
+    )
+}
+
+
+if (showCustomerAccount) {
+    RoyalCustomerAccountDialog(
+        isDarkMode = darkMode,
+        profile = customerProfile,
+        onDismiss = {
+            showCustomerAccount = false
+        },
+        onSave = { profile ->
+            saveRoyalCustomerProfile(context, profile)
+            customerProfile = profile
+            showCustomerAccount = false
+        }
+    )
+}
+
+if (showCustomerOrders) {
+    RoyalCustomerOrdersDialog(
+        isDarkMode = darkMode,
+        orders = customerOrderHistory,
+        onDismiss = {
+            showCustomerOrders = false
         }
     )
 }
