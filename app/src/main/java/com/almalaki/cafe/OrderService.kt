@@ -26,7 +26,8 @@ fun createOrder(
     fulfillmentType: String,
     totalAmount: Double,
     products: List<Product>,
-    cart: Map<Int, Int>
+    cart: Map<Int, Int>,
+    restaurantId: String? = null
 ): OrderResult {
 
     if (cart.isEmpty()) {
@@ -69,13 +70,15 @@ fun createOrder(
         customerPhone = customerPhone,
         deliveryAddress = deliveryAddress,
         fulfillmentType = fulfillmentType,
-        totalAmount = totalAmount
+        totalAmount = totalAmount,
+        restaurantId = restaurantId
     )
 
     insertOrderItems(
         orderId = orderId,
         products = products,
-        cart = cart
+        cart = cart,
+        restaurantId = restaurantId
     )
 
     return OrderResult(orderNumber)
@@ -115,7 +118,8 @@ private fun insertOrder(
     customerPhone: String,
     deliveryAddress: String,
     fulfillmentType: String,
-    totalAmount: Double
+    totalAmount: Double,
+    restaurantId: String?
 ) {
 
     val url = URL(
@@ -157,6 +161,10 @@ private fun insertOrder(
             "id",
             orderId
         )
+
+        if (!restaurantId.isNullOrBlank()) {
+            body.put("restaurant_id", restaurantId)
+        }
 
         body.put(
             "order_number",
@@ -228,7 +236,8 @@ private fun insertOrder(
 private fun insertOrderItems(
     orderId: Long,
     products: List<Product>,
-    cart: Map<Int, Int>
+    cart: Map<Int, Int>,
+    restaurantId: String?
 ) {
 
     val jsonArray = JSONArray()
@@ -246,6 +255,10 @@ private fun insertOrderItems(
                 "order_id",
                 orderId
             )
+
+            if (!restaurantId.isNullOrBlank()) {
+                item.put("restaurant_id", restaurantId)
+            }
 
             item.put(
                 "product_id",
