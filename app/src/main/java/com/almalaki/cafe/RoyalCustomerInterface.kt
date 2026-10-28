@@ -5,6 +5,9 @@ import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.LayoutDirection
 import android.graphics.BitmapFactory
@@ -36,6 +39,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -107,6 +111,10 @@ fun RoyalCustomerInterface(
     isDarkMode: Boolean = true,
     newsText: String = "أهلاً بكم في Royal Coffee — طعمٌ يستحق التجربة",
   showCartBanner: Boolean = false,
+    cartCount: Int = 0,
+    onCartClick: () -> Unit = {},
+    onOrdersClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {},
     onOwnerLogin: () -> Unit = {},
     onSettings: () -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -346,6 +354,14 @@ Box(
                     contentDescription = null,
                     modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.FillBounds
+                )
+
+                RoyalCustomerNavigationActions(
+                    cartCount = cartCount,
+                    onCartClick = onCartClick,
+                    onOrdersClick = onOrdersClick,
+                    onAccountClick = onAccountClick,
+                    modifier = Modifier.align(Alignment.TopCenter)
                 )
 
                 Box(
@@ -1451,6 +1467,238 @@ fun RoyalShinyInfoBox(
  * الشريط السفلي
  * ============================================================
  */
+private enum class RoyalCustomerNavIcon {
+    CART,
+    ORDERS,
+    ACCOUNT
+}
+
+private val RoyalCustomerNavInk = Color(0xFF0C2D24)
+private val RoyalCustomerNavBadge = Color(0xFFD92D3A)
+
+/*
+ * أزرار التنقل فوق المساحة الكريمية في البنر السفلي.
+ * تُرسم الأيقونات بخطوط خارجية متناسقة مع الصورة المرجعية.
+ */
+@Composable
+private fun RoyalCustomerNavigationActions(
+    cartCount: Int,
+    onCartClick: () -> Unit,
+    onOrdersClick: () -> Unit,
+    onAccountClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    CompositionLocalProvider(
+        LocalLayoutDirection provides LayoutDirection.Ltr
+    ) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(57.dp)
+                .padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RoyalCustomerNavigationAction(
+                icon = RoyalCustomerNavIcon.CART,
+                label = "السلة",
+                cartCount = cartCount,
+                modifier = Modifier.weight(1f),
+                onClick = onCartClick
+            )
+
+            RoyalCustomerNavigationAction(
+                icon = RoyalCustomerNavIcon.ORDERS,
+                label = "طلباتي",
+                modifier = Modifier.weight(1f),
+                onClick = onOrdersClick
+            )
+
+            RoyalCustomerNavigationAction(
+                icon = RoyalCustomerNavIcon.ACCOUNT,
+                label = "حسابي",
+                modifier = Modifier.weight(1f),
+                onClick = onAccountClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoyalCustomerNavigationAction(
+    icon: RoyalCustomerNavIcon,
+    label: String,
+    modifier: Modifier = Modifier,
+    cartCount: Int = 0,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 1.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier.size(36.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            RoyalCustomerNavigationIcon(
+                icon = icon,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (icon == RoyalCustomerNavIcon.CART && cartCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(16.dp)
+                        .background(RoyalCustomerNavBadge, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (cartCount > 99) "99+" else cartCount.toString(),
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = label,
+            color = RoyalCustomerNavInk,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun RoyalCustomerNavigationIcon(
+    icon: RoyalCustomerNavIcon,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val strokeWidth = size.minDimension * 0.075f
+        val outline = Stroke(
+            width = strokeWidth,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+        val centerX = w / 2f
+        val centerY = h / 2f
+
+        when (icon) {
+            RoyalCustomerNavIcon.CART -> {
+                drawLine(
+                    color = RoyalCustomerNavInk,
+                    start = Offset(w * 0.10f, h * 0.18f),
+                    end = Offset(w * 0.23f, h * 0.18f),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = RoyalCustomerNavInk,
+                    start = Offset(w * 0.22f, h * 0.19f),
+                    end = Offset(w * 0.32f, h * 0.70f),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                val basket = Path().apply {
+                    moveTo(w * 0.28f, h * 0.31f)
+                    lineTo(w * 0.88f, h * 0.31f)
+                    lineTo(w * 0.78f, h * 0.61f)
+                    lineTo(w * 0.36f, h * 0.61f)
+                    close()
+                }
+                drawPath(
+                    path = basket,
+                    color = RoyalCustomerNavInk,
+                    style = outline
+                )
+                drawLine(
+                    color = RoyalCustomerNavInk,
+                    start = Offset(w * 0.36f, h * 0.70f),
+                    end = Offset(w * 0.78f, h * 0.70f),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+                drawCircle(
+                    color = RoyalCustomerNavInk,
+                    radius = strokeWidth * 0.75f,
+                    center = Offset(w * 0.43f, h * 0.86f)
+                )
+                drawCircle(
+                    color = RoyalCustomerNavInk,
+                    radius = strokeWidth * 0.75f,
+                    center = Offset(w * 0.73f, h * 0.86f)
+                )
+            }
+
+            RoyalCustomerNavIcon.ORDERS -> {
+                drawRoundRect(
+                    color = RoyalCustomerNavInk,
+                    topLeft = Offset(w * 0.28f, h * 0.22f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.44f, h * 0.68f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.035f, w * 0.035f),
+                    style = outline
+                )
+                drawRoundRect(
+                    color = RoyalCustomerNavInk,
+                    topLeft = Offset(w * 0.41f, h * 0.11f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.18f, h * 0.20f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.035f, w * 0.035f),
+                    style = outline
+                )
+                listOf(0.45f, 0.60f, 0.75f).forEach { y ->
+                    drawLine(
+                        color = RoyalCustomerNavInk,
+                        start = Offset(w * 0.39f, h * y),
+                        end = Offset(w * 0.61f, h * y),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                }
+            }
+
+            RoyalCustomerNavIcon.ACCOUNT -> {
+                drawCircle(
+                    color = RoyalCustomerNavInk,
+                    radius = w * 0.14f,
+                    center = Offset(centerX, h * 0.34f),
+                    style = outline
+                )
+                val shoulders = Path().apply {
+                    moveTo(w * 0.22f, h * 0.85f)
+                    cubicTo(
+                        w * 0.23f, h * 0.62f,
+                        w * 0.37f, h * 0.53f,
+                        centerX, h * 0.53f
+                    )
+                    cubicTo(
+                        w * 0.63f, h * 0.53f,
+                        w * 0.77f, h * 0.62f,
+                        w * 0.78f, h * 0.85f
+                    )
+                }
+                drawPath(
+                    path = shoulders,
+                    color = RoyalCustomerNavInk,
+                    style = outline
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun RoyalBottomBar(
     newsText: String
@@ -1478,7 +1726,7 @@ fun RoyalBottomBar(
                 .navigationBarsPadding()
                 .padding(
                     horizontal = 8.dp,
-                    vertical = 5.dp
+                    vertical = 2.dp
                 ),
 
         verticalAlignment =
@@ -1492,14 +1740,14 @@ fun RoyalBottomBar(
         Box(
             modifier =
                 Modifier
-                    .size(48.dp),
+                    .size(38.dp),
 
             contentAlignment =
                 Alignment.Center
         ) {
 
             RoyalActiveLogo(
-                size = 48.dp
+                size = 38.dp
             )
         }
 
