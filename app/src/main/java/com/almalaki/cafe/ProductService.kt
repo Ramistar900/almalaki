@@ -45,14 +45,6 @@ fun loadProducts(
     connection.requestMethod = if (useCodeLookup) "POST" else "GET"
     connection.doOutput = useCodeLookup
 
-    if (useCodeLookup) {
-        connection.setRequestProperty("Content-Type", "application/json")
-        val body = JSONObject().put("p_code", restaurantCode).toString()
-        connection.outputStream.use {
-            it.write(body.toByteArray(Charsets.UTF_8))
-        }
-    }
-
     connection.setRequestProperty(
         "apikey",
         SUPABASE_KEY
@@ -62,6 +54,14 @@ fun loadProducts(
         "Authorization",
         "Bearer ${accessToken?.takeIf { it.isNotBlank() } ?: SUPABASE_KEY}"
     )
+
+    if (useCodeLookup) {
+        connection.setRequestProperty("Content-Type", "application/json")
+        val body = JSONObject().put("p_code", restaurantCode).toString()
+        connection.outputStream.use {
+            it.write(body.toByteArray(Charsets.UTF_8))
+        }
+    }
 
     val code = connection.responseCode
 
