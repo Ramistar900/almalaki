@@ -1546,8 +1546,8 @@ private fun RoyalCustomerNavigationActions(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .height(57.dp)
-                .padding(horizontal = 14.dp),
+                .height(48.dp)
+                .padding(horizontal = 18.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1593,7 +1593,7 @@ private fun RoyalCustomerNavigationAction(
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(27.dp),
             contentAlignment = Alignment.Center
         ) {
             RoyalCustomerNavigationIcon(
@@ -1623,7 +1623,7 @@ private fun RoyalCustomerNavigationAction(
         Text(
             text = label,
             color = RoyalCustomerNavInk,
-            fontSize = 13.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             textAlign = TextAlign.Center
