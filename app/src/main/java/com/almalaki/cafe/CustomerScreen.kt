@@ -58,22 +58,42 @@ fun CustomerScreen(
     onOwner: () -> Unit
 ) {
     val context = LocalContext.current
-val interfaceSettings = remember {
-    loadRoyalInterfaceSettings(context)
-}
-var showCustomerSettings by remember {
-    mutableStateOf(false)
-}
+    var selectedStore by remember {
+        mutableStateOf(loadSelectedRestaurant(context))
+    }
 
-if (showCustomerSettings) {
-    RoyalCustomerSettings(
-        isDarkMode = darkMode,
-        onBack = {
-            showCustomerSettings = false
-        }
-    )
-    return
-}
+    if (selectedStore == null) {
+        RestaurantJoinScreen(
+            darkMode = darkMode,
+            onRestaurantSelected = { store ->
+                selectedStore = store
+            }
+        )
+        return
+    }
+
+    val activeStore = selectedStore!!
+    val interfaceSettings = remember {
+        loadRoyalInterfaceSettings(context)
+    }
+    var showCustomerSettings by remember {
+        mutableStateOf(false)
+    }
+
+    if (showCustomerSettings) {
+        RoyalCustomerSettings(
+            isDarkMode = darkMode,
+            onBack = {
+                showCustomerSettings = false
+            },
+            onChangeRestaurant = {
+                clearSelectedRestaurant(context)
+                selectedStore = null
+                showCustomerSettings = false
+            }
+        )
+        return
+    }
     var products by remember {
         mutableStateOf<List<Product>>(emptyList())
     }
@@ -154,17 +174,17 @@ var invoiceTotalAmount by remember {
         mutableStateOf("الكل")
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(activeStore.id) {
     Thread {
         try {
-            products = loadProducts()
+            products = loadProducts(activeStore.id)
         } catch (e: Exception) {
             message = e.message
                 ?: "تعذر تحميل المنتجات."
         }
 
         try {
-            customerSections = loadCustomerSections()
+            customerSections = loadCustomerSections(activeStore.id)
         } catch (_: Exception) {
             // إذا تعذر تحميل إعدادات الأقسام،
             // تبقى المنتجات ظاهرة كالمعتاد.
@@ -795,7 +815,8 @@ val invoiceTotalSnapshot = totalAmount
                                         type,
                                         totalAmount,
                                         products,
-                                        cart
+                                        cart,
+                                        activeStore.id
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
