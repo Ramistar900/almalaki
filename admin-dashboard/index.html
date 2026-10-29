@@ -137,6 +137,12 @@
       font-size: 12px;
       padding: 20px 0;
     }
+  
+    .build-status-panel code {
+      direction: ltr;
+      overflow-wrap: anywhere;
+    }
+
   </style>
 </head>
 
@@ -223,6 +229,21 @@
         العمليات لاحقًا عبر GitHub Actions، مع مراجعة يدوية قبل النشر.
       </p>
     </div>
+
+    <div class="panel">
+      <h2>حالة البناء — عرض فقط</h2>
+      <p class="muted">
+        يعرض آخر نتائج GitHub Actions للتطبيق المحدد، دون تشغيل بناء
+        جديد أو رفع APK أو نشر إصدار.
+      </p>
+      <button id="checkBuildStatusButton" type="button">
+        فحص حالة البناء
+      </button>
+      <div id="buildStatus" class="status" role="status">
+        اضغط «فحص حالة البناء» لعرض آخر النتائج.
+      </div>
+    </div>
+
   </section>
 
   <footer>
@@ -251,6 +272,10 @@
   const maintenance = document.getElementById('maintenance');
   const featuresJson = document.getElementById('featuresJson');
   const saveButton = document.getElementById('saveButton');
+
+  const checkBuildStatusButton =
+    document.getElementById('checkBuildStatusButton');
+  const buildStatus = document.getElementById('buildStatus');
 
   let supabase = null;
   let currentUser = null;
@@ -382,6 +407,35 @@
     }
   }
 
+
+  async function checkBuildStatus() {
+    if (!currentUser || !supabase) {
+      showStatus(buildStatus, 'سجّل الدخول أولًا.', 'error');
+      return;
+    }
+
+    setBusy(checkBuildStatusButton, true, 'جارٍ فحص الحالة...');
+    showStatus(buildStatus, 'جارٍ الاتصال بخدمة حالة البناء...');
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'royal-control-build',
+        { body: { action: 'status', app: appSelect.value } }
+      );
+
+      if (error) throw error;
+      showStatus(buildStatus, JSON.stringify(data, null, 2), 'success');
+    } catch (error) {
+      showStatus(
+        buildStatus,
+        'تعذر جلب حالة البناء: ' + (error.message || String(error)),
+        'error'
+      );
+    } finally {
+      setBusy(checkBuildStatusButton, false, 'فحص حالة البناء');
+    }
+  }
+
   async function initialize() {
     try {
       validateConfig();
@@ -433,6 +487,7 @@
 
   appSelect.addEventListener('change', loadSettings);
   saveButton.addEventListener('click', saveSettings);
+  checkBuildStatusButton.addEventListener('click', checkBuildStatus);
   document.getElementById('reloadButton').addEventListener('click', loadSettings);
 
   document.getElementById('logoutButton').addEventListener('click', async () => {
