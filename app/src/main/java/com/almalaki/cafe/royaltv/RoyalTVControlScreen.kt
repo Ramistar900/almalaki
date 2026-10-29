@@ -72,6 +72,7 @@ val description: String
 @Composable
 fun RoyalTVControlScreen(
 modifier: Modifier = Modifier,
+accessToken: String = "",
 onItemSelected: (RoyalTVControlItem) -> Unit = {}
 ) {
 val context = LocalContext.current
@@ -93,7 +94,16 @@ var senderOpen by remember {
 var tickerOpen by remember {
     mutableStateOf(false)
 }
+var plusOpen by remember { mutableStateOf(false) }
 
+if (plusOpen) {
+    RoyalTVPlusScreen(
+        accessToken = accessToken,
+        modifier = modifier,
+        onBack = { plusOpen = false }
+    )
+    return
+}
 
 if (identityOpen) {
     RoyalTVLayoutControl(
@@ -256,12 +266,26 @@ Column(
         textAlign = TextAlign.Center
     )
 
+    Button(
+        onClick = { plusOpen = true },
+        modifier = Modifier.fillMaxWidth().height(48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = RoyalGold,
+            contentColor = RoyalBlack
+        )
+    ) {
+        Text(
+            text = "اشتراك ROYAL TV Plus",
+            fontWeight = FontWeight.Bold
+        )
+    }
+
     Spacer(
-        modifier = Modifier.height(18.dp)
+        modifier = Modifier.height(10.dp)
     )
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.weight(1f).fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
 
