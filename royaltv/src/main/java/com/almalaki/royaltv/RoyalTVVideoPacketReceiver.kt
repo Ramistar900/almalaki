@@ -4,6 +4,7 @@ import android.util.Log
 import java.io.BufferedInputStream
 import java.io.DataInputStream
 import java.io.EOFException
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
@@ -65,7 +66,9 @@ class RoyalTVVideoPacketReceiver(
 
         Thread({
             try {
-                ServerSocket(port).use { server ->
+                ServerSocket().use { server ->
+                    server.reuseAddress = true
+                    server.bind(InetSocketAddress(port))
                     serverSocket = server
                     listener.onServerStarted(port)
 
