@@ -746,23 +746,8 @@ var invoiceTotalAmount by remember {
                     }
 
                     else -> {
-val selectedRestaurantId = activeRestaurant.id
-val invoiceItemsSnapshot =
-    products.mapNotNull { product ->
-        val quantity = cart[product.id] ?: 0
-
-        if (quantity > 0) {
-            RoyalInvoiceItem(
-                name = product.name,
-                quantity = quantity,
-                unitPrice = product.price
-            )
-        } else {
-            null
-        }
-    }
-
-val invoiceTotalSnapshot = totalAmount
+val selectedRestaurantCode = activeRestaurant.joinCode
+    .ifBlank { ROYAL_DEFAULT_RESTAURANT_CODE }
                         orderLoading = true
                         orderMessage = ""
 
@@ -772,14 +757,13 @@ val invoiceTotalSnapshot = totalAmount
 
                                 val result =
                                     createOrder(
-                                        name,
-                                        phone,
-                                        address,
-                                        type,
-                                        totalAmount,
-                                        products,
-                                        cart,
-                                        restaurantId = selectedRestaurantId
+                                        customerName = name,
+                                        customerPhone = phone,
+                                        deliveryAddress = address,
+                                        fulfillmentType = type,
+                                        products = products,
+                                        cart = cart,
+                                        restaurantCode = selectedRestaurantCode
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
@@ -787,8 +771,8 @@ val invoiceTotalSnapshot = totalAmount
                                 invoiceCustomerPhone = phone
                                 invoiceFulfillmentType = type
                                 invoiceDeliveryAddress = address
-                                invoiceItems = invoiceItemsSnapshot
-                                invoiceTotalAmount = invoiceTotalSnapshot
+                                invoiceItems = result.items
+                                invoiceTotalAmount = result.totalAmount
 
                                 val savedProfile = RoyalCustomerProfile(
                                     name = name,
@@ -807,8 +791,8 @@ val invoiceTotalSnapshot = totalAmount
                                         customerPhone = phone,
                                         address = address,
                                         fulfillmentType = type,
-                                        totalAmount = invoiceTotalSnapshot,
-                                        items = invoiceItemsSnapshot
+                                        totalAmount = result.totalAmount,
+                                        items = result.items
                                     )
                                 )
                                 customerOrderHistory = loadRoyalCustomerOrders(context)
