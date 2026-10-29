@@ -44,28 +44,23 @@ object RoyalTVVideoSessionManager {
      * تسجيل مستمع العرض وإعادة إرسال تهيئة الترميز المحفوظة عند توفرها.
      */
     fun attach(listener: Listener) {
-        listeners.addIfAbsent(listener)
-
-        val config: ByteArray?
-        val connected: Boolean
-
         synchronized(lock) {
-            connected = senderConnected
-            // لا نعيد تهيئة قديمة بعد انقطاع المرسل.
-            config = if (connected) latestConfigPacket?.copyOf() else null
-        }
+            listeners.addIfAbsent(listener)
 
-        if (connected) {
-            safely { listener.onSenderConnected() }
-        }
+            // سلّم الحالة الحالية ضمن القفل نفسه الذي يحدّث حالة الاتصال،
+            // حتى لا يصل إشعار اتصال قديم بعد إشعار الانقطاع.
+            if (senderConnected) {
+                safely { listener.onSenderConnected() }
 
-        if (config != null) {
-            safely {
-                listener.onVideoPacket(
-                    config,
-                    0L,
-                    STREAM_CONFIG_FLAG
-                )
+                latestConfigPacket?.copyOf()?.let { config ->
+                    safely {
+                        listener.onVideoPacket(
+                            config,
+                            0L,
+                            STREAM_CONFIG_FLAG
+                        )
+                    }
+                }
             }
         }
 
@@ -105,9 +100,9 @@ object RoyalTVVideoSessionManager {
                     override fun onClientConnected() {
                         synchronized(lock) {
                             senderConnected = true
-                        }
-                        listeners.forEach { listener ->
-                            safely { listener.onSenderConnected() }
+                            listeners.forEach { listener ->
+                                safely { listener.onSenderConnected() }
+                            }
                         }
                     }
 
@@ -137,9 +132,9 @@ object RoyalTVVideoSessionManager {
                         synchronized(lock) {
                             senderConnected = false
                             latestConfigPacket = null
-                        }
-                        listeners.forEach { listener ->
-                            safely { listener.onSenderDisconnected() }
+                            listeners.forEach { listener ->
+                                safely { listener.onSenderDisconnected() }
+                            }
                         }
                     }
 
