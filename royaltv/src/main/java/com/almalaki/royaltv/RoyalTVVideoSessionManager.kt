@@ -111,19 +111,21 @@ object RoyalTVVideoSessionManager {
                         presentationTimeUs: Long,
                         flags: Int
                     ) {
-                        if (flags == STREAM_CONFIG_FLAG) {
-                            synchronized(lock) {
+                        synchronized(lock) {
+                            if (flags == STREAM_CONFIG_FLAG) {
                                 latestConfigPacket = data.copyOf()
                             }
-                        }
 
-                        listeners.forEach { listener ->
-                            safely {
-                                listener.onVideoPacket(
-                                    data,
-                                    presentationTimeUs,
-                                    flags
-                                )
+                            // حافظ على ترتيب الحزم الحية وإعادة إرسال التهيئة
+                            // عند إرفاق نافذة العرض ضمن تسلسل واحد.
+                            listeners.forEach { listener ->
+                                safely {
+                                    listener.onVideoPacket(
+                                        data,
+                                        presentationTimeUs,
+                                        flags
+                                    )
+                                }
                             }
                         }
                     }
