@@ -785,22 +785,6 @@ var invoiceTotalAmount by remember {
                     }
 
                     else -> {
-val invoiceItemsSnapshot =
-    products.mapNotNull { product ->
-        val quantity = cart[product.id] ?: 0
-
-        if (quantity > 0) {
-            RoyalInvoiceItem(
-                name = product.name,
-                quantity = quantity,
-                unitPrice = product.price
-            )
-        } else {
-            null
-        }
-    }
-
-val invoiceTotalSnapshot = totalAmount
                         orderLoading = true
                         orderMessage = ""
 
@@ -814,10 +798,9 @@ val invoiceTotalSnapshot = totalAmount
                                         phone,
                                         address,
                                         type,
-                                        totalAmount,
                                         products,
                                         cart,
-                                        activeStore.id
+                                        activeStore.joinCode
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
@@ -825,8 +808,8 @@ invoiceCustomerName = name
 invoiceCustomerPhone = phone
 invoiceFulfillmentType = type
 invoiceDeliveryAddress = address
-invoiceItems = invoiceItemsSnapshot
-invoiceTotalAmount = invoiceTotalSnapshot
+invoiceItems = result.items
+invoiceTotalAmount = result.totalAmount
 
 orderSuccessNumber = result.orderNumber
 cart = emptyMap()
