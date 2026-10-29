@@ -91,17 +91,24 @@ private fun requestPlusApi(
 }
 
 private fun loadOwnedPlusRestaurants(accessToken: String): List<RoyalTVPlusRestaurant> {
+    // Query active owner memberships rather than all visible restaurants.
+    // RLS limits membership rows to the signed-in user; role/is_active filters
+    // prevent staff restaurants from being presented as owned by this account.
     val response = requestPlusApi(
         accessToken = accessToken,
-        path = "restaurants?select=id,name,status&status=eq.active&order=name.asc"
+        path = "restaurant_members?select=restaurant_id,restaurants!restaurant_members_restaurant_id_fkey(id,name,status)&role=eq.owner&is_active=eq.true"
     )
     val json = JSONArray(response)
     return (0 until json.length()).mapNotNull { index ->
-        val item = json.optJSONObject(index) ?: return@mapNotNull null
-        val id = item.optString("id").trim()
-        val name = item.optString("name").trim()
-        if (id.isBlank() || name.isBlank()) null else RoyalTVPlusRestaurant(id, name)
-    }
+        val membership = json.optJSONObject(index) ?: return@mapNotNull null
+        val restaurant = membership.optJSONObject("restaurants")
+            ?: return@mapNotNull null
+        val id = restaurant.optString("id").trim()
+        val name = restaurant.optString("name").trim()
+        val status = restaurant.optString("status").trim()
+        if (id.isBlank() || name.isBlank() || status != "active") null
+        else RoyalTVPlusRestaurant(id, name)
+    }.distinctBy { it.id }.sortedBy { it.name.lowercase() }
 }
 
 private fun checkRoyalTVPlus(accessToken: String, restaurantId: String): Boolean {
