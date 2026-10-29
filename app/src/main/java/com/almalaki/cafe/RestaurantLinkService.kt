@@ -10,6 +10,7 @@ private const val RESTAURANT_LINK_URL = "https://duvxxskgdmgrtaleedqu.supabase.c
 private const val RESTAURANT_LINK_KEY = "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
 private const val RESTAURANT_LINK_PREFS = "royal_restaurant_links"
 const val ROYAL_DEFAULT_RESTAURANT_ID = "b3acfc71-25b1-47c6-912f-e0e6c8567f6c"
+const val ROYAL_DEFAULT_RESTAURANT_CODE = "ROYAL-93E22632214A"
 
 data class RoyalLinkedRestaurant(
     val id: String,
@@ -34,7 +35,7 @@ fun loadRoyalLinkedRestaurants(context: Context): List<RoyalLinkedRestaurant> {
             }
         }
     }.getOrDefault(emptyList())
-    return listOf(RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي")) +
+    return listOf(RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي", ROYAL_DEFAULT_RESTAURANT_CODE)) +
         linked.filterNot { it.id == ROYAL_DEFAULT_RESTAURANT_ID }
 }
 
@@ -43,7 +44,7 @@ fun loadRoyalActiveRestaurant(context: Context): RoyalLinkedRestaurant {
     val id = prefs.getString("active_restaurant_id", ROYAL_DEFAULT_RESTAURANT_ID)
         ?: ROYAL_DEFAULT_RESTAURANT_ID
     return loadRoyalLinkedRestaurants(context).firstOrNull { it.id == id }
-        ?: RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي")
+        ?: RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي", ROYAL_DEFAULT_RESTAURANT_CODE)
 }
 
 fun saveRoyalActiveRestaurant(context: Context, restaurant: RoyalLinkedRestaurant) {
