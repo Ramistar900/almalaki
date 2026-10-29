@@ -234,10 +234,10 @@ private class RoyalTVVideoPlaybackController(
             )
         }
 
-        val created =
-            MediaCodec.createDecoderByType(MIME_TYPE)
+        var created: MediaCodec? = null
 
         try {
+            created = MediaCodec.createDecoderByType(MIME_TYPE)
             created.configure(format, surface, null, 0)
             created.start()
 
@@ -252,8 +252,14 @@ private class RoyalTVVideoPlaybackController(
 
         } catch (error: Exception) {
             try {
-                created.release()
+                created?.release()
             } catch (_: Exception) {
+            }
+
+            // إذا فشل إعداد المفكك الجديد، فلا تُبقِ الواجهة على حالة بث قديمة.
+            if (decoder == null && streaming) {
+                streaming = false
+                onStreamingChanged(false)
             }
 
             throw error
