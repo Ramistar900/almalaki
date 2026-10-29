@@ -58,6 +58,7 @@ begin
           join public.orders o
             on o.id = new.order_id
            and o.restaurant_id = v_legacy_restaurant_id
+           and o.status = 'new'
           join public.restaurants r
             on r.id = v_legacy_restaurant_id
            and r.status = 'active'
