@@ -46,7 +46,7 @@ import java.net.URL
 private const val PLUS_SUPABASE_URL = "https://duvxxskgdmgrtaleedqu.supabase.co"
 private const val PLUS_SUPABASE_KEY = "sb_publishable_L-BfALjb0TkdTlyLTWbFBIg_aez3fjQd"
 private const val ROYAL_TV_PACKAGE = "com.almalaki.royaltv"
-private const val ROYAL_TV_RELEASES_URL = "https://github.com/Ramistar900/almalaki/releases"
+private const val ROYAL_TV_DOWNLOAD_URL = "https://www.mediafire.com/file/d8pp2tvwpatukzt/royaltv-release.apk/file"
 
 private val PlusGold = Color(0xFFD4AF37)
 private val PlusCream = Color(0xFFFFE9A3)
@@ -132,7 +132,7 @@ private fun openOrDownloadRoyalTV(context: Context): Boolean {
         return true
     }
 
-    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(ROYAL_TV_RELEASES_URL))
+    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(ROYAL_TV_DOWNLOAD_URL))
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(browserIntent)
     return false
@@ -269,7 +269,7 @@ fun RoyalTVPlusScreen(
                                 status = "الاشتراك فعال. جارٍ فتح ROYAL TV أو صفحة التنزيل..."
                                 val openedApp = openOrDownloadRoyalTV(context)
                                 if (!openedApp) {
-                                    status = "ROYAL TV غير مثبت. افتح صفحة الإصدارات ونزّل النسخة الحالية، ثم ارجع إلى هنا واضغط متابعة الربط."
+                                    status = "ROYAL TV غير مثبت. فتحنا رابط التنزيل الاحتياطي على MediaFire؛ بعد التثبيت ارجع إلى هنا وأعد فحص الاشتراك لمتابعة الربط."
                                 }
                             } else {
                                 status = "اشتراك Plus غير فعال لهذا المطعم. لم يتم تنفيذ أي عملية دفع؛ ربط بوابة الدفع سيُضاف بعد اختيارها."
