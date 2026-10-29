@@ -2,11 +2,11 @@
 -- REVIEW ONLY: do not apply to production until the migration is approved.
 -- Payment-provider integration is intentionally not included in this migration.
 
-create schema if not exists private;
-revoke all on schema private from public, anon, authenticated;
-grant usage on schema private to service_role;
+create schema if not exists royal_tv_private;
+revoke all on schema royal_tv_private from public, anon, authenticated;
+grant usage on schema royal_tv_private to service_role;
 
-create table if not exists private.royal_tv_plus_free_allowlist (
+create table if not exists royal_tv_private.royal_tv_plus_free_allowlist (
     user_id uuid not null references auth.users(id) on delete cascade,
     restaurant_id uuid not null references public.restaurants(id) on delete cascade,
     reason text not null default 'owner_account_and_own_restaurant',
@@ -14,7 +14,7 @@ create table if not exists private.royal_tv_plus_free_allowlist (
     primary key (user_id, restaurant_id)
 );
 
-create table if not exists private.royal_tv_plus_subscriptions (
+create table if not exists royal_tv_private.royal_tv_plus_subscriptions (
     restaurant_id uuid primary key references public.restaurants(id) on delete cascade,
     status text not null default 'inactive'
         check (status in ('inactive', 'active', 'cancelled', 'expired')),
@@ -29,13 +29,13 @@ create table if not exists private.royal_tv_plus_subscriptions (
         check (status <> 'active' or (starts_at is not null and expires_at is not null and expires_at > starts_at))
 );
 
-alter table private.royal_tv_plus_free_allowlist enable row level security;
-alter table private.royal_tv_plus_subscriptions enable row level security;
+alter table royal_tv_private.royal_tv_plus_free_allowlist enable row level security;
+alter table royal_tv_private.royal_tv_plus_subscriptions enable row level security;
 
-revoke all on table private.royal_tv_plus_free_allowlist from public, anon, authenticated;
-revoke all on table private.royal_tv_plus_subscriptions from public, anon, authenticated;
-grant select, insert, update, delete on table private.royal_tv_plus_free_allowlist to service_role;
-grant select, insert, update, delete on table private.royal_tv_plus_subscriptions to service_role;
+revoke all on table royal_tv_private.royal_tv_plus_free_allowlist from public, anon, authenticated;
+revoke all on table royal_tv_private.royal_tv_plus_subscriptions from public, anon, authenticated;
+grant select, insert, update, delete on table royal_tv_private.royal_tv_plus_free_allowlist to service_role;
+grant select, insert, update, delete on table royal_tv_private.royal_tv_plus_subscriptions to service_role;
 
 -- Seed a one-time exact account + restaurant exemption only if the current
 -- trusted admin/active-owner records identify exactly one "الملكي" restaurant.
@@ -61,7 +61,7 @@ begin
             matching_pairs;
     end if;
 
-    insert into private.royal_tv_plus_free_allowlist (user_id, restaurant_id, reason)
+    insert into royal_tv_private.royal_tv_plus_free_allowlist (user_id, restaurant_id, reason)
     select au.user_id, rm.restaurant_id, 'owner_account_and_own_restaurant'
       from public.admin_users au
       join public.restaurant_members rm
@@ -99,13 +99,13 @@ as $$
         and (
             exists (
                 select 1
-                  from private.royal_tv_plus_free_allowlist free_access
+                  from royal_tv_private.royal_tv_plus_free_allowlist free_access
                  where free_access.user_id = (select auth.uid())
                    and free_access.restaurant_id = p_restaurant_id
             )
             or exists (
                 select 1
-                  from private.royal_tv_plus_subscriptions sub
+                  from royal_tv_private.royal_tv_plus_subscriptions sub
                  where sub.restaurant_id = p_restaurant_id
                    and sub.status = 'active'
                    and sub.starts_at <= now()
