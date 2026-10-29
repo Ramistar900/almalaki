@@ -331,6 +331,8 @@ class RoyalTVSenderCaptureService : Service() {
         ownedTransport = videoTransport
         transport = videoTransport
 
+        // اربط callbacks بهوية المشفر الذي أنشأها، حتى لا تؤثر جلسة قديمة في بث جديد.
+        var ownedEncoder: RoyalTVVideoEncoder? = null
         val videoEncoder = RoyalTVVideoEncoder(
             width = width,
             height = height,
@@ -342,6 +344,8 @@ class RoyalTVSenderCaptureService : Service() {
                 override fun onOutputFormatChanged(
                     format: MediaFormat
                 ) {
+                    if (stopping || ownedEncoder == null || encoder !== ownedEncoder) return
+
                     try {
                         val actualWidth =
                             if (format.containsKey(MediaFormat.KEY_WIDTH)) {
@@ -412,6 +416,7 @@ class RoyalTVSenderCaptureService : Service() {
                         }
 
                         synchronized(codecConfigLock) {
+                            if (stopping || ownedEncoder == null || encoder !== ownedEncoder) return
                             codecConfigPacket = configPacket
                             codecConfigSent = false
                         }
@@ -440,7 +445,7 @@ class RoyalTVSenderCaptureService : Service() {
                     presentationTimeUs: Long,
                     flags: Int
                 ) {
-                    if (stopping) return
+                    if (stopping || ownedEncoder == null || encoder !== ownedEncoder) return
 
                     val activeTransport = transport ?: return
 
@@ -464,6 +469,8 @@ class RoyalTVSenderCaptureService : Service() {
                 }
 
                 override fun onEncoderError(error: Exception) {
+                    if (ownedEncoder == null || encoder !== ownedEncoder) return
+
                     Log.e(
                         TAG,
                         "H.264 encoder error",
@@ -481,6 +488,7 @@ class RoyalTVSenderCaptureService : Service() {
             }
         )
 
+        ownedEncoder = videoEncoder
         encoder = videoEncoder
 
         val inputSurface = videoEncoder.prepare()
