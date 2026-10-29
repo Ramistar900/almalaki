@@ -50,6 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun CustomerScreen(
@@ -195,35 +198,43 @@ var invoiceTotalAmount by remember {
     LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode) {
         loading = true
         message = ""
-        Thread {
-            try {
-                val loadedProducts = if (
+        try {
+            val (loadedProducts, loadedSections) = withContext(Dispatchers.IO) {
+                val productsForRestaurant = if (
                     activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID
                 ) {
                     loadProducts()
                 } else {
                     loadProductsForRestaurantCode(activeRestaurant.joinCode)
                 }
-                val loadedSections = try {
+                val sectionsForRestaurant = try {
                     if (activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID) {
                         loadCustomerSections()
                     } else {
                         loadCustomerSectionsForRestaurantCode(activeRestaurant.joinCode)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (_: Exception) {
                     emptyList()
                 }
-                products = loadedProducts
-                customerSections = loadedSections
-                cart = emptyMap()
-            } catch (e: Exception) {
-                products = emptyList()
-                customerSections = emptyList()
-                message = e.message ?: "تعذر تحميل منتجات المطعم."
-            } finally {
-                loading = false
+                productsForRestaurant to sectionsForRestaurant
             }
-        }.start()
+
+            // LaunchedEffect cancels the previous load when the active restaurant changes.
+            // Publish results only if this effect is still the active, non-cancelled request.
+            products = loadedProducts
+            customerSections = loadedSections
+            cart = emptyMap()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            products = emptyList()
+            customerSections = emptyList()
+            message = e.message ?: "تعذر تحميل منتجات المطعم."
+        } finally {
+            loading = false
+        }
     }
 
     val background =
