@@ -271,11 +271,8 @@ revoke all on function public.create_restaurant_order(text, text, text, text, te
 grant execute on function public.create_restaurant_order(text, text, text, text, text, jsonb)
     to anon, authenticated;
 
--- Close the old two-request REST path once this migration is deployed with the
--- matching APK. The SECURITY DEFINER RPC above performs both inserts atomically
--- and calculates prices from products, so direct client writes must not bypass it.
-revoke insert on table public.orders from public, anon, authenticated;
-revoke insert on table public.order_items from public, anon, authenticated;
+-- Direct REST inserts are disabled in a separate rollout migration after
+-- the tenant-aware APK is ready, so existing installed versions are not broken.
 
 -- This was a diagnostic helper only; keep it from being exposed as an RPC.
 alter function public.test_royal_coffee() set search_path = '';
