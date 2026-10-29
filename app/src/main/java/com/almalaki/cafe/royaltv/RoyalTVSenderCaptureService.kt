@@ -263,23 +263,35 @@ class RoyalTVSenderCaptureService : Service() {
         val height = evenDimension(metrics.heightPixels)
         val densityDpi = metrics.densityDpi.coerceAtLeast(1)
 
+        // اربط callbacks بناقل الجلسة التي أنشأته، ولا تسمح لناقل قديم
+        // بتغيير حالة التهيئة أو جدولة اتصال لجلسة بث أحدث.
+        var ownedTransport: RoyalTVVideoPacketTransport? = null
         val videoTransport = RoyalTVVideoPacketTransport(
             object : RoyalTVVideoPacketTransport.Listener {
 
                 override fun onConnected() {
+                    val activeTransport = ownedTransport ?: return
+                    if (stopping || transport !== activeTransport) return
+
                     Log.i(
                         TAG,
                         "Video transport connected"
                     )
 
                     // أرسل تهيئة H.264 أولًا، ثم اطلب إطارًا رئيسيًا لبدء العرض سريعًا.
-                    sendCodecConfigIfReady(transport)
-                    if (encoder?.requestSyncFrame() == true) {
+                    sendCodecConfigIfReady(activeTransport)
+                    if (
+                        transport === activeTransport &&
+                        encoder?.requestSyncFrame() == true
+                    ) {
                         Log.i(TAG, "Requested H.264 sync frame after connection")
                     }
                 }
 
                 override fun onDisconnected(reason: String) {
+                    val activeTransport = ownedTransport ?: return
+                    if (stopping || transport !== activeTransport) return
+
                     synchronized(codecConfigLock) {
                         codecConfigSent = false
                     }
@@ -288,7 +300,7 @@ class RoyalTVSenderCaptureService : Service() {
                         TAG,
                         "Video disconnected: $reason"
                     )
-                    transport?.let { active -> scheduleVideoReconnect(active, host, port) }
+                    scheduleVideoReconnect(activeTransport, host, port)
                 }
 
                 override fun onVideoPacket(
@@ -308,14 +320,15 @@ class RoyalTVSenderCaptureService : Service() {
                         "$operation: $reason"
                     )
                     if (operation == "connect") {
-                        transport?.let { active ->
-                            scheduleVideoReconnect(active, host, port)
+                        val activeTransport = ownedTransport ?: return
+                        if (!stopping && transport === activeTransport) {
+                            scheduleVideoReconnect(activeTransport, host, port)
                         }
                     }
                 }
             }
         )
-
+        ownedTransport = videoTransport
         transport = videoTransport
 
         val videoEncoder = RoyalTVVideoEncoder(
