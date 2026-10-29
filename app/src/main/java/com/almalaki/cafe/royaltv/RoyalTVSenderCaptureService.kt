@@ -272,8 +272,11 @@ class RoyalTVSenderCaptureService : Service() {
                         "Video transport connected"
                     )
 
-                    // إذا كانت التهيئة جاهزة، أرسلها فور الاتصال.
+                    // أرسل تهيئة H.264 أولًا، ثم اطلب إطارًا رئيسيًا لبدء العرض سريعًا.
                     sendCodecConfigIfReady(transport)
+                    if (encoder?.requestSyncFrame() == true) {
+                        Log.i(TAG, "Requested H.264 sync frame after connection")
+                    }
                 }
 
                 override fun onDisconnected(reason: String) {

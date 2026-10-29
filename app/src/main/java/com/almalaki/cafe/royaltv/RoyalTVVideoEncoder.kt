@@ -257,6 +257,27 @@ class RoyalTVVideoEncoder(
     }
 
     /**
+     * اطلب إطار H.264 رئيسيًا جديدًا بعد اتصال المرسل.
+     * هذا يقلل انتظار أول صورة قابلة للفك بعد إعادة الاتصال.
+     */
+    @Synchronized
+    fun requestSyncFrame(): Boolean {
+        val activeCodec = codec ?: return false
+        if (!running) return false
+
+        return try {
+            activeCodec.setParameters(
+                android.os.Bundle().apply {
+                    putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0)
+                }
+            )
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
      * أوقف المشفر وحرر موارده بأمان.
      */
     @Synchronized
