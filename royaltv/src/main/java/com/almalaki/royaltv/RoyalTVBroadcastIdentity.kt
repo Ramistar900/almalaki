@@ -98,7 +98,9 @@ fun RoyalTVBroadcastIdentity(
         modifier = modifier.fillMaxSize()
     ) {
     
-        val scale = (maxWidth.value / 360f)
+        val screenWidth = maxWidth.value
+        val screenHeight = maxHeight.value
+        val scale = (screenWidth / 360f)
             .coerceIn(0.85f, 2.6f)
 
         val logoSize = (48f * scale * layoutSettings.logoSizePercent / 100f).dp
@@ -143,8 +145,8 @@ fun RoyalTVBroadcastIdentity(
                 modifier = Modifier
                     .size(logoSize)
                     .offset(
-                        x = (layoutSettings.logoOffsetXPercent * maxWidth.value / 100f).dp,
-                        y = (layoutSettings.logoOffsetYPercent * maxHeight.value / 100f).dp
+                        x = (layoutSettings.logoOffsetXPercent * screenWidth / 100f).dp,
+                        y = (layoutSettings.logoOffsetYPercent * screenHeight / 100f).dp
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -160,8 +162,8 @@ fun RoyalTVBroadcastIdentity(
             Box(
                 modifier = Modifier
                     .offset(
-                        x = (layoutSettings.timeOffsetXPercent * maxWidth.value / 100f).dp,
-                        y = (layoutSettings.timeOffsetYPercent * maxHeight.value / 100f).dp
+                        x = (layoutSettings.timeOffsetXPercent * screenWidth / 100f).dp,
+                        y = (layoutSettings.timeOffsetYPercent * screenHeight / 100f).dp
                     )
                     .width((68f * scale).dp)
                     .height((29f * scale).dp)
@@ -198,8 +200,8 @@ fun RoyalTVBroadcastIdentity(
                     modifier = Modifier
                         .weight(1f)
                         .offset(
-                            x = (layoutSettings.tickerOffsetXPercent * maxWidth.value / 100f).dp,
-                            y = (layoutSettings.tickerOffsetYPercent * maxHeight.value / 100f).dp
+                            x = (layoutSettings.tickerOffsetXPercent * screenWidth / 100f).dp,
+                            y = (layoutSettings.tickerOffsetYPercent * screenHeight / 100f).dp
                         )
                 )
             }
@@ -209,8 +211,8 @@ fun RoyalTVBroadcastIdentity(
                 scale = scale,
                 textSize = liveTextSize,
                 modifier = Modifier.offset(
-                    x = (layoutSettings.liveOffsetXPercent * maxWidth.value / 100f).dp,
-                    y = (layoutSettings.liveOffsetYPercent * maxHeight.value / 100f).dp
+                    x = (layoutSettings.liveOffsetXPercent * screenWidth / 100f).dp,
+                    y = (layoutSettings.liveOffsetYPercent * screenHeight / 100f).dp
                 )
             )
         }
