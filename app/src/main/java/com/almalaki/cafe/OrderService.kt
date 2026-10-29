@@ -4,10 +4,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.random.Random
 
 private const val ORDER_SUPABASE_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
@@ -16,343 +12,125 @@ private const val ORDER_SUPABASE_KEY =
     "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
 
 data class OrderResult(
-    val orderNumber: String
+    val orderNumber: String,
+    val totalAmount: Double,
+    val items: List<RoyalInvoiceItem>
 )
 
+/**
+ * Submits checkout through the server-side atomic RPC.
+ * Product prices and line totals are deliberately not sent by the APK.
+ */
 fun createOrder(
     customerName: String,
     customerPhone: String,
     deliveryAddress: String,
     fulfillmentType: String,
-    totalAmount: Double,
     products: List<Product>,
     cart: Map<Int, Int>,
-    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
+    restaurantCode: String = ROYAL_DEFAULT_RESTAURANT_CODE
 ): OrderResult {
-
-    if (cart.isEmpty()) {
+    if (cart.isEmpty() || cart.values.none { it > 0 }) {
         throw Exception("السلة فارغة.")
     }
 
-    if (
-        fulfillmentType != "داخل المحل" &&
-        fulfillmentType != "توصيل إلى المنزل"
-    ) {
+    if (fulfillmentType != "داخل المحل" && fulfillmentType != "توصيل إلى المنزل") {
         throw Exception("نوع الطلب غير صحيح.")
     }
 
-    if (
-        fulfillmentType == "توصيل إلى المنزل" &&
-        deliveryAddress.trim().isEmpty()
-    ) {
+    if (fulfillmentType == "توصيل إلى المنزل" && deliveryAddress.trim().isEmpty()) {
         throw Exception("عنوان التوصيل مطلوب.")
     }
 
-    val orderNumber = generateOrderNumber()
+    if (restaurantCode.isBlank()) {
+        throw Exception("رمز المطعم غير متوفر. أعد اختيار المطعم.")
+    }
 
-    /*
-     * ننشئ رقم ID من التطبيق نفسه.
-     *
-     * بهذه الطريقة لا نحتاج:
-     * RETURNING
-     * ولا SELECT
-     * ولا Location header
-     *
-     * وهذا يتجنب مشكلة RLS التي ظهرت عند
-     * محاولة إرجاع الصف الذي تم إدخاله.
-     */
-    val orderId = generateOrderId()
+    if (cart.values.any { it < 0 || it > 1000 }) {
+        throw Exception("كمية أحد المنتجات غير صحيحة.")
+    }
 
-    insertOrder(
-        orderId = orderId,
-        orderNumber = orderNumber,
-        customerName = customerName,
-        customerPhone = customerPhone,
-        deliveryAddress = deliveryAddress,
-        fulfillmentType = fulfillmentType,
-        totalAmount = totalAmount,
-        restaurantId = restaurantId
-    )
+    val loadedProductIds = products.map { it.id }.toSet()
+    val selectedProducts = cart.filterValues { it > 0 }
+    if (selectedProducts.keys.any { it !in loadedProductIds }) {
+        throw Exception("تغيّرت قائمة المنتجات. حدّث القائمة ثم حاول مجددًا.")
+    }
 
-    insertOrderItems(
-        orderId = orderId,
-        products = products,
-        cart = cart,
-        restaurantId = restaurantId
-    )
+    val itemsPayload = JSONArray()
+    selectedProducts.toSortedMap().forEach { (productId, quantity) ->
+        itemsPayload.put(
+            JSONObject()
+                .put("product_id", productId)
+                .put("quantity", quantity)
+        )
+    }
 
-    return OrderResult(orderNumber)
-}
+    val body = JSONObject()
+        .put("p_code", restaurantCode.trim().uppercase())
+        .put("p_customer_name", customerName.trim())
+        .put("p_customer_phone", customerPhone.trim())
+        .put("p_delivery_address", deliveryAddress.trim())
+        .put("p_fulfillment_type", fulfillmentType)
+        .put("p_items", itemsPayload)
 
-private fun generateOrderNumber(): String {
-
-    val formatter = SimpleDateFormat(
-        "yyyyMMddHHmmssSSS",
-        Locale.US
-    )
-
-    return "RC-" + formatter.format(Date())
-}
-
-private fun generateOrderId(): Long {
-
-    /*
-     * نستخدم الوقت الحالي بالميلي ثانية
-     * مع رقم عشوائي صغير لتقليل احتمال التكرار.
-     *
-     * الناتج يبقى ضمن نطاق Long بسهولة.
-     */
-    val timePart =
-        System.currentTimeMillis() * 1000L
-
-    val randomPart =
-        Random.nextInt(0, 1000).toLong()
-
-    return timePart + randomPart
-}
-
-private fun insertOrder(
-    orderId: Long,
-    orderNumber: String,
-    customerName: String,
-    customerPhone: String,
-    deliveryAddress: String,
-    fulfillmentType: String,
-    totalAmount: Double,
-    restaurantId: String
-) {
-
-    val url = URL(
-        "$ORDER_SUPABASE_URL/rest/v1/orders"
-    )
-
-    val connection =
-        url.openConnection() as HttpURLConnection
+    val connection = URL("$ORDER_SUPABASE_URL/rest/v1/rpc/create_restaurant_order")
+        .openConnection() as HttpURLConnection
 
     try {
-
         connection.requestMethod = "POST"
+        connection.connectTimeout = 15000
+        connection.readTimeout = 15000
         connection.doOutput = true
-
-        connection.setRequestProperty(
-            "apikey",
-            ORDER_SUPABASE_KEY
-        )
-
-        connection.setRequestProperty(
-            "Content-Type",
-            "application/json"
-        )
-
-        /*
-         * لا نستخدم return=representation
-         * ولا headers-only.
-         *
-         * الإدخال فقط.
-         */
-        connection.setRequestProperty(
-            "Prefer",
-            "return=minimal"
-        )
-
-        val body = JSONObject()
-
-        body.put(
-            "id",
-            orderId
-        )
-
-        body.put(
-            "order_number",
-            orderNumber
-        )
-
-        body.put(
-            "customer_name",
-            customerName.trim()
-        )
-
-        body.put(
-            "customer_phone",
-            customerPhone.trim()
-        )
-
-        body.put(
-            "delivery_address",
-            deliveryAddress.trim()
-        )
-
-        body.put(
-            "fulfillment_type",
-            fulfillmentType
-        )
-
-        body.put(
-            "total_amount",
-            totalAmount
-        )
-
-        body.put(
-            "status",
-            "new"
-        )
-
-        body.put(
-            "restaurant_id",
-            restaurantId
-        )
+        connection.setRequestProperty("apikey", ORDER_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $ORDER_SUPABASE_KEY")
+        connection.setRequestProperty("Content-Type", "application/json")
 
         connection.outputStream.use { output ->
-
-            output.write(
-                body.toString()
-                    .toByteArray(Charsets.UTF_8)
-            )
-
-            output.flush()
+            output.write(body.toString().toByteArray(Charsets.UTF_8))
         }
 
-        val responseCode =
-            connection.responseCode
+        val responseCode = connection.responseCode
+        val responseBody = (
+            if (responseCode in 200..299) connection.inputStream else connection.errorStream
+        )?.bufferedReader()?.use { it.readText() }.orEmpty()
 
         if (responseCode !in 200..299) {
-
-            val error =
-                connection.errorStream
-                    ?.bufferedReader()
-                    ?.use { it.readText() }
-                    ?: "فشل إنشاء الطلب."
-
             throw Exception(
-                "HTTP $responseCode: $error"
+                "تعذر إرسال الطلب (HTTP $responseCode): " +
+                    responseBody.ifBlank { "تحقق من الاتصال وحاول مجددًا." }
             )
         }
 
+        val resultRows = JSONArray(responseBody)
+        if (resultRows.length() != 1) {
+            throw Exception("لم تُرجع قاعدة البيانات تأكيدًا واضحًا للطلب.")
+        }
+
+        val result = resultRows.getJSONObject(0)
+        val serverItems = result.optJSONArray("items") ?: JSONArray()
+        val invoiceItems = buildList {
+            for (i in 0 until serverItems.length()) {
+                val item = serverItems.getJSONObject(i)
+                add(
+                    RoyalInvoiceItem(
+                        name = item.optString("name", "منتج"),
+                        quantity = item.getInt("quantity"),
+                        unitPrice = item.getDouble("unit_price")
+                    )
+                )
+            }
+        }
+
+        if (invoiceItems.isEmpty()) {
+            throw Exception("لم تُرجع قاعدة البيانات تفاصيل الطلب.")
+        }
+
+        return OrderResult(
+            orderNumber = result.getString("order_number"),
+            totalAmount = result.getDouble("total_amount"),
+            items = invoiceItems
+        )
     } finally {
-
-        connection.disconnect()
-    }
-}
-
-private fun insertOrderItems(
-    orderId: Long,
-    products: List<Product>,
-    cart: Map<Int, Int>,
-    restaurantId: String
-) {
-
-    val jsonArray = JSONArray()
-
-    products.forEach { product ->
-
-        val quantity =
-            cart[product.id] ?: 0
-
-        if (quantity > 0) {
-
-            val item = JSONObject()
-
-            item.put(
-                "order_id",
-                orderId
-            )
-
-            item.put(
-                "product_id",
-                product.id
-            )
-
-            item.put(
-                "product_name",
-                product.name
-            )
-
-            item.put(
-                "unit_price",
-                product.price
-            )
-
-            item.put(
-                "quantity",
-                quantity
-            )
-
-            item.put(
-                "item_total",
-                product.price * quantity
-            )
-
-            item.put(
-                "restaurant_id",
-                restaurantId
-            )
-
-            jsonArray.put(item)
-        }
-    }
-
-    if (jsonArray.length() == 0) {
-
-        throw Exception(
-            "لا توجد منتجات في الطلب."
-        )
-    }
-
-    val url = URL(
-        "$ORDER_SUPABASE_URL/rest/v1/order_items"
-    )
-
-    val connection =
-        url.openConnection() as HttpURLConnection
-
-    try {
-
-        connection.requestMethod = "POST"
-        connection.doOutput = true
-
-        connection.setRequestProperty(
-            "apikey",
-            ORDER_SUPABASE_KEY
-        )
-
-        connection.setRequestProperty(
-            "Content-Type",
-            "application/json"
-        )
-
-        connection.setRequestProperty(
-            "Prefer",
-            "return=minimal"
-        )
-
-        connection.outputStream.use { output ->
-
-            output.write(
-                jsonArray.toString()
-                    .toByteArray(Charsets.UTF_8)
-            )
-
-            output.flush()
-        }
-
-        val responseCode =
-            connection.responseCode
-
-        if (responseCode !in 200..299) {
-
-            val error =
-                connection.errorStream
-                    ?.bufferedReader()
-                    ?.use { it.readText() }
-                    ?: "فشل حفظ تفاصيل الطلب."
-
-            throw Exception(
-                "HTTP $responseCode: $error"
-            )
-        }
-
-    } finally {
-
         connection.disconnect()
     }
 }
