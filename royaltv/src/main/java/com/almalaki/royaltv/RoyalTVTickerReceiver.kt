@@ -38,6 +38,11 @@ object RoyalTVTickerReceiver {
 
         val payload = command.payload
 
+        if (payload.startsWith("LAYOUT_SETTINGS|")) {
+            val json = payload.removePrefix("LAYOUT_SETTINGS|")
+            return RoyalTVLayoutSettings.applyJson(context, json)
+        }
+
         // تشغيل الشريط أو إيقافه.
         if (
             payload.startsWith(
@@ -85,6 +90,7 @@ object RoyalTVTickerReceiver {
         return command.type ==
             RoyalTVCommandType.SHOW_CONTENT &&
             (
+                command.payload.startsWith("LAYOUT_SETTINGS|") ||
                 command.payload.startsWith(
                     TICKER_PREFIX
                 ) ||

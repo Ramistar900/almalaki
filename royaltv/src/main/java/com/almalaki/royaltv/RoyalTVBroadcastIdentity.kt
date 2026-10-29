@@ -80,6 +80,7 @@ fun RoyalTVBroadcastIdentity(
     LaunchedEffect(context) {
         RoyalTVTickerManager.initialize(context)
         RoyalTVBroadcastSettings.initialize(context)
+        RoyalTVLayoutSettings.initialize(context)
     }
 
     val managedNewsText by
@@ -89,19 +90,24 @@ fun RoyalTVBroadcastIdentity(
 
     val tickerEnabled by
         RoyalTVBroadcastSettings.tickerEnabled.collectAsState()
-        
+
+    val layoutSettings by
+        RoyalTVLayoutSettings.state.collectAsState()
+
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
     ) {
     
-        val scale = (maxWidth.value / 360f)
+        val screenWidth = maxWidth.value
+        val screenHeight = maxHeight.value
+        val scale = (screenWidth / 360f)
             .coerceIn(0.85f, 2.6f)
 
-        val logoSize = (48f * scale).dp
-        val timeTextSize = (13f * scale).sp
-        val tickerTextSize = (12f * scale).sp
-        val tickerHeight = (24f * scale).dp
-        val liveTextSize = (10f * scale).sp
+        val logoSize = (48f * scale * layoutSettings.logoSizePercent / 100f).dp
+        val timeTextSize = (13f * scale * layoutSettings.timeSizePercent / 100f).sp
+        val tickerTextSize = (12f * scale * layoutSettings.tickerSizePercent / 100f).sp
+        val tickerHeight = (24f * scale * layoutSettings.tickerSizePercent / 100f).dp
+        val liveTextSize = (10f * scale * layoutSettings.liveSizePercent / 100f).sp
 
         var now by remember {
             mutableStateOf(Date())
@@ -136,7 +142,12 @@ fun RoyalTVBroadcastIdentity(
         ) {
             /* الشعار الملكي الأصلي */
             Box(
-                modifier = Modifier.size(logoSize),
+                modifier = Modifier
+                    .size(logoSize)
+                    .offset(
+                        x = (layoutSettings.logoOffsetXPercent * screenWidth / 100f).dp,
+                        y = (layoutSettings.logoOffsetYPercent * screenHeight / 100f).dp
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 RoyalLayeredLogoAnimation(
@@ -150,6 +161,10 @@ fun RoyalTVBroadcastIdentity(
             /* الساعة فقط: خلفية شفافة وإطار ذهبي */
             Box(
                 modifier = Modifier
+                    .offset(
+                        x = (layoutSettings.timeOffsetXPercent * screenWidth / 100f).dp,
+                        y = (layoutSettings.timeOffsetYPercent * screenHeight / 100f).dp
+                    )
                     .width((68f * scale).dp)
                     .height((29f * scale).dp)
                     .clip(
@@ -176,20 +191,29 @@ fun RoyalTVBroadcastIdentity(
             }
 
                         /* الشريط الإخباري المتحرك */
-            if (tickerEnabled) {
+            if (tickerEnabled && layoutSettings.showTicker) {
                 RoyalTVOriginalStyleTicker(
                     text = displayedNewsText,
                     scale = scale,
                     height = tickerHeight,
                     textSize = tickerTextSize,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .offset(
+                            x = (layoutSettings.tickerOffsetXPercent * screenWidth / 100f).dp,
+                            y = (layoutSettings.tickerOffsetYPercent * screenHeight / 100f).dp
+                        )
                 )
             }
 
             /* مؤشر مباشر مستقل عن الشريط */
             RoyalTVLiveIndicator(
                 scale = scale,
-                textSize = liveTextSize
+                textSize = liveTextSize,
+                modifier = Modifier.offset(
+                    x = (layoutSettings.liveOffsetXPercent * screenWidth / 100f).dp,
+                    y = (layoutSettings.liveOffsetYPercent * screenHeight / 100f).dp
+                )
             )
         }
     }
@@ -198,7 +222,8 @@ fun RoyalTVBroadcastIdentity(
 @Composable
 private fun RoyalTVLiveIndicator(
     scale: Float,
-    textSize: androidx.compose.ui.unit.TextUnit
+    textSize: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier
 ) {
     val transition = rememberInfiniteTransition(
         label = "royal_tv_live_indicator"
@@ -218,7 +243,7 @@ private fun RoyalTVLiveIndicator(
     )
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(50))
             .border(
                 width = (1f * scale).dp,
