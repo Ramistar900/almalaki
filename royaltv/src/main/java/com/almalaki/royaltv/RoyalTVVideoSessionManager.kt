@@ -80,7 +80,8 @@ object RoyalTVVideoSessionManager {
 
             started = true
 
-            val created = RoyalTVVideoPacketReceiver(
+            lateinit var created: RoyalTVVideoPacketReceiver
+            created = RoyalTVVideoPacketReceiver(
                 object : RoyalTVVideoPacketReceiver.Listener {
 
                     override fun onServerStarted(port: Int) {
@@ -88,13 +89,21 @@ object RoyalTVVideoSessionManager {
                     }
 
                     override fun onServerStopped() {
-                        synchronized(lock) {
-                            // اسمح بإنشاء مستقبل جديد إذا انتهى هذا الخادم.
-                            started = false
-                            receiver = null
+                        val shouldRestart = synchronized(lock) {
+                            // لا تسمح لإشعار مستقبل قديم بتصفير حالة مستقبل أحدث.
+                            if (receiver !== created) {
+                                false
+                            } else {
+                                started = false
+                                receiver = null
+                                true
+                            }
                         }
-                        Log.w(TAG, "Video receiver stopped; scheduling a safe restart")
-                        scheduleRestartIfNeeded()
+
+                        if (shouldRestart) {
+                            Log.w(TAG, "Video receiver stopped; scheduling a safe restart")
+                            scheduleRestartIfNeeded()
+                        }
                     }
 
                     override fun onClientConnected() {
