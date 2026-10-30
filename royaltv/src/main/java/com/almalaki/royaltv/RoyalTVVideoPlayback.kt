@@ -143,10 +143,21 @@ private class RoyalTVVideoPlaybackController(
                 return
             }
 
-            val inputIndex =
+            // حرّر أي مخرجات جاهزة قبل طلب خانة إدخال جديدة.
+            // إذا كان المفكك تحت ضغط، امنحه محاولة قصيرة إضافية بدل الإسقاط الفوري.
+            drainDecoder(activeDecoder)
+
+            var inputIndex =
                 activeDecoder.dequeueInputBuffer(10_000)
 
-            if (inputIndex < 0) return
+            if (inputIndex < 0) {
+                inputIndex = activeDecoder.dequeueInputBuffer(5_000)
+            }
+
+            if (inputIndex < 0) {
+                Log.w(TAG, "Decoder input queue is full; dropping video packet")
+                return
+            }
 
             val inputBuffer =
                 activeDecoder.getInputBuffer(inputIndex)
