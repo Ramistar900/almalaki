@@ -66,9 +66,10 @@ class RoyalTVVideoPacketReceiver(
         }
 
         Thread({
+            var serverSocketForCleanup: ServerSocket? = null
             try {
                 ServerSocket().use { server ->
-                    val serverSocketForCleanup = server
+                    serverSocketForCleanup = server
                     server.reuseAddress = true
                     server.bind(InetSocketAddress(port))
 
