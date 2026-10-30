@@ -43,6 +43,8 @@ create table if not exists public.royal_tv_paired_devices (
     paired_at timestamptz not null default now(),
     last_seen_at timestamptz,
     revoked_at timestamptz,
+    constraint royal_tv_device_id_restaurant_unique
+        unique (id, restaurant_id),
     check (
         (status = 'active' and revoked_at is null)
         or (status = 'revoked' and revoked_at is not null)
@@ -56,8 +58,7 @@ create table if not exists public.royal_tv_commands (
     id uuid primary key default gen_random_uuid(),
     restaurant_id uuid not null
         references public.restaurants(id) on delete cascade,
-    paired_device_id uuid not null
-        references public.royal_tv_paired_devices(id) on delete cascade,
+    paired_device_id uuid not null,
     command_type text not null
         check (command_type in (
             'SHOW_ORDER',
@@ -78,6 +79,10 @@ create table if not exists public.royal_tv_commands (
     expires_at timestamptz not null,
     claimed_at timestamptz,
     acknowledged_at timestamptz,
+    constraint royal_tv_command_device_same_restaurant_fk
+        foreign key (paired_device_id, restaurant_id)
+        references public.royal_tv_paired_devices(id, restaurant_id)
+        on delete cascade,
     check (expires_at > created_at),
     check (claimed_at is null or claimed_at >= created_at),
     check (acknowledged_at is null or acknowledged_at >= created_at)
