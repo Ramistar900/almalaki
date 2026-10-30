@@ -108,6 +108,8 @@ object RoyalTVVideoSessionManager {
 
                     override fun onClientConnected() {
                         synchronized(lock) {
+                            // تجاهل أي إشعار اتصال صادر عن مستقبل لم يعد هو النشط.
+                            if (receiver !== created) return
                             senderConnected = true
                             listeners.forEach { listener ->
                                 safely { listener.onSenderConnected() }
@@ -121,6 +123,8 @@ object RoyalTVVideoSessionManager {
                         flags: Int
                     ) {
                         synchronized(lock) {
+                            // لا تسمح لحزم مستقبل قديم بتلويث جلسة الفيديو الحالية.
+                            if (receiver !== created) return
                             if (flags == STREAM_CONFIG_FLAG) {
                                 latestConfigPacket = data.copyOf()
                             }
@@ -141,6 +145,8 @@ object RoyalTVVideoSessionManager {
 
                     override fun onClientDisconnected() {
                         synchronized(lock) {
+                            // تجاهل الانقطاع المتأخر من مستقبل لم يعد نشطًا.
+                            if (receiver !== created) return
                             senderConnected = false
                             latestConfigPacket = null
                             listeners.forEach { listener ->
@@ -151,8 +157,11 @@ object RoyalTVVideoSessionManager {
 
                     override fun onReceiverError(message: String) {
                         Log.e(TAG, message)
-                        listeners.forEach { listener ->
-                            safely { listener.onReceiverError(message) }
+                        synchronized(lock) {
+                            if (receiver !== created) return
+                            listeners.forEach { listener ->
+                                safely { listener.onReceiverError(message) }
+                            }
                         }
                     }
                 }
