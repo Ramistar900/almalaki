@@ -76,6 +76,18 @@ var customerOrderHistory by remember(context) {
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
 }
+var hasLinkedRestaurant by remember(context) {
+    mutableStateOf(
+        context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
+            .getBoolean("customer_place_connected", false) ||
+            (
+                context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
+                    .contains("active_restaurant_id") &&
+                    loadRoyalActiveRestaurant(context).id != ROYAL_DEFAULT_RESTAURANT_ID
+            )
+    )
+}
+var catalogReady by remember { mutableStateOf(false) }
 var linkedRestaurants by remember(context) {
     mutableStateOf(loadRoyalLinkedRestaurants(context))
 }
@@ -195,8 +207,18 @@ var invoiceTotalAmount by remember {
         mutableStateOf("الكل")
     }
 
-    LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode) {
+    LaunchedEffect(hasLinkedRestaurant, activeRestaurant.id, activeRestaurant.joinCode) {
+        if (!hasLinkedRestaurant) {
+            products = emptyList()
+            customerSections = emptyList()
+            cart = emptyMap()
+            loading = false
+            catalogReady = false
+            message = ""
+            return@LaunchedEffect
+        }
         loading = true
+        catalogReady = false
         message = ""
         try {
             val (loadedProducts, loadedSections) = withContext(Dispatchers.IO) {
@@ -226,11 +248,13 @@ var invoiceTotalAmount by remember {
             products = loadedProducts
             customerSections = loadedSections
             cart = emptyMap()
+            catalogReady = true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             products = emptyList()
             customerSections = emptyList()
+            catalogReady = false
             message = e.message ?: "تعذر تحميل منتجات المطعم."
         } finally {
             loading = false
@@ -374,6 +398,47 @@ var invoiceTotalAmount by remember {
                 BoxWithConstraints(
                     Modifier.weight(1f)
                 ) {
+                    if (!hasLinkedRestaurant) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                                    .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp))
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(Color.White.copy(alpha = if (darkMode) 0.10f else 0.34f))
+                                    .padding(horizontal = 22.dp, vertical = 26.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Text(
+                                    text = "يرجى الربط الآن للاستخدام",
+                                    color = if (darkMode) Color(0xFFFFE6A0) else Color(0xFF174A3A),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Button(
+                                    onClick = {
+                                        linkedRestaurants = loadRoyalLinkedRestaurants(context)
+                                        restaurantLinkMessage = ""
+                                        showRestaurantLinks = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
+                                    shape = RoundedCornerShape(14.dp),
+                                    contentPadding = PaddingValues(horizontal = 30.dp, vertical = 12.dp)
+                                ) {
+                                    Text("ربط الآن", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    } else if (!catalogReady) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            if (loading) CircularProgressIndicator(color = Gold)
+                            else Text(message.ifBlank { "تعذر تحميل منتجات المكان." }, color = textColor, fontSize = 14.sp)
+                        }
+                    } else {
                     // ارتفاع تقريبي مطابق لبنر الاسم، لتبقى التصنيفات تحته.
                     val titleBannerHeight = (maxWidth / 2.6f) + 6.dp
                     val columns = when {
@@ -492,6 +557,7 @@ var invoiceTotalAmount by remember {
                             color = Gold.copy(alpha = 0.35f),
                             thickness = 1.dp
                         )
+                    }
                     }
                 }
         
@@ -886,6 +952,9 @@ if (showRestaurantLinks) {
                         linkedRestaurants = loadRoyalLinkedRestaurants(context)
                         selectedCategory = "الكل"
                         activeRestaurant = linked
+                        hasLinkedRestaurant = true
+                        context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
+                            .edit().putBoolean("customer_place_connected", true).apply()
                         restaurantLinkMessage = ""
                         showRestaurantLinks = false
                     } catch (e: Exception) {
@@ -901,6 +970,9 @@ if (showRestaurantLinks) {
             selectedCategory = "الكل"
             cart = emptyMap()
             activeRestaurant = restaurant
+            hasLinkedRestaurant = true
+            context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
+                .edit().putBoolean("customer_place_connected", true).apply()
             restaurantLinkMessage = ""
             showRestaurantLinks = false
         },
