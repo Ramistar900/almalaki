@@ -469,7 +469,8 @@ class RoyalTVSenderCaptureService : Service() {
                 }
 
                 override fun onEncoderError(error: Exception) {
-                    if (ownedEncoder == null || encoder !== ownedEncoder) return
+                    val failedEncoder = ownedEncoder ?: return
+                    if (encoder !== failedEncoder) return
 
                     Log.e(
                         TAG,
@@ -477,8 +478,9 @@ class RoyalTVSenderCaptureService : Service() {
                         error
                     )
 
+                    // تحقق مجددًا بعد الانتقال إلى الخيط الرئيسي؛ فقد تكون جلسة أحدث قد بدأت.
                     mainHandler.post {
-                        if (!stopping) {
+                        if (!stopping && encoder === failedEncoder) {
                             stopStreaming()
                             stopForegroundCompat()
                             stopSelf()
