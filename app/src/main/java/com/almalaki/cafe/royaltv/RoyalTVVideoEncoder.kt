@@ -207,6 +207,8 @@ class RoyalTVVideoEncoder(
                     }
 
                     outputIndex >= 0 -> {
+                        var encodedBytes: ByteArray? = null
+
                         try {
                             if (bufferInfo.size > 0) {
                                 val outputBuffer: ByteBuffer? =
@@ -226,23 +228,27 @@ class RoyalTVVideoEncoder(
                                         }
                                         .slice()
 
-                                    val bytes = ByteArray(
+                                    encodedBytes = ByteArray(
                                         packet.remaining()
-                                    )
-
-                                    packet.get(bytes)
-
-                                    listener.onEncodedFrame(
-                                        bytes,
-                                        bufferInfo.presentationTimeUs,
-                                        bufferInfo.flags
-                                    )
+                                    ).also { bytes ->
+                                        packet.get(bytes)
+                                    }
                                 }
                             }
                         } finally {
+                            // حرر مخزن MediaCodec قبل استدعاء المستمع؛ فقد يتأخر
+                            // إرسال الشبكة ولا ينبغي أن يبقى مخزن المشفر محجوزًا.
                             activeCodec.releaseOutputBuffer(
                                 outputIndex,
                                 false
+                            )
+                        }
+
+                        encodedBytes?.let { bytes ->
+                            listener.onEncodedFrame(
+                                bytes,
+                                bufferInfo.presentationTimeUs,
+                                bufferInfo.flags
                             )
                         }
                     }
