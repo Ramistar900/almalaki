@@ -47,6 +47,7 @@ class RoyalTVVideoPacketReceiver(
     }
 
     private val running = AtomicBoolean(false)
+    private val lifecycleLock = Any()
 
     @Volatile
     private var serverSocket: ServerSocket? = null
@@ -67,9 +68,22 @@ class RoyalTVVideoPacketReceiver(
         Thread({
             try {
                 ServerSocket().use { server ->
+                    val serverSocketForCleanup = server
                     server.reuseAddress = true
                     server.bind(InetSocketAddress(port))
-                    serverSocket = server
+
+                    // انشر المقبس فقط إذا لم يسبق إيقاف المستقبل عملية الربط.
+                    // تتم عملية الفحص والنشر تحت القفل نفسه الذي يستخدمه close().
+                    val serverReady = synchronized(lifecycleLock) {
+                        if (!running.get()) {
+                            false
+                        } else {
+                            serverSocket = server
+                            true
+                        }
+                    }
+                    if (!serverReady) return@use
+
                     listener.onServerStarted(port)
 
                     while (running.get()) {
@@ -79,13 +93,23 @@ class RoyalTVVideoPacketReceiver(
                                     return@use
                                 }
 
-                                clientSocket = client
                                 client.tcpNoDelay = true
                                 client.keepAlive = true
 
-                                listener.onClientConnected()
+                                // امنع نشر عميل جديد بعد close()، وتأكد أن close()
+                                // يستطيع دائمًا رؤية المقبس الذي يحتاج إلى إغلاقه.
+                                val clientReady = synchronized(lifecycleLock) {
+                                    if (!running.get()) {
+                                        false
+                                    } else {
+                                        clientSocket = client
+                                        true
+                                    }
+                                }
+                                if (!clientReady) return@use
 
                                 try {
+                                    listener.onClientConnected()
                                     receivePackets(client)
                                 } catch (error: Exception) {
                                     if (running.get()) {
@@ -95,7 +119,11 @@ class RoyalTVVideoPacketReceiver(
                                         )
                                     }
                                 } finally {
-                                    clientSocket = null
+                                    synchronized(lifecycleLock) {
+                                        if (clientSocket === client) {
+                                            clientSocket = null
+                                        }
+                                    }
                                     listener.onClientDisconnected()
                                 }
                             }
@@ -117,7 +145,11 @@ class RoyalTVVideoPacketReceiver(
                     )
                 }
             } finally {
-                serverSocket = null
+                synchronized(lifecycleLock) {
+                    if (serverSocket === serverSocketForCleanup) {
+                        serverSocket = null
+                    }
+                }
                 running.set(false)
                 try {
                     listener.onServerStopped()
@@ -177,17 +209,24 @@ class RoyalTVVideoPacketReceiver(
     override fun close() {
         running.set(false)
 
+        // التقط المراجع وامسحها ذريًا بالنسبة إلى نشرها في خيط الخادم.
+        // بذلك لا يبقى مقبس يُنشأ بعد close() خارج نطاق عملية الإغلاق.
+        val sockets = synchronized(lifecycleLock) {
+            val client = clientSocket
+            val server = serverSocket
+            clientSocket = null
+            serverSocket = null
+            server to client
+        }
+
         try {
-            clientSocket?.close()
+            sockets.second?.close()
         } catch (_: Exception) {
         }
 
         try {
-            serverSocket?.close()
+            sockets.first?.close()
         } catch (_: Exception) {
         }
-
-        clientSocket = null
-        serverSocket = null
     }
 }
