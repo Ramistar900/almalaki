@@ -346,22 +346,25 @@ private class RoyalTVVideoPlaybackController(
         }
     }
 
-    @Synchronized
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
 
-        // فصل العرض فقط؛ تظل جلسة TCP جاهزة للاتصال التالي.
+        // افصل المستمع قبل أخذ قفل وحدة التحكم لتفادي عكس ترتيب الأقفال
+        // مع callbacks التي تُستدعى من داخل قفل مدير الجلسة.
         RoyalTVVideoSessionManager.detach(this)
-        releaseDecoder()
 
-        if (streaming) {
-            streaming = false
-            onStreamingChanged(false)
-        }
+        synchronized(this) {
+            releaseDecoder()
 
-        try {
-            surface.release()
-        } catch (_: Exception) {
+            if (streaming) {
+                streaming = false
+                onStreamingChanged(false)
+            }
+
+            try {
+                surface.release()
+            } catch (_: Exception) {
+            }
         }
     }
 }
