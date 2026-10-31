@@ -171,6 +171,8 @@ Deno.serve(async (request: Request) => {
         .maybeSingle();
       if (challengeError) return fail(503, "Could not validate pairing code");
       if (!challenge) return fail(403, "Pairing code expired or already used");
+      // The owner may have been disabled after creating the challenge.
+      await assertOwner(challenge.created_by, challenge.restaurant_id);
 
       // Conditional UPDATE is atomic: only one concurrent request can consume this challenge.
       const { data: consumed, error: consumeError } = await admin.from("royal_tv_pairing_challenges")
