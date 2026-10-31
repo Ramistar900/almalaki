@@ -76,15 +76,19 @@ var customerOrderHistory by remember(context) {
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
 }
+val restaurantPreferences = remember(context) {
+    context.getSharedPreferences(
+        "royal_restaurant_links",
+        android.content.Context.MODE_PRIVATE
+    )
+}
 var hasLinkedRestaurant by remember(context) {
+    val savedRestaurantId = restaurantPreferences.getString("active_restaurant_id", null)
+    val savedActiveRestaurant = loadRoyalActiveRestaurant(context)
     mutableStateOf(
-        context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
-            .getBoolean("customer_place_connected", false) ||
-            (
-                context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
-                    .contains("active_restaurant_id") &&
-                    loadRoyalActiveRestaurant(context).id != ROYAL_DEFAULT_RESTAURANT_ID
-            )
+        restaurantPreferences.getBoolean("customer_place_connected", false) ||
+            savedRestaurantId == null ||
+            savedActiveRestaurant.id == savedRestaurantId
     )
 }
 var catalogReady by remember { mutableStateOf(false) }
