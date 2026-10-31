@@ -114,8 +114,25 @@ Deno.serve(async (request: Request) => {
   if (!supabaseUrl || !anonKey || !serviceRoleKey) return fail(503, "Server configuration missing");
 
   try {
-    const body = await request.json();
-    const action = typeof body?.action === "string" ? body.action : "";
+    const declaredLength = Number(request.headers.get("content-length") ?? "0");
+    if (Number.isFinite(declaredLength) && declaredLength > 40000) {
+      return fail(413, "Request body too large");
+    }
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 40000) {
+      return fail(413, "Request body too large");
+    }
+    let body: Record<string, unknown>;
+    try {
+      const parsed: unknown = JSON.parse(rawBody);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return fail(400, "JSON object required");
+      }
+      body = parsed as Record<string, unknown>;
+    } catch {
+      return fail(400, "Invalid JSON");
+    }
+    const action = typeof body.action === "string" ? body.action : "";
 
     if (action === "create_challenge") {
       const user = await ownerIdentity(request);
