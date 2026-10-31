@@ -3,6 +3,7 @@ package com.almalaki.cafe
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import kotlin.math.abs
 
@@ -209,6 +210,12 @@ fun createOrder(
             orderNumber = orderNumber,
             totalAmount = totalAmount,
             items = invoiceItems
+        )
+    } catch (error: SocketTimeoutException) {
+        // The server may have committed the atomic order before the response timed out.
+        throw Exception(
+            "انتهت مهلة الاتصال. قد يكون الطلب قد سُجّل؛ تحقق من سجل الطلبات قبل إعادة الإرسال.",
+            error
         )
     } finally {
         connection.disconnect()
