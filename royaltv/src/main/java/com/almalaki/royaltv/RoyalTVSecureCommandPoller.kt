@@ -17,8 +17,9 @@ import kotlinx.coroutines.withContext
  * Polls the server-owned queue. A command is acknowledged only after the
  * application callback confirms that the command was accepted locally.
  *
- * This worker is intentionally not started automatically yet: the owner-side
- * challenge creation and the TV pairing UI must be connected before rollout.
+ * The activity starts this worker only when a device credential has already
+ * been configured by successful pairing. Owner-side challenge creation and
+ * production deployment remain separate prerequisites.
  */
 object RoyalTVSecureCommandPoller {
     private const val TAG = "RoyalTVSecurePoller"
