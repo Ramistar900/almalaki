@@ -63,7 +63,10 @@ on public.royal_tv_devices
 for update
 to authenticated
 using (public.is_restaurant_owner(restaurant_id))
-with check (public.is_restaurant_owner(restaurant_id));
+with check (
+    public.is_restaurant_owner(restaurant_id)
+    and revoked_at is not null
+);
 
 -- No direct table access for clients. Only narrowly scoped RPCs may access
 -- activation rows or device token hashes.
