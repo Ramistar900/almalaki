@@ -6,13 +6,17 @@
 -- Flow:
 -- 1) Signed-in restaurant owner calls issue_royal_tv_activation_code().
 -- 2) Owner enters the one-time code on the TV sender/receiver pairing screen.
--- 3) TV calls redeem_royal_tv_activation_code(code, device_uuid, device_name).
+-- 3) TV calls redeem_royal_tv_activation_code(code, registration_uuid, current_channel_device_id, device_name).
 -- 4) A 256-bit device token is returned ONCE; only its SHA-256 hash is stored.
 -- IMPORTANT: existing data/sync endpoints do not yet validate this token. This
 -- migration alone is not end-to-end device authorization.
 
 create table if not exists public.royal_tv_devices (
+    -- Server-side registration UUID; distinct from the legacy channel ID.
     device_id uuid primary key,
+    -- Preserve current ROYAL-TV-... IDs used by Realtime topics.
+    channel_device_id text not null unique
+        check (char_length(channel_device_id) between 1 and 80),
     restaurant_id uuid not null
         references public.restaurants(id) on delete cascade,
     device_name text not null
@@ -141,6 +145,7 @@ grant execute on function public.issue_royal_tv_activation_code(uuid)
 create or replace function public.redeem_royal_tv_activation_code(
     p_activation_code text,
     p_device_id uuid,
+    p_channel_device_id text,
     p_device_name text
 )
 returns table (
@@ -157,10 +162,13 @@ declare
     v_activation public.royal_tv_activation_codes%rowtype;
     v_token text;
     v_device_name text := btrim(coalesce(p_device_name, ''));
+    v_channel_device_id text := btrim(coalesce(p_channel_device_id, ''));
 begin
     if p_activation_code is null
        or char_length(p_activation_code) <> 64
        or p_device_id is null
+       or char_length(v_channel_device_id) < 1
+       or char_length(v_channel_device_id) > 80
        or char_length(v_device_name) < 1
        or char_length(v_device_name) > 80 then
         raise exception using errcode = '22023',
@@ -197,9 +205,10 @@ begin
     v_token := encode(extensions.gen_random_bytes(32), 'hex');
 
     insert into public.royal_tv_devices (
-        device_id, restaurant_id, device_name, device_token_hash
+        device_id, channel_device_id, restaurant_id, device_name, device_token_hash
     ) values (
         p_device_id,
+        v_channel_device_id,
         v_activation.restaurant_id,
         v_device_name,
         encode(extensions.digest(convert_to(v_token, 'UTF8'), 'sha256'), 'hex')
@@ -219,7 +228,7 @@ begin
 end;
 $$;
 
-revoke all on function public.redeem_royal_tv_activation_code(text, uuid, text)
+revoke all on function public.redeem_royal_tv_activation_code(text, uuid, text, text)
     from public, anon, authenticated;
-grant execute on function public.redeem_royal_tv_activation_code(text, uuid, text)
+grant execute on function public.redeem_royal_tv_activation_code(text, uuid, text, text)
     to anon, authenticated;
