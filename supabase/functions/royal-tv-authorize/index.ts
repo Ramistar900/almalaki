@@ -259,7 +259,8 @@ Deno.serve(async (request: Request) => {
         .eq("id", commandId)
         .eq("paired_device_id", device.id)
         .eq("restaurant_id", device.restaurant_id)
-        .eq("status", "pending")
+        .eq("status", "claimed")
+        .is("acknowledged_at", null)
         .gt("expires_at", new Date().toISOString())
         .select("id")
         .maybeSingle();
