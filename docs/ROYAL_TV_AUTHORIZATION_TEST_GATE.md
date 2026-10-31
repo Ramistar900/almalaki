@@ -42,3 +42,19 @@ Actions:
 - A command becomes `claimed` before the TV confirms it. Recovery/lease semantics for a TV that disconnects after claiming must be designed and tested before production use.
 - Operational rate limiting, audit logging, schema/migration execution, end-to-end tests, and Android Keystore integration remain required.
 - The endpoint has not been deployed, and no production database has been changed.
+
+## Android TV client progress (2026-10-31)
+
+Implemented on the authorization branch:
+- `RoyalTVCredentialStore.kt`: encrypts the per-device credential with a non-exportable Android Keystore AES-GCM key; only ciphertext and IV are stored in private preferences.
+- `RoyalTVAuthorizationClient.kt`: calls the pairing, command-poll and acknowledge actions over HTTPS; never embeds a service-role key.
+- `RoyalTVSecureCommandPoller.kt`: polls the server queue and acknowledges only after the local command handler accepts a command.
+- `RoyalTVMainActivity.kt`: presents a pairing-code dialog; once paired, it selects server-authenticated polling and does not fall back to legacy Realtime when the stored credential is present but unusable.
+- `.github/workflows/royal-tv-auth-android-check.yml`: compile-only Android CI workflow. No successful run has been observed yet.
+
+Still incomplete:
+- Owner-side UI/service must create the challenge using the signed-in owner's Supabase access token and display the one-time code.
+- The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
+- The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
+- No Android build, device test, or negative integration test has passed in this step.
+- Poller recovery after a command is claimed but not acknowledged still needs a server-side lease/requeue design.
