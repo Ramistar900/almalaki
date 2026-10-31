@@ -5,6 +5,7 @@ name: ROYAL TV Authorization Android Check
     branches: [main]
     paths:
       - 'royaltv/**'
+      - 'app/**'
       - '.github/workflows/royal-tv-auth-android-check.yml'
   push:
     branches: [royal-tv-server-authorization-phase1]
@@ -42,4 +43,4 @@ jobs:
           gradle-version: '8.10.2'
 
       - name: Compile ROYAL TV debug Kotlin
-        run: gradle :royaltv:compileDebugKotlin --no-daemon
+        run: gradle :royaltv:compileDebugKotlin :app:compileDebugKotlin --no-daemon
