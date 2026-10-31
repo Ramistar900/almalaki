@@ -215,20 +215,39 @@ Deno.serve(async (request: Request) => {
 
     if (action === "poll_commands") {
       const device = await activeDevice(request);
+      const now = new Date().toISOString();
       const { error: touchError } = await admin.from("royal_tv_paired_devices")
-        .update({ last_seen_at: new Date().toISOString() }).eq("id", device.id).eq("status", "active");
+        .update({ last_seen_at: now }).eq("id", device.id).eq("status", "active");
       if (touchError) return fail(503, "Could not update device status");
 
-      const { data, error } = await admin.from("royal_tv_commands")
-        .select("id,command_type,payload,created_at,expires_at")
+      // Claim each row with a conditional update so concurrent polls cannot
+      // both receive the same pending command. Claimed commands are not replayed.
+      const { data: pending, error: loadError } = await admin.from("royal_tv_commands")
+        .select("id")
         .eq("paired_device_id", device.id)
         .eq("restaurant_id", device.restaurant_id)
         .eq("status", "pending")
-        .gt("expires_at", new Date().toISOString())
+        .gt("expires_at", now)
         .order("created_at", { ascending: true })
         .limit(20);
-      if (error) return fail(503, "Could not load commands");
-      return response(200, { commands: data ?? [] });
+      if (loadError) return fail(503, "Could not load commands");
+
+      const commands = [];
+      for (const row of pending ?? []) {
+        const claimedAt = new Date().toISOString();
+        const { data: claimed, error: claimError } = await admin.from("royal_tv_commands")
+          .update({ status: "claimed", claimed_at: claimedAt })
+          .eq("id", row.id)
+          .eq("paired_device_id", device.id)
+          .eq("restaurant_id", device.restaurant_id)
+          .eq("status", "pending")
+          .gt("expires_at", claimedAt)
+          .select("id,command_type,payload,created_at,expires_at")
+          .maybeSingle();
+        if (claimError) return fail(503, "Could not claim command");
+        if (claimed) commands.push(claimed);
+      }
+      return response(200, { commands });
     }
 
     if (action === "acknowledge") {
