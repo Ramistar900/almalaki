@@ -24,9 +24,12 @@ const allowedCommands = new Set([
 ]);
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  // Browser access is limited to the official dashboard origin. Native clients
+  // are not governed by browser CORS, and still require real request credentials.
+  "Access-Control-Allow-Origin": "https://ramistar900.github.io",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-royal-device-credential",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Vary": "Origin",
   "Content-Type": "application/json; charset=utf-8",
 };
 
@@ -137,7 +140,7 @@ Deno.serve(async (request: Request) => {
     if (action === "create_challenge") {
       const user = await ownerIdentity(request);
       const restaurantId = String(body.restaurant_id ?? "");
-      if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(restaurantId)) return fail(400, "Invalid restaurant");
+      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(restaurantId)) return fail(400, "Invalid restaurant");
       await assertOwner(user.id, restaurantId);
 
       // High-entropy code; store only its digest and return plaintext once.
@@ -163,41 +166,33 @@ Deno.serve(async (request: Request) => {
       if (!deviceName) return fail(400, "Invalid device name");
 
       const codeHash = await sha256(code);
-      const { data: challenge, error: challengeError } = await admin.from("royal_tv_pairing_challenges")
-        .select("id,restaurant_id,created_by")
-        .eq("code_hash", codeHash)
-        .is("consumed_at", null)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-      if (challengeError) return fail(503, "Could not validate pairing code");
-      if (!challenge) return fail(403, "Pairing code expired or already used");
-      // The owner may have been disabled after creating the challenge.
-      await assertOwner(challenge.created_by, challenge.restaurant_id);
-
-      // Conditional UPDATE is atomic: only one concurrent request can consume this challenge.
-      const { data: consumed, error: consumeError } = await admin.from("royal_tv_pairing_challenges")
-        .update({ consumed_at: new Date().toISOString() })
-        .eq("id", challenge.id)
-        .is("consumed_at", null)
-        .gt("expires_at", new Date().toISOString())
-        .select("id")
-        .maybeSingle();
-      if (consumeError) return fail(503, "Could not consume pairing code");
-      if (!consumed) return fail(403, "Pairing code expired or already used");
-
       const credential = randomToken(32);
       const credentialHash = await sha256(credential);
-      const { error: insertError } = await admin.from("royal_tv_paired_devices").insert({
-        restaurant_id: challenge.restaurant_id,
-        device_id: deviceId,
-        device_name: deviceName,
-        credential_hash: credentialHash,
-        paired_by: challenge.created_by,
-        status: "active",
-      });
-      if (insertError) return fail(409, "Device already paired or could not be registered");
+
+      // A database transaction consumes the challenge and inserts the device
+      // together. If registration fails, the challenge consumption rolls back.
+      const { data: paired, error: pairError } = await admin.rpc(
+        "pair_royal_tv_device",
+        {
+          p_code_hash: codeHash,
+          p_device_id: deviceId,
+          p_device_name: deviceName,
+          p_credential_hash: credentialHash,
+        },
+      );
+      if (pairError) {
+        // Do not reveal whether a code, owner, or device identifier was valid.
+        return fail(409, "Pairing code invalid, expired, or device registration rejected");
+      }
+      const pairedRow = Array.isArray(paired) ? paired[0] : paired;
+      if (!pairedRow?.restaurant_id) {
+        return fail(503, "Pairing registration returned an invalid result");
+      }
       // This is the only response containing the raw device credential.
-      return response(200, { device_credential: credential, restaurant_id: challenge.restaurant_id });
+      return response(200, {
+        device_credential: credential,
+        restaurant_id: pairedRow.restaurant_id,
+      });
     }
 
     if (action === "send_command") {
@@ -272,7 +267,7 @@ Deno.serve(async (request: Request) => {
     if (action === "acknowledge") {
       const device = await activeDevice(request);
       const commandId = String(body.command_id ?? "");
-      if (!/^[0-9a-f-]{36}$/i.test(commandId)) return fail(400, "Invalid command id");
+      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(commandId)) return fail(400, "Invalid command id");
       const { data, error } = await admin.from("royal_tv_commands")
         .update({ status: "acked", acknowledged_at: new Date().toISOString() })
         .eq("id", commandId)
