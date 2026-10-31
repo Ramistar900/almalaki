@@ -22,7 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -456,6 +458,8 @@ fun RoyalCustomerAccountPortal(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var statusMessage by remember { mutableStateOf("") }
+    var isBusy by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val panelColor = if (isDarkMode) CustomerRoyalBlack else Color.White
     val primaryText = if (isDarkMode) Color.White else CustomerRoyalText
@@ -522,7 +526,7 @@ fun RoyalCustomerAccountPortal(
                         }
                     }
                     RoyalAccountPage.SIGN_IN -> {
-                        Text("تسجيل الدخول يحتاج إلى حساب موثّق. واجهة المصادقة لم تُربط بالخادم بعد.", color = secondaryText, fontSize = 13.sp)
+                        Text("تسجيل الدخول يتم عبر خادم Supabase. إذا كان تأكيد البريد مطلوبًا، يجب تأكيده أولًا.", color = secondaryText, fontSize = 13.sp)
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it; statusMessage = "" },
@@ -537,10 +541,56 @@ fun RoyalCustomerAccountPortal(
                             singleLine = true,
                             label = { Text("كلمة المرور") }
                         )
-                        Text("لم يتم إرسال بياناتك أو تسجيل الدخول. سيُفعّل ذلك بعد ربط Supabase Auth والتحقق من إعداداته.", color = secondaryText, fontSize = 12.sp)
+                        TextButton(
+                            enabled = !isBusy,
+                            onClick = {
+                                if (email.isBlank() || password.isBlank()) {
+                                    statusMessage = "أدخل البريد الإلكتروني وكلمة المرور."
+                                } else {
+                                    isBusy = true
+                                    statusMessage = ""
+                                    coroutineScope.launch {
+                                        try {
+                                            RoyalSupabaseAuth.signIn(email, password)
+                                            statusMessage = "تم قبول تسجيل الدخول من الخادم."
+                                        } catch (error: Exception) {
+                                            statusMessage = error.message?.take(220)
+                                                ?: "تعذر تسجيل الدخول. تحقق من البيانات والاتصال."
+                                        } finally {
+                                            isBusy = false
+                                        }
+                                    }
+                                }
+                            }
+                        ) { Text(if (isBusy) "جارٍ الاتصال..." else "تسجيل الدخول", color = CustomerRoyalGold) }
+                        TextButton(
+                            enabled = !isBusy,
+                            onClick = {
+                                if (email.isBlank()) {
+                                    statusMessage = "أدخل بريدك الإلكتروني لاستعادة كلمة المرور."
+                                } else {
+                                    isBusy = true
+                                    statusMessage = ""
+                                    coroutineScope.launch {
+                                        try {
+                                            RoyalSupabaseAuth.sendPasswordReset(email)
+                                            statusMessage = "استجاب الخادم لطلب الاستعادة. تحقق من بريدك إذا كان إرسال الرسائل مفعّلًا."
+                                        } catch (error: Exception) {
+                                            statusMessage = error.message?.take(220)
+                                                ?: "تعذر إرسال طلب الاستعادة."
+                                        } finally {
+                                            isBusy = false
+                                        }
+                                    }
+                                }
+                            }
+                        ) { Text("نسيت كلمة المرور؟", color = CustomerRoyalGold) }
+                        if (statusMessage.isNotBlank()) {
+                            Text(statusMessage, color = secondaryText, fontSize = 12.sp)
+                        }
                     }
                     RoyalAccountPage.EMAIL_REGISTER -> {
-                        Text("أنشئ حسابًا ببريدك الإلكتروني. هذه شاشة تجهيز فقط، ولم يتم إنشاء حساب أو إرسال بيانات للخادم.", color = secondaryText, fontSize = 13.sp)
+                        Text("أنشئ حسابًا على خادم Supabase باستخدام بريدك وكلمة مرور قوية.", color = secondaryText, fontSize = 13.sp)
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it; statusMessage = "" },
@@ -555,7 +605,31 @@ fun RoyalCustomerAccountPortal(
                             singleLine = true,
                             label = { Text("كلمة المرور") }
                         )
-                        Text("لن يتم تفعيل زر التسجيل الفعلي قبل ربط المصادقة الآمنة والتحقق من تأكيد البريد وسياسة كلمات المرور.", color = secondaryText, fontSize = 12.sp)
+                        TextButton(
+                            enabled = !isBusy,
+                            onClick = {
+                                if (email.isBlank() || password.length < 8) {
+                                    statusMessage = "أدخل بريدًا صحيحًا وكلمة مرور لا تقل عن 8 أحرف."
+                                } else {
+                                    isBusy = true
+                                    statusMessage = ""
+                                    coroutineScope.launch {
+                                        try {
+                                            RoyalSupabaseAuth.register(email, password)
+                                            statusMessage = "استجاب الخادم لطلب التسجيل. إذا كان تأكيد البريد مفعّلًا، افتح رسالة التأكيد قبل تسجيل الدخول."
+                                        } catch (error: Exception) {
+                                            statusMessage = error.message?.take(220)
+                                                ?: "تعذر إنشاء الحساب. حاول مجددًا."
+                                        } finally {
+                                            isBusy = false
+                                        }
+                                    }
+                                }
+                            }
+                        ) { Text(if (isBusy) "جارٍ التسجيل..." else "إنشاء الحساب", color = CustomerRoyalGold) }
+                        if (statusMessage.isNotBlank()) {
+                            Text(statusMessage, color = secondaryText, fontSize = 12.sp)
+                        }
                     }
                     RoyalAccountPage.FACEBOOK,
                     RoyalAccountPage.WHATSAPP -> {
