@@ -2,6 +2,8 @@ package com.almalaki.royaltv
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.viewinterop.AndroidView
@@ -59,6 +61,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +76,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -158,27 +164,64 @@ class RoyalTVMainActivity : ComponentActivity() {
 
                 RoyalTVTickerManager.initialize(applicationContext)
 
-        RoyalTVRealtime.start(royalTvDisplayId) { command ->
-            Log.i(
-                "RoyalTVMainActivity",
-                "تم استقبال أمر ROYAL TV: ${command.type}"
-            )
+        if (RoyalTVCredentialStore.isConfigured(applicationContext)) {
+            // Once securely paired, do not fall back to unauthenticated Realtime
+            // if the credential is revoked, corrupt, or the server is unavailable.
+            RoyalTVRealtime.stop()
+            RoyalTVSecureCommandPoller.start(applicationContext) { serverCommand ->
+                val commandType = runCatching {
+                    RoyalTVCommandType.valueOf(serverCommand.type)
+                }.getOrNull()
 
-            val tickerHandled = RoyalTVTickerReceiver.receive(
-                applicationContext,
-                command
-            )
-
-            if (!tickerHandled) {
-                RoyalTVDisplayStateManager.executeCommand(command)
+                if (commandType == null) {
+                    false
+                } else {
+                    val command = RoyalTVCommand(
+                        type = commandType,
+                        payload = serverCommand.payload
+                    )
+                    val tickerHandled = RoyalTVTickerReceiver.receive(
+                        applicationContext,
+                        command
+                    )
+                    if (!tickerHandled) {
+                        RoyalTVDisplayStateManager.executeCommand(command)
+                    }
+                    runOnUiThread {
+                        Toast.makeText(
+                            this,
+                            "وصل أمر آمن من الخادم: ${command.type}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    true
+                }
             }
+        } else {
+            // Compatibility mode remains for existing installations until the
+            // owner app's challenge-creation flow is migrated and verified.
+            RoyalTVRealtime.start(royalTvDisplayId) { command ->
+                Log.i(
+                    "RoyalTVMainActivity",
+                    "تم استقبال أمر ROYAL TV: ${command.type}"
+                )
 
-            runOnUiThread {
-                Toast.makeText(
-                    this,
-                    "وصل أمر ROYAL TV: ${command.type}",
-                    Toast.LENGTH_SHORT
-                ).show()
+                val tickerHandled = RoyalTVTickerReceiver.receive(
+                    applicationContext,
+                    command
+                )
+
+                if (!tickerHandled) {
+                    RoyalTVDisplayStateManager.executeCommand(command)
+                }
+
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "وصل أمر ROYAL TV: ${command.type}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
 
@@ -259,6 +302,9 @@ class RoyalTVMainActivity : ComponentActivity() {
                         screenCapturePermissionLauncher.launch(
                             projectionManager.createScreenCaptureIntent()
                         )
+                    },
+                    onSecurePairingComplete = {
+                        recreate()
                     }
                 )
             }
@@ -299,9 +345,75 @@ class RoyalTVMainActivity : ComponentActivity() {
 private fun RoyalTVChannelScreen(
     onRequestHomeScreenBroadcast: () -> Unit,
     remoteExitRequested: Boolean,
-    onRemoteExitHandled: () -> Unit
+    onRemoteExitHandled: () -> Unit,
+    onSecurePairingComplete: () -> Unit
 ) {
         val context = LocalContext.current
+    var showSecurePairingDialog by remember {
+        mutableStateOf(!RoyalTVCredentialStore.isConfigured(context))
+    }
+    var securePairingCode by remember { mutableStateOf("") }
+    var securePairingError by remember { mutableStateOf<String?>(null) }
+    var securePairingBusy by remember { mutableStateOf(false) }
+    val pairingScope = rememberCoroutineScope()
+
+    if (showSecurePairingDialog) {
+        AlertDialog(
+            onDismissRequest = { showSecurePairingDialog = false },
+            title = { Text("الاقتران الآمن — ROYAL TV") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("أدخل رمز الاقتران الذي أنشأه مالك المطعم. تنتهي صلاحية الرمز بعد خمس دقائق.")
+                    OutlinedTextField(
+                        value = securePairingCode,
+                        onValueChange = {
+                            securePairingCode = it.filterNot(Char::isWhitespace).take(128)
+                            securePairingError = null
+                        },
+                        label = { Text("رمز الاقتران") },
+                        singleLine = true,
+                        enabled = !securePairingBusy,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    securePairingError?.let { message ->
+                        Text(message, color = RoyalRed)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = !securePairingBusy && securePairingCode.length in 24..128,
+                    onClick = {
+                        pairingScope.launch {
+                            securePairingBusy = true
+                            securePairingError = null
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    RoyalTVAuthorizationClient(context).pair(securePairingCode)
+                                }
+                                showSecurePairingDialog = false
+                                onSecurePairingComplete()
+                            } catch (error: Exception) {
+                                securePairingError = error.message ?: "تعذر إتمام الاقتران الآمن"
+                            } finally {
+                                securePairingBusy = false
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (securePairingBusy) "جارٍ الاقتران…" else "اقتران آمن")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !securePairingBusy,
+                    onClick = { showSecurePairingDialog = false }
+                ) {
+                    Text("لاحقاً")
+                }
+            }
+        )
+    }
 
     val productSection =
         RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS

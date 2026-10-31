@@ -1,0 +1,4 @@
+[functions.royal-tv-authorize]
+# The function supports TV requests authenticated by a per-device credential header.
+# Owner actions independently validate the user's Supabase access token in code.
+verify_jwt = false
