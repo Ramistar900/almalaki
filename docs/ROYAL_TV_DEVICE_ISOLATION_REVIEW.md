@@ -66,3 +66,19 @@ Both current client identity implementations create a prefixed short string such
 - Runtime authorization tests: not run.
 - Production schema/data changes: none.
 - Merge to `main`: not performed.
+
+
+## Follow-up implementation — preserve existing channel identity
+
+The draft migration now separates two identifiers:
+- `device_id uuid`: a server-side registration UUID used as the registry primary key.
+- `channel_device_id text`: the existing client-generated `ROYAL-TV-...` identity used in current Realtime topic names.
+
+The draft `redeem_royal_tv_activation_code` signature now accepts both values and stores the legacy channel identity alongside the registration UUID. This avoids trying to cast the existing prefixed ID to UUID and avoids silently changing current topic names as part of database registration.
+
+### Compatibility status and remaining blockers
+- This is a schema/API design adjustment on the draft branch only; neither Android client calls the revised RPC yet.
+- No device-token persistence, token verification, revocation enforcement, or private-channel authorization has been integrated into the current clients.
+- The revised migration has been reviewed by source-level string/shape checks only. It has not been executed by PostgreSQL, compiled, or tested against staging.
+- The public/anonymous redemption RPC still requires abuse/rate-limit design before production use. A high-entropy one-time code is not a substitute for rate limiting.
+- Do not merge or apply this migration until SQL syntax, function privileges, concurrent redemption, existing-ID compatibility, and end-to-end authorization tests pass.
