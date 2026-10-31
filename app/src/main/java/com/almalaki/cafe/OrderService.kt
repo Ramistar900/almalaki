@@ -104,7 +104,10 @@ fun createOrder(
         .put("p_code", restaurantCode.trim().uppercase())
         .put("p_customer_name", normalizedName)
         .put("p_customer_phone", normalizedPhone)
-        .put("p_delivery_address", normalizedAddress)
+        .put(
+            "p_delivery_address",
+            if (fulfillmentType == "توصيل إلى المنزل") normalizedAddress else ""
+        )
         .put("p_fulfillment_type", fulfillmentType)
         .put("p_items", itemsPayload)
 
@@ -192,6 +195,9 @@ fun createOrder(
 
         if (invoiceItems.isEmpty()) {
             throw Exception("لم يُرجع الخادم تفاصيل الطلب.")
+        }
+        if (invoiceItems.size != selectedProducts.size) {
+            throw Exception("عدد أصناف الفاتورة لا يطابق الأصناف المطلوبة.")
         }
 
         val calculatedItemsTotal = invoiceItems.sumOf { it.unitPrice * it.quantity }
