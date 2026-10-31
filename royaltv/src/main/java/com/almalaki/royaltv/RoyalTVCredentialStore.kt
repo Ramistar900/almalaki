@@ -36,6 +36,11 @@ object RoyalTVCredentialStore {
             .also { saved -> check(saved) { "Could not persist device credential" } }
     }
 
+    fun isConfigured(context: Context): Boolean {
+        return context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .contains(KEY_CIPHERTEXT)
+    }
+
     @Synchronized
     fun read(context: Context): String? {
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -53,8 +58,8 @@ object RoyalTVCredentialStore {
                 Charsets.UTF_8
             ).takeIf { it.length in 32..256 }
         } catch (_: Exception) {
-            // Corrupt data or a reset Keystore key must not silently authorize a device.
-            clear(context)
+            // Keep the configured marker: a damaged credential must not trigger
+            // an automatic downgrade to the legacy unauthenticated Realtime path.
             null
         }
     }
