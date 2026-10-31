@@ -21,3 +21,37 @@ Draft design only. This change has not been applied to the live Supabase databas
 
 ## Review caveat
 The code is an initial registration primitive, not sufficient by itself for end-to-end authorization. Token verification and rate limiting at the API boundary are still required.
+
+
+## Free static audit findings — 2026-10-31
+
+### Finding A: Realtime topic is not bound to a server-verified device identity
+
+Reviewed:
+- `royaltv/src/main/java/com/almalaki/royaltv/RoyalTVRealtime.kt`
+- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVRealtime.kt`
+
+Both clients build a topic from the caller-provided `deviceId` (`royal-tv-{deviceId}`) and connect using only the public/publishable project key. The code shown does not attach the device token from `royal_tv_devices`, and does not authenticate topic access against the device registry. Topic names are identifiers, not authorization.
+
+This is a high-priority authorization gap in the client implementation. Actual exploitability depends on the project's Realtime channel access configuration, which must be verified before making a definitive exposure claim. Do not assume a random-looking device ID provides security.
+
+### Finding B: Realtime authorization policies were not found in the live database
+
+A read-only query confirmed that `realtime.messages` exists with RLS enabled, but `pg_policies` returned no policies for that relation. No database changes were made. This alone does not establish the effective public/private channel configuration; check the Realtime settings and test public and private channel access in an isolated test environment.
+
+### Required remediation before declaring device isolation complete
+
+1. Set device command channels to private and require authenticated access; do not rely on topic secrecy.
+2. Add narrow Realtime policies that validate the caller against a server-side device/owner authorization record, with correct topic-to-device binding. Do not accept a client-supplied restaurant ID as proof of ownership.
+3. Add a server-side authorization path for sending commands so a sender must own/control the target device. A public publishable key is not a device credential.
+4. Integrate one-time activation and secure token persistence/verification, including revocation checks. Never send the raw token in logs.
+5. Add isolated automated checks for unauthorized subscribe, unauthorized broadcast, owner A targeting owner B, revoked devices, and expired/reused activation codes.
+6. Keep these changes as draft until code paths, Realtime settings/policies, and staging tests are reviewed. Do not apply experimental DDL to production.
+
+### Test status
+
+- Static source review: performed for the two Realtime clients.
+- Read-only production catalog query: performed; RLS is enabled on `realtime.messages`, but no policies were returned.
+- Runtime authorization tests: not run.
+- Production schema/data changes: none.
+- Merge to `main`: not performed.
