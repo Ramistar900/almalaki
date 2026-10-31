@@ -49,11 +49,12 @@ Implemented on the authorization branch:
 - `RoyalTVCredentialStore.kt`: encrypts the per-device credential with a non-exportable Android Keystore AES-GCM key; only ciphertext and IV are stored in private preferences.
 - `RoyalTVAuthorizationClient.kt`: calls the pairing, command-poll and acknowledge actions over HTTPS; never embeds a service-role key.
 - `RoyalTVSecureCommandPoller.kt`: polls the server queue and acknowledges only after the local command handler accepts a command.
+- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVOwnerAuthorizationClient.kt`: owner API helper for challenge creation, sending commands and revocation; it requires an access-token provider and is not yet wired to the owner UI/session.
 - `RoyalTVMainActivity.kt`: presents a pairing-code dialog; once paired, it selects server-authenticated polling and does not fall back to legacy Realtime when the stored credential is present but unusable.
 - `.github/workflows/royal-tv-auth-android-check.yml`: compile-only Android CI workflow. No successful run has been observed yet.
 
 Still incomplete:
-- Owner-side UI/service must create the challenge using the signed-in owner's Supabase access token and display the one-time code.
+- Owner-side UI/session wiring must supply the signed-in owner's Supabase access token to the new helper, create the challenge, and display the one-time code.
 - The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
 - No Android build, device test, or negative integration test has passed in this step.
