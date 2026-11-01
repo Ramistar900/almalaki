@@ -52,11 +52,11 @@ Implemented on the authorization branch:
 - `RoyalTVSecureCommandPoller.kt`: polls the server queue and acknowledges only after the local command handler accepts a command.
 - `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVOwnerAuthorizationClient.kt`: owner API helper for challenge creation, listing owned restaurants, sending commands and revocation; uses the access token supplied by `AdminContent`.
 - `RoyalTVMainActivity.kt`: presents a pairing-code dialog; once paired, it selects server-authenticated polling and does not fall back to legacy Realtime when the stored credential is present but unusable.
-- `.github/workflows/royal-tv-auth-android-check.yml`: compile-only Android CI workflow. No successful run has been observed yet.
+- `.github/workflows/royal-tv-auth-android-check.yml`: compile-only Android CI workflow.
 
 Still incomplete:
-- The owner pairing screen now loads active restaurants for which the signed-in user has an active owner membership from a new authenticated Edge Function action, then lets the owner select one before requesting a pairing code. This source change is not verified until tested against a deployed staging function. Paired-device listing and revocation UI are now implemented on the branch; they still require another Android compile check and staging endpoint integration tests. Command dispatch UI remains pending.
+- The owner pairing screen loads active restaurants for which the signed-in user has an active owner membership, then lets the owner select one before requesting a pairing code. Paired-device listing, revocation UI, and constrained owner controls for updating/showing/hiding the ticker and clearing the screen are implemented on the branch. These changes require a successful compile for the latest commit and staging endpoint integration tests.
 - The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
-- Android compile CI succeeded on 2026-11-01 for commit `112ffdedd0e0a6dac6d5229c54e4a8439c811673` (both ROYAL TV and app Kotlin compile tasks). This is compile-only verification; no device test or negative integration test has been confirmed.
+- Android compile CI succeeded on 2026-11-01 for commit `112ffdedd0e0a6dac6d5229c54e4a8439c811673` and for commit `1334034bd125a8e8dda5867c4d1ec1f02d3073e6` (both ROYAL TV and app Kotlin compile tasks). This is compile-only verification. The newer owner command controls are in commit `c0a8981bb623a0621740d5ffa2406b5da5b2ca77`; its CI runs are currently in progress. No device test or negative integration test has been confirmed.
 - Poller recovery after a command is claimed but not acknowledged still needs a server-side lease/requeue design.
