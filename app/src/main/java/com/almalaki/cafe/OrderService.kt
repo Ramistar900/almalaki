@@ -5,6 +5,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URL
+import java.util.UUID
 import kotlin.math.abs
 
 private const val ORDER_SUPABASE_URL =
@@ -40,9 +41,15 @@ fun createOrder(
     fulfillmentType: String,
     products: List<Product>,
     cart: Map<Int, Int>,
-    restaurantCode: String = ROYAL_DEFAULT_RESTAURANT_CODE
+    restaurantCode: String = ROYAL_DEFAULT_RESTAURANT_CODE,
+    idempotencyKey: String
 ): OrderResult {
     val normalizedName = customerName.trim()
+    val normalizedIdempotencyKey = try {
+        UUID.fromString(idempotencyKey).toString()
+    } catch (_: IllegalArgumentException) {
+        throw Exception("معرّف محاولة الطلب غير صالح. أعد المحاولة.")
+    }
     val normalizedPhone = customerPhone.trim()
     val normalizedAddress = deliveryAddress.trim()
 
@@ -102,6 +109,7 @@ fun createOrder(
     }
 
     val body = JSONObject()
+        .put("p_idempotency_key", normalizedIdempotencyKey)
         .put("p_code", restaurantCode.trim().uppercase())
         .put("p_customer_name", normalizedName)
         .put("p_customer_phone", normalizedPhone)
@@ -112,7 +120,7 @@ fun createOrder(
         .put("p_fulfillment_type", fulfillmentType)
         .put("p_items", itemsPayload)
 
-    val connection = URL("$ORDER_SUPABASE_URL/rest/v1/rpc/create_restaurant_order")
+    val connection = URL("$ORDER_SUPABASE_URL/rest/v1/rpc/create_restaurant_order_idempotent")
         .openConnection() as HttpURLConnection
 
     try {
