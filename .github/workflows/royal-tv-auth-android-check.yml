@@ -7,12 +7,14 @@ name: ROYAL TV Authorization Android Check
       - 'royaltv/**'
       - 'app/**'
       - '.github/workflows/royal-tv-auth-android-check.yml'
+      - 'docs/ROYAL_TV_AUTHORIZATION_TEST_GATE.md'
   push:
     branches: [royal-tv-server-authorization-phase1]
     paths:
       - 'royaltv/**'
       - 'app/**'
       - '.github/workflows/royal-tv-auth-android-check.yml'
+      - 'docs/ROYAL_TV_AUTHORIZATION_TEST_GATE.md'
 
 permissions:
   contents: read
