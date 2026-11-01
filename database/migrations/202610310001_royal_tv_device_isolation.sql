@@ -171,7 +171,8 @@ declare
     v_channel_device_id text := btrim(coalesce(p_channel_device_id, ''));
 begin
     if p_activation_code is null
-       or p_activation_code !~ '^[0-9a-f]{64}       or p_device_id is null
+       or p_activation_code !~ '^[0-9a-f]{64}$'
+       or p_device_id is null
        or char_length(v_channel_device_id) < 1
        or char_length(v_channel_device_id) > 80
        or char_length(v_device_name) < 1
