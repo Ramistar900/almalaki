@@ -53,7 +53,8 @@ fun RoyalCustomerSettings(
     isDarkMode: Boolean,
     onBack: () -> Unit,
     onAccountClick: () -> Unit = {},
-    onOrdersClick: () -> Unit = {}
+    onOrdersClick: () -> Unit = {},
+    onThemeToggle: () -> Unit = {}
 ) {
 
     /*
@@ -260,6 +261,15 @@ fun RoyalCustomerSettings(
                         onBack()
                         onOrdersClick()
                     }
+                )
+            }
+            item {
+                RoyalSettingsCompactRow(
+                    title = if (isDarkMode) "الوضع الفاتح" else "الوضع الليلي",
+                    glyph = if (isDarkMode) "☀️" else "🌙",
+                    isDarkMode = isDarkMode,
+                    expanded = false,
+                    onClick = onThemeToggle
                 )
             }
             item {
