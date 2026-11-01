@@ -111,7 +111,8 @@ if (showCustomerSettings) {
         onOrdersClick = {
             customerOrderHistory = loadRoyalCustomerOrders(context)
             showCustomerOrders = true
-        }
+        },
+        onThemeToggle = onTheme
     )
     return
 }
