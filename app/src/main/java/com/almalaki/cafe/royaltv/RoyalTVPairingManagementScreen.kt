@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,12 +40,41 @@ fun RoyalTVPairingManagementScreen(
 ) {
     val scope = rememberCoroutineScope()
     var restaurantId by remember { mutableStateOf("") }
+    var ownedRestaurants by remember { mutableStateOf<List<String>>(emptyList()) }
+    var loadingRestaurants by remember { mutableStateOf(false) }
     var challenge by remember { mutableStateOf<RoyalTVPairingChallenge?>(null) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("أنشئ رمزًا مؤقتًا ثم أدخله على جهاز ROYAL TV.") }
 
     val client = remember(accessToken) {
         RoyalTVOwnerAuthorizationClient { accessToken }
+    }
+
+    LaunchedEffect(accessToken) {
+        if (accessToken.isBlank()) {
+            ownedRestaurants = emptyList()
+            message = "يرجى تسجيل الدخول بحساب المالك."
+            return@LaunchedEffect
+        }
+        loadingRestaurants = true
+        try {
+            ownedRestaurants = client.listOwnedRestaurants()
+            if (restaurantId !in ownedRestaurants) {
+                restaurantId = ownedRestaurants.firstOrNull().orEmpty()
+                challenge = null
+            }
+            message = if (ownedRestaurants.isEmpty()) {
+                "لم يعثر الخادم على مطعم نشط تملك صلاحية إدارته."
+            } else {
+                "اختر المطعم الذي تريد ربط جهاز ROYAL TV به."
+            }
+        } catch (error: Exception) {
+            ownedRestaurants = emptyList()
+            restaurantId = ""
+            message = error.message?.take(240) ?: "تعذر تحميل مطاعم حساب المالك."
+        } finally {
+            loadingRestaurants = false
+        }
     }
 
     Column(
@@ -75,17 +104,40 @@ fun RoyalTVPairingManagementScreen(
             fontSize = 14.sp
         )
 
-        OutlinedTextField(
-            value = restaurantId,
-            onValueChange = {
-                restaurantId = it.trim()
-                challenge = null
-            },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("معرّف المطعم UUID", color = PairCream) },
-            singleLine = true,
-            enabled = !busy
+        Text(
+            text = if (loadingRestaurants) "جارٍ تحميل المطاعم المصرح بها…" else "المطاعم التي يملكها هذا الحساب",
+            color = PairGold,
+            fontWeight = FontWeight.SemiBold
         )
+
+        if (!loadingRestaurants && ownedRestaurants.isEmpty()) {
+            Text(
+                text = "لا توجد مطاعم متاحة للاختيار. تحقق من تسجيل الدخول وصلاحية المالك، ثم أعد المحاولة بعد نشر الدالة الخادمية المعتمدة.",
+                color = PairCream,
+                fontSize = 13.sp
+            )
+        }
+
+        ownedRestaurants.forEach { id ->
+            Button(
+                onClick = {
+                    restaurantId = id
+                    challenge = null
+                    message = "تم اختيار المطعم. يمكنك الآن إنشاء رمز اقتران مؤقت."
+                },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (restaurantId == id) PairGold else PairPanel,
+                    contentColor = if (restaurantId == id) PairBlack else PairCream
+                )
+            ) {
+                Text(
+                    text = if (restaurantId == id) "✓  $id" else id,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         Button(
             onClick = {
@@ -103,7 +155,7 @@ fun RoyalTVPairingManagementScreen(
                     }
                 }
             },
-            enabled = !busy && accessToken.isNotBlank() && restaurantId.isNotBlank(),
+            enabled = !busy && !loadingRestaurants && accessToken.isNotBlank() && restaurantId.isNotBlank() && restaurantId in ownedRestaurants,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PairGold,
