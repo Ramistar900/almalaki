@@ -31,6 +31,17 @@ class RoyalTVOwnerAuthorizationClient(
             "^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$"
     }
 
+    suspend fun listOwnedRestaurants(): List<String> {
+        val response = ownerPost(JSONObject().put("action", "list_owned_restaurants"))
+        val rows = response.optJSONArray("restaurants") ?: return emptyList()
+        return buildList {
+            for (index in 0 until rows.length()) {
+                val id = rows.optJSONObject(index)?.optString("id").orEmpty()
+                if (id.matches(Regex(UUID_PATTERN)) && id !in this) add(id)
+            }
+        }
+    }
+
     suspend fun createPairingChallenge(restaurantId: String): RoyalTVPairingChallenge {
         require(restaurantId.matches(Regex(UUID_PATTERN))) { "معرّف المطعم غير صالح" }
         val response = ownerPost(
