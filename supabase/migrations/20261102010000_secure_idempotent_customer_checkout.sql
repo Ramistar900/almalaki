@@ -138,12 +138,7 @@ GRANT EXECUTE ON FUNCTION public.create_restaurant_order_idempotent(
     uuid, text, text, text, text, text, jsonb
 ) TO anon, authenticated;
 
--- Prevent bypassing server-side price/status validation via direct REST inserts.
--- The SECURITY DEFINER checkout RPC performs inserts as its owner.
-REVOKE INSERT ON TABLE public.orders FROM PUBLIC, anon, authenticated;
-REVOKE INSERT ON TABLE public.order_items FROM PUBLIC, anon, authenticated;
-
-DROP POLICY IF EXISTS "Legacy customers can create orders only for legacy restaurant"
-    ON public.orders;
-DROP POLICY IF EXISTS "Legacy customers can add only legacy restaurant items"
-    ON public.order_items;
+-- Keep legacy direct-insert compatibility during the APK rollout.
+-- After the RPC-enabled APK is released and customers have had time to update,
+-- apply a separate follow-up migration to revoke direct INSERT privileges and
+-- remove the legacy customer INSERT policies from orders and order_items.
