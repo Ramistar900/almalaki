@@ -49,13 +49,13 @@ Implemented on the authorization branch:
 - `RoyalTVCredentialStore.kt`: encrypts the per-device credential with a non-exportable Android Keystore AES-GCM key; only ciphertext and IV are stored in private preferences.
 - `RoyalTVAuthorizationClient.kt`: calls the pairing, command-poll and acknowledge actions over HTTPS; never embeds a service-role key.
 - `RoyalTVSecureCommandPoller.kt`: polls the server queue and acknowledges only after the local command handler accepts a command.
-- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVOwnerAuthorizationClient.kt`: owner API helper for challenge creation, sending commands and revocation; now wired to the owner pairing screen using the access token supplied by `AdminContent`.
+- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVOwnerAuthorizationClient.kt`: owner API helper for challenge creation, listing owned restaurants, sending commands and revocation; uses the access token supplied by `AdminContent`.
 - `RoyalTVMainActivity.kt`: presents a pairing-code dialog; once paired, it selects server-authenticated polling and does not fall back to legacy Realtime when the stored credential is present but unusable.
 - `.github/workflows/royal-tv-auth-android-check.yml`: compile-only Android CI workflow. No successful run has been observed yet.
 
 Still incomplete:
-- The owner pairing screen currently requires manual entry of the restaurant UUID; selecting a restaurant from the signed-in owner's authorized restaurant list is still pending. Paired-device listing, command dispatch UI, and revocation UI are also pending.
+- The owner pairing screen now loads active restaurants for which the signed-in user has an active owner membership from a new authenticated Edge Function action, then lets the owner select one before requesting a pairing code. This source change is not verified until tested against a deployed staging function. Paired-device listing, command dispatch UI, and revocation UI are still pending.
 - The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
-- No Android build, device test, or negative integration test has passed in this step.
+- No successful Android build, device test, or negative integration test has been confirmed in this step; the workflow lookup did not return a run record.
 - Poller recovery after a command is claimed but not acknowledged still needs a server-side lease/requeue design.
