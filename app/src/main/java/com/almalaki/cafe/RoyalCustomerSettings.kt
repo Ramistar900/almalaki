@@ -241,7 +241,7 @@ fun RoyalCustomerSettings(
             item {
                 RoyalSettingsCompactRow(
                     title = "حسابي",
-                    glyph = "◎",
+                    glyph = "👤",
                     isDarkMode = isDarkMode,
                     expanded = false,
                     onClick = {
@@ -253,7 +253,7 @@ fun RoyalCustomerSettings(
             item {
                 RoyalSettingsCompactRow(
                     title = "طلباتي وفواتيري",
-                    glyph = "▤",
+                    glyph = "🧾",
                     isDarkMode = isDarkMode,
                     expanded = false,
                     onClick = {
@@ -265,7 +265,7 @@ fun RoyalCustomerSettings(
             item {
                 RoyalSettingsCompactRow(
                     title = "خط التطبيق",
-                    glyph = "Aa",
+                    glyph = "🔤",
                     isDarkMode = isDarkMode,
                     expanded = expandedSection == "fonts",
                     onClick = {
@@ -339,14 +339,14 @@ fun RoyalCustomerSettings(
                             contentColor = Color.Black
                         )
                     ) {
-                        Text("حفظ الخطوط", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Text("💾  حفظ الخطوط", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
             item {
                 RoyalSettingsCompactRow(
                     title = "الأخبار والإشعارات",
-                    glyph = "◉",
+                    glyph = "🔔",
                     isDarkMode = isDarkMode,
                     expanded = expandedSection == "news",
                     onClick = {
@@ -357,7 +357,7 @@ fun RoyalCustomerSettings(
             if (expandedSection == "news") {
                 item {
                     RoyalSettingsInfoCard(
-                        glyph = "◉",
+                        glyph = "🔔",
                         title = "أخبار المطعم",
                         message = "تظهر رسائل وأخبار المطعم عبر الشريط الإخباري في الواجهة الرئيسية.",
                         isDarkMode = isDarkMode
@@ -367,7 +367,7 @@ fun RoyalCustomerSettings(
             item {
                 RoyalSettingsCompactRow(
                     title = "الخصوصية والأمان",
-                    glyph = "◇",
+                    glyph = "🔒",
                     isDarkMode = isDarkMode,
                     expanded = expandedSection == "privacy",
                     onClick = {
@@ -378,7 +378,7 @@ fun RoyalCustomerSettings(
             if (expandedSection == "privacy") {
                 item {
                     RoyalSettingsInfoCard(
-                        glyph = "◇",
+                        glyph = "🔒",
                         title = "بياناتك على جهازك",
                         message = "يحفظ التطبيق بيانات الملف الشخصي وسجل الطلبات محليًا على هذا الجهاز. يمكنك مراجعة بيانات حسابك من قسم «حسابي».",
                         isDarkMode = isDarkMode
@@ -388,7 +388,7 @@ fun RoyalCustomerSettings(
             item {
                 RoyalSettingsCompactRow(
                     title = "معلومات التطبيق ومشاركته",
-                    glyph = "ⓘ",
+                    glyph = "ℹ️",
                     isDarkMode = isDarkMode,
                     expanded = expandedSection == "sharing",
                     onClick = {
@@ -399,7 +399,7 @@ fun RoyalCustomerSettings(
             if (expandedSection == "sharing") {
                 item {
                     RoyalSettingsInfoCard(
-                        glyph = "ⓘ",
+                        glyph = "ℹ️",
                         title = "تطبيق الملكي",
                         message = "واجهة العميل لعرض قائمة المطعم وإرسال الطلبات ومتابعة سجلها.",
                         isDarkMode = isDarkMode
