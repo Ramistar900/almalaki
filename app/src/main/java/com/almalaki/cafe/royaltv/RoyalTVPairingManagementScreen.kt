@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ fun RoyalTVPairingManagementScreen(
     var loadingRestaurants by remember { mutableStateOf(false) }
     var pairedDevices by remember { mutableStateOf<List<RoyalTVPairedDevice>>(emptyList()) }
     var loadingDevices by remember { mutableStateOf(false) }
+    var tickerText by remember { mutableStateOf("") }
     var challenge by remember { mutableStateOf<RoyalTVPairingChallenge?>(null) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("أنشئ رمزًا مؤقتًا ثم أدخله على جهاز ROYAL TV.") }
@@ -258,6 +260,117 @@ fun RoyalTVPairingManagementScreen(
         }
 
 
+        Text(
+            text = "التحكم الآمن بالتلفزيون",
+            color = PairGold,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
+        Text(
+            text = "أوامر محدودة ومباشرة للأجهزة النشطة فقط. تحديث الشريط لا يقبل نصًا فارغًا.",
+            color = PairCream,
+            fontSize = 12.sp
+        )
+        OutlinedTextField(
+            value = tickerText,
+            onValueChange = { tickerText = it.take(500) },
+            label = { Text("نص الشريط الإخباري", color = PairCream) },
+            enabled = !busy,
+            singleLine = false,
+            modifier = Modifier.fillMaxWidth(),
+            supportingText = { Text("${tickerText.length}/500", color = PairCream) }
+        )
+        Button(
+            onClick = {
+                val target = pairedDevices.firstOrNull { it.status == "active" }
+                scope.launch {
+                    busy = true
+                    try {
+                        if (target == null) {
+                            message = "لا يوجد جهاز نشط لإرسال الأمر إليه."
+                        } else {
+                            val cleanText = tickerText.trim()
+                            require(cleanText.isNotEmpty()) { "أدخل نص الشريط أولًا." }
+                            client.sendCommand(
+                                restaurantId,
+                                target.deviceId,
+                                "SHOW_CONTENT",
+                                "TICKER_UPDATE|$cleanText"
+                            )
+                            message = "تمت إضافة أمر تحديث الشريط إلى قائمة الخادم للجهاز: ${target.deviceName}"
+                        }
+                    } catch (error: Exception) {
+                        message = error.message?.take(240) ?: "تعذر إرسال تحديث الشريط."
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+            enabled = !busy && tickerText.isNotBlank() && pairedDevices.any { it.status == "active" },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = PairGold, contentColor = PairBlack)
+        ) { Text(if (busy) "جارٍ إرسال الأمر…" else "تحديث الشريط على ROYAL TV") }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        try {
+                            val target = pairedDevices.firstOrNull { it.status == "active" }
+                                ?: throw IllegalStateException("لا يوجد جهاز نشط.")
+                            client.sendCommand(restaurantId, target.deviceId, "SHOW_CONTENT", "TICKER_ENABLED|true")
+                            message = "أُضيف أمر إظهار الشريط إلى قائمة الخادم."
+                        } catch (error: Exception) {
+                            message = error.message?.take(240) ?: "تعذر إرسال الأمر."
+                        } finally {
+                            busy = false
+                        }
+                    }
+                },
+                enabled = !busy && pairedDevices.any { it.status == "active" },
+                modifier = Modifier.weight(1f)
+            ) { Text("إظهار الشريط") }
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        try {
+                            val target = pairedDevices.firstOrNull { it.status == "active" }
+                                ?: throw IllegalStateException("لا يوجد جهاز نشط.")
+                            client.sendCommand(restaurantId, target.deviceId, "SHOW_CONTENT", "TICKER_ENABLED|false")
+                            message = "أُضيف أمر إخفاء الشريط إلى قائمة الخادم."
+                        } catch (error: Exception) {
+                            message = error.message?.take(240) ?: "تعذر إرسال الأمر."
+                        } finally {
+                            busy = false
+                        }
+                    }
+                },
+                enabled = !busy && pairedDevices.any { it.status == "active" },
+                modifier = Modifier.weight(1f)
+            ) { Text("إخفاء الشريط") }
+        }
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    busy = true
+                    try {
+                        val target = pairedDevices.firstOrNull { it.status == "active" }
+                            ?: throw IllegalStateException("لا يوجد جهاز نشط.")
+                        client.sendCommand(restaurantId, target.deviceId, "CLEAR_SCREEN")
+                        message = "أُضيف أمر مسح الشاشة إلى قائمة الخادم."
+                    } catch (error: Exception) {
+                        message = error.message?.take(240) ?: "تعذر إرسال أمر مسح الشاشة."
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+            enabled = !busy && pairedDevices.any { it.status == "active" },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("مسح الشاشة") }
+
         challenge?.let { active ->
             Column(
                 modifier = Modifier.fillMaxWidth().background(PairPanel).padding(16.dp),
@@ -283,7 +396,7 @@ fun RoyalTVPairingManagementScreen(
 
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "هذه المرحلة تفعّل إنشاء رمز الاقتران فقط. إدارة الأجهزة المقترنة وإرسال الأوامر ستُربط بعد إضافة واجهة خادمية موثقة لقائمة الأجهزة واختبارها.",
+            text = "إدارة الأجهزة وإرسال أوامر الشريط ومسح الشاشة مضافة على هذا الفرع. يلزم نشر نسخة staging واختبارها end-to-end قبل اعتمادها للإنتاج.",
             color = PairGold,
             fontSize = 12.sp
         )
