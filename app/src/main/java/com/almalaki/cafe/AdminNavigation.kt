@@ -52,7 +52,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "▣",
+            "🛍️",
             "تعديل المنتجات",
             section == AdminSection.PRODUCTS
         ) {
@@ -60,7 +60,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "▤",
+            "🧾",
             "الطلبات",
             section == AdminSection.ORDERS
         ) {
@@ -68,7 +68,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "📦",
+            "🗃️",
             "الأرشيف",
             section == AdminSection.ARCHIVE
         ) {
@@ -76,7 +76,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "◈",
+            "💰",
             "المبيعات",
             section == AdminSection.SALES
         ) {
@@ -84,7 +84,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "★",
+            "⭐",
             "الأكثر طلبًا",
             section == AdminSection.TOP_PRODUCTS
         ) {
@@ -92,7 +92,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "⚙",
+            "⚙️",
             "إعدادات الحساب",
             section == AdminSection.ACCOUNT_SETTINGS
         ) {
@@ -108,13 +108,21 @@ fun AdminSidebar(
         }
         
 
+        AdminMenuItem(
+            "🎨",
+            "تحرير الواجهة",
+            section == AdminSection.INTERFACE_SETTINGS
+        ) {
+            onSectionSelected(AdminSection.INTERFACE_SETTINGS)
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
         OutlinedButton(
             onClick = onLogout,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("تسجيل الخروج")
+            Text("🚪  تسجيل الخروج")
         }
     }
 }
@@ -182,7 +190,7 @@ fun AdminTopBar(
     ) {
         IconButton(onClick = onMenuClick) {
             Text(
-                text = if (menuOpen) "×" else "☰",
+                text = if (menuOpen) "✕" else "☰",
                 color = AdminGold,
                 fontSize = 27.sp
             )
@@ -205,7 +213,7 @@ fun AdminTopBar(
 
         TextButton(onClick = onLogout) {
             Text(
-                "خروج",
+                "🚪 خروج",
                 color = AdminGold
             )
         }
@@ -236,7 +244,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "▣",
+                "🛍️",
                 "تعديل المنتجات",
                 section == AdminSection.PRODUCTS
             ) {
@@ -246,7 +254,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "▤",
+                "🧾",
                 "الطلبات",
                 section == AdminSection.ORDERS
             ) {
@@ -256,7 +264,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "📦",
+                "🗃️",
                 "الأرشيف",
                 section == AdminSection.ARCHIVE
             ) {
@@ -266,7 +274,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "◈",
+                "💰",
                 "المبيعات",
                 section == AdminSection.SALES
             ) {
@@ -288,7 +296,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "★",
+                "⭐",
                 "الأكثر طلبًا",
                 section == AdminSection.TOP_PRODUCTS
             ) {
@@ -298,7 +306,7 @@ fun AdminHorizontalMenu(
         
         item {
             AdminMenuItem(
-                "⚙",
+                "⚙️",
                 "إعدادات الحساب",
                 section == AdminSection.ACCOUNT_SETTINGS
             ) {
