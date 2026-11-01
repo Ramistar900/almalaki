@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 @Composable
 fun CustomerScreen(
@@ -747,23 +748,50 @@ var invoiceTotalAmount by remember {
                     }
 
                     else -> {
-val selectedRestaurantId = activeRestaurant.id
-val invoiceItemsSnapshot =
-    products.mapNotNull { product ->
-        val quantity = cart[product.id] ?: 0
+val selectedRestaurantCode = activeRestaurant.joinCode
+    .ifBlank { ROYAL_DEFAULT_RESTAURANT_CODE }
 
-        if (quantity > 0) {
-            RoyalInvoiceItem(
-                name = product.name,
-                quantity = quantity,
-                unitPrice = product.price
-            )
-        } else {
-            null
-        }
-    }
+                        // Keep the same key for retries of the same checkout, including timeouts.
+                        // A changed checkout payload gets a fresh key so the server can distinguish it.
+                        val checkoutPrefs = context.getSharedPreferences(
+                            "royal_checkout_idempotency",
+                            android.content.Context.MODE_PRIVATE
+                        )
+                        val checkoutSignature = org.json.JSONObject()
+                            .put("name", name.trim())
+                            .put("phone", phone.trim())
+                            .put("address", address.trim())
+                            .put("type", type)
+                            .put("restaurant", selectedRestaurantCode.trim().uppercase())
+                            .put("cart", org.json.JSONArray().also { items ->
+                                cart.filterValues { it > 0 }.toSortedMap().forEach { (id, quantity) ->
+                                    items.put(
+                                        org.json.JSONObject()
+                                            .put("product_id", id)
+                                            .put("quantity", quantity)
+                                    )
+                                }
+                            })
+                            .toString()
+                        val storedSignature = checkoutPrefs.getString("active_checkout_signature", null)
+                        val idempotencyKey = if (
+                            storedSignature == checkoutSignature &&
+                            checkoutPrefs.getString("active_checkout_key", null) != null
+                        ) {
+                            checkoutPrefs.getString("active_checkout_key", null)!!
+                        } else {
+                            UUID.randomUUID().toString().also { newKey ->
+                                val saved = checkoutPrefs.edit()
+                                    .putString("active_checkout_key", newKey)
+                                    .putString("active_checkout_signature", checkoutSignature)
+                                    .commit()
+                                if (!saved) {
+                                    orderMessage = "تعذر حفظ محاولة الطلب بأمان. أعد المحاولة."
+                                    return@CheckoutDialog
+                                }
+                            }
+                        }
 
-val invoiceTotalSnapshot = totalAmount
                         orderLoading = true
                         orderMessage = ""
 
@@ -773,23 +801,29 @@ val invoiceTotalSnapshot = totalAmount
 
                                 val result =
                                     createOrder(
-                                        name,
-                                        phone,
-                                        address,
-                                        type,
-                                        totalAmount,
-                                        products,
-                                        cart,
-                                        restaurantId = selectedRestaurantId
+                                        customerName = name,
+                                        customerPhone = phone,
+                                        deliveryAddress = address,
+                                        fulfillmentType = type,
+                                        products = products,
+                                        cart = cart,
+                                        restaurantCode = selectedRestaurantCode,
+                                        idempotencyKey = idempotencyKey
                                     )
+
+                                // The server confirmed success; only now clear the retry key.
+                                checkoutPrefs.edit()
+                                    .remove("active_checkout_key")
+                                    .remove("active_checkout_signature")
+                                    .commit()
 
                                 invoiceOrderNumber = result.orderNumber
                                 invoiceCustomerName = name
                                 invoiceCustomerPhone = phone
                                 invoiceFulfillmentType = type
                                 invoiceDeliveryAddress = address
-                                invoiceItems = invoiceItemsSnapshot
-                                invoiceTotalAmount = invoiceTotalSnapshot
+                                invoiceItems = result.items
+                                invoiceTotalAmount = result.totalAmount
 
                                 val savedProfile = RoyalCustomerProfile(
                                     name = name,
@@ -808,8 +842,8 @@ val invoiceTotalSnapshot = totalAmount
                                         customerPhone = phone,
                                         address = address,
                                         fulfillmentType = type,
-                                        totalAmount = invoiceTotalSnapshot,
-                                        items = invoiceItemsSnapshot
+                                        totalAmount = result.totalAmount,
+                                        items = result.items
                                     )
                                 )
                                 customerOrderHistory = loadRoyalCustomerOrders(context)
