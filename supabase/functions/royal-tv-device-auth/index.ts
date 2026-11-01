@@ -23,6 +23,10 @@ function cleanString(value: unknown, max = 160): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -71,8 +75,8 @@ Deno.serve(async (req: Request) => {
       const deviceId = cleanString(body.device_id, 64);
       const channelDeviceId = cleanString(body.channel_device_id, 80);
       const deviceName = cleanString(body.device_name, 80);
-      if (!/^[0-9a-f]{64}$/i.test(activationCode) ||
-          !/^[0-9a-f-]{36}$/i.test(deviceId) ||
+      if (!/^[0-9a-f]{64}$/.test(activationCode) ||
+          !isUuid(deviceId) ||
           !/^ROYAL-TV-[0-9a-f]{12}$/i.test(channelDeviceId) ||
           deviceName.length < 1) {
         return json(400, { error: "invalid_activation_request" });
@@ -99,7 +103,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "device_check") {
       const deviceToken = cleanString(body.device_token, 256);
-      if (!/^[0-9a-f]{64}$/i.test(deviceToken)) return json(401, { error: "device_unauthorized" });
+      if (!/^[0-9a-f]{64}$/.test(deviceToken)) return json(401, { error: "device_unauthorized" });
       const tokenHash = await sha256Hex(deviceToken);
       const admin = serviceClient();
       const { data, error } = await admin
@@ -110,17 +114,18 @@ Deno.serve(async (req: Request) => {
       if (error || !data || data.revoked_at !== null || data.restaurants?.status !== "active") {
         return json(401, { error: "device_unauthorized" });
       }
-      const { error: touchError } = await admin
+      const { data: touched, error: touchError } = await admin
         .from("royal_tv_devices")
         .update({ last_seen_at: new Date().toISOString() })
         .eq("device_id", data.device_id)
-        .is("revoked_at", null);
+        .is("revoked_at", null)
+        .select("device_id");
       if (touchError) return json(503, { error: "device_check_unavailable" });
+      if (!touched?.length) return json(401, { error: "device_unauthorized" });
       return json(200, {
         authorized: true,
         device_id: data.device_id,
         channel_device_id: data.channel_device_id,
-        restaurant_id: data.restaurant_id,
       });
     }
 
@@ -136,7 +141,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "issue_code") {
       const restaurantId = cleanString(body.restaurant_id, 64);
-      if (!/^[0-9a-f-]{36}$/i.test(restaurantId)) return json(400, { error: "invalid_restaurant" });
+      if (!isUuid(restaurantId)) return json(400, { error: "invalid_restaurant" });
       const { data, error } = await owner.rpc("issue_royal_tv_activation_code", {
         p_restaurant_id: restaurantId,
       });
@@ -158,7 +163,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "revoke_device") {
       const deviceId = cleanString(body.device_id, 64);
-      if (!/^[0-9a-f-]{36}$/i.test(deviceId)) return json(400, { error: "invalid_device" });
+      if (!isUuid(deviceId)) return json(400, { error: "invalid_device" });
       const { data, error } = await owner
         .from("royal_tv_devices")
         .update({ revoked_at: new Date().toISOString() })
