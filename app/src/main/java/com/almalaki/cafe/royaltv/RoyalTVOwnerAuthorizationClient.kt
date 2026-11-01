@@ -12,6 +12,16 @@ data class RoyalTVPairingChallenge(
     val expiresAt: String
 )
 
+data class RoyalTVPairedDevice(
+    val id: String,
+    val deviceId: String,
+    val deviceName: String,
+    val status: String,
+    val pairedAt: String,
+    val lastSeenAt: String?,
+    val revokedAt: String?
+)
+
 /**
  * Owner-side client for the server authorization API.
  *
@@ -55,6 +65,39 @@ class RoyalTVOwnerAuthorizationClient(
             throw IOException("استجابة رمز الاقتران غير صالحة")
         }
         return RoyalTVPairingChallenge(code, expiresAt)
+    }
+
+    suspend fun listPairedDevices(restaurantId: String): List<RoyalTVPairedDevice> {
+        require(restaurantId.matches(Regex(UUID_PATTERN))) { "معرّف المطعم غير صالح" }
+        val response = ownerPost(
+            JSONObject()
+                .put("action", "list_paired_devices")
+                .put("restaurant_id", restaurantId)
+        )
+        val rows = response.optJSONArray("devices") ?: return emptyList()
+        return buildList {
+            for (index in 0 until rows.length()) {
+                val row = rows.optJSONObject(index) ?: continue
+                val id = row.optString("id")
+                val deviceId = row.optString("device_id")
+                val status = row.optString("status")
+                if (!id.matches(Regex(UUID_PATTERN)) ||
+                    deviceId.length !in 8..128 ||
+                    status !in setOf("active", "revoked")
+                ) continue
+                add(
+                    RoyalTVPairedDevice(
+                        id = id,
+                        deviceId = deviceId,
+                        deviceName = row.optString("device_name", "ROYAL TV"),
+                        status = status,
+                        pairedAt = row.optString("paired_at"),
+                        lastSeenAt = row.optString("last_seen_at").takeIf { it.isNotBlank() && it != "null" },
+                        revokedAt = row.optString("revoked_at").takeIf { it.isNotBlank() && it != "null" }
+                    )
+                )
+            }
+        }
     }
 
     suspend fun sendCommand(
