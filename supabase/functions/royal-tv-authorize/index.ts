@@ -222,6 +222,22 @@ Deno.serve(async (request: Request) => {
       });
     }
 
+    if (action === "list_paired_devices") {
+      const user = await ownerIdentity(request);
+      const restaurantId = String(body.restaurant_id ?? "");
+      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(restaurantId)) {
+        return fail(400, "Invalid restaurant");
+      }
+      await assertOwner(user.id, restaurantId);
+      const { data, error } = await admin.from("royal_tv_paired_devices")
+        .select("id,device_id,device_name,status,paired_at,last_seen_at,revoked_at")
+        .eq("restaurant_id", restaurantId)
+        .order("paired_at", { ascending: false })
+        .limit(100);
+      if (error) return fail(503, "Could not load paired devices");
+      return response(200, { devices: data ?? [] });
+    }
+
     if (action === "send_command") {
       const user = await ownerIdentity(request);
       const restaurantId = String(body.restaurant_id ?? "");
