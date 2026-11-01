@@ -10,7 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancel
 
 class RoyalTVConnectionManager(
-    context: Context
+    context: Context,
+    private val ownerAccessToken: String
 ) {
 
     private val appContext =
@@ -194,7 +195,9 @@ class RoyalTVConnectionManager(
                 targetDeviceId =
                     targetDeviceId,
                 command =
-                    command
+                    command,
+                ownerAccessToken =
+                    ownerAccessToken
             )
 
         if (!sent) {
@@ -253,7 +256,9 @@ class RoyalTVConnectionManager(
                                 pendingCommand
                                     .targetDeviceId,
                             command =
-                                pendingCommand.command
+                                pendingCommand.command,
+                            ownerAccessToken =
+                                ownerAccessToken
                         )
 
                     if (sent) {
