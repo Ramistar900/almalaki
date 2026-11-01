@@ -11,6 +11,7 @@ name: ROYAL TV Authorization Android Check
     branches: [royal-tv-server-authorization-phase1]
     paths:
       - 'royaltv/**'
+      - 'app/**'
       - '.github/workflows/royal-tv-auth-android-check.yml'
 
 permissions:
