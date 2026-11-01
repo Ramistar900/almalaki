@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,8 @@ fun RoyalTVPairingManagementScreen(
     var restaurantId by remember { mutableStateOf("") }
     var ownedRestaurants by remember { mutableStateOf<List<String>>(emptyList()) }
     var loadingRestaurants by remember { mutableStateOf(false) }
+    var pairedDevices by remember { mutableStateOf<List<RoyalTVPairedDevice>>(emptyList()) }
+    var loadingDevices by remember { mutableStateOf(false) }
     var challenge by remember { mutableStateOf<RoyalTVPairingChallenge?>(null) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("أنشئ رمزًا مؤقتًا ثم أدخله على جهاز ROYAL TV.") }
@@ -53,6 +56,7 @@ fun RoyalTVPairingManagementScreen(
     LaunchedEffect(accessToken) {
         if (accessToken.isBlank()) {
             ownedRestaurants = emptyList()
+            pairedDevices = emptyList()
             message = "يرجى تسجيل الدخول بحساب المالك."
             return@LaunchedEffect
         }
@@ -74,6 +78,21 @@ fun RoyalTVPairingManagementScreen(
             message = error.message?.take(240) ?: "تعذر تحميل مطاعم حساب المالك."
         } finally {
             loadingRestaurants = false
+        }
+    }
+
+    LaunchedEffect(accessToken, restaurantId) {
+        pairedDevices = emptyList()
+        if (accessToken.isBlank() || restaurantId.isBlank() || restaurantId !in ownedRestaurants) {
+            return@LaunchedEffect
+        }
+        loadingDevices = true
+        try {
+            pairedDevices = client.listPairedDevices(restaurantId)
+        } catch (error: Exception) {
+            message = error.message?.take(240) ?: "تعذر تحميل الأجهزة المقترنة."
+        } finally {
+            loadingDevices = false
         }
     }
 
@@ -170,6 +189,74 @@ fun RoyalTVPairingManagementScreen(
             color = PairCream,
             fontSize = 14.sp
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "الأجهزة المقترنة بهذا المطعم",
+            color = PairGold,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        loadingDevices = true
+                        try {
+                            pairedDevices = client.listPairedDevices(restaurantId)
+                        } catch (error: Exception) {
+                            message = error.message?.take(240) ?: "تعذر تحديث قائمة الأجهزة."
+                        } finally {
+                            loadingDevices = false
+                        }
+                    }
+                },
+                enabled = !loadingDevices && restaurantId.isNotBlank() && restaurantId in ownedRestaurants,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (loadingDevices) "جارٍ تحديث الأجهزة…" else "تحديث قائمة الأجهزة")
+            }
+        }
+        if (!loadingDevices && pairedDevices.isEmpty()) {
+            Text("لا توجد أجهزة مسجلة لهذا المطعم، أو لم تُربط بعد.", color = PairCream, fontSize = 13.sp)
+        }
+        pairedDevices.forEach { device ->
+            Column(
+                modifier = Modifier.fillMaxWidth().background(PairPanel).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Text(device.deviceName, color = PairGold, fontWeight = FontWeight.Bold)
+                Text("المعرّف: ${device.deviceId}", color = PairCream, fontSize = 11.sp)
+                Text("الحالة: ${if (device.status == "active") "نشط" else "ملغى"}", color = PairCream, fontSize = 13.sp)
+                Text("تاريخ الاقتران: ${device.pairedAt}", color = PairCream, fontSize = 11.sp)
+                Text("آخر اتصال: ${device.lastSeenAt ?: "لم يتصل بعد"}", color = PairCream, fontSize = 11.sp)
+                if (device.status == "active") {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                busy = true
+                                try {
+                                    client.revokeDevice(restaurantId, device.deviceId)
+                                    pairedDevices = client.listPairedDevices(restaurantId)
+                                    message = "تم إلغاء صلاحية الجهاز. لن يستطيع تنفيذ طلبات جديدة باستخدام بيانات اعتماده."
+                                } catch (error: Exception) {
+                                    message = error.message?.take(240) ?: "تعذر إلغاء صلاحية الجهاز."
+                                } finally {
+                                    busy = false
+                                }
+                            }
+                        },
+                        enabled = !busy,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF7A2020),
+                            contentColor = PairCream
+                        )
+                    ) {
+                        Text("إلغاء اقتران الجهاز")
+                    }
+                }
+            }
+        }
+
 
         challenge?.let { active ->
             Column(
