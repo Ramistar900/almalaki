@@ -114,3 +114,67 @@ Do not put a Supabase service-role/secret key in either Android app. Do not trea
 - Source-level inspection reconfirmed the legacy `ROYAL-TV-...` identity in both clients.
 - No migration executed; no production database changed; no Android build or runtime authorization test performed.
 - PR #20 remains a draft and must not be merged yet.
+
+
+## Full command-path audit — 2026-11-01
+
+### Confirmed cloud command path
+
+The application-side send path currently found in source is:
+
+`RoyalTVTickerControlScreen`
+→ `RoyalTVConnectionManager.sendCommand`
+→ `RoyalTVRealtime.sendCommand`
+→ channel `royal-tv-{targetDeviceId}`
+→ Broadcast event `royal_tv_command`.
+
+Files:
+- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVTickerControlScreen.kt`
+- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVConnectionManager.kt`
+- `app/src/main/java/com/almalaki/cafe/royaltv/RoyalTVRealtime.kt`
+- `royaltv/src/main/java/com/almalaki/royaltv/RoyalTVRealtime.kt`
+- `royaltv/src/main/java/com/almalaki/royaltv/RoyalTVMainActivity.kt`
+
+### Confirmed authorization gaps
+
+1. The owner sender creates a fresh Supabase client with only the publishable key. It does not call `realtime.setAuth(ownerAccessToken)`; therefore the logged-in owner JWT is not attached to the channel join/publish.
+2. The receiver also creates a client with only the publishable key. It does not use a per-device Auth session, does not bind an Auth user to a registered device, and does not instantiate a private channel.
+3. The owner navigation already has an `accessToken` in `AdminScreen` and passes it into `AdminContent`, but `RoyalTVControlScreen`, `RoyalTVTickerControlScreen`, and `RoyalTVConnectionManager` currently do not receive that token.
+4. `RoyalTVCommandAuthorization` relies on local `RoyalTVDeviceRegistry` and `RoyalTVPairingManager` state. Those local preferences are not a server-side tenant boundary and cannot authorize a Realtime write.
+5. The only confirmed `RoyalTVConnectionManager` UI construction found is the ticker control screen. The sender UI also includes local/Wi-Fi Direct functionality; this audit does not establish that every content, ad, order, YouTube, storage, or media path is routed through a centrally authorized remote-command gateway.
+6. The standalone ROYAL TV main activity subscribes on startup using the legacy display ID. It has no activation screen or server registration check yet.
+7. The separate `royal-orders` Postgres Changes channel in `app/src/main/java/com/almalaki/cafe/SupabaseRealtime.kt` is currently created without `private = true`. A project-wide switch that disables public Realtime access must not be flipped until this and any other non-ROYAL-TV channels are assessed for compatibility.
+
+### Database and SQL review updates
+
+- Read-only production catalog inspection confirms `pgcrypto` is installed in schema `extensions`, and `public.is_restaurant_owner(uuid)` exists.
+- The live `realtime.messages` policy query returned no rows at the time of inspection.
+- The draft SQL still needs a safe device-auth binding model, device-only read policy, owner-only publish policy, an owner revocation RPC, and concurrency-safe activation issuance. Realtime policy subqueries must not depend on client-visible device-table columns; a narrowly scoped non-exposed SECURITY DEFINER helper is one candidate, subject to review.
+- The project-level `Allow public access` setting is not a SQL migration setting. It must be changed only after all existing Realtime topics have been inventoried and staged.
+
+### Important configuration prerequisite
+
+A device-specific anonymous Auth session is a viable way to give each TV a JWT identity without embedding a service-role key. However, Supabase Anonymous Sign-Ins must be enabled for the project, and the TV client must persist/refresh that session safely. This project setting has not been verified or changed. Supabase recommends CAPTCHA/abuse controls for public anonymous sign-in; the production abuse-control design must be decided before enabling it.
+
+### Stage gate — do not merge yet
+
+The current PR remains design/migration-only and is not end-to-end isolation. Do not merge or apply until all of the following are committed and verified:
+- Owner UI issues activation codes and lists/revokes registered devices, passing the actual signed-in owner JWT.
+- TV activation creates/uses a unique device Auth identity, redeems a one-time code, stores the session securely, and refuses service if revoked.
+- Both Realtime clients use `private = true`; owner publisher supplies a valid owner JWT; receiver uses only its bound device JWT.
+- Policies deny owner A publishing to owner B's device, device A subscribing to device B's topic, and any device publishing commands.
+- All remote command, advertisement, media, storage, and sync endpoints are inventoried and independently tenant-authorized. Do not infer coverage from the ticker path.
+- The project-wide Realtime public-access setting is tested against `royal-orders` and other channel users before changing it.
+- SQL is executed against disposable/staging Supabase, concurrency and authorization tests pass, and both Android modules build successfully.
+- The existing TCP stream remains unchanged: port 39872 and its current packet/config framing.
+
+### Execution status after full-path audit
+
+- Source-path inventory: performed for the currently indexed repository source.
+- Production catalog inspection: read-only only.
+- Supabase Realtime and anonymous Auth documentation: reviewed.
+- Branch SQL write attempt: blocked by the platform's safety checks; no migration contents were changed by that attempt.
+- Android source integration: not changed in this audit pass.
+- SQL/runtime tests: not run.
+- Production project settings/data: not changed.
+- `main`: not changed; PR remains draft.
