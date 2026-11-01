@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONArray
@@ -539,7 +540,8 @@ fun RoyalCustomerAccountPortal(
                             onValueChange = { password = it; statusMessage = "" },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            label = { Text("كلمة المرور") }
+                            label = { Text("كلمة المرور") },
+                            visualTransformation = PasswordVisualTransformation()
                         )
                         TextButton(
                             enabled = !isBusy,
@@ -603,7 +605,8 @@ fun RoyalCustomerAccountPortal(
                             onValueChange = { password = it; statusMessage = "" },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            label = { Text("كلمة المرور") }
+                            label = { Text("كلمة المرور") },
+                            visualTransformation = PasswordVisualTransformation()
                         )
                         TextButton(
                             enabled = !isBusy,
