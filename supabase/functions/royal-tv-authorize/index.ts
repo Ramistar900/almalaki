@@ -137,6 +137,33 @@ Deno.serve(async (request: Request) => {
     }
     const action = typeof body.action === "string" ? body.action : "";
 
+    if (action === "list_owned_restaurants") {
+      const user = await ownerIdentity(request);
+      const { data: memberships, error: membershipError } = await admin
+        .from("restaurant_members")
+        .select("restaurant_id")
+        .eq("user_id", user.id)
+        .eq("role", "owner")
+        .eq("is_active", true);
+      if (membershipError) return fail(503, "Could not load owner restaurants");
+
+      const ids = Array.from(new Set((memberships ?? [])
+        .map((row) => String(row.restaurant_id ?? ""))
+        .filter((id) => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))));
+      if (ids.length === 0) return response(200, { restaurants: [] });
+
+      const { data: activeRestaurants, error: restaurantError } = await admin
+        .from("restaurants")
+        .select("id")
+        .in("id", ids)
+        .eq("status", "active");
+      if (restaurantError) return fail(503, "Could not verify owner restaurants");
+
+      return response(200, {
+        restaurants: (activeRestaurants ?? []).map((row) => ({ id: row.id })),
+      });
+    }
+
     if (action === "create_challenge") {
       const user = await ownerIdentity(request);
       const restaurantId = String(body.restaurant_id ?? "");
