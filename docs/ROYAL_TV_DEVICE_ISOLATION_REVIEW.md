@@ -82,3 +82,35 @@ The draft `redeem_royal_tv_activation_code` signature now accepts both values an
 - The revised migration has been reviewed by source-level string/shape checks only. It has not been executed by PostgreSQL, compiled, or tested against staging.
 - The public/anonymous redemption RPC still requires abuse/rate-limit design before production use. A high-entropy one-time code is not a substitute for rate limiting.
 - Do not merge or apply this migration until SQL syntax, function privileges, concurrent redemption, existing-ID compatibility, and end-to-end authorization tests pass.
+
+
+## Follow-up security review — 2026-11-01
+
+### Finding D: Private Realtime requires both server policy and private client configuration
+
+Current Supabase Realtime documentation confirms that channel access is evaluated using RLS policies on `realtime.messages`, the caller's JWT/headers, and `realtime.topic()`. A private channel must be instantiated with `private: true`, and the project's `Allow public access` setting must be disabled to enforce private-only channels. The current Android clients use a publishable key and a topic derived from the legacy device ID; the reviewed client code does not configure a private channel or provide a device-authenticated JWT. Adding a policy alone would not complete the change.
+
+Reference: https://supabase.com/docs/guides/realtime/authorization
+
+### Finding E: A custom device token is not automatically a Realtime identity
+
+The proposed `device_token_hash` is a custom bearer credential stored in the application database. Realtime authorization evaluates the JWT and request context; it does not automatically look up this custom token hash. Before private Realtime can be enabled without breaking existing clients, choose and test one server-controlled bridge:
+- authenticate the device through a server endpoint that validates token hash and revocation, then issue a short-lived, narrowly scoped JWT accepted by Realtime; or
+- route command publish/receive through a server-controlled gateway that validates the device token and does not expose cross-tenant messages.
+
+Do not put a Supabase service-role/secret key in either Android app. Do not treat a client-supplied restaurant ID or topic string as proof of ownership.
+
+### Finding F: Remaining migration hardening items
+
+- Activation-code issuance has no database-enforced serialization per owner/restaurant; two simultaneous issuance requests could leave more than one unconsumed code. Consider a transaction-scoped advisory lock or a uniqueness invariant after validating the desired multi-device pairing behavior.
+- The redemption RPC is callable by `anon`; the 256-bit code has high entropy, but production still needs abuse controls/monitoring and a deliberate policy for repeated invalid attempts.
+- The current migration has not been executed by PostgreSQL. Function grants, extension schema availability (`extensions.gen_random_bytes` / `extensions.digest`), table ownership assumptions, RLS behavior, and concurrent redemption must be tested in an isolated staging database.
+- The owner update policy allows updates only when `revoked_at` is non-null, but the intended revocation semantics should be tested for already-revoked rows and should prevent any accidental change to immutable ownership/identity fields.
+- Device registration records are not yet consumed by any existing command/sync/ad delivery path. Until each path checks authorization and revocation server-side, this schema must not be described as device isolation.
+
+### Verification status after this review
+
+- Supabase Realtime authorization documentation reviewed.
+- Source-level inspection reconfirmed the legacy `ROYAL-TV-...` identity in both clients.
+- No migration executed; no production database changed; no Android build or runtime authorization test performed.
+- PR #20 remains a draft and must not be merged yet.
