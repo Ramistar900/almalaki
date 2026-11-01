@@ -10,6 +10,7 @@ Actions:
 - `send_command`: requires active owner membership, an active restaurant, and an active device belonging to the same restaurant.
 - `poll_commands`: requires the per-device credential and claims commands with conditional updates.
 - `acknowledge`: accepts only an unexpired claimed command belonging to the authenticated device.
+- `list_paired_devices`: owner-only list of paired devices for one authorized restaurant; exposes device metadata only, never credential hashes.
 - `revoke_device`: owner-only revocation for a device in the same restaurant.
 
 ## Required negative tests before production
@@ -54,8 +55,8 @@ Implemented on the authorization branch:
 - `.github/workflows/royal-tv-auth-android-check.yml`: compile-only Android CI workflow. No successful run has been observed yet.
 
 Still incomplete:
-- The owner pairing screen now loads active restaurants for which the signed-in user has an active owner membership from a new authenticated Edge Function action, then lets the owner select one before requesting a pairing code. This source change is not verified until tested against a deployed staging function. Paired-device listing, command dispatch UI, and revocation UI are still pending.
+- The owner pairing screen now loads active restaurants for which the signed-in user has an active owner membership from a new authenticated Edge Function action, then lets the owner select one before requesting a pairing code. This source change is not verified until tested against a deployed staging function. Paired-device listing and revocation UI are now implemented on the branch; they still require another Android compile check and staging endpoint integration tests. Command dispatch UI remains pending.
 - The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
-- No successful Android build, device test, or negative integration test has been confirmed in this step; the workflow lookup did not return a run record.
+- Android compile CI succeeded on 2026-11-01 for commit `112ffdedd0e0a6dac6d5229c54e4a8439c811673` (both ROYAL TV and app Kotlin compile tasks). This is compile-only verification; no device test or negative integration test has been confirmed.
 - Poller recovery after a command is claimed but not acknowledged still needs a server-side lease/requeue design.
