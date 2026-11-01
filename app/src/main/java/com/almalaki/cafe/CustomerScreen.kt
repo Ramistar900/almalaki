@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 @Composable
 fun CustomerScreen(
@@ -76,6 +77,22 @@ var customerOrderHistory by remember(context) {
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
 }
+val restaurantPreferences = remember(context) {
+    context.getSharedPreferences(
+        "royal_restaurant_links",
+        android.content.Context.MODE_PRIVATE
+    )
+}
+var hasLinkedRestaurant by remember(context) {
+    val savedRestaurantId = restaurantPreferences.getString("active_restaurant_id", null)
+    val savedActiveRestaurant = loadRoyalActiveRestaurant(context)
+    mutableStateOf(
+        restaurantPreferences.getBoolean("customer_place_connected", false) ||
+            savedRestaurantId == null ||
+            savedActiveRestaurant.id == savedRestaurantId
+    )
+}
+var catalogReady by remember { mutableStateOf(false) }
 var linkedRestaurants by remember(context) {
     mutableStateOf(loadRoyalLinkedRestaurants(context))
 }
@@ -196,8 +213,18 @@ var invoiceTotalAmount by remember {
         mutableStateOf("الكل")
     }
 
-    LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode) {
+    LaunchedEffect(hasLinkedRestaurant, activeRestaurant.id, activeRestaurant.joinCode) {
+        if (!hasLinkedRestaurant) {
+            products = emptyList()
+            customerSections = emptyList()
+            cart = emptyMap()
+            loading = false
+            catalogReady = false
+            message = ""
+            return@LaunchedEffect
+        }
         loading = true
+        catalogReady = false
         message = ""
         try {
             val (loadedProducts, loadedSections) = withContext(Dispatchers.IO) {
@@ -227,11 +254,13 @@ var invoiceTotalAmount by remember {
             products = loadedProducts
             customerSections = loadedSections
             cart = emptyMap()
+            catalogReady = true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             products = emptyList()
             customerSections = emptyList()
+            catalogReady = false
             message = e.message ?: "تعذر تحميل منتجات المطعم."
         } finally {
             loading = false
@@ -375,6 +404,47 @@ var invoiceTotalAmount by remember {
                 BoxWithConstraints(
                     Modifier.weight(1f)
                 ) {
+                    if (!hasLinkedRestaurant) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                                    .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp))
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(Color.White.copy(alpha = if (darkMode) 0.10f else 0.34f))
+                                    .padding(horizontal = 22.dp, vertical = 26.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Text(
+                                    text = "يرجى الربط الآن للاستخدام",
+                                    color = if (darkMode) Color(0xFFFFE6A0) else Color(0xFF174A3A),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Button(
+                                    onClick = {
+                                        linkedRestaurants = loadRoyalLinkedRestaurants(context)
+                                        restaurantLinkMessage = ""
+                                        showRestaurantLinks = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
+                                    shape = RoundedCornerShape(14.dp),
+                                    contentPadding = PaddingValues(horizontal = 30.dp, vertical = 12.dp)
+                                ) {
+                                    Text("ربط الآن", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    } else if (!catalogReady) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            if (loading) CircularProgressIndicator(color = Gold)
+                            else Text(message.ifBlank { "تعذر تحميل منتجات المكان." }, color = textColor, fontSize = 14.sp)
+                        }
+                    } else {
                     // ارتفاع تقريبي مطابق لبنر الاسم، لتبقى التصنيفات تحته.
                     val titleBannerHeight = (maxWidth / 2.6f) + 6.dp
                     val columns = when {
@@ -493,6 +563,7 @@ var invoiceTotalAmount by remember {
                             color = Gold.copy(alpha = 0.35f),
                             thickness = 1.dp
                         )
+                    }
                     }
                 }
         
@@ -747,23 +818,50 @@ var invoiceTotalAmount by remember {
                     }
 
                     else -> {
-val selectedRestaurantId = activeRestaurant.id
-val invoiceItemsSnapshot =
-    products.mapNotNull { product ->
-        val quantity = cart[product.id] ?: 0
+val selectedRestaurantCode = activeRestaurant.joinCode
+    .ifBlank { ROYAL_DEFAULT_RESTAURANT_CODE }
 
-        if (quantity > 0) {
-            RoyalInvoiceItem(
-                name = product.name,
-                quantity = quantity,
-                unitPrice = product.price
-            )
-        } else {
-            null
-        }
-    }
+                        // Keep the same key for retries of the same checkout, including timeouts.
+                        // A changed checkout payload gets a fresh key so the server can distinguish it.
+                        val checkoutPrefs = context.getSharedPreferences(
+                            "royal_checkout_idempotency",
+                            android.content.Context.MODE_PRIVATE
+                        )
+                        val checkoutSignature = org.json.JSONObject()
+                            .put("name", name.trim())
+                            .put("phone", phone.trim())
+                            .put("address", address.trim())
+                            .put("type", type)
+                            .put("restaurant", selectedRestaurantCode.trim().uppercase())
+                            .put("cart", org.json.JSONArray().also { items ->
+                                cart.filterValues { it > 0 }.toSortedMap().forEach { (id, quantity) ->
+                                    items.put(
+                                        org.json.JSONObject()
+                                            .put("product_id", id)
+                                            .put("quantity", quantity)
+                                    )
+                                }
+                            })
+                            .toString()
+                        val storedSignature = checkoutPrefs.getString("active_checkout_signature", null)
+                        val idempotencyKey = if (
+                            storedSignature == checkoutSignature &&
+                            checkoutPrefs.getString("active_checkout_key", null) != null
+                        ) {
+                            checkoutPrefs.getString("active_checkout_key", null)!!
+                        } else {
+                            UUID.randomUUID().toString().also { newKey ->
+                                val saved = checkoutPrefs.edit()
+                                    .putString("active_checkout_key", newKey)
+                                    .putString("active_checkout_signature", checkoutSignature)
+                                    .commit()
+                                if (!saved) {
+                                    orderMessage = "تعذر حفظ محاولة الطلب بأمان. أعد المحاولة."
+                                    return@CheckoutDialog
+                                }
+                            }
+                        }
 
-val invoiceTotalSnapshot = totalAmount
                         orderLoading = true
                         orderMessage = ""
 
@@ -773,23 +871,29 @@ val invoiceTotalSnapshot = totalAmount
 
                                 val result =
                                     createOrder(
-                                        name,
-                                        phone,
-                                        address,
-                                        type,
-                                        totalAmount,
-                                        products,
-                                        cart,
-                                        restaurantId = selectedRestaurantId
+                                        customerName = name,
+                                        customerPhone = phone,
+                                        deliveryAddress = address,
+                                        fulfillmentType = type,
+                                        products = products,
+                                        cart = cart,
+                                        restaurantCode = selectedRestaurantCode,
+                                        idempotencyKey = idempotencyKey
                                     )
+
+                                // The server confirmed success; only now clear the retry key.
+                                checkoutPrefs.edit()
+                                    .remove("active_checkout_key")
+                                    .remove("active_checkout_signature")
+                                    .commit()
 
                                 invoiceOrderNumber = result.orderNumber
                                 invoiceCustomerName = name
                                 invoiceCustomerPhone = phone
                                 invoiceFulfillmentType = type
                                 invoiceDeliveryAddress = address
-                                invoiceItems = invoiceItemsSnapshot
-                                invoiceTotalAmount = invoiceTotalSnapshot
+                                invoiceItems = result.items
+                                invoiceTotalAmount = result.totalAmount
 
                                 val savedProfile = RoyalCustomerProfile(
                                     name = name,
@@ -808,8 +912,8 @@ val invoiceTotalSnapshot = totalAmount
                                         customerPhone = phone,
                                         address = address,
                                         fulfillmentType = type,
-                                        totalAmount = invoiceTotalSnapshot,
-                                        items = invoiceItemsSnapshot
+                                        totalAmount = result.totalAmount,
+                                        items = result.items
                                     )
                                 )
                                 customerOrderHistory = loadRoyalCustomerOrders(context)
@@ -903,6 +1007,9 @@ if (showRestaurantLinks) {
                         linkedRestaurants = loadRoyalLinkedRestaurants(context)
                         selectedCategory = "الكل"
                         activeRestaurant = linked
+                        hasLinkedRestaurant = true
+                        context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
+                            .edit().putBoolean("customer_place_connected", true).apply()
                         restaurantLinkMessage = ""
                         showRestaurantLinks = false
                     } catch (e: Exception) {
@@ -918,6 +1025,9 @@ if (showRestaurantLinks) {
             selectedCategory = "الكل"
             cart = emptyMap()
             activeRestaurant = restaurant
+            hasLinkedRestaurant = true
+            context.getSharedPreferences("royal_restaurant_links", android.content.Context.MODE_PRIVATE)
+                .edit().putBoolean("customer_place_connected", true).apply()
             restaurantLinkMessage = ""
             showRestaurantLinks = false
         },
