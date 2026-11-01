@@ -41,7 +41,7 @@ fun RoyalTVTickerControlScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val connectionManager = remember(context) {
+    val connectionManager = remember(context, accessToken) {
         RoyalTVConnectionManager(context, accessToken)
     }
 
