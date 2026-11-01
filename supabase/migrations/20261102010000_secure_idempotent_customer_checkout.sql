@@ -104,6 +104,10 @@ BEGIN
         RETURN;
     END IF;
 
+    -- The existing INSERT triggers require this transaction-local marker.
+    -- Direct REST callers cannot set it through table inserts.
+    PERFORM pg_catalog.set_config('royal.atomic_checkout', 'on', true);
+
     -- This implementation validates quantities, product ownership and prices,
     -- then inserts the order and all order lines in one database transaction.
     SELECT r.order_number, r.total_amount, r.items
