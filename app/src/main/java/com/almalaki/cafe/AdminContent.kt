@@ -266,7 +266,8 @@ AdminSection.INTERFACE_SETTINGS -> {
 AdminSection.ROYAL_TV_CONTROL -> {
     item {
         RoyalTVControlScreen(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            accessToken = accessToken
         )
     }
 }
