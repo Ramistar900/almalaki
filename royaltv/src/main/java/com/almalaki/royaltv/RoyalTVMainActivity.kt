@@ -164,11 +164,20 @@ class RoyalTVMainActivity : ComponentActivity() {
 
                 RoyalTVTickerManager.initialize(applicationContext)
 
-        if (RoyalTVCredentialStore.isConfigured(applicationContext)) {
-            // Once securely paired, do not fall back to unauthenticated Realtime
-            // if the credential is revoked, corrupt, or the server is unavailable.
+        val secureCredentialConfigured =
+            RoyalTVCredentialStore.isConfigured(applicationContext)
+        if (secureCredentialConfigured) {
+            RoyalTVSecureModeStore.enable(applicationContext)
+        }
+        val secureModeEnabled = secureCredentialConfigured ||
+            RoyalTVSecureModeStore.isEnabled(applicationContext)
+
+        if (secureModeEnabled) {
+            // Once secure mode has been selected, never fall back to the
+            // unauthenticated Realtime command channel when a credential is absent.
             RoyalTVRealtime.stop()
-            RoyalTVSecureCommandPoller.start(applicationContext) { serverCommand ->
+            if (secureCredentialConfigured) {
+                RoyalTVSecureCommandPoller.start(applicationContext) { serverCommand ->
                 val commandType = runCatching {
                     RoyalTVCommandType.valueOf(serverCommand.type)
                 }.getOrNull()
@@ -196,10 +205,11 @@ class RoyalTVMainActivity : ComponentActivity() {
                     }
                     true
                 }
+                }
             }
         } else {
-            // Compatibility mode remains for existing installations until the
-            // owner app's challenge-creation flow is migrated and verified.
+            // Compatibility mode remains only for installations that have
+            // never explicitly entered secure authorization mode.
             RoyalTVRealtime.start(royalTvDisplayId) { command ->
                 Log.i(
                     "RoyalTVMainActivity",
@@ -1061,15 +1071,50 @@ modifier = Modifier.fillMaxSize()
                     }
                 },
                 dismissButton = {
-                    TextButton(
-                        onClick = {
-                            showExitDialog = false
-                        }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "لا",
-                            color = RoyalPearl
-                        )
+                        TextButton(
+                            onClick = {
+                                val hadSecureCredential =
+                                    RoyalTVCredentialStore.isConfigured(context)
+                                RoyalTVSecureCommandPoller.stop()
+                                RoyalTVRealtime.stop()
+                                RoyalTVCredentialStore.clear(context)
+                                RoyalTVDeviceIdentity.rotateDeviceId(context)
+                                check(RoyalTVSecureModeStore.enable(context)) {
+                                    "تعذر حفظ وضع الاقتران الآمن"
+                                }
+                                securePairingCode = ""
+                                securePairingError = if (hadSecureCredential) {
+                                    "ألغِ اقتران الجهاز السابق من حساب المالك أولاً، ثم أدخل الرمز الجديد. تم إنشاء معرّف جهاز جديد."
+                                } else {
+                                    "أدخل رمز الاقتران الذي أنشأه مالك المطعم."
+                                }
+                                showExitDialog = false
+                                showSecurePairingDialog = true
+                            }
+                        ) {
+                            Text(
+                                text = if (RoyalTVCredentialStore.isConfigured(context)) {
+                                    "إعادة الاقتران"
+                                } else {
+                                    "الاقتران الآمن"
+                                },
+                                color = RoyalGold
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                showExitDialog = false
+                            }
+                        ) {
+                            Text(
+                                text = "لا",
+                                color = RoyalPearl
+                            )
+                        }
                     }
                 },
                 containerColor = RoyalCharcoal
