@@ -15,7 +15,7 @@ The migration filename prefix is the Supabase migration version. Keep it identic
 | 20261103034845 | require_active_legacy_menu_and_revoke_unused_helper | 20261103034845_require_active_legacy_menu_and_revoke_unused_helper.sql |
 | 20261103035541 | explicitly_deny_direct_admin_registry_access | 20261103035541_explicitly_deny_direct_admin_registry_access.sql |
 | 20261103041905 | link_authenticated_orders_to_customer_accounts | 20261103041905_link_authenticated_orders_to_customer_accounts.sql |
-| 20261103053000 | restaurant_interface_settings | 20261103053000_restaurant_interface_settings.sql |
+| 20261103050916 | restaurant_interface_settings | 20261103050916_restaurant_interface_settings.sql |
 
 ## Applied historical migrations whose original SQL is not present here
 
