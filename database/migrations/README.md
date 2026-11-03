@@ -13,6 +13,8 @@ The migration filename prefix is the Supabase migration version. Keep it identic
 | 20261103034045 | complete_tenant_isolation_hardening | 20261103034045_complete_tenant_isolation_hardening.sql |
 | 20261103034300 | combine_tenant_select_policies_and_indexes | 20261103034300_combine_tenant_select_policies_and_indexes.sql |
 | 20261103034845 | require_active_legacy_menu_and_revoke_unused_helper | 20261103034845_require_active_legacy_menu_and_revoke_unused_helper.sql |
+| 20261103035541 | explicitly_deny_direct_admin_registry_access | 20261103035541_explicitly_deny_direct_admin_registry_access.sql |
+| 20261103041905 | link_authenticated_orders_to_customer_accounts | 20261103041905_link_authenticated_orders_to_customer_accounts.sql |
 
 ## Applied historical migrations whose original SQL is not present here
 
@@ -37,3 +39,7 @@ Do not create empty or guessed replacement files for these versions. They must b
 6. Commit the exact applied SQL to `main`; never publish a second filename/version for an already-applied migration.
 
 A live database with all migrations applied is not automatically reproducible from GitHub until the six historical source files above are recovered.
+
+## Current tenant domains
+
+The live application/database currently implements restaurant/café tenants. No `stores`, `store_members`, `store_products`, or `store_orders` domain exists yet, so store-to-store isolation is not claimed as implemented. Do not create placeholder store tables without the product requirements; when the store feature is designed, give it its own tenant ownership, RLS, storage namespace, and cross-tenant tests before exposing it.
