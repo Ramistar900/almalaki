@@ -345,13 +345,14 @@ Box(
             isDarkMode = isDarkMode,
             searchQuery = searchQuery,
             onSearchQueryChange = onSearchQueryChange,
-            brandingRevision = brandingRevision
-        ) {
-            scope.launch {
-                drawerState.open()
+            brandingRevision = brandingRevision,
+            onMenuClick = {
+                scope.launch {
+                    drawerState.open()
+                }
+                onMenuClick()
             }
-            onMenuClick()
-        }
+        )
 
         Box(
             modifier = Modifier
