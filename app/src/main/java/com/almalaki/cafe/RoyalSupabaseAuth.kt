@@ -7,7 +7,7 @@ import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.providers.OAuthProvider
+import io.github.jan.supabase.auth.providers.Facebook
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.auth.providers.builtin.Phone
 import io.github.jan.supabase.auth.handleDeeplinks
@@ -53,7 +53,7 @@ object RoyalSupabaseAuth {
     }
 
     suspend fun signInWithFacebook() {
-        client.auth.signInWith(OAuthProvider("facebook"))
+        client.auth.signInWith(Facebook)
     }
 
     suspend fun sendWhatsAppOtp(phoneNumber: String) {
