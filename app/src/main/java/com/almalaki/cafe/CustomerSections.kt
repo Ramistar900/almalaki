@@ -93,12 +93,13 @@ private fun customerSectionsRequest(
 }
 
 /** تحميل إعدادات الأقسام المشتركة من Supabase. */
-fun loadCustomerSections(): List<CustomerSection> {
+fun loadCustomerSections(accessToken: String? = null): List<CustomerSection> {
     val response = customerSectionsRequest(
         method = "GET",
         path = "customer_sections" +
             "?select=section_key,title,category_names,enabled,sort_order" +
-            "&order=sort_order.asc"
+            "&order=sort_order.asc",
+        accessToken = accessToken
     )
 
     val json = JSONArray(response)
