@@ -66,3 +66,42 @@ Deno.test("recovers only ROYAL TV claims whose 30-second lease has elapsed", () 
     throw new Error("malformed claim timestamp must not be recovered");
   }
 });
+
+
+Deno.test("ROYAL TV schema migration keeps the server-only tables isolated", async () => {
+  const sql = await Deno.readTextFile(
+    new URL("../../../database/migrations/202610300001_royal_tv_server_authorization.sql", import.meta.url),
+  );
+  for (const table of [
+    "royal_tv_pairing_challenges",
+    "royal_tv_paired_devices",
+    "royal_tv_commands",
+  ]) {
+    if (!sql.includes(`alter table public.${table} enable row level security`)) {
+      throw new Error(`RLS is not enabled for ${table}`);
+    }
+    if (!sql.includes(`revoke all on table public.${table}`) ||
+        !sql.includes("from public, anon, authenticated")) {
+      throw new Error(`Client privileges are not revoked for ${table}`);
+    }
+    if (!sql.includes(`grant all on table public.${table} to service_role`)) {
+      throw new Error(`Service role grant is missing for ${table}`);
+    }
+  }
+});
+
+Deno.test("ROYAL TV pairing RPC is atomic and server-role only", async () => {
+  const sql = await Deno.readTextFile(
+    new URL("../../../database/migrations/202610310001_royal_tv_pairing_atomicity.sql", import.meta.url),
+  );
+  if (!/language plpgsql\s+security definer\s+set search_path = ''/i.test(sql)) {
+    throw new Error("Pairing RPC must be SECURITY DEFINER with an empty search_path");
+  }
+  if (!sql.includes("c.consumed_at is null") || !sql.includes("c.expires_at > now()")) {
+    throw new Error("Pairing challenge must be atomically unconsumed and unexpired");
+  }
+  if (!sql.includes("from public, anon, authenticated") ||
+      !sql.includes("to service_role")) {
+    throw new Error("Pairing RPC must be executable only by service_role");
+  }
+});
