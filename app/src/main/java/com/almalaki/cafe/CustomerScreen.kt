@@ -62,7 +62,8 @@ import kotlinx.coroutines.delay
 fun CustomerScreen(
     darkMode: Boolean,
     onTheme: () -> Unit,
-    onOwner: () -> Unit
+    onOwner: () -> Unit,
+    onDeveloper: () -> Unit
 ) {
     val context = LocalContext.current
     val customerScope = rememberCoroutineScope()
@@ -547,6 +548,7 @@ LaunchedEffect(syncedCustomerUserId) {
                     showCustomerAccount = true
                 }
             },
+            onDeveloperLogin = onDeveloper,
             onOwnerLogin = onOwner,
             onSettings = {
                 if (customerIdentityReady) showCustomerSettings = true
