@@ -173,6 +173,13 @@ begin
 end;
 $function$;
 
+-- Apply the existing tenant-assignment trigger to customer sections too.
+-- This prevents a second owner's sections from falling back to the first restaurant.
+drop trigger if exists assign_restaurant_to_customer_sections on public.customer_sections;
+create trigger assign_restaurant_to_customer_sections
+before insert on public.customer_sections
+for each row execute function private.assign_owner_restaurant_id();
+
 -- Customer apps must not write order headers or lines directly.
 -- The SECURITY DEFINER RPC performs the validated inserts atomically.
 drop policy if exists "Legacy customers can create orders only for legacy restaurant"
