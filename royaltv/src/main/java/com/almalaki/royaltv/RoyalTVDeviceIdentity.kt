@@ -66,6 +66,25 @@ object RoyalTVDeviceIdentity {
     }
 
     /**
+     * إنشاء معرّف جديد عند إعادة الاقتران، مع الاحتفاظ باسم الجهاز.
+     * يساعد ذلك على إنشاء سجل خادم جديد بعد إلغاء اعتماد السجل السابق.
+     */
+    fun rotateDeviceId(context: Context): String {
+        val prefs = context.applicationContext
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val newId = "ROYAL-TV-" +
+            UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .take(12)
+                .uppercase()
+        check(prefs.edit().putString(KEY_DEVICE_ID, newId).commit()) {
+            "تعذر حفظ معرّف جهاز ROYAL TV الجديد"
+        }
+        return newId
+    }
+
+    /**
      * تغيير اسم الجهاز دون تغيير معرّفه.
      */
     fun setDeviceName(context: Context, name: String) {
