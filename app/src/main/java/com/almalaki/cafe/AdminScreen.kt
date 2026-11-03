@@ -113,6 +113,7 @@ LaunchedEffect(accessToken) {
         }
         ownerRestaurantId = resolvedRestaurantId
         migrateLegacyRoyalInterfaceSettings(context, resolvedRestaurantId)
+        RoyalTextLogoSettings.migrateLegacy(context, resolvedRestaurantId)
         interfaceSettings = loadRoyalInterfaceSettings(context, resolvedRestaurantId)
     } catch (error: Exception) {
         ownerRestaurantId = ""
