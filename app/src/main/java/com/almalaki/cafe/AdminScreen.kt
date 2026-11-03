@@ -79,7 +79,7 @@ val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var ownerRestaurantId by remember { mutableStateOf("") }
     var interfaceSettings by remember {
-        mutableStateOf(loadRoyalInterfaceSettings(context))
+        mutableStateOf(RoyalInterfaceSettings())
     }
 
 var section by remember { mutableStateOf(AdminSection.HOME) }
