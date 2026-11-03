@@ -439,11 +439,16 @@ fun RoyalActiveLogo(
 ) {
 
     val context = LocalContext.current
-    val scopedRestaurantId = restaurantId ?: LocalRoyalRestaurantId.current
+    val scopedRestaurantId = when {
+        restaurantId == null -> LocalRoyalRestaurantId.current
+        restaurantId.isBlank() -> ""
+        else -> restaurantId
+    }
 
     val activeLogo =
         remember(context, scopedRestaurantId) {
-            loadActiveRoyalLogo(context, scopedRestaurantId)
+            if (scopedRestaurantId.isBlank()) royalDefaultLogoEntry()
+            else loadActiveRoyalLogo(context, scopedRestaurantId)
         }
 
     Box(
@@ -734,7 +739,8 @@ fun RoyalShinyLogo(
     val scopedRestaurantId = restaurantId ?: LocalRoyalRestaurantId.current
 
     val logoConfig = remember(context, scopedRestaurantId) {
-        RoyalTextLogoSettings.load(context, scopedRestaurantId)
+        if (scopedRestaurantId.isBlank()) RoyalTextLogoConfig()
+        else RoyalTextLogoSettings.load(context, scopedRestaurantId)
     }
 
     val transition = rememberInfiniteTransition(
