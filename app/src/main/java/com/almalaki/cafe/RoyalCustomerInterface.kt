@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.LayoutDirection
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.BlendMode
@@ -106,6 +107,8 @@ private val RoyalGray = Color(0xFFBDBDBD)
 private const val GENERIC_LOGO_FRONT_PAUSE_MS = 5_000
 private const val GENERIC_LOGO_TURN_MS = 2_400
 
+val LocalRoyalRestaurantId = staticCompositionLocalOf { ROYAL_DEFAULT_RESTAURANT_ID }
+
   @Composable
 fun RoyalCustomerInterface(
     isDarkMode: Boolean = true,
@@ -176,6 +179,7 @@ onSearchQueryChange: (String) -> Unit = {},
         )
         
 
+    CompositionLocalProvider(LocalRoyalRestaurantId provides restaurantId) {
     ModalNavigationDrawer(
 
         drawerState = drawerState,
@@ -403,12 +407,14 @@ Box(
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     RoyalBottomBar(
-                        newsText
+                        newsText = newsText,
+                        restaurantId = restaurantId
                     )
                 }
             }
         }  
     }
+}
 }
 }
 /*
@@ -427,15 +433,16 @@ Box(
 @Composable
 fun RoyalActiveLogo(
     modifier: Modifier = Modifier,
-    size: Dp = 42.dp
+    size: Dp = 42.dp,
+    restaurantId: String? = null
 ) {
 
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
+    val scopedRestaurantId = restaurantId ?: LocalRoyalRestaurantId.current
 
     val activeLogo =
-        remember(context) {
-            loadActiveRoyalLogo(context)
+        remember(context, scopedRestaurantId) {
+            loadActiveRoyalLogo(context, scopedRestaurantId)
         }
 
     Box(
@@ -487,11 +494,13 @@ fun RoyalActiveLogo(
 @Composable
 fun Royal3DAnimatedLogo(
     modifier: Modifier = Modifier,
-    size: Dp = 42.dp
+    size: Dp = 42.dp,
+    restaurantId: String? = null
 ) {
     RoyalActiveLogo(
         modifier = modifier,
-        size = size
+        size = size,
+        restaurantId = restaurantId
     )
 }
 
@@ -717,12 +726,14 @@ private fun RoyalGeneric3DLogo(
  */
 @Composable
 fun RoyalShinyLogo(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    restaurantId: String? = null
 ) {
     val context = LocalContext.current
+    val scopedRestaurantId = restaurantId ?: LocalRoyalRestaurantId.current
 
-    val logoConfig = remember(context) {
-        RoyalTextLogoSettings.load(context)
+    val logoConfig = remember(context, scopedRestaurantId) {
+        RoyalTextLogoSettings.load(context, scopedRestaurantId)
     }
 
     val transition = rememberInfiniteTransition(
@@ -1183,8 +1194,10 @@ fun RoyalLiveDateTime(
  @Composable
 fun RoyalNewsTicker(
     newsText: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    restaurantId: String? = null
 ) {
+    val scopedRestaurantId = restaurantId ?: LocalRoyalRestaurantId.current
     /*
      * ============================================================
      * شريط أخبار Royal
@@ -1348,7 +1361,7 @@ fun RoyalNewsTicker(
                      * وليس بعد آخر خبر.
                      */
                     if (index < newsItems.lastIndex) {
-                        RoyalTickerLogoSeparator()
+                        RoyalTickerLogoSeparator(scopedRestaurantId)
                     }
                 }
             }
@@ -1368,10 +1381,11 @@ fun RoyalNewsTicker(
  * لا يتم تغيير تصميم الشعار.
  */
 @Composable
-private fun RoyalTickerLogoSeparator() {
+private fun RoyalTickerLogoSeparator(restaurantId: String) {
 
     RoyalActiveLogo(
-        size = 18.dp
+        size = 18.dp,
+        restaurantId = restaurantId
     )
 }
 
@@ -1745,8 +1759,10 @@ private fun RoyalCustomerNavigationIcon(
 
 @Composable
 fun RoyalBottomBar(
-    newsText: String
+    newsText: String,
+    restaurantId: String? = null
 ) {
+    val scopedRestaurantId = restaurantId ?: LocalRoyalRestaurantId.current
 
     var now by
         remember {
@@ -1791,7 +1807,8 @@ fun RoyalBottomBar(
         ) {
 
             RoyalActiveLogo(
-                size = 38.dp
+                size = 38.dp,
+                restaurantId = scopedRestaurantId
             )
         }
 
@@ -1827,6 +1844,7 @@ fun RoyalBottomBar(
 
         RoyalNewsTicker(
             newsText = newsText,
+            restaurantId = scopedRestaurantId,
             modifier =
                 Modifier
                     .weight(1f)
