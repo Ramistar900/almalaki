@@ -29,5 +29,8 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Type-check ROYAL TV authorization Edge Function
+        run: deno check supabase/functions/royal-tv-authorize/index.ts
+
       - name: Run ROYAL TV authorization validation tests
         run: deno test supabase/functions/_shared/royal-tv-auth-validation_test.ts
