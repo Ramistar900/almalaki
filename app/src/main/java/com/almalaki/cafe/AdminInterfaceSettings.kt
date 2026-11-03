@@ -613,40 +613,40 @@ fun AdminInterfaceSettings(
     }
 
     val saved =
-        remember {
+        remember(restaurantId) {
             loadRoyalInterfaceSettings(context, restaurantId)
         }
 
-    var newsText by remember {
+    var newsText by remember(restaurantId) {
         mutableStateOf(
             saved.newsText
         )
     }
 
-    var topLogoPath by remember {
+    var topLogoPath by remember(restaurantId) {
         mutableStateOf(
             saved.topLogoPath
         )
     }
 
-    var bottomLogoPath by remember {
+    var bottomLogoPath by remember(restaurantId) {
         mutableStateOf(
             saved.bottomLogoPath
         )
     }
-    var textLogoConfig by remember {
+    var textLogoConfig by remember(restaurantId) {
     mutableStateOf(
         RoyalTextLogoSettings.load(context, restaurantId)
     )
     }
 
-    var logoLibrary by remember {
+    var logoLibrary by remember(restaurantId) {
         mutableStateOf(
             loadRoyalLogoLibrary(context, restaurantId)
         )
     }
 
-    var activeLogoId by remember {
+    var activeLogoId by remember(restaurantId) {
         mutableStateOf(
             loadActiveRoyalLogoId(context, restaurantId)
         )
