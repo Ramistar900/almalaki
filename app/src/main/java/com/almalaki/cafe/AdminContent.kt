@@ -37,6 +37,7 @@ fun AdminContent(
     loading: Boolean,
     accessToken: String,
     context: android.content.Context,
+    restaurantId: String,
     onNameChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
@@ -236,10 +237,18 @@ AdminSection.INTERFACE_SETTINGS -> {
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            AdminInterfaceSettings(
-                context = context,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (restaurantId.isNotBlank()) {
+                AdminInterfaceSettings(
+                    context = context,
+                    restaurantId = restaurantId,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Text(
+                    text = "تعذر تحميل هوية المطعم؛ لم يتم فتح إعدادات الهوية لتجنب حفظها في نطاق خاطئ.",
+                    color = AdminGold
+                )
+            }
 
             HorizontalDivider()
 
