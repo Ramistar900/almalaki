@@ -96,6 +96,17 @@ async function activeDevice(request: Request) {
     .maybeSingle();
   if (error) throw new Error("DEVICE_CHECK_FAILED");
   if (!data) throw new Error("DEVICE_REVOKED_OR_UNKNOWN");
+
+  // A paired device must not continue receiving queued commands after its
+  // restaurant is suspended. Re-check tenant status for every device action.
+  const { data: restaurant, error: restaurantError } = await admin.from("restaurants")
+    .select("id")
+    .eq("id", data.restaurant_id)
+    .eq("status", "active")
+    .maybeSingle();
+  if (restaurantError) throw new Error("RESTAURANT_CHECK_FAILED");
+  if (!restaurant) throw new Error("RESTAURANT_INACTIVE");
+
   return data;
 }
 
