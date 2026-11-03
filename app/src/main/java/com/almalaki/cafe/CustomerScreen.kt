@@ -134,6 +134,9 @@ fun syncCustomerAccount() {
 
 LaunchedEffect(Unit) {
     if (RoyalSupabaseAuth.currentUserId() != null) syncCustomerAccount()
+    RoyalSupabaseAuth.sessionStatusEvents().collect {
+        if (RoyalSupabaseAuth.currentUserId() != null) syncCustomerAccount()
+    }
 }
 
 if (showCustomerSettings) {
