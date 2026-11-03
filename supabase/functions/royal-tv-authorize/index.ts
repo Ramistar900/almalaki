@@ -4,7 +4,14 @@
 // Never ship SUPABASE_SERVICE_ROLE_KEY to Android clients.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { ROYAL_TV_COMMAND_CLAIM_LEASE_MS } from "../_shared/royal-tv-auth-validation.ts";
+import {
+  allowedRoyalTvCommands,
+  isCanonicalUuid,
+  isPayloadWithinLimit,
+  isValidDeviceId,
+  isValidDeviceName,
+  ROYAL_TV_COMMAND_CLAIM_LEASE_MS,
+} from "../_shared/royal-tv-auth-validation.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -15,16 +22,6 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const CLAIM_LEASE_MS = ROYAL_TV_COMMAND_CLAIM_LEASE_MS;
-
-const allowedCommands = new Set([
-  "SHOW_ORDER",
-  "SHOW_YOUTUBE",
-  "SHOW_MEDIA",
-  "SHOW_AD",
-  "SHOW_CONTENT",
-  "REMOTE_COMMAND",
-  "CLEAR_SCREEN",
-]);
 
 const corsHeaders = {
   // Browser access is limited to the official dashboard origin. Native clients
@@ -170,7 +167,7 @@ Deno.serve(async (request: Request) => {
     if (action === "create_challenge") {
       const user = await ownerIdentity(request);
       const restaurantId = String(body.restaurant_id ?? "");
-      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(restaurantId)) return fail(400, "Invalid restaurant");
+      if (!isCanonicalUuid(restaurantId)) return fail(400, "Invalid restaurant");
       await assertOwner(user.id, restaurantId);
 
       // High-entropy code; store only its digest and return plaintext once.
@@ -192,8 +189,8 @@ Deno.serve(async (request: Request) => {
       const deviceId = String(body.device_id ?? "").trim();
       const deviceName = String(body.device_name ?? "ROYAL TV").trim().slice(0, 100);
       if (code.length < 24 || code.length > 128) return fail(400, "Invalid pairing code");
-      if (deviceId.length < 8 || deviceId.length > 128) return fail(400, "Invalid device identifier");
-      if (!deviceName) return fail(400, "Invalid device name");
+      if (!isValidDeviceId(deviceId)) return fail(400, "Invalid device identifier");
+      if (!isValidDeviceName(deviceName)) return fail(400, "Invalid device name");
 
       const codeHash = await sha256(code);
       const credential = randomToken(32);
@@ -228,7 +225,7 @@ Deno.serve(async (request: Request) => {
     if (action === "list_paired_devices") {
       const user = await ownerIdentity(request);
       const restaurantId = String(body.restaurant_id ?? "");
-      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(restaurantId)) {
+      if (!isCanonicalUuid(restaurantId)) {
         return fail(400, "Invalid restaurant");
       }
       await assertOwner(user.id, restaurantId);
@@ -247,8 +244,10 @@ Deno.serve(async (request: Request) => {
       const deviceId = String(body.device_id ?? "");
       const commandType = String(body.command_type ?? "");
       const payload = body.payload ?? {};
-      if (!allowedCommands.has(commandType)) return fail(400, "Unsupported command type");
-      if (JSON.stringify(payload).length > 32768) return fail(413, "Payload too large");
+      if (!isCanonicalUuid(restaurantId)) return fail(400, "Invalid restaurant");
+      if (!isValidDeviceId(deviceId)) return fail(400, "Invalid device identifier");
+      if (!allowedRoyalTvCommands.has(commandType)) return fail(400, "Unsupported command type");
+      if (!isPayloadWithinLimit(payload)) return fail(413, "Payload too large");
       await assertOwner(user.id, restaurantId);
 
       const { data: device, error: deviceError } = await admin.from("royal_tv_paired_devices")
@@ -359,6 +358,8 @@ Deno.serve(async (request: Request) => {
       const user = await ownerIdentity(request);
       const restaurantId = String(body.restaurant_id ?? "");
       const deviceId = String(body.device_id ?? "");
+      if (!isCanonicalUuid(restaurantId)) return fail(400, "Invalid restaurant");
+      if (!isValidDeviceId(deviceId)) return fail(400, "Invalid device identifier");
       await assertOwner(user.id, restaurantId);
       const { data, error } = await admin.from("royal_tv_paired_devices")
         .update({ status: "revoked", revoked_at: new Date().toISOString() })
