@@ -1,5 +1,6 @@
 package com.almalaki.cafe
 
+import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -58,6 +59,29 @@ object RoyalCustomerCloud {
         } finally {
             connection.disconnect()
         }
+    }
+
+    /**
+     * Register this app installation for the currently authenticated account.
+     * Only a random app-scoped UUID and a generic platform label are stored.
+     */
+    fun registerCurrentDevice(context: Context) {
+        val userId = RoyalSupabaseAuth.currentUserId()
+            ?: throw Exception("سجّل الدخول أولاً لتسجيل الجهاز.")
+        val deviceId = RoyalDeviceIdentity.getOrCreate(context)
+        val body = JSONObject()
+            .put("user_id", userId)
+            .put("device_id", deviceId)
+            .put("device_label", "Android app")
+            .put("platform", "android")
+            .put("last_seen_at", java.time.Instant.now().toString())
+            .toString()
+        request(
+            "POST",
+            "/rest/v1/user_devices?on_conflict=user_id,device_id",
+            body,
+            "resolution=merge-duplicates,return=minimal"
+        )
     }
 
     fun loadProfile(): RoyalCustomerProfile? {
