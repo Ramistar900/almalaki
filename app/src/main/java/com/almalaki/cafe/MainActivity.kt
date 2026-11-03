@@ -132,6 +132,7 @@ fun RoyalCoffeeApp(
     BackHandler {
     when (screen) {
         "login" -> screen = "customer"
+        "developer_login" -> screen = "customer"
         "reset" -> screen = "login"
         "admin" -> screen = "customer"
         "customer" -> Unit
@@ -212,10 +213,12 @@ val royalTypography =
                     darkMode = !darkMode
                     prefs.edit().putBoolean("dark_mode", darkMode).apply()
                 },
-                onOwner = { screen = "login" }
+                onOwner = { screen = "login" },
+                onDeveloper = { screen = "developer_login" }
             )
 
-            "login" -> LoginScreen(
+            "login", "developer_login" -> LoginScreen(
+                developerOnly = screen == "developer_login",
                 onBack = { screen = "customer" },
                 onSuccess = { newToken ->
                     token = newToken
