@@ -287,6 +287,22 @@ LaunchedEffect(customerIdentityReady) {
         loading = true
     }
 }
+
+LaunchedEffect(syncedCustomerUserId) {
+    // Clear transient customer-only UI whenever the authenticated account changes,
+    // even if the previous and next accounts selected the same restaurant.
+    showCustomerSettings = false
+    showCustomerAccount = false
+    showCustomerProfileEditor = false
+    showRestaurantLinks = false
+    showCustomerOrders = false
+    showCart = false
+    showCheckout = false
+    showInvoice = false
+    cart = emptyMap()
+    orderMessage = ""
+    orderSuccessNumber = ""
+}
     /*
      * البحث والتصنيف
      */
@@ -460,7 +476,7 @@ LaunchedEffect(customerIdentityReady) {
             showCartBanner = totalItems > 0,
             cartCount = totalItems,
             onCartClick = {
-                showCart = true
+                if (customerIdentityReady) showCart = true
             },
             onOrdersClick = {
                 if (customerIdentityReady) {
