@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val INTERFACE_PREFS = "royal_interface_settings"
 
@@ -631,6 +635,7 @@ fun saveRoyalInterfaceSettings(
 @Composable
 fun AdminInterfaceSettings(
     context: Context,
+    accessToken: String,
     restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
     modifier: Modifier = Modifier
 ) {
@@ -682,6 +687,8 @@ fun AdminInterfaceSettings(
     var message by remember {
         mutableStateOf("")
     }
+    var saving by remember(restaurantId) { mutableStateOf(false) }
+    val saveScope = rememberCoroutineScope()
 
     /*
      * اختيار شعار PNG جديد.
@@ -1065,7 +1072,7 @@ Slider(
 
             Button(
                 onClick = {
-
+                    if (saving) return@Button
                     saveRoyalInterfaceSettings(
                         context = context,
                         restaurantId = restaurantId,
@@ -1074,33 +1081,38 @@ Slider(
                         bottomLogoPath = bottomLogoPath
                     )
                     RoyalTextLogoSettings.save(
-                    context = context,
-                    restaurantId = restaurantId,
-                    config = textLogoConfig
+                        context = context,
+                        restaurantId = restaurantId,
+                        config = textLogoConfig
                     )
-
-                    logoLibrary =
-                        loadRoyalLogoLibrary(
-                            context,
-                            restaurantId
-                        )
-
-                    activeLogoId =
-                        loadActiveRoyalLogoId(
-                            context,
-                            restaurantId
-                        )
-
-                    message = "تم الحفظ ✓"
+                    logoLibrary = loadRoyalLogoLibrary(context, restaurantId)
+                    activeLogoId = loadActiveRoyalLogoId(context, restaurantId)
+                    saving = true
+                    message = "جاري مزامنة التعديلات مع زبائن المطعم..."
+                    saveScope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                publishRoyalRestaurantBranding(
+                                    context = context,
+                                    accessToken = accessToken,
+                                    restaurantId = restaurantId,
+                                    newsText = newsText,
+                                    textLogoConfig = textLogoConfig
+                                )
+                            }
+                            message = "تم الحفظ ومزامنة هوية المطعم مع الزبائن ✓"
+                        } catch (error: Exception) {
+                            message = "حُفظت التعديلات محلياً، لكن تعذرت المزامنة: ${error.message ?: "خطأ اتصال"}"
+                        } finally {
+                            saving = false
+                        }
+                    }
                 },
-
-                modifier =
-                    Modifier.fillMaxWidth()
+                enabled = !saving,
+                modifier = Modifier.fillMaxWidth()
             ) {
 
-                Text(
-                    "📌 حفظ التعديلات"
-                )
+                Text(if (saving) "جاري المزامنة..." else "📌 حفظ التعديلات")
             }
 
             if (
