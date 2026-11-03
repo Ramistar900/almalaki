@@ -1116,3 +1116,36 @@ Slider(
         }
     }
 }
+
+
+fun cacheRemoteRoyalInterfaceSettings(
+    context: Context,
+    restaurantId: String,
+    newsText: String,
+    activeLogoId: String,
+    activeLogoName: String,
+    activeLogoPath: String?,
+    activeLogoAnimation: String,
+    textLogoConfig: RoyalTextLogoConfig
+) {
+    require(restaurantId.trim().matches(Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")))
+    interfacePrefs(context, restaurantId).edit()
+        .putString(KEY_NEWS_TEXT, newsText.take(240))
+        .apply()
+    if (!activeLogoPath.isNullOrBlank() && activeLogoId.isNotBlank()) {
+        val logos = loadRoyalLogoLibrary(context, restaurantId)
+            .filterNot { it.id == activeLogoId }
+            .toMutableList()
+        logos.add(RoyalLogoEntry(
+            id = activeLogoId,
+            name = activeLogoName.take(100).ifBlank { "شعار المطعم" },
+            filePath = activeLogoPath,
+            animationType = if (activeLogoAnimation == ROYAL_ANIMATION_GENERIC_3D) ROYAL_ANIMATION_GENERIC_3D else ROYAL_ANIMATION_LAYERED
+        ))
+        saveRoyalLogoLibrary(context, restaurantId, logos)
+        saveActiveRoyalLogoId(context, activeLogoId, restaurantId)
+    } else {
+        saveActiveRoyalLogoId(context, ROYAL_DEFAULT_LOGO_ID, restaurantId)
+    }
+    RoyalTextLogoSettings.save(context, textLogoConfig, restaurantId)
+}
