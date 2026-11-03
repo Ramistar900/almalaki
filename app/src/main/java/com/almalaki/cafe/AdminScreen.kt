@@ -523,7 +523,7 @@ Column(
             )
                         }
             if (section != AdminSection.ROYAL_TV) {
-            RoyalBottomBar(newsText = interfaceSettings.newsText)
+            RoyalBottomBar(newsText = interfaceSettings.newsText, restaurantId = ownerRestaurantId)
             }
         }
     }
