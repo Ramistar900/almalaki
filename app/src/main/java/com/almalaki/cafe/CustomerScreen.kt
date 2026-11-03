@@ -65,9 +65,6 @@ fun CustomerScreen(
     val context = LocalContext.current
     val customerScope = rememberCoroutineScope()
     var customerSyncGeneration by remember { mutableStateOf(0) }
-val interfaceSettings = remember {
-    loadRoyalInterfaceSettings(context)
-}
 var showCustomerSettings by remember {
     mutableStateOf(false)
 }
@@ -79,6 +76,9 @@ var customerOrderHistory by remember(context) {
 }
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
+}
+val interfaceSettings = remember(activeRestaurant.id) {
+    loadRoyalInterfaceSettings(context, activeRestaurant.id)
 }
 var linkedRestaurants by remember(context) {
     mutableStateOf(loadRoyalLinkedRestaurants(context))
@@ -415,6 +415,7 @@ var invoiceTotalAmount by remember {
         
         
         RoyalCustomerInterface(
+            restaurantId = activeRestaurant.id,
             isDarkMode = darkMode,
             newsText = interfaceSettings.newsText,
             showCartBanner = totalItems > 0,
