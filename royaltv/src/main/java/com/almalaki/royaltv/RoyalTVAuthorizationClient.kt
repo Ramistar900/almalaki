@@ -27,7 +27,7 @@ class RoyalTVAuthorizationClient(
         private const val ENDPOINT =
             "https://duvxxskgdmgrtaleedqu.supabase.co/functions/v1/royal-tv-authorize"
         private const val PUBLIC_API_KEY =
-            "sb_publishable_L-BfALjb0TkdTlyLTWbFBIg_aez3fjQd"
+            "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
         private const val CONNECT_TIMEOUT_MS = 10000
         private const val READ_TIMEOUT_MS = 15000
     }
