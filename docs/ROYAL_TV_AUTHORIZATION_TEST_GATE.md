@@ -78,3 +78,10 @@ Still incomplete:
 - The Android poller records an accepted command UUID in private app preferences before sending its acknowledgement. If the server must redeliver because the acknowledgement was lost, the client acknowledges the known command without repeating the local action.
 - This is bounded at-least-once delivery, not a mathematical exactly-once guarantee. A crash between the local action and the local deduplication write may still repeat an action; display commands must remain safe to repeat.
 - No schema migration was needed for this lease implementation, and no production migration or Edge Function deployment was performed.
+
+
+## Second integrated build check (2026-11-03)
+
+- Follow-up check `41584276366` used merge base `9f8d933771337befdfc4b5be7e86b87ead47ee94`. ROYAL TV Kotlin compilation completed, while Almalaki compilation stopped at `CustomerScreen.kt:529` because that base snapshot's `RoyalCustomerInterface` declaration did not yet expose the `brandingRevision` argument already passed by `CustomerScreen`.
+- The current `main` commit `fe475e81d13aa1b3aa7f42f1a6731aa60fe35773` adds the matching `brandingRevision` parameter to `RoyalCustomerInterface`. The failure belongs to the earlier merge snapshot and needs a new integration run against the updated base.
+- No change was made to customer UI code from the ROYAL TV branch; this branch continues to keep its changes limited to TV authorization and its review documentation.
