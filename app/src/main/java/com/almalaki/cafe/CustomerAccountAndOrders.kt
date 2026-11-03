@@ -144,7 +144,7 @@ fun loadRoyalCustomerOrders(context: Context): List<RoyalCustomerOrderRecord> {
 fun saveRoyalCustomerOrder(
     context: Context,
     newOrder: RoyalCustomerOrderRecord
-) {
+): Boolean {
     val savedOrders = loadRoyalCustomerOrders(context)
         .filterNot { it.orderNumber == newOrder.orderNumber }
 
@@ -176,12 +176,12 @@ fun saveRoyalCustomerOrder(
         )
     }
 
-    context.getSharedPreferences(
+    return context.getSharedPreferences(
         CUSTOMER_ORDERS_PREFS,
         Context.MODE_PRIVATE
     ).edit()
         .putString(CUSTOMER_ORDERS_KEY, array.toString())
-        .apply()
+        .commit()
 }
 
 @Composable
