@@ -152,19 +152,21 @@ fun loadAndCacheRoyalRestaurantBranding(context: Context, restaurantId: String):
     }
     var localPath: String? = null
     if (rawPath != null) {
-        val download = brandingConnection("$BRANDING_URL/storage/v1/object/public/$BRANDING_BUCKET/${encodeBrandingPath(rawPath)}", "GET")
-        try {
-            if (download.responseCode in 200..299) {
-                val bytes = download.inputStream.use { it.readBytes() }
-                if (bytes.isNotEmpty() && bytes.size <= 10 * 1024 * 1024) {
-                    val ext = rawPath.substringAfterLast('.', "png").lowercase()
-                        .takeIf { it in setOf("png", "jpg", "jpeg", "webp") } ?: "png"
-                    val file = File(context.filesDir, "royal_remote_logo_${restaurantId}.$ext")
-                    file.writeBytes(bytes)
-                    localPath = file.absolutePath
+        val ext = rawPath.substringAfterLast('.', "png").lowercase()
+            .takeIf { it in setOf("png", "jpg", "jpeg", "webp") } ?: "png"
+        val cachedFile = File(context.filesDir, "royal_remote_logo_${restaurantId}_${rawPath.hashCode()}.$ext")
+        if (!cachedFile.isFile) {
+            val download = brandingConnection("$BRANDING_URL/storage/v1/object/public/$BRANDING_BUCKET/${encodeBrandingPath(rawPath)}", "GET")
+            try {
+                if (download.responseCode in 200..299) {
+                    val bytes = download.inputStream.use { it.readBytes() }
+                    if (bytes.isNotEmpty() && bytes.size <= 10 * 1024 * 1024) cachedFile.writeBytes(bytes)
                 }
-            }
-        } finally { download.disconnect() }
+            } finally { download.disconnect() }
+        }
+        if (cachedFile.isFile && cachedFile.length() in 1..(10L * 1024 * 1024)) {
+            localPath = cachedFile.absolutePath
+        }
     }
     val style = runCatching {
         RoyalTextLogoStyle.valueOf(row.optString("text_logo_style", "MODERN_SIGNATURE"))
