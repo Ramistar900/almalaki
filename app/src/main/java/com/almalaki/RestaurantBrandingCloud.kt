@@ -131,3 +131,53 @@ fun publishRoyalRestaurantBranding(
         connection.disconnect()
     }
 }
+
+fun loadAndCacheRoyalRestaurantBranding(context: Context, restaurantId: String): RoyalRestaurantBranding? {
+    if (!restaurantId.matches(Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"))) return null
+    val id = URLEncoder.encode(restaurantId, "UTF-8")
+    val connection = brandingConnection("$BRANDING_URL/rest/v1/restaurant_interface_settings?select=*&restaurant_id=eq.$id&limit=1", "GET")
+    val body: String
+    try {
+        val code = connection.responseCode
+        body = (if (code in 200..299) connection.inputStream else connection.errorStream)
+            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (code !in 200..299) throw Exception("تعذر تحميل هوية المطعم (HTTP $code).")
+    } finally { connection.disconnect() }
+    val rows = JSONArray(body)
+    if (rows.length() == 0) return null
+    val row = rows.getJSONObject(0)
+    val rawPath = row.optString("active_logo_path").takeIf {
+        it.isNotBlank() && it != "null" && it.startsWith("$restaurantId/branding/") &&
+            it.matches(Regex("^[0-9a-fA-F-]{36}/branding/[A-Za-z0-9._-]{1,140}$"))
+    }
+    var localPath: String? = null
+    if (rawPath != null) {
+        val download = brandingConnection("$BRANDING_URL/storage/v1/object/public/$BRANDING_BUCKET/${encodeBrandingPath(rawPath)}", "GET")
+        try {
+            if (download.responseCode in 200..299) {
+                val bytes = download.inputStream.use { it.readBytes() }
+                if (bytes.isNotEmpty() && bytes.size <= 10 * 1024 * 1024) {
+                    val ext = rawPath.substringAfterLast('.', "png").lowercase()
+                        .takeIf { it in setOf("png", "jpg", "jpeg", "webp") } ?: "png"
+                    val file = File(context.filesDir, "royal_remote_logo_${restaurantId}.$ext")
+                    file.writeBytes(bytes)
+                    localPath = file.absolutePath
+                }
+            }
+        } finally { download.disconnect() }
+    }
+    val style = runCatching {
+        RoyalTextLogoStyle.valueOf(row.optString("text_logo_style", "MODERN_SIGNATURE"))
+    }.getOrDefault(RoyalTextLogoStyle.MODERN_SIGNATURE)
+    val config = RoyalTextLogoConfig(
+        text = row.optString("text_logo_text", "Royal Coffee").ifBlank { "Royal Coffee" }.take(120),
+        style = style,
+        fontSizeSp = row.optInt("text_logo_font_size", 27).coerceIn(16, 56)
+    )
+    val activeId = if (localPath != null) row.optString("active_logo_id").ifBlank { "remote_active_logo" } else ROYAL_DEFAULT_LOGO_ID
+    val activeName = if (localPath != null) row.optString("active_logo_name").ifBlank { "شعار المطعم" } else "الشعار الأساسي"
+    val animation = if (localPath != null && row.optString("active_logo_animation") == ROYAL_ANIMATION_GENERIC_3D) ROYAL_ANIMATION_GENERIC_3D else ROYAL_ANIMATION_LAYERED
+    val news = row.optString("news_text", "")
+    cacheRemoteRoyalInterfaceSettings(context, restaurantId, news, activeId, activeName, localPath, animation, config)
+    return RoyalRestaurantBranding(news, activeId, activeName, localPath, animation, config)
+}
