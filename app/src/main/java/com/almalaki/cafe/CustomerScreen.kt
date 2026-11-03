@@ -117,6 +117,10 @@ fun syncCustomerAccount() {
         }
 
         prepareRoyalCustomerLocalAccount(context, currentUserId)
+        // Device registration is best-effort; it must never block account data sync.
+        withContext(Dispatchers.IO) {
+            runCatching { RoyalCustomerCloud.registerCurrentDevice(context) }
+        }
         customerProfile = loadRoyalCustomerProfile(context)
         customerOrderHistory = loadRoyalCustomerOrders(context)
         linkedRestaurants = loadRoyalLinkedRestaurants(context)
