@@ -162,11 +162,11 @@ object RoyalCustomerCloud {
     }
 
     fun loadSnapshot(): RoyalCustomerCloudSnapshot {
-        return RoyalCustomerCloudSnapshot(
-            profile = loadProfile(),
-            restaurants = loadRestaurants(),
-            orders = loadOrders()
-        )
+        // Keep profile and restaurant sync available even if order history is temporarily unavailable.
+        val profile = runCatching { loadProfile() }.getOrNull()
+        val restaurants = runCatching { loadRestaurants() }.getOrDefault(emptyList())
+        val orders = runCatching { loadOrders() }.getOrDefault(emptyList())
+        return RoyalCustomerCloudSnapshot(profile, restaurants, orders)
     }
 
     private fun parseTimestamp(value: String): Long {
