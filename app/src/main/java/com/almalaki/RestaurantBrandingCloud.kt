@@ -114,7 +114,6 @@ fun publishRoyalRestaurantBranding(
         put("text_logo_text", textLogoConfig.text.trim().ifEmpty { "Royal Coffee" }.take(120))
         put("text_logo_style", textLogoConfig.style.name)
         put("text_logo_font_size", textLogoConfig.fontSizeSp.coerceIn(16, 56))
-        put("updated_at", java.time.Instant.now().toString())
     }
     val url = "$BRANDING_URL/rest/v1/restaurant_interface_settings?on_conflict=restaurant_id"
     val connection = brandingConnection(url, "POST", accessToken)
