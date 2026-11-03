@@ -36,7 +36,6 @@ object RoyalTVDeviceIdentity {
             UUID.randomUUID()
                 .toString()
                 .replace("-", "")
-                .take(12)
                 .uppercase()
 
         prefs.edit()
@@ -76,7 +75,6 @@ object RoyalTVDeviceIdentity {
             UUID.randomUUID()
                 .toString()
                 .replace("-", "")
-                .take(12)
                 .uppercase()
         check(prefs.edit().putString(KEY_DEVICE_ID, newId).commit()) {
             "تعذر حفظ معرّف جهاز ROYAL TV الجديد"
