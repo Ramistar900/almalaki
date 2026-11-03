@@ -40,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 @Composable
 fun CustomerScreen(
@@ -61,6 +63,7 @@ fun CustomerScreen(
     onOwner: () -> Unit
 ) {
     val context = LocalContext.current
+    val customerScope = rememberCoroutineScope()
 val interfaceSettings = remember {
     loadRoyalInterfaceSettings(context)
 }
@@ -96,6 +99,41 @@ var restaurantLinkMessage by remember {
 }
 var showCustomerOrders by remember {
     mutableStateOf(false)
+}
+
+fun syncCustomerAccount() {
+    customerScope.launch {
+        if (RoyalSupabaseAuth.currentUserId() == null) {
+            customerProfile = RoyalCustomerProfile()
+            customerOrderHistory = emptyList()
+            saveRoyalLinkedRestaurants(context, emptyList())
+            linkedRestaurants = loadRoyalLinkedRestaurants(context)
+            val defaultRestaurant = RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي")
+            selectRoyalRestaurant(context, defaultRestaurant)
+            activeRestaurant = defaultRestaurant
+            return@launch
+        }
+
+        try {
+            val snapshot = withContext(Dispatchers.IO) {
+                RoyalCustomerCloud.loadSnapshot()
+            }
+            snapshot.profile?.let {
+                saveRoyalCustomerProfile(context, it)
+                customerProfile = it
+            }
+            saveRoyalLinkedRestaurants(context, snapshot.restaurants)
+            linkedRestaurants = loadRoyalLinkedRestaurants(context)
+            activeRestaurant = loadRoyalActiveRestaurant(context)
+            customerOrderHistory = snapshot.orders
+        } catch (_: Exception) {
+            // Keep the local copy available if the network is temporarily unavailable.
+        }
+    }
+}
+
+LaunchedEffect(Unit) {
+    if (RoyalSupabaseAuth.currentUserId() != null) syncCustomerAccount()
 }
 
 if (showCustomerSettings) {
@@ -780,7 +818,8 @@ val invoiceTotalSnapshot = totalAmount
                                         totalAmount,
                                         products,
                                         cart,
-                                        restaurantId = selectedRestaurantId
+                                        restaurantId = selectedRestaurantId,
+                                        restaurantCode = activeRestaurant.joinCode
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
@@ -798,6 +837,9 @@ val invoiceTotalSnapshot = totalAmount
                                     fulfillmentType = type
                                 )
                                 saveRoyalCustomerProfile(context, savedProfile)
+                                if (RoyalSupabaseAuth.currentUserId() != null) {
+                                    runCatching { RoyalCustomerCloud.saveProfile(savedProfile) }
+                                }
                                 customerProfile = savedProfile
 
                                 saveRoyalCustomerOrder(
@@ -862,7 +904,8 @@ if (showCustomerAccount) {
             customerProfile = loadRoyalCustomerProfile(context)
             showCustomerAccount = false
             showCustomerProfileEditor = true
-        }
+        },
+        onAuthChanged = { syncCustomerAccount() }
     )
 }
 
@@ -875,6 +918,15 @@ if (showCustomerProfileEditor) {
             saveRoyalCustomerProfile(context, profile)
             customerProfile = profile
             showCustomerProfileEditor = false
+            if (RoyalSupabaseAuth.currentUserId() != null) {
+                customerScope.launch {
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            RoyalCustomerCloud.saveProfile(profile)
+                        }
+                    }
+                }
+            }
         },
         onManageRestaurants = {
             showCustomerProfileEditor = false
