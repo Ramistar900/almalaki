@@ -33,7 +33,7 @@ private const val INTERFACE_PREFS = "royal_interface_settings"
 
 private fun interfacePrefsName(restaurantId: String): String {
     val safeId = restaurantId.trim().lowercase()
-        .takeIf { it.matches(Regex("^[0-9a-f-]{36}$")) }
+        .takeIf { it.matches(Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")) }
         ?: ROYAL_DEFAULT_RESTAURANT_ID
     return "${INTERFACE_PREFS}_${safeId}"
 }
