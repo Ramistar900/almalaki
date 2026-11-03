@@ -18,6 +18,7 @@ import io.github.jan.supabase.auth.handleDeeplinks
 object RoyalSupabaseAuth {
     const val PROJECT_URL = "https://duvxxskgdmgrtaleedqu.supabase.co"
     const val PUBLISHABLE_KEY = "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
+    const val AUTH_CALLBACK_URL = "com.almalaki://auth-callback"
 
     private val client by lazy {
         createSupabaseClient(
@@ -36,7 +37,7 @@ object RoyalSupabaseAuth {
         require(email.isNotBlank()) { "أدخل البريد الإلكتروني." }
         require(password.length >= 8) { "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل." }
 
-        client.auth.signUpWith(Email) {
+        client.auth.signUpWith(Email, redirectUrl = AUTH_CALLBACK_URL) {
             this.email = email.trim()
             this.password = password
         }
