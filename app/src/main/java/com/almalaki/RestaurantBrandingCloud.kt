@@ -108,7 +108,7 @@ fun publishRoyalRestaurantBranding(
     }
     val payload = JSONObject().apply {
         put("restaurant_id", restaurantId)
-        put("news_text", newsText.trim().ifEmpty { "أهلاً بكم في Royal Coffee ☕" })
+        put("news_text", newsText.trim().take(240).ifEmpty { "أهلاً بكم في Royal Coffee ☕" })
         put("active_logo_id", if (remoteLogoPath == null) ROYAL_DEFAULT_LOGO_ID else activeLogo.id)
         put("active_logo_name", if (remoteLogoPath == null) "الشعار الأساسي" else activeLogo.name.take(100))
         put("active_logo_path", remoteLogoPath ?: JSONObject.NULL)
