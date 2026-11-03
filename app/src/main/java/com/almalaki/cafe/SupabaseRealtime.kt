@@ -19,7 +19,7 @@ private const val ROYAL_REALTIME_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
 
 private const val ROYAL_REALTIME_KEY =
-    "sb_publishable_L-BfALjb0TkdTlyLTWbFBIg_aez3fjQd"
+    "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
 
 private var royalRealtimeJob: Job? = null
 
