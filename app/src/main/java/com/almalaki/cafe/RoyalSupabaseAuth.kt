@@ -7,10 +7,10 @@ import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.providers.builtin.Facebook
+import io.github.jan.supabase.auth.providers.OAuthProvider
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.auth.providers.builtin.Phone
-import io.github.jan.supabase.handleDeeplinks
+import io.github.jan.supabase.auth.handleDeeplinks
 
 /**
  * Public client configuration only. Never place a Supabase service-role key in the Android app.
@@ -53,7 +53,7 @@ object RoyalSupabaseAuth {
     }
 
     suspend fun signInWithFacebook() {
-        client.auth.signInWith(Facebook)
+        client.auth.signInWith(OAuthProvider("facebook"))
     }
 
     suspend fun sendWhatsAppOtp(phoneNumber: String) {
