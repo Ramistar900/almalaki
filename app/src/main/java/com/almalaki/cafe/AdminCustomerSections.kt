@@ -68,7 +68,7 @@ fun AdminCustomerSections(
 
         Thread {
             try {
-                val result = loadCustomerSections()
+                val result = loadCustomerSections(accessToken)
                 sections = result
             } catch (e: Exception) {
                 errorMessage = e.message
