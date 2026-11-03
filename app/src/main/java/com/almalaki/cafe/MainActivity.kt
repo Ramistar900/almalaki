@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         RoyalFontManager.initialize(this)
+        RoyalSupabaseAuth.handleDeepLink(intent)
         recoveryTokenState.value = extractRecoveryToken(intent)
 
         setContent {
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        RoyalSupabaseAuth.handleDeepLink(intent)
 
         val token = extractRecoveryToken(intent)
         if (token.isNotBlank()) {
