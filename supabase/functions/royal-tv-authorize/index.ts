@@ -4,6 +4,7 @@
 // Never ship SUPABASE_SERVICE_ROLE_KEY to Android clients.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ROYAL_TV_COMMAND_CLAIM_LEASE_MS } from "../_shared/royal-tv-auth-validation.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -13,7 +14,7 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const CLAIM_LEASE_MS = 30_000;
+const CLAIM_LEASE_MS = ROYAL_TV_COMMAND_CLAIM_LEASE_MS;
 
 const allowedCommands = new Set([
   "SHOW_ORDER",
@@ -296,7 +297,7 @@ Deno.serve(async (request: Request) => {
         .eq("paired_device_id", device.id)
         .eq("restaurant_id", device.restaurant_id)
         .eq("status", "claimed")
-        .lt("claimed_at", staleClaimCutoff)
+        .lte("claimed_at", staleClaimCutoff)
         .gt("expires_at", now);
       if (recoveryError) return fail(503, "Could not recover expired command claims");
 
