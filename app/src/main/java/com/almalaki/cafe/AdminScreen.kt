@@ -77,8 +77,9 @@ fun AdminScreen(
 val context = LocalContext.current
 val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val interfaceSettings = remember { 
-    loadRoyalInterfaceSettings(context)
+    var ownerRestaurantId by remember { mutableStateOf("") }
+    var interfaceSettings by remember {
+        mutableStateOf(loadRoyalInterfaceSettings(context))
     }
 
 var section by remember { mutableStateOf(AdminSection.HOME) }
@@ -102,6 +103,22 @@ var price by remember { mutableStateOf("") }
 var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 var editingProductId by remember { mutableStateOf<Int?>(null) }
 var message by remember { mutableStateOf("") }
+
+LaunchedEffect(accessToken) {
+    try {
+        val resolvedRestaurantId = kotlinx.coroutines.withContext(
+            kotlinx.coroutines.Dispatchers.IO
+        ) {
+            resolveOwnerRestaurantId(accessToken)
+        }
+        ownerRestaurantId = resolvedRestaurantId
+        migrateLegacyRoyalInterfaceSettings(context, resolvedRestaurantId)
+        interfaceSettings = loadRoyalInterfaceSettings(context, resolvedRestaurantId)
+    } catch (error: Exception) {
+        ownerRestaurantId = ""
+        message = error.message ?: "تعذر التحقق من المطعم المرتبط بحساب المالك."
+    }
+}
 var loading by remember { mutableStateOf(false) }
 
 var products by remember { mutableStateOf<List<Product>>(emptyList()) }
@@ -364,11 +381,11 @@ Column(
             .padding(horizontal = 10.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Royal3DAnimatedLogo(size = 38.dp)
+        Royal3DAnimatedLogo(size = 38.dp, restaurantId = ownerRestaurantId)
 
         Spacer(modifier = Modifier.weight(1f))
 
-        RoyalShinyLogo()
+        RoyalShinyLogo(restaurantId = ownerRestaurantId)
     }
     if (isLandscape) {
     Column(
@@ -408,7 +425,7 @@ Column(
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
-                accessToken = accessToken, context = context, onNameChange = { name = it },
+                accessToken = accessToken, context = context, restaurantId = ownerRestaurantId, onNameChange = { name = it },
                 onCategoryChange = { category = it }, onPriceChange = { price = it },
                 onPickImage = { imagePicker.launch("image/*") },
                 onEditProduct = {
@@ -437,7 +454,7 @@ Column(
                 }
 
              if (section != AdminSection.ROYAL_TV) {
-             RoyalBottomBar(newsText = interfaceSettings.newsText)
+             RoyalBottomBar(newsText = interfaceSettings.newsText, restaurantId = ownerRestaurantId)
         }
     }
     } else {
