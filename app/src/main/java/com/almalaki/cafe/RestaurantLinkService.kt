@@ -38,6 +38,34 @@ fun loadRoyalLinkedRestaurants(context: Context): List<RoyalLinkedRestaurant> {
         linked.filterNot { it.id == ROYAL_DEFAULT_RESTAURANT_ID }
 }
 
+fun saveRoyalLinkedRestaurants(
+    context: Context,
+    restaurants: List<RoyalLinkedRestaurant>
+) {
+    val array = JSONArray()
+    restaurants
+        .filterNot { it.id == ROYAL_DEFAULT_RESTAURANT_ID }
+        .distinctBy { it.id }
+        .forEach {
+            array.put(
+                JSONObject()
+                    .put("id", it.id)
+                    .put("name", it.name)
+                    .put("join_code", it.joinCode)
+            )
+        }
+    context.getSharedPreferences(RESTAURANT_LINK_PREFS, Context.MODE_PRIVATE)
+        .edit()
+        .putString("linked_restaurants", array.toString())
+        .apply()
+}
+
+fun syncRoyalLinkedRestaurants(context: Context): List<RoyalLinkedRestaurant> {
+    val cloud = RoyalCustomerCloud.loadRestaurants()
+    saveRoyalLinkedRestaurants(context, cloud)
+    return loadRoyalLinkedRestaurants(context)
+}
+
 fun loadRoyalActiveRestaurant(context: Context): RoyalLinkedRestaurant {
     val prefs = context.getSharedPreferences(RESTAURANT_LINK_PREFS, Context.MODE_PRIVATE)
     val id = prefs.getString("active_restaurant_id", ROYAL_DEFAULT_RESTAURANT_ID)
@@ -54,32 +82,11 @@ fun saveRoyalActiveRestaurant(context: Context, restaurant: RoyalLinkedRestauran
 }
 
 fun linkRoyalRestaurant(context: Context, code: String): RoyalLinkedRestaurant {
-    val normalizedCode = code.trim().uppercase()
-    require(normalizedCode.isNotBlank()) { "أدخل رمز المطعم." }
-    val resolved = restaurantRpc("resolve_restaurant_join_code", JSONObject().put("p_code", normalizedCode))
-    val rows = JSONArray(resolved)
-    if (rows.length() == 0) throw Exception("رمز المطعم غير صحيح أو أن المطعم غير متاح.")
-    val row = rows.getJSONObject(0)
-    val restaurant = RoyalLinkedRestaurant(
-        id = row.getString("restaurant_id"),
-        name = row.getString("restaurant_name"),
-        joinCode = normalizedCode
-    )
-    val existing = loadRoyalLinkedRestaurants(context)
-        .filterNot { it.id == ROYAL_DEFAULT_RESTAURANT_ID || it.id == restaurant.id }
-    val all = existing + restaurant
-    val array = JSONArray()
-    all.forEach {
-        array.put(JSONObject()
-            .put("id", it.id)
-            .put("name", it.name)
-            .put("join_code", it.joinCode))
-    }
-    context.getSharedPreferences(RESTAURANT_LINK_PREFS, Context.MODE_PRIVATE)
-        .edit()
-        .putString("linked_restaurants", array.toString())
-        .putString("active_restaurant_id", restaurant.id)
-        .apply()
+    val restaurant = RoyalCustomerCloud.linkRestaurant(code)
+    val all = loadRoyalLinkedRestaurants(context)
+        .filterNot { it.id == restaurant.id || it.id == ROYAL_DEFAULT_RESTAURANT_ID } + restaurant
+    saveRoyalLinkedRestaurants(context, all)
+    saveRoyalActiveRestaurant(context, restaurant)
     return restaurant
 }
 
