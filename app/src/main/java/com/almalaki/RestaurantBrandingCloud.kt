@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.HasRecord
+import io.github.jan.supabase.realtime.HasOldRecord
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -202,8 +204,21 @@ fun startRoyalRestaurantBrandingRealtime(restaurantId: String, onChanged: () -> 
                 table = "restaurant_interface_settings"
             }
             channel.subscribe(blockUntilSubscribed = true)
-            changes.collect {
-                withContext(Dispatchers.Main) { onChanged() }
+            changes.collect { change ->
+                // Postgres Changes does not expose a writable tenant filter in this
+                // client version. Inspect the row identity and refresh only this tenant.
+                val changedRecord = when (change) {
+                    is HasRecord -> change.record
+                    is HasOldRecord -> change.oldRecord
+                    else -> null
+                }
+                val changedRestaurantId = changedRecord
+                    ?.get("restaurant_id")
+                    ?.toString()
+                    ?.trim('"')
+                if (changedRestaurantId.equals(restaurantId, ignoreCase = true)) {
+                    withContext(Dispatchers.Main) { onChanged() }
+                }
             }
         } catch (e: CancellationException) {
             throw e
