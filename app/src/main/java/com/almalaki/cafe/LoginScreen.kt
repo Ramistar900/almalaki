@@ -23,6 +23,7 @@ private const val LOGIN_SUPABASE_KEY =
 
 @Composable
 fun LoginScreen(
+    developerOnly: Boolean = false,
     onSuccess: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -93,6 +94,7 @@ fun LoginScreen(
                 },
                 message = message,
                 loading = loading,
+                developerOnly = developerOnly,
                 onLogin = {
                     if (email.isBlank()) {
                         message = "أدخل البريد الإلكتروني."
@@ -115,6 +117,9 @@ fun LoginScreen(
                                 password = password
                             )
 
+                            if (developerOnly) {
+                                verifyDeveloperAccount(accessToken)
+                            }
                             onSuccess(accessToken)
                         } catch (e: Exception) {
                             AppSounds.wrongPassword(context)
@@ -145,6 +150,7 @@ private fun LoginContent(
     onPasswordChange: (String) -> Unit,
     message: String,
     loading: Boolean,
+    developerOnly: Boolean,
     onLogin: () -> Unit,
     onForgotPassword: () -> Unit,
     onBack: () -> Unit
@@ -164,7 +170,7 @@ private fun LoginContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "دخول المالك 👑",
+            text = if (developerOnly) "المطور الملكي 🔐" else "دخول المالك 👑",
             color = Color(0xFFF5F0E5),
             fontSize = 23.sp
         )
@@ -335,6 +341,42 @@ private fun PasswordResetContent(
                 fontSize = 14.sp
             )
         }
+    }
+}
+
+
+private fun verifyDeveloperAccount(accessToken: String) {
+    val connection = URL(
+        "$LOGIN_SUPABASE_URL/rest/v1/rpc/is_dashboard_admin"
+    ).openConnection() as HttpURLConnection
+
+    try {
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.connectTimeout = 10000
+        connection.readTimeout = 10000
+        connection.setRequestProperty("apikey", LOGIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Accept", "application/json")
+
+        connection.outputStream.use {
+            it.write("{}".toByteArray(Charsets.UTF_8))
+        }
+
+        val code = connection.responseCode
+        val response = (
+            if (code in 200..299) connection.inputStream else connection.errorStream
+        )?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+
+        if (code !in 200..299) {
+            throw Exception("تعذر التحقق من صلاحية المطوّر (HTTP $code).")
+        }
+        if (!response.trim().equals("true", ignoreCase = true)) {
+            throw Exception("هذا الحساب غير مخوّل للدخول إلى قسم المطوّر الملكي.")
+        }
+    } finally {
+        connection.disconnect()
     }
 }
 
