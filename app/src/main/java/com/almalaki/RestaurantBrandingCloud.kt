@@ -181,3 +181,41 @@ fun loadAndCacheRoyalRestaurantBranding(context: Context, restaurantId: String):
     cacheRemoteRoyalInterfaceSettings(context, restaurantId, news, activeId, activeName, localPath, animation, config)
     return RoyalRestaurantBranding(news, activeId, activeName, localPath, animation, config)
 }
+
+private var royalBrandingRealtimeJob: Job? = null
+private var royalBrandingRealtimeScope: CoroutineScope? = null
+
+fun startRoyalRestaurantBrandingRealtime(restaurantId: String, onChanged: () -> Unit) {
+    stopRoyalRestaurantBrandingRealtime()
+    if (!restaurantId.matches(Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"))) return
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    royalBrandingRealtimeScope = scope
+    royalBrandingRealtimeJob = scope.launch {
+        try {
+            val client = createSupabaseClient(
+                supabaseUrl = BRANDING_URL,
+                supabaseKey = BRANDING_KEY
+            ) { install(Realtime) }
+            val channel = client.channel("restaurant-interface-$restaurantId")
+            val changes = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "restaurant_interface_settings"
+                filter = "restaurant_id=eq.$restaurantId"
+            }
+            channel.subscribe(blockUntilSubscribed = true)
+            changes.collect {
+                withContext(Dispatchers.Main) { onChanged() }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("RoyalBranding", "Realtime branding listener unavailable: ${e.message}")
+        }
+    }
+}
+
+fun stopRoyalRestaurantBrandingRealtime() {
+    royalBrandingRealtimeJob?.cancel()
+    royalBrandingRealtimeJob = null
+    royalBrandingRealtimeScope?.cancel()
+    royalBrandingRealtimeScope = null
+}
