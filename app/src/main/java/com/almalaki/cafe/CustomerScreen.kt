@@ -36,6 +36,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +56,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @Composable
 fun CustomerScreen(
@@ -79,9 +81,11 @@ var customerOrderHistory by remember(context) {
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
 }
-val interfaceSettings = remember(activeRestaurant.id, customerIdentityReady) {
-    if (customerIdentityReady) loadRoyalInterfaceSettings(context, activeRestaurant.id)
-    else RoyalInterfaceSettings()
+var interfaceSettings by remember(activeRestaurant.id, customerIdentityReady) {
+    mutableStateOf(
+        if (customerIdentityReady) loadRoyalInterfaceSettings(context, activeRestaurant.id)
+        else RoyalInterfaceSettings()
+    )
 }
 var linkedRestaurants by remember(context) {
     mutableStateOf(loadRoyalLinkedRestaurants(context))
@@ -181,6 +185,44 @@ LaunchedEffect(Unit) {
         // Also sync on sign-out/expired sessions so local account data is cleared.
         syncCustomerAccount()
     }
+}
+
+LaunchedEffect(activeRestaurant.id, customerIdentityReady) {
+    if (!customerIdentityReady) return@LaunchedEffect
+    if (activeRestaurant.id.isBlank()) return@LaunchedEffect
+    suspend fun refreshBranding() {
+        try {
+            withContext(Dispatchers.IO) {
+                loadAndCacheRoyalRestaurantBranding(context, activeRestaurant.id)
+            }
+            interfaceSettings = loadRoyalInterfaceSettings(context, activeRestaurant.id)
+        } catch (_: Exception) {
+            // Keep the current tenant-scoped cache when the network is unavailable.
+        }
+    }
+    refreshBranding()
+    while (true) {
+        delay(60_000L)
+        refreshBranding()
+    }
+}
+
+DisposableEffect(activeRestaurant.id, customerIdentityReady) {
+    if (customerIdentityReady && activeRestaurant.id.isNotBlank()) {
+        startRoyalRestaurantBrandingRealtime(activeRestaurant.id) {
+            customerScope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        loadAndCacheRoyalRestaurantBranding(context, activeRestaurant.id)
+                    }
+                    interfaceSettings = loadRoyalInterfaceSettings(context, activeRestaurant.id)
+                } catch (_: Exception) {
+                    // Periodic refresh remains as a fallback.
+                }
+            }
+        }
+    }
+    onDispose { stopRoyalRestaurantBrandingRealtime() }
 }
 
 if (showCustomerSettings && customerIdentityReady) {
