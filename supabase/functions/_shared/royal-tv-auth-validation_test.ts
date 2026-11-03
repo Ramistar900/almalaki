@@ -2,6 +2,7 @@ import {
   allowedRoyalTvCommands,
   isCanonicalUuid,
   isPayloadWithinLimit,
+  isRoyalTvCommandClaimLeaseExpired,
   isValidDeviceId,
   isValidDeviceName,
 } from "./royal-tv-auth-validation.ts";
@@ -47,4 +48,21 @@ Deno.test("rejects payloads larger than the configured character limit", () => {
     throw new Error("oversized payload accepted");
   }
   if (isPayloadWithinLimit(undefined)) throw new Error("undefined payload should be rejected");
+});
+
+
+Deno.test("recovers only ROYAL TV claims whose 30-second lease has elapsed", () => {
+  const now = Date.parse("2026-11-03T08:00:30.000Z");
+  if (!isRoyalTvCommandClaimLeaseExpired("2026-11-03T08:00:00.000Z", now)) {
+    throw new Error("claim at the lease boundary should be recoverable");
+  }
+  if (isRoyalTvCommandClaimLeaseExpired("2026-11-03T08:00:00.001Z", now)) {
+    throw new Error("claim within the active lease must not be recovered");
+  }
+  if (isRoyalTvCommandClaimLeaseExpired(null, now)) {
+    throw new Error("claim without a timestamp must not be recovered");
+  }
+  if (isRoyalTvCommandClaimLeaseExpired("not-a-timestamp", now)) {
+    throw new Error("malformed claim timestamp must not be recovered");
+  }
 });
