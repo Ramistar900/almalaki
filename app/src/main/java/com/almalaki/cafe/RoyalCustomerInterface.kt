@@ -123,6 +123,7 @@ fun RoyalCustomerInterface(
     onMenuClick: () -> Unit = {},
   searchQuery: String = "",
 onSearchQueryChange: (String) -> Unit = {},
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
     content: @Composable () -> Unit
 ) {
 
