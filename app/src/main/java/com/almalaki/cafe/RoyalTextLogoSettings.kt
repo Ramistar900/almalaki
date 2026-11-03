@@ -23,6 +23,36 @@ object RoyalTextLogoSettings {
     private const val PREFS_NAME =
         "royal_text_logo_settings"
 
+    private fun scopedPrefsName(restaurantId: String): String {
+        val safeId = restaurantId.trim().lowercase()
+            .takeIf { it.matches(Regex("^[0-9a-f-]{36}$")) }
+            ?: ROYAL_DEFAULT_RESTAURANT_ID
+        return "${PREFS_NAME}_${safeId}"
+    }
+
+    /**
+     * Migrate old device-wide logo preferences only when the owner opens
+     * settings for their verified restaurant. Customer screens never claim
+     * the legacy global values.
+     */
+    fun migrateLegacy(context: Context, restaurantId: String) {
+        val legacy = context.applicationContext.getSharedPreferences(
+            PREFS_NAME, Context.MODE_PRIVATE
+        )
+        val scoped = context.applicationContext.getSharedPreferences(
+            scopedPrefsName(restaurantId), Context.MODE_PRIVATE
+        )
+        if (scoped.contains(KEY_TEXT) || scoped.contains(KEY_STYLE) ||
+            scoped.contains(KEY_FONT_SIZE)
+        ) return
+
+        val editor = scoped.edit()
+        if (legacy.contains(KEY_TEXT)) editor.putString(KEY_TEXT, legacy.getString(KEY_TEXT, "Royal Coffee"))
+        if (legacy.contains(KEY_STYLE)) editor.putString(KEY_STYLE, legacy.getString(KEY_STYLE, RoyalTextLogoStyle.MODERN_SIGNATURE.name))
+        if (legacy.contains(KEY_FONT_SIZE)) editor.putInt(KEY_FONT_SIZE, legacy.getInt(KEY_FONT_SIZE, 27))
+        editor.apply()
+    }
+
     private const val KEY_TEXT =
         "logo_text"
 
@@ -38,10 +68,13 @@ object RoyalTextLogoSettings {
     /**
      * قراءة آخر إعدادات محفوظة.
      */
-    fun load(context: Context): RoyalTextLogoConfig {
+    fun load(
+        context: Context,
+        restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
+    ): RoyalTextLogoConfig {
         val prefs = context.applicationContext
             .getSharedPreferences(
-                PREFS_NAME,
+                scopedPrefsName(restaurantId),
                 Context.MODE_PRIVATE
             )
 
@@ -78,11 +111,12 @@ object RoyalTextLogoSettings {
      */
     fun save(
         context: Context,
-        config: RoyalTextLogoConfig
+        config: RoyalTextLogoConfig,
+        restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
     ) {
         context.applicationContext
             .getSharedPreferences(
-                PREFS_NAME,
+                scopedPrefsName(restaurantId),
                 Context.MODE_PRIVATE
             )
             .edit()
