@@ -19,7 +19,7 @@ data class Product(
     val imageUrl: String
 )
 
-fun loadProducts(): List<Product> {
+fun loadProducts(accessToken: String? = null): List<Product> {
 
     val url = URL(
         "$SUPABASE_URL/rest/v1/products" +
@@ -39,7 +39,7 @@ fun loadProducts(): List<Product> {
 
     connection.setRequestProperty(
         "Authorization",
-        "Bearer $SUPABASE_KEY"
+        "Bearer ${accessToken?.takeIf { it.isNotBlank() } ?: SUPABASE_KEY}"
     )
 
     val code = connection.responseCode
