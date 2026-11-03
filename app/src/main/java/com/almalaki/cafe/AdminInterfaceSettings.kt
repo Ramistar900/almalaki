@@ -716,6 +716,7 @@ fun AdminInterfaceSettings(
                 val newLogo =
                     addLogoToLibrary(
                         context = context,
+                        restaurantId = restaurantId,
                         uri = uri,
                         displayName =
                             "شعار إضافي ${logoLibrary.size}"
@@ -729,7 +730,8 @@ fun AdminInterfaceSettings(
 
                         logoLibrary =
                             loadRoyalLogoLibrary(
-                                context
+                                context,
+                                restaurantId
                             )
 
                         "تمت إضافة الشعار إلى المكتبة ✓"
@@ -899,7 +901,8 @@ fun AdminInterfaceSettings(
 
                             saveActiveRoyalLogoId(
                                 context = context,
-                                logoId = logo.id
+                                logoId = logo.id,
+                                restaurantId = restaurantId
                             )
 
                             activeLogoId =
@@ -1056,7 +1059,8 @@ Slider(
 
                     activeLogoId =
                         loadActiveRoyalLogoId(
-                            context
+                            context,
+                            restaurantId
                         )
 
                     message = "تم الحفظ ✓"
