@@ -43,12 +43,21 @@ object RoyalTVSecureCommandPoller {
                     val commands = client.pollCommands()
                     for (command in commands) {
                         if (!isActive) break
+                        if (RoyalTVProcessedCommandStore.contains(context, command.id)) {
+                            // The command may have executed before an earlier ACK failed.
+                            // Acknowledge the retry without repeating the local action.
+                            client.acknowledge(command.id)
+                            continue
+                        }
                         val accepted = withContext(Dispatchers.Main) {
                             onCommand(command)
                         }
                         if (accepted) {
-                            // The server validates device ownership, claim status,
-                            // expiry and one-time acknowledgement before accepting this.
+                            // Persist the id before ACK so a recovered server lease does
+                            // not execute the same accepted command twice after a lost ACK.
+                            if (!RoyalTVProcessedCommandStore.markProcessed(context, command.id)) {
+                                throw IllegalStateException("Could not persist processed command id")
+                            }
                             client.acknowledge(command.id)
                         }
                     }
