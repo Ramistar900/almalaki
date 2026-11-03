@@ -13,6 +13,8 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+const CLAIM_LEASE_MS = 30_000;
+
 const allowedCommands = new Set([
   "SHOW_ORDER",
   "SHOW_YOUTUBE",
@@ -272,13 +274,35 @@ Deno.serve(async (request: Request) => {
 
     if (action === "poll_commands") {
       const device = await activeDevice(request);
-      const now = new Date().toISOString();
+      const nowDate = new Date();
+      const now = nowDate.toISOString();
+      const staleClaimCutoff = new Date(nowDate.getTime() - CLAIM_LEASE_MS).toISOString();
       const { error: touchError } = await admin.from("royal_tv_paired_devices")
         .update({ last_seen_at: now }).eq("id", device.id).eq("status", "active");
       if (touchError) return fail(503, "Could not update device status");
 
+      // Expire old commands and recover only claims whose lease elapsed.
+      // All updates remain scoped to this exact paired device and restaurant.
+      const { error: expireError } = await admin.from("royal_tv_commands")
+        .update({ status: "expired" })
+        .eq("paired_device_id", device.id)
+        .eq("restaurant_id", device.restaurant_id)
+        .in("status", ["pending", "claimed"])
+        .lte("expires_at", now);
+      if (expireError) return fail(503, "Could not expire old commands");
+
+      const { error: recoveryError } = await admin.from("royal_tv_commands")
+        .update({ status: "pending", claimed_at: null })
+        .eq("paired_device_id", device.id)
+        .eq("restaurant_id", device.restaurant_id)
+        .eq("status", "claimed")
+        .lt("claimed_at", staleClaimCutoff)
+        .gt("expires_at", now);
+      if (recoveryError) return fail(503, "Could not recover expired command claims");
+
       // Claim each row with a conditional update so concurrent polls cannot
-      // both receive the same pending command. Claimed commands are not replayed.
+      // both receive the same pending command. A claim is leased for 30 seconds;
+      // only this device can recover it after the lease expires.
       const { data: pending, error: loadError } = await admin.from("royal_tv_commands")
         .select("id")
         .eq("paired_device_id", device.id)
@@ -311,14 +335,18 @@ Deno.serve(async (request: Request) => {
       const device = await activeDevice(request);
       const commandId = String(body.command_id ?? "");
       if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(commandId)) return fail(400, "Invalid command id");
+      const acknowledgedAt = new Date();
+      const acknowledgementTime = acknowledgedAt.toISOString();
+      const activeLeaseCutoff = new Date(acknowledgedAt.getTime() - CLAIM_LEASE_MS).toISOString();
       const { data, error } = await admin.from("royal_tv_commands")
-        .update({ status: "acked", acknowledged_at: new Date().toISOString() })
+        .update({ status: "acked", acknowledged_at: acknowledgementTime })
         .eq("id", commandId)
         .eq("paired_device_id", device.id)
         .eq("restaurant_id", device.restaurant_id)
         .eq("status", "claimed")
         .is("acknowledged_at", null)
-        .gt("expires_at", new Date().toISOString())
+        .gt("claimed_at", activeLeaseCutoff)
+        .gt("expires_at", acknowledgementTime)
         .select("id")
         .maybeSingle();
       if (error) return fail(503, "Could not acknowledge command");
