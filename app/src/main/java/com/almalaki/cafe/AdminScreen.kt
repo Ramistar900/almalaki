@@ -494,7 +494,7 @@ Column(
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
-                accessToken = accessToken, context = context, onNameChange = { name = it },
+                accessToken = accessToken, context = context, restaurantId = ownerRestaurantId, onNameChange = { name = it },
                 onCategoryChange = { category = it }, onPriceChange = { price = it },
                 onPickImage = { imagePicker.launch("image/*") },
                 onEditProduct = {
