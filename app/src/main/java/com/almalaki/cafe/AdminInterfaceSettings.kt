@@ -652,7 +652,7 @@ fun AdminInterfaceSettings(
 
     var newsText by remember(restaurantId) {
         mutableStateOf(
-            saved.newsText
+            saved.newsText.take(240)
         )
     }
 
