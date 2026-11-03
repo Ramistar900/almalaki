@@ -151,17 +151,25 @@ fun loadAndCacheRoyalRestaurantBranding(context: Context, restaurantId: String):
         it.isNotBlank() && it != "null" && it.startsWith("$restaurantId/branding/") &&
             it.matches(Regex("^[0-9a-fA-F-]{36}/branding/[A-Za-z0-9._-]{1,140}$"))
     }
+    val previouslyActiveLogo = loadActiveRoyalLogo(context, restaurantId)
+    val hasUsablePreviousLogo = previouslyActiveLogo.id != ROYAL_DEFAULT_LOGO_ID &&
+        File(previouslyActiveLogo.filePath).isFile
     var localPath: String? = null
     if (rawPath != null) {
         val ext = rawPath.substringAfterLast('.', "png").lowercase()
             .takeIf { it in setOf("png", "jpg", "jpeg", "webp") } ?: "png"
         val cachedFile = File(context.filesDir, "royal_remote_logo_${restaurantId}_${rawPath.hashCode()}.$ext")
+        if (cachedFile.exists() && cachedFile.length() !in 1..(10L * 1024 * 1024)) {
+            cachedFile.delete()
+        }
         if (!cachedFile.isFile) {
             val download = brandingConnection("$BRANDING_URL/storage/v1/object/public/$BRANDING_BUCKET/${encodeBrandingPath(rawPath)}", "GET")
             try {
                 if (download.responseCode in 200..299) {
                     val bytes = download.inputStream.use { it.readBytes() }
-                    if (bytes.isNotEmpty() && bytes.size <= 10 * 1024 * 1024) cachedFile.writeBytes(bytes)
+                    if (bytes.isNotEmpty() && bytes.size <= 10 * 1024 * 1024) {
+                        cachedFile.writeBytes(bytes)
+                    }
                 }
             } finally { download.disconnect() }
         }
@@ -177,12 +185,26 @@ fun loadAndCacheRoyalRestaurantBranding(context: Context, restaurantId: String):
         style = style,
         fontSizeSp = row.optInt("text_logo_font_size", 27).coerceIn(16, 56)
     )
-    val activeId = if (localPath != null) row.optString("active_logo_id").ifBlank { "remote_active_logo" } else ROYAL_DEFAULT_LOGO_ID
-    val activeName = if (localPath != null) row.optString("active_logo_name").ifBlank { "شعار المطعم" } else "الشعار الأساسي"
-    val animation = if (localPath != null && row.optString("active_logo_animation") == ROYAL_ANIMATION_GENERIC_3D) ROYAL_ANIMATION_GENERIC_3D else ROYAL_ANIMATION_LAYERED
-    val news = row.optString("news_text", "")
-    cacheRemoteRoyalInterfaceSettings(context, restaurantId, news, activeId, activeName, localPath, animation, config)
-    return RoyalRestaurantBranding(news, activeId, activeName, localPath, animation, config)
+    val keepPreviousLogo = rawPath != null && localPath == null && hasUsablePreviousLogo
+    val activeId = when {
+        localPath != null -> row.optString("active_logo_id").ifBlank { "remote_active_logo" }
+        keepPreviousLogo -> previouslyActiveLogo.id
+        else -> ROYAL_DEFAULT_LOGO_ID
+    }
+    val activeName = when {
+        localPath != null -> row.optString("active_logo_name").ifBlank { "شعار المطعم" }
+        keepPreviousLogo -> previouslyActiveLogo.name
+        else -> "الشعار الأساسي"
+    }
+    val activePath = localPath ?: previouslyActiveLogo.filePath.takeIf { keepPreviousLogo }
+    val animation = when {
+        localPath != null && row.optString("active_logo_animation") == ROYAL_ANIMATION_GENERIC_3D -> ROYAL_ANIMATION_GENERIC_3D
+        keepPreviousLogo -> previouslyActiveLogo.animationType
+        else -> ROYAL_ANIMATION_LAYERED
+    }
+    val news = row.optString("news_text", "").take(240)
+    cacheRemoteRoyalInterfaceSettings(context, restaurantId, news, activeId, activeName, activePath, animation, config)
+    return RoyalRestaurantBranding(news, activeId, activeName, activePath, animation, config)
 }
 
 private var royalBrandingRealtimeJob: Job? = null
