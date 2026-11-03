@@ -105,3 +105,10 @@ Still incomplete:
 - Deno validation run `41585854566` passed on the same head; Edge Function type-check and all 5 validation tests passed. Push-triggered Android run `41585848502` also passed.
 - PR #18 remains open and draft. No merge, Supabase database change, production migration, Edge Function deployment, or paid Supabase branch was performed.
 - Remaining pre-production work: server-side rate limiting, durable audit-event recording, isolated staging tests for owner/tenant/device authorization and concurrent challenge consumption, real Android TV pairing/revocation/re-pair tests, and a reviewed retirement plan for the legacy Realtime command path. Do not describe the secure endpoint as production deployed until those gates pass.
+## SQL privilege review and final test gate (2026-11-03)
+
+- The schema migration explicitly grants the three server-only ROYAL TV tables to `service_role` after revoking `public`, `anon`, and `authenticated`. The atomic pairing RPC remains executable only by `service_role`.
+- Static migration tests were added for RLS enablement, client-role revocation, service-role table grants, `SECURITY DEFINER` with an empty search path, one-time unexpired challenge consumption, and service-role-only RPC execution.
+- Deno run `41586251163` passed `deno check` and all 7 tests (0 failures). The Deno test runner was granted read permission only to `database/migrations` for these static checks.
+- Android integration run `41586251191` completed successfully for branch head `ed58d54a678518c23595dabfe8dcc42a50e9d856`, with latest main commit `fe475e81d13aa1b3aa7f42f1a6731aa60fe35773` as the merge base. The `:royaltv:compileDebugKotlin` and `:app:compileDebugKotlin` tasks succeeded.
+- All SQL work described here is source review and static test coverage only. Neither migration was applied to Supabase; no paid branch, deployment, or production data change was made.
