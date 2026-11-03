@@ -65,6 +65,8 @@ fun CustomerScreen(
     val context = LocalContext.current
     val customerScope = rememberCoroutineScope()
     var customerSyncGeneration by remember { mutableStateOf(0) }
+    var customerIdentityReady by remember { mutableStateOf(false) }
+    var syncedCustomerUserId by remember { mutableStateOf<String?>(null) }
 var showCustomerSettings by remember {
     mutableStateOf(false)
 }
@@ -77,8 +79,9 @@ var customerOrderHistory by remember(context) {
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
 }
-val interfaceSettings = remember(activeRestaurant.id) {
-    loadRoyalInterfaceSettings(context, activeRestaurant.id)
+val interfaceSettings = remember(activeRestaurant.id, customerIdentityReady) {
+    if (customerIdentityReady) loadRoyalInterfaceSettings(context, activeRestaurant.id)
+    else RoyalInterfaceSettings()
 }
 var linkedRestaurants by remember(context) {
     mutableStateOf(loadRoyalLinkedRestaurants(context))
@@ -109,6 +112,7 @@ fun syncCustomerAccount() {
     customerScope.launch {
         val currentUserId = RoyalSupabaseAuth.currentUserId()
         if (syncGeneration != customerSyncGeneration) return@launch
+        if (currentUserId != syncedCustomerUserId) customerIdentityReady = false
 
         if (currentUserId == null) {
             clearRoyalCustomerLocalAccount(context)
@@ -119,14 +123,12 @@ fun syncCustomerAccount() {
             val defaultRestaurant = RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي")
             selectRoyalRestaurant(context, defaultRestaurant)
             activeRestaurant = defaultRestaurant
+            syncedCustomerUserId = null
+            customerIdentityReady = true
             return@launch
         }
 
         prepareRoyalCustomerLocalAccount(context, currentUserId)
-        // Device registration is best-effort; it must never block account data sync.
-        withContext(Dispatchers.IO) {
-            runCatching { RoyalCustomerCloud.registerCurrentDevice(context) }
-        }
         if (
             syncGeneration != customerSyncGeneration ||
             RoyalSupabaseAuth.currentUserId() != currentUserId
@@ -136,6 +138,17 @@ fun syncCustomerAccount() {
         customerOrderHistory = loadRoyalCustomerOrders(context)
         linkedRestaurants = loadRoyalLinkedRestaurants(context)
         activeRestaurant = loadRoyalActiveRestaurant(context)
+        syncedCustomerUserId = currentUserId
+        customerIdentityReady = true
+
+        // Device registration is best-effort; it must never block account data sync.
+        withContext(Dispatchers.IO) {
+            runCatching { RoyalCustomerCloud.registerCurrentDevice(context) }
+        }
+        if (
+            syncGeneration != customerSyncGeneration ||
+            RoyalSupabaseAuth.currentUserId() != currentUserId
+        ) return@launch
 
         try {
             val snapshot = withContext(Dispatchers.IO) {
@@ -170,7 +183,7 @@ LaunchedEffect(Unit) {
     }
 }
 
-if (showCustomerSettings) {
+if (showCustomerSettings && customerIdentityReady) {
     RoyalCustomerSettings(
         isDarkMode = darkMode,
         onBack = {
@@ -257,6 +270,23 @@ var invoiceItems by remember {
 var invoiceTotalAmount by remember {
     mutableStateOf(0.0)
 }
+
+LaunchedEffect(customerIdentityReady) {
+    if (!customerIdentityReady) {
+        showCustomerSettings = false
+        showCustomerAccount = false
+        showCustomerProfileEditor = false
+        showRestaurantLinks = false
+        showCustomerOrders = false
+        showCart = false
+        showCheckout = false
+        showInvoice = false
+        cart = emptyMap()
+        products = emptyList()
+        customerSections = emptyList()
+        loading = true
+    }
+}
     /*
      * البحث والتصنيف
      */
@@ -268,7 +298,16 @@ var invoiceTotalAmount by remember {
         mutableStateOf("الكل")
     }
 
-    LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode) {
+    LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode, customerIdentityReady) {
+        // Do not load a previously selected tenant until the current account
+        // has been identified and its local cache has been prepared.
+        if (!customerIdentityReady) {
+            loading = true
+            products = emptyList()
+            customerSections = emptyList()
+            cart = emptyMap()
+            return@LaunchedEffect
+        }
         // Clear the previous tenant's content immediately; never keep its menu
         // or cart visible while the next restaurant is loading.
         loading = true
@@ -415,7 +454,7 @@ var invoiceTotalAmount by remember {
         
         
         RoyalCustomerInterface(
-            restaurantId = activeRestaurant.id,
+            restaurantId = if (customerIdentityReady) activeRestaurant.id else "",
             isDarkMode = darkMode,
             newsText = interfaceSettings.newsText,
             showCartBanner = totalItems > 0,
@@ -424,16 +463,20 @@ var invoiceTotalAmount by remember {
                 showCart = true
             },
             onOrdersClick = {
-                customerOrderHistory = loadRoyalCustomerOrders(context)
-                showCustomerOrders = true
+                if (customerIdentityReady) {
+                    customerOrderHistory = loadRoyalCustomerOrders(context)
+                    showCustomerOrders = true
+                }
             },
             onAccountClick = {
-                customerProfile = loadRoyalCustomerProfile(context)
-                showCustomerAccount = true
+                if (customerIdentityReady) {
+                    customerProfile = loadRoyalCustomerProfile(context)
+                    showCustomerAccount = true
+                }
             },
             onOwnerLogin = onOwner,
             onSettings = {
-                showCustomerSettings = true
+                if (customerIdentityReady) showCustomerSettings = true
             },
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it }
