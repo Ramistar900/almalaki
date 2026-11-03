@@ -27,7 +27,8 @@ fun createOrder(
     totalAmount: Double,
     products: List<Product>,
     cart: Map<Int, Int>,
-    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
+    restaurantCode: String = ""
 ): OrderResult {
 
     if (cart.isEmpty()) {
@@ -46,6 +47,18 @@ fun createOrder(
         deliveryAddress.trim().isEmpty()
     ) {
         throw Exception("عنوان التوصيل مطلوب.")
+    }
+
+    if (restaurantCode.isNotBlank()) {
+        return createRestaurantOrderViaRpc(
+            restaurantCode = restaurantCode,
+            customerName = customerName,
+            customerPhone = customerPhone,
+            deliveryAddress = deliveryAddress,
+            fulfillmentType = fulfillmentType,
+            products = products,
+            cart = cart
+        )
     }
 
     val orderNumber = generateOrderNumber()
@@ -82,6 +95,64 @@ fun createOrder(
     )
 
     return OrderResult(orderNumber)
+}
+
+private fun createRestaurantOrderViaRpc(
+    restaurantCode: String,
+    customerName: String,
+    customerPhone: String,
+    deliveryAddress: String,
+    fulfillmentType: String,
+    products: List<Product>,
+    cart: Map<Int, Int>
+): OrderResult {
+    val items = JSONArray()
+    products.forEach { product ->
+        val quantity = cart[product.id] ?: 0
+        if (quantity > 0) {
+            items.put(
+                JSONObject()
+                    .put("product_id", product.id)
+                    .put("quantity", quantity)
+            )
+        }
+    }
+    if (items.length() == 0) throw Exception("لا توجد منتجات في الطلب.")
+
+    val body = JSONObject()
+        .put("p_code", restaurantCode.trim().uppercase())
+        .put("p_customer_name", customerName.trim())
+        .put("p_customer_phone", customerPhone.trim())
+        .put("p_delivery_address", deliveryAddress.trim())
+        .put("p_fulfillment_type", fulfillmentType)
+        .put("p_items", items)
+
+    val connection = URL("$ORDER_SUPABASE_URL/rest/v1/rpc/create_restaurant_order")
+        .openConnection() as HttpURLConnection
+    try {
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 15000
+        connection.readTimeout = 20000
+        connection.doOutput = true
+        connection.setRequestProperty("apikey", ORDER_SUPABASE_KEY)
+        connection.setRequestProperty(
+            "Authorization",
+            "Bearer ${RoyalSupabaseAuth.accessTokenOrNull() ?: ORDER_SUPABASE_KEY}"
+        )
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+        val code = connection.responseCode
+        val response = (if (code in 200..299) connection.inputStream else connection.errorStream)
+            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (code !in 200..299) {
+            throw Exception("تعذر إرسال الطلب (HTTP $code): " + response.take(240))
+        }
+        val rows = JSONArray(response)
+        if (rows.length() == 0) throw Exception("لم يرجع الخادم رقم الطلب.")
+        return OrderResult(rows.getJSONObject(0).optString("order_number"))
+    } finally {
+        connection.disconnect()
+    }
 }
 
 private fun generateOrderNumber(): String {
@@ -134,9 +205,10 @@ private fun insertOrder(
         connection.requestMethod = "POST"
         connection.doOutput = true
 
+        connection.setRequestProperty("apikey", ORDER_SUPABASE_KEY)
         connection.setRequestProperty(
-            "apikey",
-            ORDER_SUPABASE_KEY
+            "Authorization",
+            "Bearer ${RoyalSupabaseAuth.accessTokenOrNull() ?: ORDER_SUPABASE_KEY}"
         )
 
         connection.setRequestProperty(
@@ -310,9 +382,10 @@ private fun insertOrderItems(
         connection.requestMethod = "POST"
         connection.doOutput = true
 
+        connection.setRequestProperty("apikey", ORDER_SUPABASE_KEY)
         connection.setRequestProperty(
-            "apikey",
-            ORDER_SUPABASE_KEY
+            "Authorization",
+            "Bearer ${RoyalSupabaseAuth.accessTokenOrNull() ?: ORDER_SUPABASE_KEY}"
         )
 
         connection.setRequestProperty(
