@@ -609,6 +609,7 @@ fun AdminInterfaceSettings(
 ) {
     remember(context, restaurantId) {
         migrateLegacyRoyalInterfaceSettings(context, restaurantId)
+        RoyalTextLogoSettings.migrateLegacy(context, restaurantId)
     }
 
     val saved =
