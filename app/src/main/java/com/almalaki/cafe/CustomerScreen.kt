@@ -64,6 +64,7 @@ fun CustomerScreen(
 ) {
     val context = LocalContext.current
     val customerScope = rememberCoroutineScope()
+    var customerSyncGeneration by remember { mutableStateOf(0) }
 val interfaceSettings = remember {
     loadRoyalInterfaceSettings(context)
 }
@@ -102,8 +103,13 @@ var showCustomerOrders by remember {
 }
 
 fun syncCustomerAccount() {
+    customerSyncGeneration += 1
+    val syncGeneration = customerSyncGeneration
+
     customerScope.launch {
         val currentUserId = RoyalSupabaseAuth.currentUserId()
+        if (syncGeneration != customerSyncGeneration) return@launch
+
         if (currentUserId == null) {
             clearRoyalCustomerLocalAccount(context)
             customerProfile = RoyalCustomerProfile()
@@ -121,6 +127,11 @@ fun syncCustomerAccount() {
         withContext(Dispatchers.IO) {
             runCatching { RoyalCustomerCloud.registerCurrentDevice(context) }
         }
+        if (
+            syncGeneration != customerSyncGeneration ||
+            RoyalSupabaseAuth.currentUserId() != currentUserId
+        ) return@launch
+
         customerProfile = loadRoyalCustomerProfile(context)
         customerOrderHistory = loadRoyalCustomerOrders(context)
         linkedRestaurants = loadRoyalLinkedRestaurants(context)
@@ -130,6 +141,13 @@ fun syncCustomerAccount() {
             val snapshot = withContext(Dispatchers.IO) {
                 RoyalCustomerCloud.loadSnapshot()
             }
+            // A delayed response from a previous account must never overwrite
+            // the local cache or UI after a different account signs in.
+            if (
+                syncGeneration != customerSyncGeneration ||
+                RoyalSupabaseAuth.currentUserId() != currentUserId
+            ) return@launch
+
             snapshot.profile?.let {
                 saveRoyalCustomerProfile(context, it)
                 customerProfile = it
@@ -145,9 +163,10 @@ fun syncCustomerAccount() {
 }
 
 LaunchedEffect(Unit) {
-    if (RoyalSupabaseAuth.currentUserId() != null) syncCustomerAccount()
+    syncCustomerAccount()
     RoyalSupabaseAuth.sessionStatusEvents().collect {
-        if (RoyalSupabaseAuth.currentUserId() != null) syncCustomerAccount()
+        // Also sync on sign-out/expired sessions so local account data is cleared.
+        syncCustomerAccount()
     }
 }
 
@@ -250,8 +269,16 @@ var invoiceTotalAmount by remember {
     }
 
     LaunchedEffect(activeRestaurant.id, activeRestaurant.joinCode) {
+        // Clear the previous tenant's content immediately; never keep its menu
+        // or cart visible while the next restaurant is loading.
         loading = true
         message = ""
+        products = emptyList()
+        customerSections = emptyList()
+        cart = emptyMap()
+        selectedCategory = "الكل"
+        showCart = false
+        showCheckout = false
         try {
             val (loadedProducts, loadedSections) = withContext(Dispatchers.IO) {
                 val productsForRestaurant = if (
