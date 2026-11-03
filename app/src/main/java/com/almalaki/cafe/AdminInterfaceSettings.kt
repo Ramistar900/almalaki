@@ -49,16 +49,43 @@ private fun interfacePrefs(context: Context, restaurantId: String) =
 fun migrateLegacyRoyalInterfaceSettings(context: Context, restaurantId: String) {
     val legacy = context.getSharedPreferences(INTERFACE_PREFS, Context.MODE_PRIVATE)
     val scoped = interfacePrefs(context, restaurantId)
-    if (scoped.contains(KEY_NEWS_TEXT) || scoped.contains(KEY_LOGO_LIBRARY) ||
-        scoped.contains(KEY_ACTIVE_LOGO_ID) || scoped.contains(KEY_TOP_LOGO_PATH) ||
-        scoped.contains(KEY_BOTTOM_LOGO_PATH)
-    ) return
-
     val editor = scoped.edit()
-    listOf(KEY_NEWS_TEXT, KEY_TOP_LOGO_PATH, KEY_BOTTOM_LOGO_PATH,
-        KEY_LOGO_LIBRARY, KEY_ACTIVE_LOGO_ID).forEach { key ->
-        if (legacy.contains(key)) editor.putString(key, legacy.getString(key, ""))
+
+    if (!scoped.contains(KEY_NEWS_TEXT) &&
+        legacy.contains(KEY_NEWS_TEXT)
+    ) {
+        editor.putString(KEY_NEWS_TEXT, legacy.getString(KEY_NEWS_TEXT, DEFAULT_NEWS_TEXT))
     }
+
+    listOf(KEY_TOP_LOGO_PATH, KEY_BOTTOM_LOGO_PATH).forEach { key ->
+        if (scoped.getString(key, "").isNullOrBlank() &&
+            !legacy.getString(key, "").isNullOrBlank()
+        ) {
+            editor.putString(key, legacy.getString(key, ""))
+        }
+    }
+
+    // Customer screens may have initialized an empty default-only logo list
+    // before the owner opens settings. Preserve any tenant-specific logos,
+    // but migrate the old custom library when the scoped list has no custom logo.
+    if (legacy.contains(KEY_LOGO_LIBRARY)) {
+        val legacyLogos = logoLibraryFromJson(legacy.getString(KEY_LOGO_LIBRARY, null))
+        val scopedLogos = logoLibraryFromJson(scoped.getString(KEY_LOGO_LIBRARY, null))
+        val legacyHasCustom = legacyLogos.any { it.id != ROYAL_DEFAULT_LOGO_ID }
+        val scopedHasCustom = scopedLogos.any { it.id != ROYAL_DEFAULT_LOGO_ID }
+        if (legacyHasCustom && !scopedHasCustom) {
+            editor.putString(KEY_LOGO_LIBRARY, legacy.getString(KEY_LOGO_LIBRARY, "[]"))
+        }
+    }
+
+    val legacyActive = legacy.getString(KEY_ACTIVE_LOGO_ID, ROYAL_DEFAULT_LOGO_ID)
+    val scopedActive = scoped.getString(KEY_ACTIVE_LOGO_ID, ROYAL_DEFAULT_LOGO_ID)
+    if (legacyActive != ROYAL_DEFAULT_LOGO_ID &&
+        scopedActive == ROYAL_DEFAULT_LOGO_ID
+    ) {
+        editor.putString(KEY_ACTIVE_LOGO_ID, legacyActive)
+    }
+
     editor.apply()
 }
 
