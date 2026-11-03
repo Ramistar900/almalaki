@@ -16,7 +16,7 @@ private const val STORAGE_KEY =
  * The query is constrained by restaurant_members RLS, so it cannot return
  * another account's tenant.
  */
-private fun resolveOwnerRestaurantId(accessToken: String): String {
+fun resolveOwnerRestaurantId(accessToken: String): String {
     require(accessToken.isNotBlank()) { "جلسة المالك غير متوفرة." }
 
     val url = URL(
