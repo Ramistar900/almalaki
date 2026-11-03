@@ -94,3 +94,14 @@ Still incomplete:
 - The claim lease and persistent client deduplication were compiled successfully in the integration build. This does not replace a live concurrency test against PostgreSQL.
 - Rate limiting and durable audit-event storage remain open security work. Do not add or apply a new production migration until the current live migration list and exact next version are verified. No paid Supabase branch was created, no migration was applied, and the Edge Function was not deployed.
 - PR #18 remains open and draft. No merge was performed.
+
+## Final review additions (2026-11-03)
+
+- The authorization Edge Function now uses shared validators for restaurant UUIDs, device IDs/names, allowed command types, and payload size in the challenge/pair/list/send/revoke/ack request paths. The Deno workflow runs both `deno check` on the Edge Function and the shared validation unit tests.
+- Device polling and acknowledgement now also re-check that the paired device's restaurant is active. A suspended restaurant cannot receive or acknowledge queued secure commands.
+- The TV exposes a secure pairing/re-pair action from its Back/exit dialog. It stops both command transports before clearing old local credentials, rotates the device identifier, persists secure-mode selection, and then shows the pairing-code dialog. The owner should revoke the old device from Almalaki before re-pairing. If secure-mode persistence fails, the TV keeps the existing credential and does not clear it.
+- Device identifiers now retain the full UUID-derived random value rather than truncating it to 12 hexadecimal characters. Re-pairing gets a fresh identifier so it does not collide with the revoked row's unique device_id.
+- Android integration run `41585854568` passed for branch head `55e71dd6abacec926926cf6c860f3bb318879761`; `:royaltv:compileDebugKotlin` and `:app:compileDebugKotlin` both completed successfully against the PR merge snapshot.
+- Deno validation run `41585854566` passed on the same head; Edge Function type-check and all 5 validation tests passed. Push-triggered Android run `41585848502` also passed.
+- PR #18 remains open and draft. No merge, Supabase database change, production migration, Edge Function deployment, or paid Supabase branch was performed.
+- Remaining pre-production work: server-side rate limiting, durable audit-event recording, isolated staging tests for owner/tenant/device authorization and concurrent challenge consumption, real Android TV pairing/revocation/re-pair tests, and a reviewed retirement plan for the legacy Realtime command path. Do not describe the secure endpoint as production deployed until those gates pass.
