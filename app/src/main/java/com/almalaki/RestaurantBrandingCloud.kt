@@ -201,7 +201,6 @@ fun startRoyalRestaurantBrandingRealtime(restaurantId: String, onChanged: () -> 
             val channel = client.channel("restaurant-interface-$restaurantId")
             val changes = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "restaurant_interface_settings"
-                filter = "restaurant_id=eq.$restaurantId"
             }
             channel.subscribe(blockUntilSubscribed = true)
             changes.collect {
