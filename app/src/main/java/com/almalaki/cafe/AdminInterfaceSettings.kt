@@ -604,6 +604,7 @@ fun saveRoyalInterfaceSettings(
             KEY_NEWS_TEXT,
             newsText
                 .trim()
+                .take(240)
                 .ifEmpty {
                     DEFAULT_NEWS_TEXT
                 }
@@ -1055,7 +1056,7 @@ Slider(
                 value = newsText,
 
                 onValueChange = {
-                    newsText = it
+                    newsText = it.take(240)
                 },
 
                 modifier =
