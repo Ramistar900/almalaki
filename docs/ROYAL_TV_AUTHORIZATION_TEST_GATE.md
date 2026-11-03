@@ -60,3 +60,11 @@ Still incomplete:
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
 - Android compile CI succeeded on 2026-11-01 for commits `112ffdedd0e0a6dac6d5229c54e4a8439c811673`, `1334034bd125a8e8dda5867c4d1ec1f02d3073e6`, `c0a8981bb623a0621740d5ffa2406b5da5b2ca77`, and `5ae59d97d0d49efb248c6fa24bd2cb60950fbe4f`. Both Android Kotlin compile tasks completed successfully on the latest head. This is compile-only verification. No device test or negative integration test has been confirmed.
 - Poller recovery after a command is claimed but not acknowledged still needs a server-side lease/requeue design.
+
+## Integrated build follow-up (2026-11-03)
+
+- Pull request check run `41565546301` used synthetic merge commit `2d49db9328f65e028e0f9cccf9213b887c41b7e1`, whose base parent was `e06af9caa7a0bf728f463397986feae93d884e6a` and whose PR head was `55b3f46156ad7ca6c6081f7fa564d527ed3393fd`.
+- In that run, `:royaltv:compileDebugKotlin` completed; `:app:compileDebugKotlin` failed because the merged base snapshot contained a misplaced customer session observer and an incompatible Facebook OAuth provider reference.
+- The later current `main` tree (`3ea8605eaa054dea83898995b6f0ed5899b22152`) contains the corresponding corrections: the observer is imported and placed inside the customer account portal where its state is in scope, and Facebook sign-in uses the SDK's `Facebook` provider reference.
+- That old failure must not be treated as the result for the later `main` tree. A fresh pull-request integration run is required before reporting a full successful build.
+- The Android compile gate remains enabled. No production migration or Edge Function deployment was performed.
