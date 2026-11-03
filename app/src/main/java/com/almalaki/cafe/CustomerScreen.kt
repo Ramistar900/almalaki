@@ -103,7 +103,9 @@ var showCustomerOrders by remember {
 
 fun syncCustomerAccount() {
     customerScope.launch {
-        if (RoyalSupabaseAuth.currentUserId() == null) {
+        val currentUserId = RoyalSupabaseAuth.currentUserId()
+        if (currentUserId == null) {
+            clearRoyalCustomerLocalAccount(context)
             customerProfile = RoyalCustomerProfile()
             customerOrderHistory = emptyList()
             saveRoyalLinkedRestaurants(context, emptyList())
@@ -113,6 +115,12 @@ fun syncCustomerAccount() {
             activeRestaurant = defaultRestaurant
             return@launch
         }
+
+        prepareRoyalCustomerLocalAccount(context, currentUserId)
+        customerProfile = loadRoyalCustomerProfile(context)
+        customerOrderHistory = loadRoyalCustomerOrders(context)
+        linkedRestaurants = loadRoyalLinkedRestaurants(context)
+        activeRestaurant = loadRoyalActiveRestaurant(context)
 
         try {
             val snapshot = withContext(Dispatchers.IO) {
