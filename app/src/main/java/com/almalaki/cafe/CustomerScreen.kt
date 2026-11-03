@@ -811,12 +811,6 @@ val selectedRestaurantCode = activeRestaurant.joinCode
                                         idempotencyKey = idempotencyKey
                                     )
 
-                                // The server confirmed success; only now clear the retry key.
-                                checkoutPrefs.edit()
-                                    .remove("active_checkout_key")
-                                    .remove("active_checkout_signature")
-                                    .commit()
-
                                 invoiceOrderNumber = result.orderNumber
                                 invoiceCustomerName = name
                                 invoiceCustomerPhone = phone
@@ -834,7 +828,7 @@ val selectedRestaurantCode = activeRestaurant.joinCode
                                 saveRoyalCustomerProfile(context, savedProfile)
                                 customerProfile = savedProfile
 
-                                saveRoyalCustomerOrder(
+                                val orderSaved = saveRoyalCustomerOrder(
                                     context,
                                     RoyalCustomerOrderRecord(
                                         orderNumber = result.orderNumber,
@@ -846,10 +840,20 @@ val selectedRestaurantCode = activeRestaurant.joinCode
                                         items = result.items
                                     )
                                 )
+                                if (!orderSaved) {
+                                    throw Exception("تم تسجيل الطلب على الخادم، لكن تعذر حفظ نسخة آمنة على الجهاز. أعد فتح التطبيق؛ لا تنشئ طلبًا جديدًا.")
+                                }
                                 customerOrderHistory = loadRoyalCustomerOrders(context)
 
                                 orderSuccessNumber = result.orderNumber
                                 cart = emptyMap()
+
+                                // Keep the same key until the confirmed order is durably saved locally.
+                                // If the app stops before this point, retrying returns the same server order.
+                                checkoutPrefs.edit()
+                                    .remove("active_checkout_key")
+                                    .remove("active_checkout_signature")
+                                    .commit()
 
 showCheckout = false
 showInvoice = true
