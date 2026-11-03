@@ -81,6 +81,12 @@ var customerOrderHistory by remember(context) {
 var activeRestaurant by remember(context) {
     mutableStateOf(loadRoyalActiveRestaurant(context))
 }
+var brandingRevision by remember(activeRestaurant.id) {
+    mutableStateOf(0)
+}
+var lastRemoteBranding by remember(activeRestaurant.id) {
+    mutableStateOf<RoyalRestaurantBranding?>(null)
+}
 var interfaceSettings by remember(activeRestaurant.id, customerIdentityReady) {
     mutableStateOf(
         if (customerIdentityReady) loadRoyalInterfaceSettings(context, activeRestaurant.id)
@@ -192,8 +198,12 @@ LaunchedEffect(activeRestaurant.id, customerIdentityReady) {
     if (activeRestaurant.id.isBlank()) return@LaunchedEffect
     suspend fun refreshBranding() {
         try {
-            withContext(Dispatchers.IO) {
+            val remoteBranding = withContext(Dispatchers.IO) {
                 loadAndCacheRoyalRestaurantBranding(context, activeRestaurant.id)
+            }
+            if (remoteBranding != null && remoteBranding != lastRemoteBranding) {
+                lastRemoteBranding = remoteBranding
+                brandingRevision += 1
             }
             interfaceSettings = loadRoyalInterfaceSettings(context, activeRestaurant.id)
         } catch (_: Exception) {
@@ -212,8 +222,12 @@ DisposableEffect(activeRestaurant.id, customerIdentityReady) {
         startRoyalRestaurantBrandingRealtime(activeRestaurant.id) {
             customerScope.launch {
                 try {
-                    withContext(Dispatchers.IO) {
+                    val remoteBranding = withContext(Dispatchers.IO) {
                         loadAndCacheRoyalRestaurantBranding(context, activeRestaurant.id)
+                    }
+                    if (remoteBranding != null && remoteBranding != lastRemoteBranding) {
+                        lastRemoteBranding = remoteBranding
+                        brandingRevision += 1
                     }
                     interfaceSettings = loadRoyalInterfaceSettings(context, activeRestaurant.id)
                 } catch (_: Exception) {
@@ -512,6 +526,7 @@ LaunchedEffect(syncedCustomerUserId) {
         
         
         RoyalCustomerInterface(
+            brandingRevision = brandingRevision,
             restaurantId = if (customerIdentityReady) activeRestaurant.id else "",
             isDarkMode = darkMode,
             newsText = interfaceSettings.newsText,
