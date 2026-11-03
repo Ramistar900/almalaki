@@ -31,6 +31,37 @@ import java.util.UUID
 
 private const val INTERFACE_PREFS = "royal_interface_settings"
 
+private fun interfacePrefsName(restaurantId: String): String {
+    val safeId = restaurantId.trim().lowercase()
+        .takeIf { it.matches(Regex("^[0-9a-f-]{36}$")) }
+        ?: ROYAL_DEFAULT_RESTAURANT_ID
+    return "${INTERFACE_PREFS}_${safeId}"
+}
+
+private fun interfacePrefs(context: Context, restaurantId: String) =
+    context.getSharedPreferences(interfacePrefsName(restaurantId), Context.MODE_PRIVATE)
+
+/**
+ * One-time migration of the previous device-wide settings into the current
+ * owner's restaurant namespace. Never copy these legacy values into customer
+ * views or into a different restaurant.
+ */
+fun migrateLegacyRoyalInterfaceSettings(context: Context, restaurantId: String) {
+    val legacy = context.getSharedPreferences(INTERFACE_PREFS, Context.MODE_PRIVATE)
+    val scoped = interfacePrefs(context, restaurantId)
+    if (scoped.contains(KEY_NEWS_TEXT) || scoped.contains(KEY_LOGO_LIBRARY) ||
+        scoped.contains(KEY_ACTIVE_LOGO_ID) || scoped.contains(KEY_TOP_LOGO_PATH) ||
+        scoped.contains(KEY_BOTTOM_LOGO_PATH)
+    ) return
+
+    val editor = scoped.edit()
+    listOf(KEY_NEWS_TEXT, KEY_TOP_LOGO_PATH, KEY_BOTTOM_LOGO_PATH,
+        KEY_LOGO_LIBRARY, KEY_ACTIVE_LOGO_ID).forEach { key ->
+        if (legacy.contains(key)) editor.putString(key, legacy.getString(key, ""))
+    }
+    editor.apply()
+}
+
 private const val KEY_NEWS_TEXT = "news_text"
 private const val KEY_TOP_LOGO_PATH = "top_logo_path"
 private const val KEY_BOTTOM_LOGO_PATH = "bottom_logo_path"
@@ -199,14 +230,11 @@ private fun logoLibraryFromJson(
  */
 private fun saveRoyalLogoLibrary(
     context: Context,
+    restaurantId: String,
     logos: List<RoyalLogoEntry>
 ) {
 
-    context
-        .getSharedPreferences(
-            INTERFACE_PREFS,
-            Context.MODE_PRIVATE
-        )
+    interfacePrefs(context, restaurantId)
         .edit()
         .putString(
             KEY_LOGO_LIBRARY,
@@ -221,14 +249,11 @@ private fun saveRoyalLogoLibrary(
  * يضمن وجود الشعار الأساسي دائمًا.
  */
 fun loadRoyalLogoLibrary(
-    context: Context
+    context: Context,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
 ): List<RoyalLogoEntry> {
 
-    val prefs =
-        context.getSharedPreferences(
-            INTERFACE_PREFS,
-            Context.MODE_PRIVATE
-        )
+    val prefs = interfacePrefs(context, restaurantId)
 
     val logos =
         logoLibraryFromJson(
@@ -316,6 +341,7 @@ fun loadRoyalLogoLibrary(
      */
     saveRoyalLogoLibrary(
         context = context,
+        restaurantId = restaurantId,
         logos = logos
     )
 
@@ -329,14 +355,11 @@ fun loadRoyalLogoLibrary(
  * يكون الشعار الأساسي هو النشط.
  */
 fun loadActiveRoyalLogoId(
-    context: Context
+    context: Context,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
 ): String {
 
-    val prefs =
-        context.getSharedPreferences(
-            INTERFACE_PREFS,
-            Context.MODE_PRIVATE
-        )
+    val prefs = interfacePrefs(context, restaurantId)
 
     val savedId =
         prefs.getString(
@@ -352,7 +375,7 @@ fun loadActiveRoyalLogoId(
      * للشعار الأساسي.
      */
     val library =
-        loadRoyalLogoLibrary(context)
+        loadRoyalLogoLibrary(context, restaurantId)
 
     return if (
         library.any {
@@ -370,11 +393,12 @@ fun loadActiveRoyalLogoId(
  */
 fun saveActiveRoyalLogoId(
     context: Context,
-    logoId: String
+    logoId: String,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
 ) {
 
     val library =
-        loadRoyalLogoLibrary(context)
+        loadRoyalLogoLibrary(context, restaurantId)
 
     /*
      * لا نسمح بحفظ معرّف غير موجود.
@@ -387,11 +411,7 @@ fun saveActiveRoyalLogoId(
         return
     }
 
-    context
-        .getSharedPreferences(
-            INTERFACE_PREFS,
-            Context.MODE_PRIVATE
-        )
+    interfacePrefs(context, restaurantId)
         .edit()
         .putString(
             KEY_ACTIVE_LOGO_ID,
@@ -404,14 +424,15 @@ fun saveActiveRoyalLogoId(
  * الحصول على الشعار النشط بالكامل.
  */
 fun loadActiveRoyalLogo(
-    context: Context
+    context: Context,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
 ): RoyalLogoEntry {
 
     val library =
-        loadRoyalLogoLibrary(context)
+        loadRoyalLogoLibrary(context, restaurantId)
 
     val activeId =
-        loadActiveRoyalLogoId(context)
+        loadActiveRoyalLogoId(context, restaurantId)
 
     return library.firstOrNull {
         it.id == activeId
@@ -427,6 +448,7 @@ fun loadActiveRoyalLogo(
  */
 private fun addLogoToLibrary(
     context: Context,
+    restaurantId: String,
     uri: Uri,
     displayName: String
 ): RoyalLogoEntry? {
@@ -471,13 +493,15 @@ private fun addLogoToLibrary(
 
         val library =
             loadRoyalLogoLibrary(
-                context
+                context,
+                restaurantId
             ).toMutableList()
 
         library.add(logo)
 
         saveRoyalLogoLibrary(
             context,
+            restaurantId,
             library
         )
 
@@ -493,24 +517,21 @@ private fun addLogoToLibrary(
  * إعدادات الواجهة الحالية.
  */
 fun loadRoyalInterfaceSettings(
-    context: Context
+    context: Context,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID
 ): RoyalInterfaceSettings {
 
-    val prefs =
-        context.getSharedPreferences(
-            INTERFACE_PREFS,
-            Context.MODE_PRIVATE
-        )
+    val prefs = interfacePrefs(context, restaurantId)
 
     /*
      * التأكد من إنشاء مكتبة الشعارات.
      */
-    loadRoyalLogoLibrary(context)
+    loadRoyalLogoLibrary(context, restaurantId)
 
     /*
      * التأكد من وجود شعار نشط صحيح.
      */
-    loadActiveRoyalLogoId(context)
+    loadActiveRoyalLogoId(context, restaurantId)
 
     return RoyalInterfaceSettings(
 
@@ -540,15 +561,12 @@ fun loadRoyalInterfaceSettings(
 fun saveRoyalInterfaceSettings(
     context: Context,
     newsText: String,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
     topLogoPath: String,
     bottomLogoPath: String
 ) {
 
-    context
-        .getSharedPreferences(
-            INTERFACE_PREFS,
-            Context.MODE_PRIVATE
-        )
+    interfacePrefs(context, restaurantId)
         .edit()
 
         .putString(
@@ -575,23 +593,27 @@ fun saveRoyalInterfaceSettings(
     /*
      * التأكد من بقاء الشعار الأساسي.
      */
-    loadRoyalLogoLibrary(context)
+    loadRoyalLogoLibrary(context, restaurantId)
 
     /*
      * التأكد من وجود شعار نشط صالح.
      */
-    loadActiveRoyalLogoId(context)
+    loadActiveRoyalLogoId(context, restaurantId)
 }
 
 @Composable
 fun AdminInterfaceSettings(
     context: Context,
+    restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
     modifier: Modifier = Modifier
 ) {
+    remember(context, restaurantId) {
+        migrateLegacyRoyalInterfaceSettings(context, restaurantId)
+    }
 
     val saved =
         remember {
-            loadRoyalInterfaceSettings(context)
+            loadRoyalInterfaceSettings(context, restaurantId)
         }
 
     var newsText by remember {
@@ -613,19 +635,19 @@ fun AdminInterfaceSettings(
     }
     var textLogoConfig by remember {
     mutableStateOf(
-        RoyalTextLogoSettings.load(context)
+        RoyalTextLogoSettings.load(context, restaurantId)
     )
     }
 
     var logoLibrary by remember {
         mutableStateOf(
-            loadRoyalLogoLibrary(context)
+            loadRoyalLogoLibrary(context, restaurantId)
         )
     }
 
     var activeLogoId by remember {
         mutableStateOf(
-            loadActiveRoyalLogoId(context)
+            loadActiveRoyalLogoId(context, restaurantId)
         )
     }
 
@@ -648,6 +670,7 @@ fun AdminInterfaceSettings(
                 val newLogo =
                     addLogoToLibrary(
                         context = context,
+                        restaurantId = restaurantId,
                         uri = uri,
                         displayName =
                             "شعار إضافي ${logoLibrary.size}"
@@ -661,7 +684,8 @@ fun AdminInterfaceSettings(
 
                         logoLibrary =
                             loadRoyalLogoLibrary(
-                                context
+                                context,
+                                restaurantId
                             )
 
                         /*
@@ -880,7 +904,8 @@ fun AdminInterfaceSettings(
 
                             activeLogoId =
                                 loadActiveRoyalLogoId(
-                                    context
+                                    context,
+                                    restaurantId
                                 )
 
                             message =
@@ -1012,18 +1037,21 @@ Slider(
 
                     saveRoyalInterfaceSettings(
                         context = context,
+                        restaurantId = restaurantId,
                         newsText = newsText,
                         topLogoPath = topLogoPath,
                         bottomLogoPath = bottomLogoPath
                     )
                     RoyalTextLogoSettings.save(
                     context = context,
+                    restaurantId = restaurantId,
                     config = textLogoConfig
                     )
 
                     logoLibrary =
                         loadRoyalLogoLibrary(
-                            context
+                            context,
+                            restaurantId
                         )
 
                     activeLogoId =
