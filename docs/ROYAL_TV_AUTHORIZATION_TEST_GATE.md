@@ -41,7 +41,7 @@ Actions:
 
 - This is a first server endpoint implementation, not a production security certification.
 - A command claim now has a 30-second lease. An expired claim is returned to the pending queue only for the same device and restaurant, while expired commands are marked expired. Android stores accepted command IDs before acknowledgement to suppress replay after a lost ACK. This remains at-least-once delivery: a process crash between a local side effect and persisting its ID can still produce a duplicate, so command handlers should remain idempotent.
-- Operational rate limiting, audit logging, schema/migration execution, end-to-end tests, and Android Keystore integration remain required.
+- Server-side rate limiting and durable audit-event recording are not implemented yet. The Android Keystore code is present but still needs real-device verification. The Edge Function and migrations remain undeployed, and isolated negative/end-to-end tests are required before production.
 - The endpoint has not been deployed, and no production database has been changed.
 
 ## Android TV client progress (2026-10-31)
@@ -59,14 +59,14 @@ Still incomplete:
 - The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
 - Android compile CI succeeded on 2026-11-01 for commits `112ffdedd0e0a6dac6d5229c54e4a8439c811673`, `1334034bd125a8e8dda5867c4d1ec1f02d3073e6`, `c0a8981bb623a0621740d5ffa2406b5da5b2ca77`, and `5ae59d97d0d49efb248c6fa24bd2cb60950fbe4f`. Both Android Kotlin compile tasks completed successfully on the latest head. This is compile-only verification. No device test or negative integration test has been confirmed.
-- Server-side stale-claim recovery and Android-side processed-command deduplication are implemented on this branch. The lease helper has a Deno unit test; the Deno test workflow and isolated staging/end-to-end tests still need to pass before production use.
+- Server-side stale-claim recovery and Android-side processed-command deduplication are implemented on this branch. The lease helper Deno unit test passed in run 41584559028; isolated staging/end-to-end tests and real-device verification remain outstanding.
 
 ## Integrated build follow-up (2026-11-03)
 
 - Pull request check run `41565546301` used synthetic merge commit `2d49db9328f65e028e0f9cccf9213b887c41b7e1`, whose base parent was `e06af9caa7a0bf728f463397986feae93d884e6a` and whose PR head was `55b3f46156ad7ca6c6081f7fa564d527ed3393fd`.
 - In that run, `:royaltv:compileDebugKotlin` completed; `:app:compileDebugKotlin` failed because the merged base snapshot contained a misplaced customer session observer and an incompatible Facebook OAuth provider reference.
 - The later current `main` tree (`3ea8605eaa054dea83898995b6f0ed5899b22152`) contains the corresponding corrections: the observer is imported and placed inside the customer account portal where its state is in scope, and Facebook sign-in uses the SDK's `Facebook` provider reference.
-- That old failure must not be treated as the result for the later `main` tree. A fresh pull-request integration run is required before reporting a full successful build.
+- That old failure was superseded by the integration run recorded below; it must not be treated as the result for the later `main` tree.
 - The Android compile gate remains enabled. No production migration or Edge Function deployment was performed.
 
 
@@ -83,5 +83,14 @@ Still incomplete:
 ## Second integrated build check (2026-11-03)
 
 - Follow-up check `41584276366` used merge base `9f8d933771337befdfc4b5be7e86b87ead47ee94`. ROYAL TV Kotlin compilation completed, while Almalaki compilation stopped at `CustomerScreen.kt:529` because that base snapshot's `RoyalCustomerInterface` declaration did not yet expose the `brandingRevision` argument already passed by `CustomerScreen`.
-- The current `main` commit `fe475e81d13aa1b3aa7f42f1a6731aa60fe35773` adds the matching `brandingRevision` parameter to `RoyalCustomerInterface`. The failure belongs to the earlier merge snapshot and needs a new integration run against the updated base.
+- The current `main` commit `fe475e81d13aa1b3aa7f42f1a6731aa60fe35773` added the matching `brandingRevision` parameter to `RoyalCustomerInterface`. The later integration run below used this updated base and passed.
 - No change was made to customer UI code from the ROYAL TV branch; this branch continues to keep its changes limited to TV authorization and its review documentation.
+
+## Latest verified integration and validation (2026-11-03)
+
+- Android integration run 41584559020 completed successfully for PR head a522733ca45105fa0f75bab11904dd1fe299b1dd, using merge commit eb25bdb00ced8e8bc46b3b2b399d194367e67fcf with base parent fe475e81d13aa1b3aa7f42f1a6731aa60fe35773. Both :royaltv:compileDebugKotlin and :app:compileDebugKotlin completed successfully.
+- Deno validation workflow run 41584559028 completed successfully: 5 tests passed, 0 failed, including the exact 30-second claim lease boundary.
+- RoyalTVAuthorizationClient.kt now uses the same Supabase publishable API key as RoyalSupabaseAuth.kt. The prior TV-client key contained one extra character; it was corrected on this branch. This is a public client key, not a service-role secret.
+- The claim lease and persistent client deduplication were compiled successfully in the integration build. This does not replace a live concurrency test against PostgreSQL.
+- Rate limiting and durable audit-event storage remain open security work. Do not add or apply a new production migration until the current live migration list and exact next version are verified. No paid Supabase branch was created, no migration was applied, and the Edge Function was not deployed.
+- PR #18 remains open and draft. No merge was performed.
