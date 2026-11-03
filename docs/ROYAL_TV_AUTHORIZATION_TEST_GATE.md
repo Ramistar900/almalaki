@@ -40,7 +40,7 @@ Actions:
 ## Known limitations of this first implementation
 
 - This is a first server endpoint implementation, not a production security certification.
-- A command becomes `claimed` before the TV confirms it. Recovery/lease semantics for a TV that disconnects after claiming must be designed and tested before production use.
+- A command claim now has a 30-second lease. An expired claim is returned to the pending queue only for the same device and restaurant, while expired commands are marked expired. Android stores accepted command IDs before acknowledgement to suppress replay after a lost ACK. This remains at-least-once delivery: a process crash between a local side effect and persisting its ID can still produce a duplicate, so command handlers should remain idempotent.
 - Operational rate limiting, audit logging, schema/migration execution, end-to-end tests, and Android Keystore integration remain required.
 - The endpoint has not been deployed, and no production database has been changed.
 
@@ -59,7 +59,7 @@ Still incomplete:
 - The migration and Edge Function are not deployed; the TV pairing request cannot work against production yet.
 - The legacy Realtime path remains for unpaired installations only, pending owner-side migration and end-to-end verification.
 - Android compile CI succeeded on 2026-11-01 for commits `112ffdedd0e0a6dac6d5229c54e4a8439c811673`, `1334034bd125a8e8dda5867c4d1ec1f02d3073e6`, `c0a8981bb623a0621740d5ffa2406b5da5b2ca77`, and `5ae59d97d0d49efb248c6fa24bd2cb60950fbe4f`. Both Android Kotlin compile tasks completed successfully on the latest head. This is compile-only verification. No device test or negative integration test has been confirmed.
-- Poller recovery after a command is claimed but not acknowledged still needs a server-side lease/requeue design.
+- Server-side stale-claim recovery and Android-side processed-command deduplication are implemented on this branch. The lease helper has a Deno unit test; the Deno test workflow and isolated staging/end-to-end tests still need to pass before production use.
 
 ## Integrated build follow-up (2026-11-03)
 
@@ -68,3 +68,13 @@ Still incomplete:
 - The later current `main` tree (`3ea8605eaa054dea83898995b6f0ed5899b22152`) contains the corresponding corrections: the observer is imported and placed inside the customer account portal where its state is in scope, and Facebook sign-in uses the SDK's `Facebook` provider reference.
 - That old failure must not be treated as the result for the later `main` tree. A fresh pull-request integration run is required before reporting a full successful build.
 - The Android compile gate remains enabled. No production migration or Edge Function deployment was performed.
+
+
+## Command delivery recovery (2026-11-03)
+
+- The server claim lease is 30 seconds and is shared with the validation test helper.
+- A poll by a paired device first marks its own expired commands as `expired`, then returns only its own stale, unexpired claims to `pending`. Tenant and paired-device filters are applied to both updates.
+- Acknowledgement requires the command to remain `claimed`, unexpired, unacknowledged, and inside the current claim lease.
+- The Android poller records an accepted command UUID in private app preferences before sending its acknowledgement. If the server must redeliver because the acknowledgement was lost, the client acknowledges the known command without repeating the local action.
+- This is bounded at-least-once delivery, not a mathematical exactly-once guarantee. A crash between the local action and the local deduplication write may still repeat an action; display commands must remain safe to repeat.
+- No schema migration was needed for this lease implementation, and no production migration or Edge Function deployment was performed.
