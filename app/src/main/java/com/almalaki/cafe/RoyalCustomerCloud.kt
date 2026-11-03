@@ -74,7 +74,7 @@ object RoyalCustomerCloud {
             .put("device_id", deviceId)
             .put("device_label", "Android app")
             .put("platform", "android")
-            .put("last_seen_at", java.time.Instant.now().toString())
+            .put("last_seen_at", java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date()))
             .toString()
         request(
             "POST",
