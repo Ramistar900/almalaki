@@ -110,6 +110,11 @@ revoke all on table public.royal_tv_paired_devices
 revoke all on table public.royal_tv_commands
     from public, anon, authenticated;
 
+-- Only the server-side Edge Function service role may access these tables.
+grant all on table public.royal_tv_pairing_challenges to service_role;
+grant all on table public.royal_tv_paired_devices to service_role;
+grant all on table public.royal_tv_commands to service_role;
+
 comment on table public.royal_tv_pairing_challenges is
     'Server-only, short-lived one-time pairing challenges; code_hash is a SHA-256 hex digest.';
 comment on table public.royal_tv_paired_devices is
