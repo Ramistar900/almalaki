@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -203,14 +204,6 @@ fun RoyalCustomerAccountDialog(
         mutableStateOf(profile.fulfillmentType.ifBlank { "داخل المحل" })
     }
     var validationMessage by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        RoyalSupabaseAuth.sessionStatusEvents().collect {
-            if (RoyalSupabaseAuth.currentUserId() != null && !isAuthenticated) {
-                authenticated()
-            }
-        }
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -491,6 +484,14 @@ fun RoyalCustomerAccountPortal(
         statusMessage = "تم تسجيل الدخول بنجاح."
         page = RoyalAccountPage.HOME
         onAuthChanged()
+    }
+
+    LaunchedEffect(Unit) {
+        RoyalSupabaseAuth.sessionStatusEvents().collect {
+            if (RoyalSupabaseAuth.currentUserId() != null && !isAuthenticated) {
+                authenticated()
+            }
+        }
     }
 
     AlertDialog(
