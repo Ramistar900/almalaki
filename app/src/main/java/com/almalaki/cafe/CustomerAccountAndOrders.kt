@@ -204,6 +204,14 @@ fun RoyalCustomerAccountDialog(
     }
     var validationMessage by remember { mutableStateOf("") }
 
+    LaunchedEffect(Unit) {
+        RoyalSupabaseAuth.sessionStatusEvents().collect {
+            if (RoyalSupabaseAuth.currentUserId() != null && !isAuthenticated) {
+                authenticated()
+            }
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = panelColor,
