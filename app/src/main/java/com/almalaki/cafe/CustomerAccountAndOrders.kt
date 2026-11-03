@@ -2,6 +2,7 @@ package com.almalaki.cafe
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -565,6 +569,7 @@ fun RoyalCustomerAccountPortal(
                         if (isAuthenticated) {
                             Text("أنت مسجّل الدخول إلى حساب العميل.", color = secondaryText, fontSize = 13.sp)
                             Text(signedInLabel, color = CustomerRoyalGold, fontWeight = FontWeight.SemiBold)
+                            CustomerPrivacyNotice()
                             AccountPortalButton("بياناتي والمطاعم المرتبطة", primaryText) {
                                 onCustomerDetails()
                             }
@@ -860,6 +865,63 @@ fun RoyalCustomerAccountPortal(
             }
         }
     )
+}
+
+@Composable
+private fun CustomerPrivacyNotice() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFE8F5E9), RoundedCornerShape(14.dp))
+            .border(1.dp, Color(0xFFC8E6C9), RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Canvas(modifier = Modifier.height(34.dp).fillMaxWidth(0.13f)) {
+            val shield = Path().apply {
+                moveTo(size.width * 0.5f, size.height * 0.04f)
+                cubicTo(size.width * 0.68f, size.height * 0.16f, size.width * 0.86f, size.height * 0.17f, size.width * 0.9f, size.height * 0.2f)
+                lineTo(size.width * 0.86f, size.height * 0.58f)
+                cubicTo(size.width * 0.82f, size.height * 0.78f, size.width * 0.62f, size.height * 0.92f, size.width * 0.5f, size.height * 0.98f)
+                cubicTo(size.width * 0.38f, size.height * 0.92f, size.width * 0.18f, size.height * 0.78f, size.width * 0.14f, size.height * 0.58f)
+                lineTo(size.width * 0.1f, size.height * 0.2f)
+                cubicTo(size.width * 0.32f, size.height * 0.17f, size.width * 0.32f, size.height * 0.16f, size.width * 0.5f, size.height * 0.04f)
+                close()
+            }
+            drawPath(shield, Color(0xFFD4AF37))
+            val check = Path().apply {
+                moveTo(size.width * 0.3f, size.height * 0.51f)
+                lineTo(size.width * 0.45f, size.height * 0.66f)
+                lineTo(size.width * 0.72f, size.height * 0.36f)
+            }
+            drawPath(
+                path = check,
+                color = Color.White,
+                style = Stroke(
+                    width = size.minDimension * 0.095f,
+                    cap = StrokeCap.Round
+                )
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(
+                text = "خصوصيتك وأمانك مهمّان لنا",
+                color = Color(0xFF1B5E20),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
+            )
+            Text(
+                text = "نحترم خصوصيتك؛ لا نصل إلى صورك أو ملفاتك أو جهات اتصالك. وتُستخدم معلومات حسابك لتقديم خدمات الملكي فقط.",
+                color = Color(0xFF285B35),
+                fontSize = 11.sp,
+                lineHeight = 16.sp
+            )
+        }
+    }
 }
 
 @Composable
