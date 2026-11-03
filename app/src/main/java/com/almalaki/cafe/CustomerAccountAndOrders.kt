@@ -447,24 +447,43 @@ private enum class RoyalAccountPage {
 }
 
 /**
- * بوابة الحساب المستقلة. لا تدّعي نجاح المصادقة قبل تهيئة مزوّد تسجيل الدخول.
+ * بوابة حساب العميل: بريد، Facebook OAuth، أو WhatsApp OTP.
+ * لا تعتبر إدخال الهاتف وحده دليلاً على ملكية الرقم.
  */
 @Composable
 fun RoyalCustomerAccountPortal(
     isDarkMode: Boolean,
     onDismiss: () -> Unit,
-    onCustomerDetails: () -> Unit
+    onCustomerDetails: () -> Unit,
+    onAuthChanged: () -> Unit = {}
 ) {
     var page by remember { mutableStateOf(RoyalAccountPage.HOME) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var otp by remember { mutableStateOf("") }
+    var otpSent by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
     var isBusy by remember { mutableStateOf(false) }
+    var isAuthenticated by remember { mutableStateOf(RoyalSupabaseAuth.currentUserId() != null) }
+    var signedInLabel by remember {
+        mutableStateOf(RoyalSupabaseAuth.currentEmail() ?: "حساب عميل موثّق")
+    }
     val coroutineScope = rememberCoroutineScope()
 
     val panelColor = if (isDarkMode) CustomerRoyalBlack else Color.White
     val primaryText = if (isDarkMode) Color.White else CustomerRoyalText
     val secondaryText = if (isDarkMode) Color(0xFFBDBDBD) else CustomerRoyalMuted
+
+    fun authenticated() {
+        isAuthenticated = true
+        signedInLabel = RoyalSupabaseAuth.currentEmail()
+            ?: RoyalSupabaseAuth.currentUserId()
+            ?: "حساب عميل موثّق"
+        statusMessage = "تم تسجيل الدخول بنجاح."
+        page = RoyalAccountPage.HOME
+        onAuthChanged()
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -476,8 +495,8 @@ fun RoyalCustomerAccountPortal(
                     RoyalAccountPage.REGISTER_METHODS -> "إنشاء حساب"
                     RoyalAccountPage.SIGN_IN -> "الدخول إلى حسابي"
                     RoyalAccountPage.EMAIL_REGISTER -> "التسجيل بالبريد الإلكتروني"
-                    RoyalAccountPage.FACEBOOK -> "الربط عبر Facebook"
-                    RoyalAccountPage.WHATSAPP -> "الربط عبر WhatsApp"
+                    RoyalAccountPage.FACEBOOK -> "الدخول عبر Facebook"
+                    RoyalAccountPage.WHATSAPP -> "الدخول عبر WhatsApp"
                 },
                 color = CustomerRoyalGold,
                 fontSize = 21.sp,
@@ -494,105 +513,72 @@ fun RoyalCustomerAccountPortal(
             ) {
                 when (page) {
                     RoyalAccountPage.HOME -> {
-                        Text(
-                            "مرحبًا بك في حساب الملكي. اختر ما تريد دون ازدحام الخيارات.",
-                            color = secondaryText,
-                            fontSize = 13.sp
-                        )
-                        AccountPortalButton("إنشاء حساب", primaryText) {
-                            statusMessage = ""
-                            page = RoyalAccountPage.REGISTER_METHODS
-                        }
-                        AccountPortalButton("الدخول إلى حسابي", primaryText) {
-                            statusMessage = ""
-                            page = RoyalAccountPage.SIGN_IN
-                        }
-                        AccountPortalButton("بيانات العميل والمطاعم المرتبطة", primaryText) {
-                            onCustomerDetails()
+                        if (isAuthenticated) {
+                            Text("أنت مسجّل الدخول إلى حساب العميل.", color = secondaryText, fontSize = 13.sp)
+                            Text(signedInLabel, color = CustomerRoyalGold, fontWeight = FontWeight.SemiBold)
+                            AccountPortalButton("بياناتي والمطاعم المرتبطة", primaryText) {
+                                onCustomerDetails()
+                            }
+                            AccountPortalButton("تسجيل الخروج", primaryText) {
+                                if (!isBusy) {
+                                    isBusy = true
+                                    coroutineScope.launch {
+                                        try {
+                                            RoyalSupabaseAuth.signOut()
+                                            isAuthenticated = false
+                                            signedInLabel = ""
+                                            statusMessage = "تم تسجيل الخروج."
+                                            onAuthChanged()
+                                        } catch (error: Exception) {
+                                            statusMessage = error.message ?: "تعذر تسجيل الخروج."
+                                        } finally {
+                                            isBusy = false
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Text(
+                                "أنشئ حسابك أو ادخل إلى حسابك لحفظ بياناتك ومطاعمك وطلباتك على أجهزتك.",
+                                color = secondaryText,
+                                fontSize = 13.sp
+                            )
+                            AccountPortalButton("إنشاء حساب", primaryText) {
+                                statusMessage = ""
+                                page = RoyalAccountPage.REGISTER_METHODS
+                            }
+                            AccountPortalButton("الدخول إلى حسابي", primaryText) {
+                                statusMessage = ""
+                                page = RoyalAccountPage.SIGN_IN
+                            }
                         }
                     }
+
                     RoyalAccountPage.REGISTER_METHODS -> {
-                        Text("اختر وسيلة التسجيل؛ ستظهر تفاصيل الوسيلة في صفحة مستقلة.", color = secondaryText, fontSize = 13.sp)
+                        Text("اختر وسيلة إنشاء الحساب.", color = secondaryText, fontSize = 13.sp)
                         AccountPortalButton("البريد الإلكتروني", primaryText) {
                             email = ""; password = ""; statusMessage = ""
                             page = RoyalAccountPage.EMAIL_REGISTER
                         }
                         AccountPortalButton("Facebook", primaryText) {
-                            statusMessage = "تسجيل Facebook غير مفعّل بعد. يلزم إعداد مزوّد OAuth والتحقق من إعداداته قبل استخدامه."
+                            statusMessage = ""
                             page = RoyalAccountPage.FACEBOOK
                         }
                         AccountPortalButton("WhatsApp", primaryText) {
-                            statusMessage = "ربط WhatsApp غير مفعّل بعد. يلزم إعداد تحقق رسمي لرقم الهاتف؛ لن نعتبر مجرد إدخال الرقم تسجيلًا موثّقًا."
+                            phone = ""; otp = ""; otpSent = false; statusMessage = ""
                             page = RoyalAccountPage.WHATSAPP
                         }
                     }
-                    RoyalAccountPage.SIGN_IN -> {
-                        Text("تسجيل الدخول يتم عبر خادم Supabase. إذا كان تأكيد البريد مطلوبًا، يجب تأكيده أولًا.", color = secondaryText, fontSize = 13.sp)
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it; statusMessage = "" },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("البريد الإلكتروني") }
-                        )
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it; statusMessage = "" },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("كلمة المرور") },
-                            visualTransformation = PasswordVisualTransformation()
-                        )
-                        TextButton(
-                            enabled = !isBusy,
-                            onClick = {
-                                if (email.isBlank() || password.isBlank()) {
-                                    statusMessage = "أدخل البريد الإلكتروني وكلمة المرور."
-                                } else {
-                                    isBusy = true
-                                    statusMessage = ""
-                                    coroutineScope.launch {
-                                        try {
-                                            RoyalSupabaseAuth.signIn(email, password)
-                                            statusMessage = "تم قبول تسجيل الدخول من الخادم."
-                                        } catch (error: Exception) {
-                                            statusMessage = error.message?.take(220)
-                                                ?: "تعذر تسجيل الدخول. تحقق من البيانات والاتصال."
-                                        } finally {
-                                            isBusy = false
-                                        }
-                                    }
-                                }
-                            }
-                        ) { Text(if (isBusy) "جارٍ الاتصال..." else "تسجيل الدخول", color = CustomerRoyalGold) }
-                        TextButton(
-                            enabled = !isBusy,
-                            onClick = {
-                                if (email.isBlank()) {
-                                    statusMessage = "أدخل بريدك الإلكتروني لاستعادة كلمة المرور."
-                                } else {
-                                    isBusy = true
-                                    statusMessage = ""
-                                    coroutineScope.launch {
-                                        try {
-                                            RoyalSupabaseAuth.sendPasswordReset(email)
-                                            statusMessage = "استجاب الخادم لطلب الاستعادة. تحقق من بريدك إذا كان إرسال الرسائل مفعّلًا."
-                                        } catch (error: Exception) {
-                                            statusMessage = error.message?.take(220)
-                                                ?: "تعذر إرسال طلب الاستعادة."
-                                        } finally {
-                                            isBusy = false
-                                        }
-                                    }
-                                }
-                            }
-                        ) { Text("نسيت كلمة المرور؟", color = CustomerRoyalGold) }
-                        if (statusMessage.isNotBlank()) {
-                            Text(statusMessage, color = secondaryText, fontSize = 12.sp)
-                        }
-                    }
+
+                    RoyalAccountPage.SIGN_IN,
                     RoyalAccountPage.EMAIL_REGISTER -> {
-                        Text("أنشئ حسابًا على خادم Supabase باستخدام بريدك وكلمة مرور قوية.", color = secondaryText, fontSize = 13.sp)
+                        val registering = page == RoyalAccountPage.EMAIL_REGISTER
+                        Text(
+                            if (registering) "استخدم بريدًا إلكترونيًا صالحًا وكلمة مرور لا تقل عن 8 أحرف."
+                            else "أدخل بيانات حسابك المسجّل.",
+                            color = secondaryText,
+                            fontSize = 13.sp
+                        )
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it; statusMessage = "" },
@@ -611,33 +597,190 @@ fun RoyalCustomerAccountPortal(
                         TextButton(
                             enabled = !isBusy,
                             onClick = {
-                                if (email.isBlank() || password.length < 8) {
-                                    statusMessage = "أدخل بريدًا صحيحًا وكلمة مرور لا تقل عن 8 أحرف."
+                                if (email.isBlank() || (registering && password.length < 8) || (!registering && password.isBlank())) {
+                                    statusMessage = if (registering) {
+                                        "أدخل بريدًا صحيحًا وكلمة مرور لا تقل عن 8 أحرف."
+                                    } else {
+                                        "أدخل البريد الإلكتروني وكلمة المرور."
+                                    }
                                 } else {
                                     isBusy = true
                                     statusMessage = ""
                                     coroutineScope.launch {
                                         try {
-                                            RoyalSupabaseAuth.register(email, password)
-                                            statusMessage = "استجاب الخادم لطلب التسجيل. إذا كان تأكيد البريد مفعّلًا، افتح رسالة التأكيد قبل تسجيل الدخول."
+                                            if (registering) {
+                                                RoyalSupabaseAuth.register(email, password)
+                                                if (RoyalSupabaseAuth.currentUserId() != null) {
+                                                    authenticated()
+                                                } else {
+                                                    statusMessage = "تم إنشاء الحساب. افتح رسالة تأكيد البريد ثم سجّل الدخول."
+                                                }
+                                            } else {
+                                                RoyalSupabaseAuth.signIn(email, password)
+                                                authenticated()
+                                            }
                                         } catch (error: Exception) {
                                             statusMessage = error.message?.take(220)
-                                                ?: "تعذر إنشاء الحساب. حاول مجددًا."
+                                                ?: "تعذر إكمال العملية. تحقق من البيانات والاتصال."
                                         } finally {
                                             isBusy = false
                                         }
                                     }
                                 }
                             }
-                        ) { Text(if (isBusy) "جارٍ التسجيل..." else "إنشاء الحساب", color = CustomerRoyalGold) }
-                        if (statusMessage.isNotBlank()) {
-                            Text(statusMessage, color = secondaryText, fontSize = 12.sp)
+                        ) {
+                            Text(
+                                when {
+                                    isBusy && registering -> "جارٍ إنشاء الحساب..."
+                                    isBusy -> "جارٍ تسجيل الدخول..."
+                                    registering -> "إنشاء الحساب"
+                                    else -> "تسجيل الدخول"
+                                },
+                                color = CustomerRoyalGold
+                            )
+                        }
+                        if (!registering) {
+                            TextButton(
+                                enabled = !isBusy,
+                                onClick = {
+                                    if (email.isBlank()) {
+                                        statusMessage = "أدخل بريدك الإلكتروني لاستعادة كلمة المرور."
+                                    } else {
+                                        isBusy = true
+                                        coroutineScope.launch {
+                                            try {
+                                                RoyalSupabaseAuth.sendPasswordReset(email)
+                                                statusMessage = "تم إرسال طلب الاستعادة. تحقق من بريدك الإلكتروني."
+                                            } catch (error: Exception) {
+                                                statusMessage = error.message?.take(220)
+                                                    ?: "تعذر إرسال طلب الاستعادة."
+                                            } finally {
+                                                isBusy = false
+                                            }
+                                        }
+                                    }
+                                }
+                            ) { Text("نسيت كلمة المرور؟", color = CustomerRoyalGold) }
                         }
                     }
-                    RoyalAccountPage.FACEBOOK,
-                    RoyalAccountPage.WHATSAPP -> {
-                        Text(statusMessage, color = secondaryText, fontSize = 13.sp)
+
+                    RoyalAccountPage.FACEBOOK -> {
+                        Text(
+                            "سيفتح Facebook صفحة تسجيل الدخول الرسمية، ثم يعود التطبيق إلى حسابك.",
+                            color = secondaryText,
+                            fontSize = 13.sp
+                        )
+                        TextButton(
+                            enabled = !isBusy,
+                            onClick = {
+                                isBusy = true
+                                statusMessage = ""
+                                coroutineScope.launch {
+                                    try {
+                                        RoyalSupabaseAuth.signInWithFacebook()
+                                        if (RoyalSupabaseAuth.currentUserId() != null) {
+                                            authenticated()
+                                        } else {
+                                            statusMessage = "أكمل تسجيل الدخول في نافذة Facebook ثم ارجع إلى التطبيق."
+                                        }
+                                    } catch (error: Exception) {
+                                        statusMessage = error.message?.take(220)
+                                            ?: "تعذر بدء تسجيل الدخول عبر Facebook."
+                                    } finally {
+                                        isBusy = false
+                                    }
+                                }
+                            }
+                        ) {
+                            Text(if (isBusy) "جارٍ فتح Facebook..." else "متابعة عبر Facebook", color = CustomerRoyalGold)
+                        }
                     }
+
+                    RoyalAccountPage.WHATSAPP -> {
+                        Text(
+                            "أدخل رقم WhatsApp بصيغته الدولية، وسنرسل رمز تحقق لمرة واحدة.",
+                            color = secondaryText,
+                            fontSize = 13.sp
+                        )
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { phone = it; statusMessage = "" },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("رقم الهاتف الدولي، مثال +905XXXXXXXXX") }
+                        )
+                        if (otpSent) {
+                            OutlinedTextField(
+                                value = otp,
+                                onValueChange = { otp = it.filter(Char::isDigit).take(6); statusMessage = "" },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                label = { Text("رمز التحقق المكوّن من 6 أرقام") }
+                            )
+                        }
+                        TextButton(
+                            enabled = !isBusy,
+                            onClick = {
+                                if (!otpSent) {
+                                    isBusy = true
+                                    statusMessage = ""
+                                    coroutineScope.launch {
+                                        try {
+                                            RoyalSupabaseAuth.sendWhatsAppOtp(phone)
+                                            otpSent = true
+                                            statusMessage = "تم طلب إرسال الرمز. أدخل الرمز الذي وصلك عبر WhatsApp."
+                                        } catch (error: Exception) {
+                                            statusMessage = error.message?.take(220)
+                                                ?: "تعذر إرسال رمز WhatsApp. تحقق من إعداد الخدمة."
+                                        } finally {
+                                            isBusy = false
+                                        }
+                                    }
+                                } else {
+                                    if (otp.length != 6) {
+                                        statusMessage = "أدخل رمز التحقق كاملاً."
+                                    } else {
+                                        isBusy = true
+                                        coroutineScope.launch {
+                                            try {
+                                                RoyalSupabaseAuth.verifyWhatsAppOtp(phone, otp)
+                                                authenticated()
+                                            } catch (error: Exception) {
+                                                statusMessage = error.message?.take(220)
+                                                    ?: "رمز التحقق غير صحيح أو انتهت صلاحيته."
+                                            } finally {
+                                                isBusy = false
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text(
+                                when {
+                                    isBusy && !otpSent -> "جارٍ إرسال الرمز..."
+                                    isBusy -> "جارٍ التحقق..."
+                                    otpSent -> "تحقق والدخول"
+                                    else -> "إرسال رمز WhatsApp"
+                                },
+                                color = CustomerRoyalGold
+                            )
+                        }
+                        if (otpSent) {
+                            TextButton(
+                                enabled = !isBusy,
+                                onClick = {
+                                    otp = ""
+                                    otpSent = false
+                                    statusMessage = ""
+                                }
+                            ) { Text("تغيير رقم الهاتف", color = secondaryText) }
+                        }
+                    }
+                }
+
+                if (statusMessage.isNotBlank()) {
+                    Text(statusMessage, color = secondaryText, fontSize = 12.sp)
                 }
             }
         },
@@ -651,6 +794,7 @@ fun RoyalCustomerAccountPortal(
                     RoyalAccountPage.FACEBOOK,
                     RoyalAccountPage.WHATSAPP -> page = RoyalAccountPage.REGISTER_METHODS
                 }
+                statusMessage = ""
             }) {
                 Text(
                     if (page == RoyalAccountPage.HOME) "إغلاق" else "رجوع",
