@@ -240,6 +240,7 @@ AdminSection.INTERFACE_SETTINGS -> {
             if (restaurantId.isNotBlank()) {
                 AdminInterfaceSettings(
                     context = context,
+                    accessToken = accessToken,
                     restaurantId = restaurantId,
                     modifier = Modifier.fillMaxWidth()
                 )
