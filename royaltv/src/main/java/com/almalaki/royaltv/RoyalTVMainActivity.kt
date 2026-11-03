@@ -1077,23 +1077,28 @@ modifier = Modifier.fillMaxSize()
                     ) {
                         TextButton(
                             onClick = {
-                                val hadSecureCredential =
-                                    RoyalTVCredentialStore.isConfigured(context)
-                                RoyalTVSecureCommandPoller.stop()
-                                RoyalTVRealtime.stop()
-                                RoyalTVCredentialStore.clear(context)
-                                RoyalTVDeviceIdentity.rotateDeviceId(context)
-                                check(RoyalTVSecureModeStore.enable(context)) {
-                                    "تعذر حفظ وضع الاقتران الآمن"
-                                }
-                                securePairingCode = ""
-                                securePairingError = if (hadSecureCredential) {
-                                    "ألغِ اقتران الجهاز السابق من حساب المالك أولاً، ثم أدخل الرمز الجديد. تم إنشاء معرّف جهاز جديد."
+                                if (!RoyalTVSecureModeStore.enable(context)) {
+                                    Toast.makeText(
+                                        context,
+                                        "تعذر حفظ وضع الاقتران الآمن؛ لم يتم تغيير بيانات اعتماد الجهاز.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 } else {
-                                    "أدخل رمز الاقتران الذي أنشأه مالك المطعم."
+                                    val hadSecureCredential =
+                                        RoyalTVCredentialStore.isConfigured(context)
+                                    RoyalTVSecureCommandPoller.stop()
+                                    RoyalTVRealtime.stop()
+                                    RoyalTVCredentialStore.clear(context)
+                                    RoyalTVDeviceIdentity.rotateDeviceId(context)
+                                    securePairingCode = ""
+                                    securePairingError = if (hadSecureCredential) {
+                                        "ألغِ اقتران الجهاز السابق من حساب المالك أولاً، ثم أدخل الرمز الجديد. تم إنشاء معرّف جهاز جديد."
+                                    } else {
+                                        "أدخل رمز الاقتران الذي أنشأه مالك المطعم."
+                                    }
+                                    showExitDialog = false
+                                    showSecurePairingDialog = true
                                 }
-                                showExitDialog = false
-                                showSecurePairingDialog = true
                             }
                         ) {
                             Text(
