@@ -42,6 +42,8 @@ import java.util.Locale
 private const val CUSTOMER_PROFILE_PREFS = "royal_customer_profile"
 private const val CUSTOMER_ORDERS_PREFS = "royal_customer_orders"
 private const val CUSTOMER_ORDERS_KEY = "orders_json"
+private const val CUSTOMER_ACCOUNT_PREFS = "royal_customer_account"
+private const val CUSTOMER_ACCOUNT_USER_KEY = "user_id"
 
 private val CustomerRoyalGold = Color(0xFFD4AF37)
 private val CustomerRoyalGoldLight = Color(0xFFFFE9A3)
@@ -74,6 +76,12 @@ fun loadRoyalCustomerProfile(context: Context): RoyalCustomerProfile {
         Context.MODE_PRIVATE
     )
 
+    val accountId = context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
+        .getString(CUSTOMER_ACCOUNT_USER_KEY, "").orEmpty()
+    if (accountId.isNotBlank() && accountId != RoyalSupabaseAuth.currentUserId()) {
+        return RoyalCustomerProfile()
+    }
+
     return RoyalCustomerProfile(
         name = preferences.getString("name", "").orEmpty(),
         phone = preferences.getString("phone", "").orEmpty(),
@@ -98,9 +106,37 @@ fun saveRoyalCustomerProfile(
         .putString("address", profile.address.trim())
         .putString("fulfillment_type", profile.fulfillmentType)
         .apply()
+    RoyalSupabaseAuth.currentUserId()?.let { userId ->
+        context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
+            .edit().putString(CUSTOMER_ACCOUNT_USER_KEY, userId).apply()
+    }
+}
+
+fun prepareRoyalCustomerLocalAccount(context: Context, userId: String) {
+    val accountPrefs = context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
+    val previousUserId = accountPrefs.getString(CUSTOMER_ACCOUNT_USER_KEY, "").orEmpty()
+    if (previousUserId != userId) {
+        context.getSharedPreferences(CUSTOMER_PROFILE_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences(CUSTOMER_ORDERS_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+        saveRoyalLinkedRestaurants(context, emptyList())
+        saveRoyalActiveRestaurant(context, RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي"))
+        accountPrefs.edit().putString(CUSTOMER_ACCOUNT_USER_KEY, userId).apply()
+    }
+}
+
+fun clearRoyalCustomerLocalAccount(context: Context) {
+    context.getSharedPreferences(CUSTOMER_PROFILE_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+    context.getSharedPreferences(CUSTOMER_ORDERS_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+    context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+    saveRoyalLinkedRestaurants(context, emptyList())
+    saveRoyalActiveRestaurant(context, RoyalLinkedRestaurant(ROYAL_DEFAULT_RESTAURANT_ID, "الملكي"))
 }
 
 fun loadRoyalCustomerOrders(context: Context): List<RoyalCustomerOrderRecord> {
+    val accountId = context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
+        .getString(CUSTOMER_ACCOUNT_USER_KEY, "").orEmpty()
+    if (accountId.isNotBlank() && accountId != RoyalSupabaseAuth.currentUserId()) return emptyList()
+
     val raw = context.getSharedPreferences(
         CUSTOMER_ORDERS_PREFS,
         Context.MODE_PRIVATE
@@ -183,6 +219,10 @@ fun saveRoyalCustomerOrder(
     ).edit()
         .putString(CUSTOMER_ORDERS_KEY, array.toString())
         .apply()
+    RoyalSupabaseAuth.currentUserId()?.let { userId ->
+        context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
+            .edit().putString(CUSTOMER_ACCOUNT_USER_KEY, userId).apply()
+    }
 }
 
 @Composable
