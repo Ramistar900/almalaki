@@ -90,6 +90,8 @@ object RoyalSupabaseAuth {
         client.handleDeeplinks(intent)
     }
 
+    fun sessionStatusEvents() = client.auth.sessionStatus
+
     fun currentUserId(): String? = client.auth.currentUserOrNull()?.id
 
     fun currentEmail(): String? = client.auth.currentUserOrNull()?.email
