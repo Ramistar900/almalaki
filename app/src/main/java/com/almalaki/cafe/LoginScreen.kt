@@ -110,6 +110,7 @@ fun LoginScreen(
                     Thread {
                         try {
                             val accessToken = loginOwner(
+                                context = context,
                                 email = email.trim(),
                                 password = password
                             )
@@ -338,6 +339,7 @@ private fun PasswordResetContent(
 }
 
 private fun loginOwner(
+    context: android.content.Context,
     email: String,
     password: String
 ): String {
@@ -407,12 +409,56 @@ private fun loginOwner(
 
         val json = JSONObject(response)
 
-        return json.optString("access_token")
+        val accessToken = json.optString("access_token")
             .ifBlank {
                 throw Exception(
                     "لم يتم الحصول على جلسة تسجيل الدخول."
                 )
             }
+
+        // Register only the app-generated random installation ID after successful owner auth.
+        // Failure to register the device must not block a valid owner login.
+        runCatching {
+            val userId = json.optJSONObject("user")?.optString("id").orEmpty()
+            if (userId.isNotBlank()) {
+                val deviceId = RoyalDeviceIdentity.getOrCreate(context)
+                val deviceBody = JSONObject()
+                    .put("user_id", userId)
+                    .put("device_id", deviceId)
+                    .put("device_label", "Android app")
+                    .put("platform", "android")
+                    .put(
+                        "last_seen_at",
+                        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+                            .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+                            .format(java.util.Date())
+                    )
+                    .toString()
+                val deviceConnection = URL(
+                    "$LOGIN_SUPABASE_URL/rest/v1/user_devices?on_conflict=user_id,device_id"
+                ).openConnection() as HttpURLConnection
+                try {
+                    deviceConnection.requestMethod = "POST"
+                    deviceConnection.doOutput = true
+                    deviceConnection.connectTimeout = 10000
+                    deviceConnection.readTimeout = 10000
+                    deviceConnection.setRequestProperty("apikey", LOGIN_SUPABASE_KEY)
+                    deviceConnection.setRequestProperty("Authorization", "Bearer $accessToken")
+                    deviceConnection.setRequestProperty("Content-Type", "application/json")
+                    deviceConnection.setRequestProperty("Prefer", "resolution=merge-duplicates,return=minimal")
+                    deviceConnection.outputStream.use {
+                        it.write(deviceBody.toByteArray(Charsets.UTF_8))
+                    }
+                    if (deviceConnection.responseCode !in 200..299) {
+                        throw Exception("Device registration failed")
+                    }
+                } finally {
+                    deviceConnection.disconnect()
+                }
+            }
+        }
+
+        return accessToken
     } finally {
         connection.disconnect()
     }
