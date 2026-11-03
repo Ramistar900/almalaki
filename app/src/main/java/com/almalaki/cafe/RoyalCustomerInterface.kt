@@ -118,6 +118,7 @@ fun RoyalCustomerInterface(
     onCartClick: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
     onAccountClick: () -> Unit = {},
+    onDeveloperLogin: () -> Unit = {},
     onOwnerLogin: () -> Unit = {},
     onSettings: () -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -251,15 +252,25 @@ onSearchQueryChange: (String) -> Unit = {},
 
                 RoyalDrawerItem(
                     RoyalIcon.PROFILE,
+                    "المطور الملكي",
+                    isDarkMode,
+                    subtitle = "دخول حساب المطوّر"
+                ) {
+                    scope.launch {
+                        drawerState.close()
+                    }
+                    onDeveloperLogin()
+                }
+
+                RoyalDrawerItem(
+                    RoyalIcon.STORE,
                     "دخول المالك",
                     isDarkMode,
                     subtitle = "إدارة المطعم والمنتجات والطلبات"
                 ) {
-
                     scope.launch {
                         drawerState.close()
                     }
-
                     onOwnerLogin()
                 }
 
