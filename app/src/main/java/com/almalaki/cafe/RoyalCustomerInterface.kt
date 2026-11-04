@@ -846,7 +846,7 @@ fun RoyalTopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(112.dp)
+            .height(106.dp)
             .clipToBounds()
     ) {
         // البنر العلوي يمتد بعرض الواجهة وينتهي قريباً من مربع البحث.
@@ -987,7 +987,8 @@ private fun RoyalTitleFrame(
         Column(
             modifier = Modifier
                 .fillMaxWidth(0.50f)
-                .align(Alignment.Center),
+                .align(Alignment.Center)
+                .offset(y = (-3).dp),
             horizontalAlignment =
                 Alignment.CenterHorizontally,
             verticalArrangement =
@@ -1003,7 +1004,7 @@ private fun RoyalTitleFrame(
             )
 
             Spacer(
-                Modifier.height(4.dp)
+                Modifier.height(2.dp)
             )
 
             Text(
