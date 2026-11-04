@@ -31,11 +31,12 @@ object RoyalTextLogoSettings {
     }
 
     /**
-     * Migrate old device-wide logo preferences only when the owner opens
-     * settings for their verified restaurant. Customer screens never claim
-     * the legacy global values.
+     * Migrate old device-wide logo preferences only for the original Almalaki
+     * restaurant. Never copy its branding into another owner's tenant.
      */
     fun migrateLegacy(context: Context, restaurantId: String) {
+        if (restaurantId != ROYAL_DEFAULT_RESTAURANT_ID) return
+
         val legacy = context.applicationContext.getSharedPreferences(
             PREFS_NAME, Context.MODE_PRIVATE
         )
