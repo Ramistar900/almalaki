@@ -167,6 +167,7 @@ if (section == AdminSection.ROYAL_TV_CONTROL) {
                         AdminOrderCard(
     order = order,
     accessToken = accessToken,
+    restaurantId = restaurantId,
     onStatus = onOrderStatus,
     onDelete = onDeleteOrder,
     openDetails = order.id == highlightedOrderId
