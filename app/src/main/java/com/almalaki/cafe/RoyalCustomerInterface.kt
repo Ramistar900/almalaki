@@ -415,7 +415,7 @@ Box(
                     onAccountClick = onAccountClick,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .offset(y = 15.dp)
+                        .offset(y = 11.dp)
                 )
 
                 Box(
@@ -1581,7 +1581,7 @@ private fun RoyalCustomerNavigationActions(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(58.dp)
                 .padding(horizontal = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
@@ -1621,14 +1621,14 @@ private fun RoyalCustomerNavigationAction(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 1.dp),
+            .padding(vertical = 3.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(25.dp),
+            modifier = Modifier.size(30.dp),
             contentAlignment = Alignment.Center
         ) {
             RoyalCustomerNavigationIcon(
@@ -1658,8 +1658,8 @@ private fun RoyalCustomerNavigationAction(
         Text(
             text = label,
             color = RoyalCustomerNavInk,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             textAlign = TextAlign.Center
         )
