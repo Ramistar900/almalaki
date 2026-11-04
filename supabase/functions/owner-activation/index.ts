@@ -87,7 +87,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       restaurant_name?: string;
     };
     try {
-      body = await req.json();
+      const parsedBody = await req.json();
+      if (!parsedBody || typeof parsedBody !== "object" || Array.isArray(parsedBody)) {
+        return respond(400, { error: "Invalid JSON body" });
+      }
+      body = parsedBody as typeof body;
     } catch {
       return respond(400, { error: "Invalid JSON body" });
     }
@@ -101,8 +105,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (!userData.user.email_confirmed_at) {
         return respond(403, { error: "Confirm your email before activating an owner account" });
       }
-      const code = (body.code ?? "").trim();
-      const restaurantName = (body.restaurant_name ?? "").trim();
+      const code = typeof body.code === "string" ? body.code.trim() : "";
+      const restaurantName = typeof body.restaurant_name === "string"
+        ? body.restaurant_name.trim()
+        : "";
       if (code.length < 20 || code.length > 100) {
         return respond(400, { error: "Invalid or inactive owner activation code" });
       }
@@ -148,7 +154,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const rawCode = base32(randomBytes);
       const code = formatCode(rawCode);
       const codeHash = await sha256Hex(code);
-      const note = (body.note ?? "").trim().slice(0, 120);
+      const note = typeof body.note === "string" ? body.note.trim().slice(0, 120) : "";
       const { data, error } = await adminClient
         .from("owner_activation_codes")
         .insert({
@@ -177,8 +183,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return respond(200, { ok: true, activations: data ?? [] });
     }
 
-    const id = (body.id ?? "").trim();
-    const nextStatus = body.status;
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    const nextStatus = typeof body.status === "string" ? body.status : "";
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       return respond(400, { error: "Invalid activation record" });
     }
