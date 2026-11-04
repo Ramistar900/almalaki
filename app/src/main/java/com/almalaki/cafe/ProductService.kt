@@ -19,12 +19,13 @@ data class Product(
     val imageUrl: String
 )
 
-fun loadProducts(accessToken: String? = null): List<Product> {
+fun loadProducts(accessToken: String): List<Product> {
+    val restaurantId = resolveOwnerRestaurantId(accessToken)
 
     val url = URL(
         "$SUPABASE_URL/rest/v1/products" +
                 "?select=id,name,category,price,image_url" +
-                "&order=id.asc"
+                "&restaurant_id=eq.$restaurantId&order=id.asc"
     )
 
     val connection =
@@ -107,6 +108,7 @@ fun addProduct(
     imageUrl: String
 ) {
 
+    val restaurantId = resolveOwnerRestaurantId(accessToken)
     val url = URL(
         "$SUPABASE_URL/rest/v1/products"
     )
@@ -164,6 +166,11 @@ fun addProduct(
                 "description",
                 name.trim()
             )
+
+            put(
+                "restaurant_id",
+                restaurantId
+            )
         }.toString()
 
     connection.outputStream.use {
@@ -200,8 +207,9 @@ fun deleteProduct(
     id: Int
 ) {
 
+    val restaurantId = resolveOwnerRestaurantId(accessToken)
     val url = URL(
-        "$SUPABASE_URL/rest/v1/products?id=eq.$id"
+        "$SUPABASE_URL/rest/v1/products?id=eq.$id&restaurant_id=eq.$restaurantId"
     )
 
     val connection =
