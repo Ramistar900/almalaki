@@ -46,11 +46,12 @@ private fun interfacePrefs(context: Context, restaurantId: String) =
     context.getSharedPreferences(interfacePrefsName(restaurantId), Context.MODE_PRIVATE)
 
 /**
- * One-time migration of the previous device-wide settings into the current
- * owner's restaurant namespace. Never copy these legacy values into customer
- * views or into a different restaurant.
+ * One-time migration of device-wide settings for the original Almalaki tenant only.
+ * Never copy the legacy owner's branding into another restaurant on the same device.
  */
 fun migrateLegacyRoyalInterfaceSettings(context: Context, restaurantId: String) {
+    if (restaurantId != ROYAL_DEFAULT_RESTAURANT_ID) return
+
     val legacy = context.getSharedPreferences(INTERFACE_PREFS, Context.MODE_PRIVATE)
     val scoped = interfacePrefs(context, restaurantId)
     val editor = scoped.edit()
