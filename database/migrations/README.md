@@ -17,7 +17,7 @@ The migration filename prefix is the Supabase migration version. Keep it identic
 | 20261103041905 | link_authenticated_orders_to_customer_accounts | 20261103041905_link_authenticated_orders_to_customer_accounts.sql |
 | 20261103050916 | restaurant_interface_settings | 20261103050916_restaurant_interface_settings.sql |
 | 20261104021748 | owner_activation_codes | 20261104021748_owner_activation_codes.sql |
-| 20261104023000 | owner_activation_user_lock | 20261104023000_owner_activation_user_lock.sql |
+| 20261104022220 | owner_activation_user_lock | 20261104022220_owner_activation_user_lock.sql |
 
 
 ## Edge Functions
