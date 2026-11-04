@@ -1,6 +1,7 @@
 package com.almalaki.cafe
 
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 
@@ -11,7 +12,7 @@ import io.github.jan.supabase.createSupabaseClient
 object RoyalCustomerAuth {
     private const val SUPABASE_URL = "https://duvxxskgdmgrtaleedqu.supabase.co"
     private const val SUPABASE_PUBLISHABLE_KEY =
-        "sb_publishable_L-BfALjb0TkdTlyLTWbFBIg_aez3fjQd"
+        "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
 
     private val client by lazy {
         createSupabaseClient(
@@ -36,7 +37,7 @@ object RoyalCustomerAuth {
         runCatching {
             require(email.trim().contains("@")) { "أدخل بريدًا إلكترونيًا صحيحًا." }
             require(password.isNotBlank()) { "أدخل كلمة المرور." }
-            client.auth.loginWith(Email) {
+            client.auth.signInWith(Email) {
                 this.email = email.trim()
                 this.password = password
             }
