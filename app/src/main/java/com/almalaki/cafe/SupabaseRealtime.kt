@@ -27,9 +27,11 @@ private var royalRealtimeScope: CoroutineScope? = null
 
 fun startRoyalOrderRealtime(
     accessToken: String,
+    restaurantId: String,
     context: android.content.Context,
     onNewOrder: () -> Unit
 ) {
+    require(restaurantId.isNotBlank()) { "معرّف المطعم غير متوفر لاتصال الطلبات." }
     stopRoyalOrderRealtime()
 
     val scope = CoroutineScope(
@@ -56,6 +58,7 @@ fun startRoyalOrderRealtime(
                     schema = "public"
                 ) {
                     table = "orders"
+                    filter = "restaurant_id=eq.$restaurantId"
                 }
 
             try {
