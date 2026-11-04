@@ -262,6 +262,10 @@ LaunchedEffect(Unit) {
 }
 LaunchedEffect(ownerRestaurantId) {
     if (ownerRestaurantId.isBlank()) return@LaunchedEffect
+    stopRoyalOrderAlert()
+    orderAlertVisible = false
+    highlightedOrderId = null
+    orderAlertMessage = "🔔 يوجد طلب جديد"
     migrateLegacyRoyalInterfaceSettings(context, ownerRestaurantId)
     RoyalTextLogoSettings.migrateLegacy(context, ownerRestaurantId)
     interfaceSettings = loadRoyalInterfaceSettings(context, ownerRestaurantId)
