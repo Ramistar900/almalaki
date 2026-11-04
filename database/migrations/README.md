@@ -18,6 +18,11 @@ The migration filename prefix is the Supabase migration version. Keep it identic
 | 20261103050916 | restaurant_interface_settings | 20261103050916_restaurant_interface_settings.sql |
 | 20261104021748 | owner_activation_codes | 20261104021748_owner_activation_codes.sql |
 
+
+## Edge Functions
+
+- `supabase/functions/owner-activation/index.ts` — issues one-time owner activation codes, lists and pauses/revokes them for dashboard administrators, and redeems an active code only after the new owner's email is confirmed. The full code is returned once; only its SHA-256 hash is stored.
+
 ## Applied historical migrations whose original SQL is not present here
 
 The live Almalaki Supabase project reports these migrations as already applied, but their original SQL source files were not present in this repository during the isolation audit:
