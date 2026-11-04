@@ -94,10 +94,15 @@ private fun customerSectionsRequest(
 
 /** تحميل إعدادات الأقسام المشتركة من Supabase. */
 fun loadCustomerSections(accessToken: String? = null): List<CustomerSection> {
+    val ownerRestaurantId = accessToken
+        ?.takeIf { it.isNotBlank() }
+        ?.let { resolveOwnerRestaurantId(it) }
+    val tenantFilter = ownerRestaurantId?.let { "&restaurant_id=eq.$it" }.orEmpty()
     val response = customerSectionsRequest(
         method = "GET",
         path = "customer_sections" +
             "?select=section_key,title,category_names,enabled,sort_order" +
+            tenantFilter +
             "&order=sort_order.asc",
         accessToken = accessToken
     )
@@ -151,7 +156,9 @@ fun saveCustomerSection(
         }
     }
 
+    val restaurantId = resolveOwnerRestaurantId(accessToken)
     val body = JSONObject().apply {
+        put("restaurant_id", restaurantId)
         put("section_key", section.sectionKey.trim())
         put("title", section.title.trim())
         put("category_names", categories)
@@ -178,6 +185,7 @@ fun setCustomerSectionEnabled(
         "جلسة المالك غير متوفرة."
     }
 
+    val restaurantId = resolveOwnerRestaurantId(accessToken)
     val encodedKey = URLEncoder.encode(
         sectionKey,
         "UTF-8"
@@ -189,7 +197,7 @@ fun setCustomerSectionEnabled(
 
     customerSectionsRequest(
         method = "PATCH",
-        path = "customer_sections?section_key=eq.$encodedKey",
+        path = "customer_sections?section_key=eq.$encodedKey&restaurant_id=eq.$restaurantId",
         accessToken = accessToken,
         body = body,
         prefer = "return=minimal"
