@@ -3,6 +3,7 @@ package com.almalaki.cafe
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
@@ -58,7 +59,7 @@ fun startRoyalOrderRealtime(
                     schema = "public"
                 ) {
                     table = "orders"
-                    filter = "restaurant_id=eq.$restaurantId"
+                    filter("restaurant_id", FilterOperator.EQ, restaurantId)
                 }
 
             try {
