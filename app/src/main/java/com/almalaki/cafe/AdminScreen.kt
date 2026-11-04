@@ -115,6 +115,13 @@ LaunchedEffect(accessToken) {
         migrateLegacyRoyalInterfaceSettings(context, resolvedRestaurantId)
         RoyalTextLogoSettings.migrateLegacy(context, resolvedRestaurantId)
         interfaceSettings = loadRoyalInterfaceSettings(context, resolvedRestaurantId)
+        isDeveloperAccount = try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                isRoyalDeveloperAccount(accessToken)
+            }
+        } catch (_: Exception) {
+            null
+        }
     } catch (error: Exception) {
         ownerRestaurantId = ""
         message = error.message ?: "تعذر التحقق من المطعم المرتبط بحساب المالك."
@@ -131,6 +138,7 @@ var loadingDashboard by remember { mutableStateOf(false) }
 var loadingArchive by remember { mutableStateOf(false) }
 var accountEmail by remember { mutableStateOf("") }
 var loadingAccount by remember { mutableStateOf(false) }
+var isDeveloperAccount by remember { mutableStateOf<Boolean?>(null) }
 var orderAlertVisible by remember { mutableStateOf(false) }
 var highlightedOrderId by remember { mutableStateOf<Long?>(null) }
 var orderAlertMessage by remember { mutableStateOf("🔔 يوجد طلب جديد") }
@@ -423,6 +431,7 @@ Column(
                 section = section, products = products, orders = orders, archivedOrders = archivedOrders,
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
                 loadingDashboard = loadingDashboard, accountEmail = accountEmail, loadingAccount = loadingAccount,
+                isDeveloperAccount = isDeveloperAccount,
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
@@ -491,6 +500,7 @@ Column(
                 section = section, products = products, orders = orders, archivedOrders = archivedOrders,
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
                 loadingDashboard = loadingDashboard, accountEmail = accountEmail, loadingAccount = loadingAccount,
+                isDeveloperAccount = isDeveloperAccount,
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
