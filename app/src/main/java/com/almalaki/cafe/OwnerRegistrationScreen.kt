@@ -141,7 +141,12 @@ fun OwnerRegistrationScreen(
                     busy = true
                     message = "جارٍ التحقق من البريد ورمز التفعيل..."
                     try {
-                        var accessToken = RoyalSupabaseAuth.accessTokenOrNull()
+                        val currentEmail = RoyalSupabaseAuth.currentEmail().orEmpty()
+                        var accessToken = if (currentEmail.equals(email.trim(), ignoreCase = true)) {
+                            RoyalSupabaseAuth.accessTokenOrNull()
+                        } else {
+                            null
+                        }
                         if (accessToken.isNullOrBlank()) {
                             RoyalSupabaseAuth.signIn(email.trim(), password)
                             accessToken = RoyalSupabaseAuth.accessTokenOrNull()
