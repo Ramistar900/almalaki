@@ -339,15 +339,18 @@ LaunchedEffect(accessToken) {
         kotlinx.coroutines.delay(5000L)
     }
 }
-DisposableEffect(accessToken) {
-    startRoyalOrderRealtime(
-        accessToken = accessToken,
-        context = context
-    ) {
-        orderAlertVisible = true
-        startRoyalOrderAlert(context)
+DisposableEffect(accessToken, ownerRestaurantId) {
+    if (ownerRestaurantId.isNotBlank()) {
+        startRoyalOrderRealtime(
+            accessToken = accessToken,
+            restaurantId = ownerRestaurantId,
+            context = context
+        ) {
+            orderAlertVisible = true
+            startRoyalOrderAlert(context)
+        }
     }
-    
+
     onDispose {
         stopRoyalOrderRealtime()
     }
