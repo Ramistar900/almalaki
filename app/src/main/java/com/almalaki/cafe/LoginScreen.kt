@@ -25,7 +25,8 @@ private const val LOGIN_SUPABASE_KEY =
 fun LoginScreen(
     developerOnly: Boolean = false,
     onSuccess: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onRegisterOwner: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -136,6 +137,7 @@ fun LoginScreen(
                     message = ""
                     showReset = true
                 },
+                onRegisterOwner = onRegisterOwner,
                 onBack = onBack
             )
         }
@@ -153,6 +155,7 @@ private fun LoginContent(
     developerOnly: Boolean,
     onLogin: () -> Unit,
     onForgotPassword: () -> Unit,
+    onRegisterOwner: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -217,6 +220,18 @@ private fun LoginContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (!developerOnly) {
+            TextButton(
+                onClick = onRegisterOwner,
+                enabled = !loading
+            ) {
+                Text(
+                    text = "إنشاء حساب مالك برمز تفعيل",
+                    color = Color(0xFFD4AF37)
+                )
+            }
+        }
 
         TextButton(
             onClick = onForgotPassword,
