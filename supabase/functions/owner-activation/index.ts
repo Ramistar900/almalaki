@@ -81,6 +81,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let body: {
       action?: string;
       note?: string;
+      owner_name?: string;
       id?: string;
       status?: string;
       code?: string;
@@ -154,7 +155,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const rawCode = base32(randomBytes);
       const code = formatCode(rawCode);
       const codeHash = await sha256Hex(code);
-      const note = typeof body.note === "string" ? body.note.trim().slice(0, 120) : "";
+      const ownerName = typeof body.owner_name === "string"
+        ? body.owner_name.trim()
+        : typeof body.note === "string" ? body.note.trim() : "";
+      if (ownerName.length < 2 || ownerName.length > 120) {
+        return respond(400, { error: "Owner name must be between 2 and 120 characters" });
+      }
       const { data, error } = await adminClient
         .from("owner_activation_codes")
         .insert({
@@ -162,7 +168,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           code_prefix: code.slice(0, 14),
           status: "active",
           created_by: userData.user.id,
-          note: note || null,
+          note: ownerName,
         })
         .select("id, code_prefix, status, created_at, note")
         .single();
