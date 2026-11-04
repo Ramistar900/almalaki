@@ -151,16 +151,15 @@ fun OwnerRegistrationScreen(
                             RoyalSupabaseAuth.signIn(email.trim(), password)
                             accessToken = RoyalSupabaseAuth.accessTokenOrNull()
                         }
-                        if (accessToken.isNullOrBlank()) {
-                            throw Exception("لم نحصل على جلسة صالحة. أكّد البريد ثم سجّل الدخول مجدداً.")
-                        }
+                        val validAccessToken = accessToken?.takeIf { it.isNotBlank() }
+                            ?: throw Exception("لم نحصل على جلسة صالحة. أكّد البريد ثم سجّل الدخول مجدداً.")
                         activateOwnerAccount(
-                            accessToken = accessToken,
+                            accessToken = validAccessToken,
                             code = activationCode,
                             restaurantName = restaurantName
                         )
                         message = "تم تفعيل حساب المالك وإنشاء المطعم بنجاح."
-                        onActivated(accessToken)
+                        onActivated(validAccessToken)
                     } catch (error: Exception) {
                         message = error.message ?: "تعذر تفعيل حساب المالك."
                     } finally {
