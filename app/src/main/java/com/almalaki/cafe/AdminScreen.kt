@@ -78,6 +78,7 @@ val context = LocalContext.current
 val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var ownerRestaurantId by remember { mutableStateOf("") }
+    var isDeveloperAccount by remember { mutableStateOf<Boolean?>(null) }
     var interfaceSettings by remember {
         mutableStateOf(RoyalInterfaceSettings())
     }
@@ -115,6 +116,13 @@ LaunchedEffect(accessToken) {
         migrateLegacyRoyalInterfaceSettings(context, resolvedRestaurantId)
         RoyalTextLogoSettings.migrateLegacy(context, resolvedRestaurantId)
         interfaceSettings = loadRoyalInterfaceSettings(context, resolvedRestaurantId)
+        isDeveloperAccount = try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                isRoyalDeveloperAccount(accessToken)
+            }
+        } catch (_: Exception) {
+            null
+        }
     } catch (error: Exception) {
         ownerRestaurantId = ""
         message = error.message ?: "تعذر التحقق من المطعم المرتبط بحساب المالك."
@@ -331,15 +339,18 @@ LaunchedEffect(accessToken) {
         kotlinx.coroutines.delay(5000L)
     }
 }
-DisposableEffect(accessToken) {
-    startRoyalOrderRealtime(
-        accessToken = accessToken,
-        context = context
-    ) {
-        orderAlertVisible = true
-        startRoyalOrderAlert(context)
+DisposableEffect(accessToken, ownerRestaurantId) {
+    if (ownerRestaurantId.isNotBlank()) {
+        startRoyalOrderRealtime(
+            accessToken = accessToken,
+            restaurantId = ownerRestaurantId,
+            context = context
+        ) {
+            orderAlertVisible = true
+            startRoyalOrderAlert(context)
+        }
     }
-    
+
     onDispose {
         stopRoyalOrderRealtime()
     }
@@ -384,6 +395,15 @@ Column(
     ) {
         Royal3DAnimatedLogo(size = 38.dp, restaurantId = ownerRestaurantId)
 
+        if (isDeveloperAccount != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isDeveloperAccount == true) "المطور الملكي" else "مالك المطعم",
+                color = AdminGold,
+                fontSize = 12.sp
+            )
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
         RoyalShinyLogo(restaurantId = ownerRestaurantId)
@@ -423,6 +443,7 @@ Column(
                 section = section, products = products, orders = orders, archivedOrders = archivedOrders,
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
                 loadingDashboard = loadingDashboard, accountEmail = accountEmail, loadingAccount = loadingAccount,
+                isDeveloperAccount = isDeveloperAccount,
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,
@@ -491,6 +512,7 @@ Column(
                 section = section, products = products, orders = orders, archivedOrders = archivedOrders,
                 loadingArchive = loadingArchive, salesStats = salesStats, topProducts = topProducts,
                 loadingDashboard = loadingDashboard, accountEmail = accountEmail, loadingAccount = loadingAccount,
+                isDeveloperAccount = isDeveloperAccount,
                 onRefreshAccount = ::refreshAccount, onChangeEmail = ::changeEmail, onChangePassword = ::changePassword,
                 message = message, name = name, category = category, price = price,
                 selectedImageUri = selectedImageUri, editingProductId = editingProductId, loading = loading,

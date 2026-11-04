@@ -25,6 +25,7 @@ fun AdminContent(
     loadingArchive: Boolean,
     accountEmail: String,
     loadingAccount: Boolean,
+    isDeveloperAccount: Boolean? = null,
     onRefreshAccount: () -> Unit,
     onChangeEmail: (String) -> Unit,
     onChangePassword: (String, String, String) -> Unit,
@@ -220,6 +221,39 @@ if (section == AdminSection.ROYAL_TV_CONTROL) {
             }
 
             AdminSection.ACCOUNT_SETTINGS -> {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = AdminPanel)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("نوع الحساب", color = AdminCream, fontSize = 14.sp)
+                            Text(
+                                text = when (isDeveloperAccount) {
+                                    true -> "المطور الملكي 🔐"
+                                    false -> "حساب مالك مطعم 👑"
+                                    null -> "جارٍ التحقق من نوع الحساب..."
+                                },
+                                color = AdminGold,
+                                fontSize = 20.sp
+                            )
+                            Text(
+                                text = if (isDeveloperAccount == true) {
+                                    "تم التحقق من صلاحية المطوّر مباشرةً من الخادم."
+                                } else if (isDeveloperAccount == false) {
+                                    "هذا الحساب يملك صلاحيات إدارة مطعمه فقط."
+                                } else {
+                                    "لا يتم تحديد الصلاحيات من بيانات محفوظة داخل التطبيق."
+                                },
+                                color = AdminCream,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
                 item {
                     AccountSettingsScreen(
                         currentEmail = accountEmail,

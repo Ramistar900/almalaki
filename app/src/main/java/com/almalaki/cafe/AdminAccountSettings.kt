@@ -50,6 +50,39 @@ private fun authConnection(
     return connection
 }
 
+fun isRoyalDeveloperAccount(accessToken: String): Boolean {
+    require(accessToken.isNotBlank()) { "جلسة الحساب غير متوفرة." }
+    val connection = URL(
+        "$ADMIN_SUPABASE_URL/rest/v1/rpc/is_dashboard_admin"
+    ).openConnection() as HttpURLConnection
+
+    try {
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.connectTimeout = 10000
+        connection.readTimeout = 10000
+        connection.setRequestProperty("apikey", ADMIN_SUPABASE_KEY)
+        connection.setRequestProperty("Authorization", "Bearer $accessToken")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Accept", "application/json")
+        connection.outputStream.use {
+            it.write("{}".toByteArray(Charsets.UTF_8))
+        }
+
+        val code = connection.responseCode
+        val response = (
+            if (code in 200..299) connection.inputStream else connection.errorStream
+        )?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+
+        if (code !in 200..299) {
+            throw Exception("تعذر التحقق من نوع الحساب (HTTP $code).")
+        }
+        return response.trim().equals("true", ignoreCase = true)
+    } finally {
+        connection.disconnect()
+    }
+}
+
 fun loadCurrentAccountEmail(accessToken: String): String {
     val connection = authConnection(accessToken, "GET")
 

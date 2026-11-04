@@ -74,6 +74,7 @@ private fun royalSalesDisplayDate(value: String): String {
 
 private fun royalSalesGet(
     accessToken: String,
+    restaurantId: String,
     table: String,
     select: String,
     offset: Int,
@@ -82,7 +83,7 @@ private fun royalSalesGet(
     val encodedSelect = URLEncoder.encode(select, "UTF-8")
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/$table" +
-            "?select=$encodedSelect&order=id.asc&limit=$limit&offset=$offset"
+            "?select=$encodedSelect&restaurant_id=eq.$restaurantId&order=id.asc&limit=$limit&offset=$offset"
     )
     val connection = url.openConnection() as HttpURLConnection
     connection.requestMethod = "GET"
@@ -101,12 +102,14 @@ private fun royalSalesGet(
 }
 
 private fun loadRoyalSalesRecords(accessToken: String): List<RoyalSalesRecord> {
+    val restaurantId = resolveOwnerRestaurantId(accessToken)
     val records = mutableListOf<RoyalSalesRecord>()
     var offset = 0
 
     while (true) {
         val body = royalSalesGet(
             accessToken,
+            restaurantId,
             "sales_records",
             "id,sold_at,order_number,order_id,customer_name,customer_phone,fulfillment_type,delivery_address,total_amount",
             offset
@@ -139,6 +142,7 @@ private fun loadRoyalSalesRecords(accessToken: String): List<RoyalSalesRecord> {
     while (true) {
         val body = royalSalesGet(
             accessToken,
+            restaurantId,
             "sales_record_items",
             "sales_record_id,product_id,product_name,quantity,unit_price,item_total",
             offset
