@@ -78,6 +78,7 @@ val context = LocalContext.current
 val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var ownerRestaurantId by remember { mutableStateOf("") }
+    var isDeveloperAccount by remember { mutableStateOf<Boolean?>(null) }
     var interfaceSettings by remember {
         mutableStateOf(RoyalInterfaceSettings())
     }
@@ -138,7 +139,6 @@ var loadingDashboard by remember { mutableStateOf(false) }
 var loadingArchive by remember { mutableStateOf(false) }
 var accountEmail by remember { mutableStateOf("") }
 var loadingAccount by remember { mutableStateOf(false) }
-var isDeveloperAccount by remember { mutableStateOf<Boolean?>(null) }
 var orderAlertVisible by remember { mutableStateOf(false) }
 var highlightedOrderId by remember { mutableStateOf<Long?>(null) }
 var orderAlertMessage by remember { mutableStateOf("🔔 يوجد طلب جديد") }
@@ -391,6 +391,15 @@ Column(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Royal3DAnimatedLogo(size = 38.dp, restaurantId = ownerRestaurantId)
+
+        if (isDeveloperAccount != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isDeveloperAccount == true) "المطور الملكي" else "مالك المطعم",
+                color = AdminGold,
+                fontSize = 12.sp
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
