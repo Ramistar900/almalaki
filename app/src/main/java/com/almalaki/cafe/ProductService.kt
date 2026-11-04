@@ -19,15 +19,16 @@ data class Product(
     val imageUrl: String
 )
 
-fun loadProducts(accessToken: String? = null): List<Product> {
+fun loadProducts(accessToken: String? = null, restaurantId: String? = null): List<Product> {
     val ownerToken = accessToken?.takeIf { it.isNotBlank() }
-    val restaurantId = ownerToken?.let { resolveOwnerRestaurantId(it) }
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: ownerToken?.let { resolveOwnerRestaurantId(it) }
         ?: ROYAL_DEFAULT_RESTAURANT_ID
 
     val url = URL(
         "$SUPABASE_URL/rest/v1/products" +
                 "?select=id,name,category,price,image_url" +
-                "&restaurant_id=eq.$restaurantId&order=id.asc"
+                "&restaurant_id=eq.$scopedRestaurantId&order=id.asc"
     )
 
     val connection =
@@ -107,10 +108,12 @@ fun addProduct(
     name: String,
     category: String,
     price: Double,
-    imageUrl: String
+    imageUrl: String,
+    restaurantId: String? = null
 ) {
 
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val url = URL(
         "$SUPABASE_URL/rest/v1/products"
     )
@@ -171,7 +174,7 @@ fun addProduct(
 
             put(
                 "restaurant_id",
-                restaurantId
+                scopedRestaurantId
             )
         }.toString()
 
@@ -206,12 +209,14 @@ fun addProduct(
 
 fun deleteProduct(
     accessToken: String,
-    id: Int
+    id: Int,
+    restaurantId: String? = null
 ) {
 
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val url = URL(
-        "$SUPABASE_URL/rest/v1/products?id=eq.$id&restaurant_id=eq.$restaurantId"
+        "$SUPABASE_URL/rest/v1/products?id=eq.$id&restaurant_id=eq.$scopedRestaurantId"
     )
 
     val connection =
