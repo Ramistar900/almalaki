@@ -133,6 +133,7 @@ fun RoyalCoffeeApp(
     when (screen) {
         "login" -> screen = "customer"
         "developer_login" -> screen = "customer"
+        "owner_register" -> screen = "login"
         "reset" -> screen = "login"
         "admin" -> screen = "customer"
         "customer" -> Unit
@@ -220,7 +221,16 @@ val royalTypography =
             "login", "developer_login" -> LoginScreen(
                 developerOnly = screen == "developer_login",
                 onBack = { screen = "customer" },
+                onRegisterOwner = { screen = "owner_register" },
                 onSuccess = { newToken ->
+                    token = newToken
+                    screen = "admin"
+                }
+            )
+
+            "owner_register" -> OwnerRegistrationScreen(
+                onBack = { screen = "login" },
+                onActivated = { newToken ->
                     token = newToken
                     screen = "admin"
                 }
