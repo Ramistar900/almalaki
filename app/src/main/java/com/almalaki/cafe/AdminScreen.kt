@@ -78,6 +78,8 @@ val context = LocalContext.current
 val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var ownerRestaurantId by remember { mutableStateOf("") }
+    var ownerRestaurants by remember { mutableStateOf<List<OwnerRestaurant>>(emptyList()) }
+    var restaurantMenuExpanded by remember { mutableStateOf(false) }
     var isDeveloperAccount by remember { mutableStateOf<Boolean?>(null) }
     var interfaceSettings by remember {
         mutableStateOf(RoyalInterfaceSettings())
@@ -107,15 +109,15 @@ var message by remember { mutableStateOf("") }
 
 LaunchedEffect(accessToken) {
     try {
-        val resolvedRestaurantId = kotlinx.coroutines.withContext(
+        val loadedRestaurants = kotlinx.coroutines.withContext(
             kotlinx.coroutines.Dispatchers.IO
         ) {
-            resolveOwnerRestaurantId(accessToken)
+            loadOwnerRestaurants(accessToken)
         }
-        ownerRestaurantId = resolvedRestaurantId
-        migrateLegacyRoyalInterfaceSettings(context, resolvedRestaurantId)
-        RoyalTextLogoSettings.migrateLegacy(context, resolvedRestaurantId)
-        interfaceSettings = loadRoyalInterfaceSettings(context, resolvedRestaurantId)
+        ownerRestaurants = loadedRestaurants
+        if (ownerRestaurantId !in loadedRestaurants.map { it.id }) {
+            ownerRestaurantId = loadedRestaurants.first().id
+        }
         isDeveloperAccount = try {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 isRoyalDeveloperAccount(accessToken)
@@ -124,8 +126,9 @@ LaunchedEffect(accessToken) {
             null
         }
     } catch (error: Exception) {
+        ownerRestaurants = emptyList()
         ownerRestaurantId = ""
-        message = error.message ?: "تعذر التحقق من المطعم المرتبط بحساب المالك."
+        message = error.message ?: "تعذر تحميل المطاعم المرتبطة بحساب المالك."
     }
 }
 var loading by remember { mutableStateOf(false) }
@@ -160,7 +163,7 @@ val imagePicker = rememberLauncherForActivityResult(
 
 fun refreshProducts() {
     Thread {
-        try { products = loadProducts(accessToken) }
+        try { products = loadProducts(accessToken, ownerRestaurantId) }
         catch (e: Exception) { message = e.message ?: "تعذر تحميل المنتجات." }
     }.start()
 }
@@ -168,7 +171,7 @@ fun refreshProducts() {
 fun refreshOrders() {
     Thread {
         try {
-            val loadedOrders = loadAdminOrders(accessToken)
+            val loadedOrders = loadAdminOrders(accessToken, ownerRestaurantId)
 
             Handler(Looper.getMainLooper()).post {
                 orders = loadedOrders
@@ -184,7 +187,7 @@ fun refreshOrders() {
 fun refreshArchive() {
     loadingArchive = true
     Thread {
-        try { archivedOrders = loadArchivedOrders(accessToken) }
+        try { archivedOrders = loadArchivedOrders(accessToken, ownerRestaurantId) }
         catch (e: Exception) { message = e.message ?: "تعذر تحميل الأرشيف." }
         finally { loadingArchive = false }
     }.start()
@@ -242,31 +245,54 @@ fun refreshDashboard() {
     loadingDashboard = true
     Thread {
         try {
-            val currentProducts = loadProducts(accessToken)
-            val currentOrders = loadAdminOrders(accessToken)
+            val currentProducts = loadProducts(accessToken, ownerRestaurantId)
+            val currentOrders = loadAdminOrders(accessToken, ownerRestaurantId)
             val completedOrders = currentOrders.filter { it.status.equals("completed", ignoreCase = true) }
             products = currentProducts
             orders = currentOrders
-            salesStats = calculateSalesStats(accessToken)
-            topProducts = calculateTopProducts(accessToken, completedOrders, currentProducts)
+            salesStats = calculateSalesStats(accessToken, ownerRestaurantId)
+            topProducts = calculateTopProducts(accessToken, completedOrders, currentProducts, ownerRestaurantId)
         } catch (e: Exception) {
             message = e.message ?: "تعذر تحديث لوحة التحكم."
         } finally { loadingDashboard = false }
     }.start()
 }
 LaunchedEffect(Unit) {
-    refreshDashboard()
-    refreshArchive()
     refreshAccount()
 }
+LaunchedEffect(ownerRestaurantId) {
+    if (ownerRestaurantId.isBlank()) return@LaunchedEffect
+    stopRoyalOrderAlert()
+    orderAlertVisible = false
+    highlightedOrderId = null
+    orderAlertMessage = "🔔 يوجد طلب جديد"
+    migrateLegacyRoyalInterfaceSettings(context, ownerRestaurantId)
+    RoyalTextLogoSettings.migrateLegacy(context, ownerRestaurantId)
+    interfaceSettings = loadRoyalInterfaceSettings(context, ownerRestaurantId)
+    products = emptyList()
+    orders = emptyList()
+    archivedOrders = emptyList()
+    salesStats = AdminSalesStats()
+    topProducts = emptyList()
+    editingProductId = null
+    name = ""
+    category = ""
+    price = ""
+    selectedImageUri = null
+    refreshDashboard()
+    refreshArchive()
+}
 
-LaunchedEffect(accessToken) {
+LaunchedEffect(accessToken, ownerRestaurantId) {
+    if (ownerRestaurantId.isBlank()) return@LaunchedEffect
+    orderAlertInitialized = false
+    lastKnownOrderIds = emptySet()
     while (true) {
         try {
             val currentOrders = kotlinx.coroutines.withContext(
     kotlinx.coroutines.Dispatchers.IO
 ) {
-    loadAdminOrders(accessToken)
+    loadAdminOrders(accessToken, ownerRestaurantId)
             }
 
             val currentIds = currentOrders.map { it.id }.toSet()
@@ -288,7 +314,8 @@ LaunchedEffect(accessToken) {
     ) {
         loadOrderItems(
             accessToken = accessToken,
-            orderId = alertOrder.id
+            orderId = alertOrder.id,
+            restaurantId = ownerRestaurantId
         )
     }
 
@@ -404,6 +431,30 @@ Column(
             )
         }
 
+        if (ownerRestaurants.size > 1) {
+            Box {
+                TextButton(onClick = { restaurantMenuExpanded = true }, colors = ButtonDefaults.textButtonColors(contentColor = AdminGold)) {
+                    Text(ownerRestaurants.firstOrNull { it.id == ownerRestaurantId }?.name ?: "اختر المطعم")
+                    Text("⌄")
+                }
+                DropdownMenu(expanded = restaurantMenuExpanded, onDismissRequest = { restaurantMenuExpanded = false }) {
+                    ownerRestaurants.forEach { restaurant ->
+                        DropdownMenuItem(
+                            text = { Text(restaurant.name) },
+                            onClick = {
+                                restaurantMenuExpanded = false
+                                if (ownerRestaurantId != restaurant.id) {
+                                    ownerRestaurantId = restaurant.id
+                                    message = "تم اختيار المطعم"
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        } else if (ownerRestaurants.isNotEmpty()) {
+            Text(text = ownerRestaurants.first().name, color = AdminGold, fontSize = 12.sp)
+        }
         Spacer(modifier = Modifier.weight(1f))
 
         RoyalShinyLogo(restaurantId = ownerRestaurantId)
@@ -455,21 +506,21 @@ Column(
                     selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن."; section = AdminSection.PRODUCTS
                 },
                 onDeleteProduct = { product -> Thread {
-                    try { deleteProduct(accessToken, product.id); products = loadProducts(accessToken); message = "تم حذف المنتج بنجاح ✅" }
+                    try { deleteProduct(accessToken, product.id, ownerRestaurantId); products = loadProducts(accessToken, ownerRestaurantId); message = "تم حذف المنتج بنجاح ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." }
                 }.start() },
-                onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId,
+                onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId, ownerRestaurantId,
                     { loading = it }, { message = it }, { products = it }, {
                         name = ""; category = ""; price = ""; selectedImageUri = null; editingProductId = null
                     }) },
                 onCancelEdit = { editingProductId = null; name = ""; category = ""; price = ""; selectedImageUri = null; message = "" },
                 onRefresh = { refreshDashboard() }, onRefreshArchive = { refreshArchive() },
                 onOrderStatus = { orderId, status -> Thread {
-                    try { updateOrderStatusAsync(accessToken, orderId, status); orders = loadAdminOrders(accessToken); salesStats = calculateSalesStats(accessToken); message = "تم تحديث حالة الطلب ✅" }
+                    try { updateOrderStatusAsync(accessToken, orderId, status, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); salesStats = calculateSalesStats(accessToken, ownerRestaurantId); message = "تم تحديث حالة الطلب ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر تحديث حالة الطلب." }
                 }.start() },
                 onDeleteOrder = { orderId -> Thread {
-                    try { deleteCancelledOrder(accessToken, orderId); orders = loadAdminOrders(accessToken); message = "تم حذف الطلب الملغى ✅" }
+                    try { deleteCancelledOrder(accessToken, orderId, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); message = "تم حذف الطلب الملغى ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف الطلب." }
                 }.start() }
             )
@@ -524,21 +575,21 @@ Column(
                     selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن."; section = AdminSection.PRODUCTS
                 },
                 onDeleteProduct = { product -> Thread {
-                    try { deleteProduct(accessToken, product.id); products = loadProducts(accessToken); message = "تم حذف المنتج بنجاح ✅" }
+                    try { deleteProduct(accessToken, product.id, ownerRestaurantId); products = loadProducts(accessToken, ownerRestaurantId); message = "تم حذف المنتج بنجاح ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." }
                 }.start() },
-                onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId,
+                onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId, ownerRestaurantId,
                     { loading = it }, { message = it }, { products = it }, {
                         name = ""; category = ""; price = ""; selectedImageUri = null; editingProductId = null
                     }) },
                 onCancelEdit = { editingProductId = null; name = ""; category = ""; price = ""; selectedImageUri = null; message = "" },
                 onRefresh = { refreshDashboard() }, onRefreshArchive = { refreshArchive() },
                 onOrderStatus = { orderId, status -> Thread {
-                    try { updateOrderStatusAsync(accessToken, orderId, status); orders = loadAdminOrders(accessToken); salesStats = calculateSalesStats(accessToken); message = "تم تحديث حالة الطلب ✅" }
+                    try { updateOrderStatusAsync(accessToken, orderId, status, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); salesStats = calculateSalesStats(accessToken, ownerRestaurantId); message = "تم تحديث حالة الطلب ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر تحديث حالة الطلب." }
                 }.start() },
                 onDeleteOrder = { orderId -> Thread {
-                    try { deleteCancelledOrder(accessToken, orderId); orders = loadAdminOrders(accessToken); message = "تم حذف الطلب الملغى ✅" }
+                    try { deleteCancelledOrder(accessToken, orderId, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); message = "تم حذف الطلب الملغى ✅" }
                     catch (e: Exception) { message = e.message ?: "تعذر حذف الطلب." }
                 }.start() },
                 highlightedOrderId = highlightedOrderId

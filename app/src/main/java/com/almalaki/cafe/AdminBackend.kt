@@ -49,6 +49,7 @@ fun saveProduct(
     price: String,
     selectedImageUri: Uri?,
     editingProductId: Int?,
+    restaurantId: String,
     onLoading: (Boolean) -> Unit,
     onMessage: (String) -> Unit,
     onProductsLoaded: (List<Product>) -> Unit,
@@ -83,7 +84,8 @@ fun saveProduct(
                 imageUrl = uploadProductImage(
                     accessToken = accessToken,
                     bytes = bytes,
-                    mimeType = mimeType
+                    mimeType = mimeType,
+                    restaurantId = restaurantId
                 )
             }
 
@@ -93,7 +95,8 @@ fun saveProduct(
                     name = name.trim(),
                     category = category.trim(),
                     price = priceValue,
-                    imageUrl = imageUrl
+                    imageUrl = imageUrl,
+                    restaurantId = restaurantId
                 )
                 onMessage("تمت إضافة المنتج بنجاح ✅")
             } else {
@@ -103,12 +106,13 @@ fun saveProduct(
                     name = name.trim(),
                     category = category.trim(),
                     price = priceValue,
-                    imageUrl = imageUrl
+                    imageUrl = imageUrl,
+                    restaurantId = restaurantId
                 )
                 onMessage("تم تعديل المنتج بنجاح ✅")
             }
 
-            onProductsLoaded(loadProducts(accessToken))
+            onProductsLoaded(loadProducts(accessToken, restaurantId))
             onClear()
         } catch (e: Exception) {
             onMessage(e.message ?: "حدث خطأ أثناء الحفظ.")
@@ -119,14 +123,16 @@ fun saveProduct(
 }
 
 fun loadAdminOrders(
-    accessToken: String
+    accessToken: String,
+    restaurantId: String? = null
 ): List<AdminOrder> {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/orders" +
                 "?select=id,order_number,customer_name," +
                 "customer_phone,delivery_address,fulfillment_type," +
-                "total_amount,status&restaurant_id=eq.$restaurantId&order=id.desc"
+                "total_amount,status&restaurant_id=eq.$scopedRestaurantId&order=id.desc"
     )
 
     val connection = url.openConnection() as HttpURLConnection
@@ -171,13 +177,15 @@ fun loadAdminOrders(
 }
 fun loadOrderItems(
     accessToken: String,
-    orderId: Long
+    orderId: Long,
+    restaurantId: String? = null
 ): List<AdminOrderItem> {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/order_items" +
                 "?select=id,order_id,product_id,product_name,quantity,unit_price,item_total" +
-                "&order_id=eq.$orderId&restaurant_id=eq.$restaurantId&order=id.asc"
+                "&order_id=eq.$orderId&restaurant_id=eq.$scopedRestaurantId&order=id.asc"
     )
 
     val connection = url.openConnection() as HttpURLConnection
@@ -227,13 +235,15 @@ fun loadOrderItems(
 }
 
 fun calculateSalesStats(
-    accessToken: String
+    accessToken: String,
+    restaurantId: String? = null
 ): AdminSalesStats {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/orders" +
                 "?select=total_amount,created_at,status" +
-                "&status=eq.completed&restaurant_id=eq.$restaurantId&order=created_at.desc&limit=1000"
+                "&status=eq.completed&restaurant_id=eq.$scopedRestaurantId&order=created_at.desc&limit=1000"
     )
 
     val connection = url.openConnection() as HttpURLConnection
@@ -323,10 +333,12 @@ fun calculateSalesStats(
 fun calculateTopProducts(
     accessToken: String,
     completedOrders: List<AdminOrder>,
-    products: List<Product>
+    products: List<Product>,
+    restaurantId: String? = null
 ): List<AdminTopProduct> {
     if (completedOrders.isEmpty()) return emptyList()
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
 
     val ids = completedOrders.map { it.id }
     val inValue = ids.joinToString(",")
@@ -334,7 +346,7 @@ fun calculateTopProducts(
     val url = URL(
         "$ADMIN_SUPABASE_URL/rest/v1/order_items" +
                 "?select=product_id,quantity,item_total" +
-                "&order_id=in.($inValue)&restaurant_id=eq.$restaurantId&limit=5000"
+                "&order_id=in.($inValue)&restaurant_id=eq.$scopedRestaurantId&limit=5000"
     )
 
     val connection = url.openConnection() as HttpURLConnection
@@ -416,11 +428,13 @@ fun updateAdminProduct(
     name: String,
     category: String,
     price: Double,
-    imageUrl: String
+    imageUrl: String,
+    restaurantId: String? = null
 ) {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val connection = URL(
-        "$ADMIN_SUPABASE_URL/rest/v1/products?id=eq.$id&restaurant_id=eq.$restaurantId"
+        "$ADMIN_SUPABASE_URL/rest/v1/products?id=eq.$id&restaurant_id=eq.$scopedRestaurantId"
     ).openConnection() as HttpURLConnection
 
     try {
@@ -458,12 +472,14 @@ fun updateAdminProduct(
 
 fun deleteCancelledOrder(
     accessToken: String,
-    orderId: Long
+    orderId: Long,
+    restaurantId: String? = null
 ) {
-    // حذف تفاصيل الطلب أولًا ثم الطلب نفسه ضمن مطعم الجلسة فقط.
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    // حذف تفاصيل الطلب أولًا ثم الطلب نفسه ضمن المطعم المحدد.
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val itemsConnection = URL(
-        "$ADMIN_SUPABASE_URL/rest/v1/order_items?order_id=eq.$orderId&restaurant_id=eq.$restaurantId"
+        "$ADMIN_SUPABASE_URL/rest/v1/order_items?order_id=eq.$orderId&restaurant_id=eq.$scopedRestaurantId"
     ).openConnection() as HttpURLConnection
 
     try {
@@ -485,7 +501,7 @@ fun deleteCancelledOrder(
     }
 
     val orderConnection = URL(
-        "$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId&restaurant_id=eq.$restaurantId&status=eq.cancelled"
+        "$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId&restaurant_id=eq.$scopedRestaurantId&status=eq.cancelled"
     ).openConnection() as HttpURLConnection
 
     try {
@@ -510,11 +526,13 @@ fun deleteCancelledOrder(
 fun updateOrderStatusAsync(
     accessToken: String,
     orderId: Long,
-    status: String
+    status: String,
+    restaurantId: String? = null
 ) {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
     val connection = URL(
-        "$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId&restaurant_id=eq.$restaurantId"
+        "$ADMIN_SUPABASE_URL/rest/v1/orders?id=eq.$orderId&restaurant_id=eq.$scopedRestaurantId"
     ).openConnection() as HttpURLConnection
 
     try {

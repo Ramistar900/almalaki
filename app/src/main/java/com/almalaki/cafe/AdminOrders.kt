@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 fun AdminOrderCard(
     order: AdminOrder,
     accessToken: String,
+    restaurantId: String,
     onStatus: (Long, String) -> Unit,
     onDelete: (Long) -> Unit,
     openDetails: Boolean = false
@@ -121,7 +122,8 @@ Row(
                     try {
                         val loadedItems = loadOrderItems(
                             accessToken = accessToken,
-                            orderId = order.id
+                            orderId = order.id,
+                            restaurantId = restaurantId
                         )
 
                         Handler(Looper.getMainLooper()).post {
