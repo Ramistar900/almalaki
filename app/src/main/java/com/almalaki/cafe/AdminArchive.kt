@@ -31,13 +31,15 @@ data class AdminArchivedOrder(
 )
 
 fun loadArchivedOrders(
-    accessToken: String
+    accessToken: String,
+    restaurantId: String? = null
 ): List<AdminArchivedOrder> {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId?.takeIf { it.isNotBlank() }
+        ?: resolveOwnerRestaurantId(accessToken)
 
     val response = adminRequest(
         "GET",
-        "orders_archive?select=archive_id,original_order_id,order_number,customer_name,customer_phone,delivery_address,fulfillment_type,total_amount,status,original_created_at,archived_at,archive_reason,order_items&restaurant_id=eq.$restaurantId&order=archived_at.desc",
+        "orders_archive?select=archive_id,original_order_id,order_number,customer_name,customer_phone,delivery_address,fulfillment_type,total_amount,status,original_created_at,archived_at,archive_reason,order_items&restaurant_id=eq.$scopedRestaurantId&order=archived_at.desc",
         accessToken
     )
 
