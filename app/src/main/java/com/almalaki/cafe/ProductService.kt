@@ -19,8 +19,10 @@ data class Product(
     val imageUrl: String
 )
 
-fun loadProducts(accessToken: String): List<Product> {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+fun loadProducts(accessToken: String? = null): List<Product> {
+    val ownerToken = accessToken?.takeIf { it.isNotBlank() }
+    val restaurantId = ownerToken?.let { resolveOwnerRestaurantId(it) }
+        ?: ROYAL_DEFAULT_RESTAURANT_ID
 
     val url = URL(
         "$SUPABASE_URL/rest/v1/products" +
