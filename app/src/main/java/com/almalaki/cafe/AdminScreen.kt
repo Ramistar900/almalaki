@@ -431,7 +431,7 @@ Column(
             Box {
                 TextButton(onClick = { restaurantMenuExpanded = true }, colors = ButtonDefaults.textButtonColors(contentColor = AdminGold)) {
                     Text(ownerRestaurants.firstOrNull { it.id == ownerRestaurantId }?.name ?: "اختر المطعم")
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                    Text("⌄")
                 }
                 DropdownMenu(expanded = restaurantMenuExpanded, onDismissRequest = { restaurantMenuExpanded = false }) {
                     ownerRestaurants.forEach { restaurant ->
