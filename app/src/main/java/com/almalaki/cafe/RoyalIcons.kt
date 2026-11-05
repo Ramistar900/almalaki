@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -64,7 +65,11 @@ enum class RoyalIcon {
     DRINK,
     DESSERT,
     JUICE,
-    NOTIFICATION
+    NOTIFICATION,
+    RESERVATIONS,
+    ARCHIVE,
+    TV,
+    PALETTE
 }
 
 /* =========================
@@ -107,6 +112,10 @@ private fun iconColor(icon: RoyalIcon): Color {
         RoyalIcon.DESSERT -> RoyalPink
         RoyalIcon.JUICE -> RoyalGreen
         RoyalIcon.NOTIFICATION -> RoyalYellow
+        RoyalIcon.RESERVATIONS -> RoyalCyan
+        RoyalIcon.ARCHIVE -> RoyalSilver
+        RoyalIcon.TV -> RoyalPurple
+        RoyalIcon.PALETTE -> RoyalPink
     }
 }
 
@@ -120,8 +129,10 @@ fun RoyalIconButton(
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
     size: Dp = 54.dp,
-    onClick: () -> Unit
-    ) {
+    onClick: () -> Unit,
+    interactive: Boolean = true,
+    tint: Color? = null
+) {
     val context = LocalContext.current
     val isTV = isRoyalTV(context)
     val scope = rememberCoroutineScope()
@@ -137,7 +148,9 @@ fun RoyalIconButton(
     Box(
         modifier = modifier
             .size(size)
-            .pointerInput(icon) {
+            .then(
+                if (interactive) {
+                    Modifier.pointerInput(icon) {
                 detectTapGestures {
                     
              /* حركة التكبير للهاتف والتابلت فقط */
@@ -185,6 +198,15 @@ fun RoyalIconButton(
                         onClick()
                     }
                 }
+                    }
+                } else {
+                    Modifier
+                }
+            )
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+                rotationZ = rotation.value
             },
         contentAlignment = Alignment.Center
     ) {
@@ -196,7 +218,7 @@ fun RoyalIconButton(
 
             val s = minOf(this.size.width, this.size.height)
             val stroke = s * 0.085f
-            val c = iconColor(icon)
+            val c = tint ?: iconColor(icon)
 
             val center = Offset(
                 this.size.width / 2f,
@@ -1505,6 +1527,44 @@ fun RoyalIconButton(
                             center.y + r * 0.65f
                         )
                     )
+                }
+
+                RoyalIcon.RESERVATIONS -> {
+                    drawRoundRect(color = c, topLeft = Offset(center.x-r*.82f,center.y-r*.72f),
+                        size = androidx.compose.ui.geometry.Size(r*1.64f,r*1.55f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(r*.12f),style=Stroke(width=stroke))
+                    drawLine(c,Offset(center.x-r*.82f,center.y-r*.22f),Offset(center.x+r*.82f,center.y-r*.22f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawLine(c,Offset(center.x-r*.42f,center.y-r*.98f),Offset(center.x-r*.42f,center.y-r*.48f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawLine(c,Offset(center.x+r*.42f,center.y-r*.98f),Offset(center.x+r*.42f,center.y-r*.48f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawCircle(c,radius=stroke*1.1f,center=Offset(center.x-r*.34f,center.y+r*.22f))
+                    drawCircle(c,radius=stroke*1.1f,center=Offset(center.x+r*.30f,center.y+r*.22f))
+                }
+
+                RoyalIcon.ARCHIVE -> {
+                    drawRoundRect(color=c,topLeft=Offset(center.x-r*.82f,center.y-r*.58f),
+                        size=androidx.compose.ui.geometry.Size(r*1.64f,r*1.42f),
+                        cornerRadius=androidx.compose.ui.geometry.CornerRadius(r*.12f),style=Stroke(width=stroke))
+                    drawLine(c,Offset(center.x-r*.82f,center.y-r*.22f),Offset(center.x+r*.82f,center.y-r*.22f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawRoundRect(color=c,topLeft=Offset(center.x-r*.30f,center.y-r*.12f),
+                        size=androidx.compose.ui.geometry.Size(r*.60f,r*.28f),
+                        cornerRadius=androidx.compose.ui.geometry.CornerRadius(r*.08f),style=Stroke(width=stroke))
+                }
+
+                RoyalIcon.TV -> {
+                    drawRoundRect(color=c,topLeft=Offset(center.x-r*.90f,center.y-r*.55f),
+                        size=androidx.compose.ui.geometry.Size(r*1.80f,r*1.25f),
+                        cornerRadius=androidx.compose.ui.geometry.CornerRadius(r*.16f),style=Stroke(width=stroke))
+                    drawLine(c,Offset(center.x,center.y+r*.70f),Offset(center.x,center.y+r*.98f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawLine(c,Offset(center.x-r*.42f,center.y+r*.98f),Offset(center.x+r*.42f,center.y+r*.98f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawLine(c,Offset(center.x-r*.22f,center.y-r*.72f),Offset(center.x-r*.55f,center.y-r*1.02f),strokeWidth=stroke,cap=StrokeCap.Round)
+                    drawLine(c,Offset(center.x+r*.22f,center.y-r*.72f),Offset(center.x+r*.55f,center.y-r*1.02f),strokeWidth=stroke,cap=StrokeCap.Round)
+                }
+
+                RoyalIcon.PALETTE -> {
+                    drawCircle(color=c,radius=r*.82f,center=center,style=Stroke(width=stroke))
+                    drawCircle(c,radius=stroke*1.15f,center=Offset(center.x-r*.34f,center.y-r*.25f))
+                    drawCircle(c,radius=stroke*1.15f,center=Offset(center.x+r*.25f,center.y-r*.36f))
+                    drawCircle(c,radius=stroke*1.15f,center=Offset(center.x-r*.05f,center.y+r*.30f))
                 }
             }
         }
