@@ -60,12 +60,3 @@ jobs:
 
       - name: Assemble Debug
         run: gradle :app:assembleDebug --no-daemon
-
-      # Keep compiling the APK on PRs; skip only the storage-consuming upload.
-      - name: Upload Debug APK
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Almalaki-PR-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
