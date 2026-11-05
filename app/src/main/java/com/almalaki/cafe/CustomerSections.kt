@@ -92,11 +92,23 @@ private fun customerSectionsRequest(
     }
 }
 
-/** تحميل إعدادات الأقسام المشتركة من Supabase. */
-fun loadCustomerSections(accessToken: String? = null): List<CustomerSection> {
-    val ownerRestaurantId = accessToken
-        ?.takeIf { it.isNotBlank() }
-        ?.let { resolveOwnerRestaurantId(it) }
+/**
+ * Loads menu sections for the requested tenant.
+ * Owner screens should always pass the restaurant selected in the admin UI.
+ * The no-argument form remains the public legacy-menu reader for customers.
+ */
+fun loadCustomerSections(
+    accessToken: String? = null,
+    restaurantId: String? = null
+): List<CustomerSection> {
+    val ownerRestaurantId = when {
+        !restaurantId.isNullOrBlank() -> {
+            require(accessToken?.isNotBlank() == true) { "جلسة المالك غير متوفرة." }
+            requireValidSectionRestaurantId(restaurantId)
+        }
+        !accessToken.isNullOrBlank() -> resolveOwnerRestaurantId(accessToken)
+        else -> null
+    }
     val tenantFilter = ownerRestaurantId?.let { "&restaurant_id=eq.$it" }.orEmpty()
     val response = customerSectionsRequest(
         method = "GET",
@@ -138,10 +150,11 @@ fun loadCustomerSections(accessToken: String? = null): List<CustomerSection> {
     return result
 }
 
-/** إضافة قسم أو تحديث إعداداته باستخدام جلسة المالك. */
+/** إضافة قسم أو تحديث إعداداته ضمن المطعم المحدد من شاشة المالك. */
 fun saveCustomerSection(
     accessToken: String,
-    section: CustomerSection
+    section: CustomerSection,
+    restaurantId: String? = null
 ) {
     require(accessToken.isNotBlank()) {
         "جلسة المالك غير متوفرة."
@@ -156,9 +169,12 @@ fun saveCustomerSection(
         }
     }
 
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId
+        ?.takeIf { it.isNotBlank() }
+        ?.also(::requireValidSectionRestaurantId)
+        ?: resolveOwnerRestaurantId(accessToken)
     val body = JSONObject().apply {
-        put("restaurant_id", restaurantId)
+        put("restaurant_id", scopedRestaurantId)
         put("section_key", section.sectionKey.trim())
         put("title", section.title.trim())
         put("category_names", categories)
@@ -168,7 +184,7 @@ fun saveCustomerSection(
 
     customerSectionsRequest(
         method = "POST",
-        path = "customer_sections?on_conflict=section_key",
+        path = "customer_sections?on_conflict=restaurant_id,section_key",
         accessToken = accessToken,
         body = body,
         prefer = "resolution=merge-duplicates,return=minimal"
@@ -179,13 +195,17 @@ fun saveCustomerSection(
 fun setCustomerSectionEnabled(
     accessToken: String,
     sectionKey: String,
-    enabled: Boolean
+    enabled: Boolean,
+    restaurantId: String? = null
 ) {
     require(accessToken.isNotBlank()) {
         "جلسة المالك غير متوفرة."
     }
 
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+    val scopedRestaurantId = restaurantId
+        ?.takeIf { it.isNotBlank() }
+        ?.also(::requireValidSectionRestaurantId)
+        ?: resolveOwnerRestaurantId(accessToken)
     val encodedKey = URLEncoder.encode(
         sectionKey,
         "UTF-8"
@@ -197,7 +217,7 @@ fun setCustomerSectionEnabled(
 
     customerSectionsRequest(
         method = "PATCH",
-        path = "customer_sections?section_key=eq.$encodedKey&restaurant_id=eq.$restaurantId",
+        path = "customer_sections?section_key=eq.$encodedKey&restaurant_id=eq.$scopedRestaurantId",
         accessToken = accessToken,
         body = body,
         prefer = "return=minimal"
