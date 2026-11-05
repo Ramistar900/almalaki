@@ -182,11 +182,36 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (action === "list") {
       const { data, error } = await adminClient
         .from("owner_activation_codes")
-        .select("id, code_prefix, status, created_at, updated_at, expires_at, redeemed_at, restaurant_id, note")
+        .select("id, code_prefix, status, created_at, updated_at, expires_at, redeemed_at, redeemed_by, restaurant_id, note")
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) return respond(500, { error: "Could not load owner activation codes" });
-      return respond(200, { ok: true, activations: data ?? [] });
+
+      // Resolve the actual account that redeemed each code. This is display-only;
+      // authorization continues to rely exclusively on is_dashboard_admin().
+      const activations = await Promise.all((data ?? []).map(async (activation) => {
+        if (!activation.redeemed_by) {
+          return { ...activation, redeemed_owner_name: null };
+        }
+        const { data: redeemedUserData, error: redeemedUserError } =
+          await adminClient.auth.admin.getUserById(activation.redeemed_by);
+        if (redeemedUserError || !redeemedUserData.user) {
+          return { ...activation, redeemed_owner_name: "تعذر جلب بيانات الحساب" };
+        }
+        const metadata = redeemedUserData.user.user_metadata ?? {};
+        const metadataName = [
+          metadata.full_name,
+          metadata.name,
+          metadata.display_name,
+          metadata.fullName,
+        ].find((value) => typeof value === "string" && value.trim().length > 0);
+        return {
+          ...activation,
+          redeemed_owner_name: metadataName?.trim() || redeemedUserData.user.email || "اسم غير متاح",
+        };
+      }));
+
+      return respond(200, { ok: true, activations });
     }
 
     const id = typeof body.id === "string" ? body.id.trim() : "";
