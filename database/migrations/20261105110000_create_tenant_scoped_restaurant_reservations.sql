@@ -21,7 +21,6 @@ create policy "Customers and owners can read tenant reservations" on public.rest
 using (customer_user_id = (select auth.uid()) or private.is_restaurant_owner(restaurant_id));
 revoke all on public.restaurant_reservations from anon, authenticated;
 grant select on public.restaurant_reservations to authenticated;
-grant usage, select on sequence public.restaurant_reservations_id_seq to authenticated;
 
 create or replace function public.create_restaurant_reservation(
     p_restaurant_id uuid, p_customer_name text, p_customer_phone text,
