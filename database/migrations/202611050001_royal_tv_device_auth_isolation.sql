@@ -157,6 +157,11 @@ begin
         )
     );
 
+    -- Bound storage growth without touching recent or currently usable codes.
+    delete from public.royal_tv_activation_codes c
+     where c.created_at < now() - interval '7 days'
+       and (c.consumed_at is not null or c.expires_at <= now());
+
     select count(*)::integer
       into v_recent_count
       from public.royal_tv_activation_codes c
@@ -348,6 +353,9 @@ begin
     perform pg_catalog.pg_advisory_xact_lock(
         pg_catalog.hashtextextended(p_auth_user_id::text, 1)
     );
+
+    delete from public.royal_tv_activation_attempts a
+     where a.attempted_at < now() - interval '1 day';
 
     select count(*)::integer
       into v_ip_count
