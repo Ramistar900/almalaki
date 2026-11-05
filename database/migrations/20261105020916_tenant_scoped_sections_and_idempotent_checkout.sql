@@ -99,7 +99,7 @@ BEGIN
     END IF;
 
     IF p_fulfillment_type = 'توصيل إلى المنزل'
-       AND pg_catalog.nullif(pg_catalog.btrim(coalesce(p_delivery_address, '')), '') IS NULL THEN
+       AND NULLIF(pg_catalog.btrim(coalesce(p_delivery_address, '')), '') IS NULL THEN
         RAISE EXCEPTION 'Delivery address is required';
     END IF;
 
