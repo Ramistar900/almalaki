@@ -292,12 +292,6 @@ object RoyalTVOfflineCommandStore {
                         ""
                     ).trim()
 
-                if (
-                    targetDeviceId.isBlank()
-                ) {
-                    continue
-                }
-
                 val restaurantId = item.optString(KEY_RESTAURANT_ID, "").trim()
 
                 val command =
