@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,7 +23,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,73 +35,88 @@ private val TickerWhite = Color(0xFFF5F0E5)
 
 @Composable
 fun RoyalTVTickerControlScreen(
+    accessToken: String,
+    restaurantId: String,
     modifier: Modifier = Modifier,
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val connectionManager = remember(context) {
-        RoyalTVConnectionManager(context)
+    var devices by remember(restaurantId) {
+        mutableStateOf<List<RoyalTVManagedDevice>>(emptyList())
     }
-
-    val tickerController = remember(connectionManager) {
-        RoyalTVTabletTickerController(connectionManager)
+    var selectedDevice by remember(restaurantId) {
+        mutableStateOf<RoyalTVManagedDevice?>(null)
     }
-
-    var targetDeviceId by remember {
-        mutableStateOf("")
-    }
-
-    var tickerText by remember {
-        mutableStateOf("")
-    }
-
+    var deviceMenuExpanded by remember { mutableStateOf(false) }
+    var tickerText by remember { mutableStateOf("") }
     var statusText by remember {
-        mutableStateOf("أدخل معرّف شاشة ROYAL TV أولًا")
+        mutableStateOf("جارٍ تحميل شاشات هذا المطعم...")
     }
+    var loadingDevices by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
 
-    var busy by remember {
-        mutableStateOf(false)
-    }
+    LaunchedEffect(accessToken, restaurantId) {
+        if (accessToken.isBlank() || restaurantId.isBlank()) {
+            devices = emptyList()
+            selectedDevice = null
+            statusText = "تعذر تحديد حساب المالك أو المطعم الحالي."
+            return@LaunchedEffect
+        }
 
-    DisposableEffect(connectionManager) {
-        connectionManager.start(
-            onCommand = {}
-        )
+        loadingDevices = true
+        try {
+            devices = RoyalTVOwnerDeviceManager.listDevices(
+                accessToken = accessToken,
+                restaurantId = restaurantId
+            ).filter { it.isActive }
 
-        onDispose {
-            connectionManager.stop()
+            if (selectedDevice?.deviceId !in devices.map { it.deviceId }) {
+                selectedDevice = devices.firstOrNull()
+            }
+
+            statusText = if (devices.isEmpty()) {
+                "لا توجد شاشة نشطة لهذا المطعم. اربط شاشة من إدارة أجهزة ROYAL TV أولًا."
+            } else {
+                "اختر شاشة مسجلة في المطعم لإرسال أوامر الشريط إليها."
+            }
+        } catch (error: Exception) {
+            devices = emptyList()
+            selectedDevice = null
+            statusText = error.message ?: "تعذر تحميل الشاشات المسجلة."
+        } finally {
+            loadingDevices = false
         }
     }
 
-    fun runTickerCommand(
-        action: suspend (String) -> Boolean,
+    fun sendTickerCommand(
+        payload: String,
         successMessage: String
     ) {
-        val target = targetDeviceId.trim()
-
-        if (target.isBlank()) {
-            statusText = "يرجى إدخال معرّف جهاز ROYAL TV"
+        val target = selectedDevice
+        if (target == null) {
+            statusText = "اختر شاشة نشطة ومربوطة بهذا المطعم أولًا."
             return
         }
-
         if (busy) return
 
         busy = true
-        statusText = "جارٍ تجهيز الأمر..."
-
+        statusText = "جارٍ إرسال الأمر إلى ${target.displayId}..."
         scope.launch {
             try {
-                val result = action(target)
-
-                statusText = if (result) {
+                val sent = RoyalTVOwnerDeviceManager.sendCommand(
+                    accessToken = accessToken,
+                    channelTopic = target.channelTopic,
+                    commandType = RoyalTVCommandType.SHOW_CONTENT.name,
+                    payload = payload
+                )
+                statusText = if (sent) {
                     successMessage
                 } else {
-                    "تعذّر الإرسال المباشر؛ تحقق من الاتصال. قد يكون الأمر محفوظًا للإرسال لاحقًا."
+                    "فشل إرسال الأمر إلى الشاشة. تحقق من اتصالها ثم أعد المحاولة."
                 }
-            } catch (e: Exception) {
-                statusText = "حدث خطأ: ${e.message ?: "تعذّر تنفيذ الأمر"}"
+            } catch (error: Exception) {
+                statusText = error.message ?: "تعذر إرسال الأمر."
             } finally {
                 busy = false
             }
@@ -122,19 +138,43 @@ fun RoyalTVTickerControlScreen(
         )
 
         Text(
-            text = "أرسل الخبر إلى شاشة التلفزيون المطلوبة.",
+            text = "الأجهزة المعروضة هنا هي الشاشات النشطة التابعة للمطعم المختار فقط.",
             color = TickerWhite,
-            fontSize = 15.sp
+            fontSize = 14.sp
         )
 
-        OutlinedTextField(
-            value = targetDeviceId,
-            onValueChange = { targetDeviceId = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("معرّف جهاز ROYAL TV") },
-            placeholder = { Text("مثال: ROYAL-TV-001") },
-            singleLine = true
-        )
+        androidx.compose.foundation.layout.Box {
+            Button(
+                onClick = { deviceMenuExpanded = true },
+                enabled = !loadingDevices && devices.isNotEmpty() && !busy,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = TickerPanel,
+                    contentColor = TickerGold
+                )
+            ) {
+                Text(
+                    selectedDevice?.let { "${it.displayId} — ${it.deviceName}" }
+                        ?: "اختر شاشة ROYAL TV"
+                )
+            }
+            DropdownMenu(
+                expanded = deviceMenuExpanded,
+                onDismissRequest = { deviceMenuExpanded = false }
+            ) {
+                devices.forEach { device ->
+                    DropdownMenuItem(
+                        text = {
+                            Text("${device.displayId} — ${device.deviceName}")
+                        },
+                        onClick = {
+                            selectedDevice = device
+                            deviceMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         OutlinedTextField(
             value = tickerText,
@@ -149,49 +189,34 @@ fun RoyalTVTickerControlScreen(
         Button(
             onClick = {
                 val cleanText = tickerText.trim()
-
                 if (cleanText.isBlank()) {
                     statusText = "اكتب نص الخبر أولًا"
                 } else {
-                    runTickerCommand(
-                        action = { target ->
-                            tickerController.updateTicker(
-                                targetDeviceId = target,
-                                text = cleanText
-                            )
-                        },
-                        successMessage = "تم إرسال أمر تحديث الخبر"
+                    sendTickerCommand(
+                        payload = "TICKER_UPDATE|$cleanText",
+                        successMessage = "تم إرسال أمر تحديث الخبر إلى الشاشة المحددة."
                     )
                 }
             },
-            enabled = !busy,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
+            enabled = !busy && !loadingDevices && selectedDevice != null,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = TickerGold,
                 contentColor = TickerBlack
             )
         ) {
-            Text(
-                text = "تحديث نص الخبر",
-                fontWeight = FontWeight.Bold
-            )
+            Text("تحديث نص الخبر", fontWeight = FontWeight.Bold)
         }
 
         Button(
             onClick = {
-                runTickerCommand(
-                    action = { target ->
-                        tickerController.enableTicker(target)
-                    },
-                    successMessage = "تم إرسال أمر تشغيل الشريط"
+                sendTickerCommand(
+                    payload = "TICKER_ENABLED|true",
+                    successMessage = "تم إرسال أمر تشغيل الشريط."
                 )
             },
-            enabled = !busy,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            enabled = !busy && !loadingDevices && selectedDevice != null,
+            modifier = Modifier.fillMaxWidth().height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF176B60),
                 contentColor = Color.White
@@ -202,17 +227,13 @@ fun RoyalTVTickerControlScreen(
 
         Button(
             onClick = {
-                runTickerCommand(
-                    action = { target ->
-                        tickerController.disableTicker(target)
-                    },
-                    successMessage = "تم إرسال أمر إيقاف الشريط"
+                sendTickerCommand(
+                    payload = "TICKER_ENABLED|false",
+                    successMessage = "تم إرسال أمر إيقاف الشريط."
                 )
             },
-            enabled = !busy,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            enabled = !busy && !loadingDevices && selectedDevice != null,
+            modifier = Modifier.fillMaxWidth().height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF8B3030),
                 contentColor = Color.White
