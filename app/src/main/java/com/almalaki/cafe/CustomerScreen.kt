@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -975,22 +976,49 @@ LaunchedEffect(syncedCustomerUserId) {
 
                     else -> {
 val selectedRestaurantId = activeRestaurant.id
-val invoiceItemsSnapshot =
-    products.mapNotNull { product ->
-        val quantity = cart[product.id] ?: 0
+val selectedRestaurantCode = activeRestaurant.joinCode
+    .ifBlank { ROYAL_DEFAULT_RESTAURANT_CODE }
 
-        if (quantity > 0) {
-            RoyalInvoiceItem(
-                name = product.name,
-                quantity = quantity,
-                unitPrice = product.price
+// Persist one key per exact customer/store/cart attempt. The same key is reused
+// after timeouts, but another signed-in customer receives a different key.
+val checkoutPrefs = context.getSharedPreferences(
+    "royal_checkout_idempotency",
+    android.content.Context.MODE_PRIVATE
+)
+val checkoutSignature = org.json.JSONObject()
+    .put("customer_user_id", RoyalSupabaseAuth.currentUserId().orEmpty())
+    .put("name", name.trim())
+    .put("phone", phone.trim())
+    .put("address", address.trim())
+    .put("type", type)
+    .put("restaurant", selectedRestaurantCode.trim().uppercase())
+    .put("cart", org.json.JSONArray().also { items ->
+        cart.filterValues { it > 0 }.toSortedMap().forEach { (id, quantity) ->
+            items.put(
+                org.json.JSONObject()
+                    .put("product_id", id)
+                    .put("quantity", quantity)
             )
-        } else {
-            null
+        }
+    })
+    .toString()
+
+val storedSignature = checkoutPrefs.getString("active_checkout_signature", null)
+val existingKey = checkoutPrefs.getString("active_checkout_key", null)
+val idempotencyKey = if (storedSignature == checkoutSignature && !existingKey.isNullOrBlank()) {
+    existingKey
+} else {
+    UUID.randomUUID().toString().also { newKey ->
+        val saved = checkoutPrefs.edit()
+            .putString("active_checkout_key", newKey)
+            .putString("active_checkout_signature", checkoutSignature)
+            .commit()
+        if (!saved) {
+            orderMessage = "تعذر حفظ محاولة الطلب بأمان. أعد المحاولة."
+            return@CheckoutDialog
         }
     }
-
-val invoiceTotalSnapshot = totalAmount
+}
                         orderLoading = true
                         orderMessage = ""
 
@@ -1000,16 +1028,17 @@ val invoiceTotalSnapshot = totalAmount
 
                                 val result =
                                     createOrder(
-                                        name,
-                                        phone,
-                                        address,
-                                        type,
-                                        totalAmount,
-                                        products,
-                                        cart,
+                                        customerName = name,
+                                        customerPhone = phone,
+                                        deliveryAddress = address,
+                                        fulfillmentType = type,
+                                        totalAmount = totalAmount,
+                                        products = products,
+                                        cart = cart,
                                         restaurantId = selectedRestaurantId,
-                                        restaurantCode = activeRestaurant.joinCode,
-                                        paymentMethod = paymentMethod
+                                        restaurantCode = selectedRestaurantCode,
+                                        paymentMethod = paymentMethod,
+                                        idempotencyKey = idempotencyKey
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
@@ -1017,8 +1046,8 @@ val invoiceTotalSnapshot = totalAmount
                                 invoiceCustomerPhone = phone
                                 invoiceFulfillmentType = type
                                 invoiceDeliveryAddress = address
-                                invoiceItems = invoiceItemsSnapshot
-                                invoiceTotalAmount = invoiceTotalSnapshot
+                                invoiceItems = result.items
+                                invoiceTotalAmount = result.totalAmount
 
                                 val savedProfile = RoyalCustomerProfile(
                                     name = name,
@@ -1032,7 +1061,7 @@ val invoiceTotalSnapshot = totalAmount
                                 }
                                 customerProfile = savedProfile
 
-                                saveRoyalCustomerOrder(
+                                val orderSaved = saveRoyalCustomerOrder(
                                     context,
                                     RoyalCustomerOrderRecord(
                                         orderNumber = result.orderNumber,
@@ -1040,17 +1069,28 @@ val invoiceTotalSnapshot = totalAmount
                                         customerPhone = phone,
                                         address = address,
                                         fulfillmentType = type,
-                                        totalAmount = invoiceTotalSnapshot,
-                                        items = invoiceItemsSnapshot
+                                        totalAmount = result.totalAmount,
+                                        items = result.items
                                     )
                                 )
+                                if (!orderSaved) {
+                                    throw Exception(
+                                        "تم تسجيل الطلب على الخادم، لكن تعذر حفظ نسخة محلية آمنة. أعد المحاولة من النافذة نفسها؛ لن يُنشأ طلب مكرر."
+                                    )
+                                }
                                 customerOrderHistory = loadRoyalCustomerOrders(context)
+
+                                // Keep the key until the server response and local order are both saved.
+                                checkoutPrefs.edit()
+                                    .remove("active_checkout_key")
+                                    .remove("active_checkout_signature")
+                                    .commit()
 
                                 orderSuccessNumber = result.orderNumber
                                 cart = emptyMap()
 
-showCheckout = false
-showInvoice = true
+                                showCheckout = false
+                                showInvoice = true
 
                             } catch (e: Exception) {
 

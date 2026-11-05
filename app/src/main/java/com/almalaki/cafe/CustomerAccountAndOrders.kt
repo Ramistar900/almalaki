@@ -185,7 +185,7 @@ fun loadRoyalCustomerOrders(context: Context): List<RoyalCustomerOrderRecord> {
 fun saveRoyalCustomerOrder(
     context: Context,
     newOrder: RoyalCustomerOrderRecord
-) {
+): Boolean {
     val savedOrders = loadRoyalCustomerOrders(context)
         .filterNot { it.orderNumber == newOrder.orderNumber }
 
@@ -217,15 +217,23 @@ fun saveRoyalCustomerOrder(
         )
     }
 
-    context.getSharedPreferences(
+    val ordersSaved = context.getSharedPreferences(
         CUSTOMER_ORDERS_PREFS,
         Context.MODE_PRIVATE
     ).edit()
         .putString(CUSTOMER_ORDERS_KEY, array.toString())
-        .apply()
-    RoyalSupabaseAuth.currentUserId()?.let { userId ->
+        .commit()
+
+    if (!ordersSaved) return false
+
+    val userId = RoyalSupabaseAuth.currentUserId()
+    return if (userId != null) {
         context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
-            .edit().putString(CUSTOMER_ACCOUNT_USER_KEY, userId).apply()
+            .edit()
+            .putString(CUSTOMER_ACCOUNT_USER_KEY, userId)
+            .commit()
+    } else {
+        true
     }
 }
 
