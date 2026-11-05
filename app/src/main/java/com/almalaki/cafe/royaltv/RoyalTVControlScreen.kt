@@ -274,10 +274,21 @@ Column(
             contentColor = RoyalBlack
         )
     ) {
-        Text(
-            text = "اشتراك ROYAL TV Plus",
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = com.almalaki.cafe.R.drawable.royal_badge_premium),
+                contentDescription = "Premium",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "اشتراك ROYAL TV Premium",
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 
     Spacer(
