@@ -60,25 +60,25 @@ fun RoyalAnimatedIcon(
 fun royalFoodIconResource(category: String): Int? {
     val value = category.trim().lowercase(Locale.ROOT)
     return when {
-        listOf("قهوة", "كافي", "كافيه", "coffee", "espresso", "لاتيه").any(value::contains) ->
+        listOf("قهوة", "كافي", "كافيه", "coffee", "espresso", "لاتيه").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_coffee_animated
-        listOf("عصير", "juice", "سموذي", "smoothie").any(value::contains) ->
+        listOf("عصير", "juice", "سموذي", "smoothie").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_juice_animated
-        listOf("شاورما", "shawarma").any(value::contains) ->
+        listOf("شاورما", "shawarma").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_shawarma_animated
-        listOf("برغر", "برجر", "burger", "hamburger").any(value::contains) ->
+        listOf("برغر", "برجر", "burger", "hamburger").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_burger_animated
-        listOf("بيتزا", "pizza").any(value::contains) ->
+        listOf("بيتزا", "pizza").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_pizza_animated
-        listOf("حلويات", "حلوى", "dessert", "sweets", "كيك", "cake").any(value::contains) ->
+        listOf("حلويات", "حلوى", "dessert", "sweets", "كيك", "cake").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_dessert_animated
-        listOf("شاي", "tea").any(value::contains) ->
+        listOf("شاي", "tea").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_tea_animated
-        listOf("سلطة", "salad").any(value::contains) ->
+        listOf("سلطة", "salad").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_salad_animated
-        listOf("آيس كريم", "ايس كريم", "بوظة", "ice cream", "ice_cream").any(value::contains) ->
+        listOf("آيس كريم", "ايس كريم", "بوظة", "ice cream", "ice_cream").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_ice_cream_animated
-        listOf("ساندويش", "ساندويتش", "سندويش", "sandwich").any(value::contains) ->
+        listOf("ساندويش", "ساندويتش", "سندويش", "sandwich").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_sandwich_animated
         else -> null
     }
