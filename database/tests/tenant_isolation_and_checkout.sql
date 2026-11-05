@@ -307,6 +307,30 @@ BEGIN
         RAISE EXCEPTION 'Changed checkout payload was not rejected for the same idempotency key';
     END IF;
 
+    -- A product belonging to restaurant B must not be orderable using store A's code.
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333302',
+            'ROYAL-A1B2C3D4E5F6',
+            'Customer C',
+            '',
+            '',
+            'داخل المحل',
+            '[{"product_id":990000000000002,"quantity":1}]'::jsonb,
+            'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%One or more products do not belong to this restaurant%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Checkout accepted a product from a different restaurant';
+    END IF;
+
     -- Store A's order must not appear in another customer's order history.
     SELECT count(*) INTO v_count
       FROM public.orders
