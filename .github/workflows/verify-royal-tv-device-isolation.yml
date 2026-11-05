@@ -1,0 +1,64 @@
+name: Verify ROYAL TV Device Isolation Branch
+
+'on':
+  push:
+    branches:
+      - royal-tv-device-auth-isolation-20261105
+    paths:
+      - 'app/**'
+      - 'royaltv/**'
+      - 'database/migrations/**'
+      - 'supabase/functions/royal-tv-device-auth/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew'
+      - '.github/workflows/verify-royal-tv-device-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: royal-tv-device-isolation-validation
+  cancel-in-progress: true
+
+jobs:
+  compile-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Compile Almalaki and ROYAL TV debug variants
+        run: |
+          gradle :app:assembleDebug :royaltv:assembleDebug --no-daemon
+
+      - name: Confirm debug APK outputs
+        run: |
+          set -euo pipefail
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s royaltv/build/outputs/apk/debug/royaltv-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
+          sha256sum royaltv/build/outputs/apk/debug/royaltv-debug.apk
