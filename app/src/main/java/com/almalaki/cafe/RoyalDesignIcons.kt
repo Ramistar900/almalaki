@@ -51,10 +51,13 @@ fun RoyalAnimatedIcon(
     )
 }
 
-/** Resolve customer-entered category names to the closest available food icon. */
-fun royalFoodIconResource(category: String): Int? {
+/** Resolve every customer category to a purpose-built animated Royal icon. */
+fun royalFoodIconResource(category: String): Int {
     val value = category.trim().lowercase(Locale.ROOT)
     return when {
+        value == "الكل" || value == "all" ||
+            listOf("جميع", "كل المنتجات", "all products").any { value.contains(it, ignoreCase = true) } ->
+            R.drawable.royal_customer_category_all_animated
         listOf("قهوة", "كافي", "كافيه", "coffee", "espresso", "لاتيه").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_coffee_animated
         listOf("عصير", "juice", "سموذي", "smoothie").any { value.contains(it, ignoreCase = true) } ->
@@ -75,8 +78,27 @@ fun royalFoodIconResource(category: String): Int? {
             R.drawable.royal_food_ice_cream_animated
         listOf("ساندويش", "ساندويتش", "سندويش", "sandwich").any { value.contains(it, ignoreCase = true) } ->
             R.drawable.royal_food_sandwich_animated
-        else -> null
+        else -> R.drawable.royal_customer_category_other_animated
     }
+}
+
+/** Animated line icons for the customer navigation and drawer. */
+fun royalCustomerNavigationIconResource(icon: RoyalIcon): Int = when (icon) {
+    RoyalIcon.CART -> R.drawable.royal_customer_nav_cart_animated
+    RoyalIcon.ORDERS -> R.drawable.royal_customer_nav_orders_animated
+    RoyalIcon.PROFILE -> R.drawable.royal_customer_nav_account_animated
+    RoyalIcon.RESERVATIONS -> R.drawable.royal_customer_nav_reservation_animated
+    RoyalIcon.STORE -> R.drawable.royal_customer_nav_store_animated
+    RoyalIcon.SETTINGS -> R.drawable.royal_customer_nav_settings_animated
+    else -> R.drawable.royal_customer_nav_account_animated
+}
+
+/** Drawer-specific treatment: developer access uses its own crowned profile mark. */
+fun royalDrawerIconResource(icon: RoyalIcon): Int = when (icon) {
+    RoyalIcon.PROFILE -> R.drawable.royal_customer_nav_developer_animated
+    RoyalIcon.STORE -> R.drawable.royal_customer_nav_store_animated
+    RoyalIcon.SETTINGS -> R.drawable.royal_customer_nav_settings_animated
+    else -> royalCustomerNavigationIconResource(icon)
 }
 
 /** Icons reflect the persisted order status; unknown states keep the text-only fallback. */
