@@ -299,10 +299,6 @@ object RoyalTVOfflineCommandStore {
                 }
 
                 val restaurantId = item.optString(KEY_RESTAURANT_ID, "").trim()
-                if (restaurantId.isBlank()) {
-                    // Legacy entries are not replayable under tenant isolation.
-                    continue
-                }
 
                 val command =
                     parseCommand(item)
