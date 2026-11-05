@@ -1,8 +1,7 @@
 package com.almalaki.royaltv
 
 import android.util.Log
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
@@ -26,11 +25,8 @@ private const val ROYAL_TV_EVENT =
 /**
  * مستقبل أوامر تطبيق ROYAL TV المستقل.
  *
- * يستخدم القناة نفسها التي يستخدمها تطبيق المالك:
- * royal-tv-{deviceId}
- *
- * هذه المرحلة تستقبل الأوامر فقط؛
- * تنفيذ كل أمر على الشاشة سيتم ربطه في المرحلة التالية.
+ * يستقبل الأوامر من قناة خاصة يحددها الخادم بعد تسجيل الجهاز.
+ * لا يستخدم معرّف الشاشة المحلي كهوية قناة أو كوسيلة صلاحية.
  */
 object RoyalTVRealtime {
 
@@ -40,21 +36,15 @@ object RoyalTVRealtime {
 
     @Synchronized
     fun start(
-        deviceId: String,
+        supabase: SupabaseClient,
+        channelTopic: String,
         onCommand: (RoyalTVCommand) -> Unit
     ) {
-        if (deviceId.isBlank()) {
-            Log.e("RoyalTVRealtime", "معرّف الجهاز فارغ")
-            return
-        }
-
-        if (ROYAL_TV_KEY ==
-            "PASTE_EXISTING_SUPABASE_PUBLISHABLE_KEY_HERE"
-        ) {
-            Log.e(
-                "RoyalTVRealtime",
-                "يجب إدخال مفتاح Supabase publishable الموجود في تطبيق المالك"
+        if (!channelTopic.matches(
+                Regex("^royal-tv:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
             )
+        ) {
+            Log.e("RoyalTVRealtime", "موضوع قناة الجهاز غير صالح")
             return
         }
 
@@ -68,16 +58,11 @@ object RoyalTVRealtime {
 
         receiverScope.launch {
             try {
-                val supabase = createSupabaseClient(
-                    supabaseUrl = ROYAL_TV_URL,
-                    supabaseKey = ROYAL_TV_KEY
-                ) {
-                    install(Realtime)
+                // The client carries the device's persisted Supabase Auth
+                // session. Realtime resolves refreshed access tokens from Auth.
+                val deviceChannel = supabase.channel(channelTopic) {
+                    isPrivate = true
                 }
-
-                val deviceChannel = supabase.channel(
-                    "royal-tv-$deviceId"
-                )
 
                 channel = deviceChannel
 
@@ -138,7 +123,7 @@ object RoyalTVRealtime {
 
                 Log.i(
                     "RoyalTVRealtime",
-                    "بدأ الاستماع لقناة الجهاز: $deviceId"
+                    "بدأ الاستماع للقناة الخاصة للجهاز: $channelTopic"
                 )
             } catch (error: Exception) {
                 Log.e(
