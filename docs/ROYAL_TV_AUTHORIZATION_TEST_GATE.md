@@ -112,3 +112,11 @@ Still incomplete:
 - Deno run `41586251163` passed `deno check` and all 7 tests (0 failures). The Deno test runner was granted read permission only to `database/migrations` for these static checks.
 - Android integration run `41586251191` completed successfully for branch head `ed58d54a678518c23595dabfe8dcc42a50e9d856`, with latest main commit `fe475e81d13aa1b3aa7f42f1a6731aa60fe35773` as the merge base. The `:royaltv:compileDebugKotlin` and `:app:compileDebugKotlin` tasks succeeded.
 - All SQL work described here is source review and static test coverage only. Neither migration was applied to Supabase; no paid branch, deployment, or production data change was made.
+
+## Server-side rate limiting (2026-11-05)
+
+- Added migration `202611050001_royal_tv_rate_limits.sql` with a server-only fixed-window counter table and atomic `consume_royal_tv_rate_limit` RPC. Client roles have no table access or RPC execute permission; only `service_role` can consume counters.
+- Added per-action limits for owner restaurant listing, pairing challenge creation, device pairing, paired-device listing, command sending, device polling, acknowledgements, and device revocation. The Edge Function hashes action/subject keys before storing them; raw credentials and user identifiers are not written to the rate-limit table.
+- HTTP 429 is returned when a bucket reaches its configured limit. A rate-limit storage/RPC failure fails closed with HTTP 503 rather than silently disabling the limit.
+- Added Deno static tests for migration privileges, fixed-window atomic enforcement, and presence of all action gates. The validation workflow now watches database migration changes and grants read access only to the migration and Edge Function source directories required by those tests.
+- This is source implementation only. The migration has not been applied, the Edge Function has not been deployed, and live load/concurrency behavior has not been tested. Rate-limit row retention/cleanup still needs an operational policy before production.
