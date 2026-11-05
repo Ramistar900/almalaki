@@ -110,6 +110,22 @@ async function activeDevice(request: Request) {
   return data;
 }
 
+async function enforceRateLimit(
+  action: string,
+  subject: string,
+  limit: number,
+  windowSeconds: number,
+) {
+  const bucketKey = await sha256(`${action}:${subject}`);
+  const { data, error } = await admin.rpc("consume_royal_tv_rate_limit", {
+    p_bucket_key: bucketKey,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  });
+  if (error) throw new Error("RATE_LIMIT_CHECK_FAILED");
+  if (data !== true) throw new Error("RATE_LIMITED");
+}
+
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
   if (message === "AUTH_REQUIRED") return fail(401, "Authentication required");
@@ -117,6 +133,7 @@ function errorResponse(error: unknown) {
   if (message === "OWNER_REQUIRED") return fail(403, "Active restaurant owner membership required");
   if (message === "RESTAURANT_INACTIVE") return fail(403, "Restaurant is inactive");
   if (message === "DEVICE_AUTH_REQUIRED") return fail(401, "Device credential required");
+  if (message === "RATE_LIMITED") return fail(429, "Too many requests; try again later");
   if (message === "DEVICE_REVOKED_OR_UNKNOWN") return fail(403, "Device is revoked or unknown");
   if (message.endsWith("_FAILED")) return fail(503, "Authorization service unavailable");
   return fail(400, "Request rejected");
@@ -150,6 +167,7 @@ Deno.serve(async (request: Request) => {
 
     if (action === "list_owned_restaurants") {
       const user = await ownerIdentity(request);
+      await enforceRateLimit("list_owned_restaurants", user.id, 60, 60);
       const { data: memberships, error: membershipError } = await admin
         .from("restaurant_members")
         .select("restaurant_id")
@@ -180,6 +198,7 @@ Deno.serve(async (request: Request) => {
       const restaurantId = String(body.restaurant_id ?? "");
       if (!isCanonicalUuid(restaurantId)) return fail(400, "Invalid restaurant");
       await assertOwner(user.id, restaurantId);
+      await enforceRateLimit("create_challenge", `${user.id}:${restaurantId}`, 10, 600);
 
       // High-entropy code; store only its digest and return plaintext once.
       const code = randomToken(24);
@@ -202,6 +221,8 @@ Deno.serve(async (request: Request) => {
       if (code.length < 24 || code.length > 128) return fail(400, "Invalid pairing code");
       if (!isValidDeviceId(deviceId)) return fail(400, "Invalid device identifier");
       if (!isValidDeviceName(deviceName)) return fail(400, "Invalid device name");
+      const clientIp = request.headers.get("cf-connecting-ip") ?? "";
+      await enforceRateLimit("pair_device", clientIp || deviceId, 10, 300);
 
       const codeHash = await sha256(code);
       const credential = randomToken(32);
@@ -240,6 +261,7 @@ Deno.serve(async (request: Request) => {
         return fail(400, "Invalid restaurant");
       }
       await assertOwner(user.id, restaurantId);
+      await enforceRateLimit("list_paired_devices", `${user.id}:${restaurantId}`, 60, 60);
       const { data, error } = await admin.from("royal_tv_paired_devices")
         .select("id,device_id,device_name,status,paired_at,last_seen_at,revoked_at")
         .eq("restaurant_id", restaurantId)
@@ -260,6 +282,7 @@ Deno.serve(async (request: Request) => {
       if (!allowedRoyalTvCommands.has(commandType)) return fail(400, "Unsupported command type");
       if (!isPayloadWithinLimit(payload)) return fail(413, "Payload too large");
       await assertOwner(user.id, restaurantId);
+      await enforceRateLimit("send_command", `${user.id}:${restaurantId}`, 30, 60);
 
       const { data: device, error: deviceError } = await admin.from("royal_tv_paired_devices")
         .select("id,restaurant_id")
@@ -285,6 +308,7 @@ Deno.serve(async (request: Request) => {
 
     if (action === "poll_commands") {
       const device = await activeDevice(request);
+      await enforceRateLimit("poll_commands", device.id, 120, 60);
       const nowDate = new Date();
       const now = nowDate.toISOString();
       const staleClaimCutoff = new Date(nowDate.getTime() - CLAIM_LEASE_MS).toISOString();
@@ -344,6 +368,7 @@ Deno.serve(async (request: Request) => {
 
     if (action === "acknowledge") {
       const device = await activeDevice(request);
+      await enforceRateLimit("acknowledge", device.id, 120, 60);
       const commandId = String(body.command_id ?? "");
       if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(commandId)) return fail(400, "Invalid command id");
       const acknowledgedAt = new Date();
@@ -372,6 +397,7 @@ Deno.serve(async (request: Request) => {
       if (!isCanonicalUuid(restaurantId)) return fail(400, "Invalid restaurant");
       if (!isValidDeviceId(deviceId)) return fail(400, "Invalid device identifier");
       await assertOwner(user.id, restaurantId);
+      await enforceRateLimit("revoke_device", `${user.id}:${restaurantId}`, 10, 60);
       const { data, error } = await admin.from("royal_tv_paired_devices")
         .update({ status: "revoked", revoked_at: new Date().toISOString() })
         .eq("restaurant_id", restaurantId)
