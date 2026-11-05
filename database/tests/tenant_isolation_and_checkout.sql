@@ -218,6 +218,9 @@ BEGIN
     GET DIAGNOSTICS v_rows = ROW_COUNT;
     IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner A modified Owner B image'; END IF;
 
+    -- Storage API enables this transaction-local guard before deletion.
+    -- Setting it here lets this SQL regression test reach the folder RLS policy.
+    PERFORM pg_catalog.set_config('storage.allow_delete_query', 'true', true);
     DELETE FROM storage.objects
      WHERE bucket_id = 'product-images'
        AND name = '22222222-2222-4222-8222-222222222202/tenant-isolation-b-seed.jpg';
@@ -308,6 +311,8 @@ BEGIN
     GET DIAGNOSTICS v_rows = ROW_COUNT;
     IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner B modified Owner A image'; END IF;
 
+    -- The transaction-local Storage API guard is required for DELETE tests.
+    PERFORM pg_catalog.set_config('storage.allow_delete_query', 'true', true);
     DELETE FROM storage.objects
      WHERE bucket_id = 'product-images'
        AND name = '22222222-2222-4222-8222-222222222201/tenant-isolation-a-seed.jpg';
