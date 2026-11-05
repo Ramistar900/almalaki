@@ -1615,7 +1615,7 @@ private fun RoyalCustomerNavigationActions(
 
             RoyalCustomerNavigationAction(
                 icon = RoyalCustomerNavIcon.RESERVATION,
-                label = "حجوزاتي",
+                label = "احجز طاولة",
                 modifier = Modifier.weight(1f),
                 onClick = onReservationClick
             )
@@ -1631,6 +1631,15 @@ private fun RoyalCustomerNavigationAction(
     cartCount: Int = 0,
     onClick: () -> Unit
 ) {
+    val iconPulse by rememberInfiniteTransition(label = "customer_nav_icon_pulse").animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "customer_nav_icon_scale"
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -1640,7 +1649,11 @@ private fun RoyalCustomerNavigationAction(
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(30.dp),
+            modifier = Modifier.size(30.dp).graphicsLayer {
+                val scale = if (icon == RoyalCustomerNavIcon.RESERVATION) iconPulse else 1f
+                scaleX = scale
+                scaleY = scale
+            },
             contentAlignment = Alignment.Center
         ) {
             RoyalCustomerNavigationIcon(
