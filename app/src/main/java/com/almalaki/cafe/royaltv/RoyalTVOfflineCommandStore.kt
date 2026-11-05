@@ -26,7 +26,8 @@ import org.json.JSONObject
  */
 data class RoyalTVPendingCommand(
     val targetDeviceId: String,
-    val command: RoyalTVCommand
+    val command: RoyalTVCommand,
+    val restaurantId: String = ""
 )
 
 object RoyalTVOfflineCommandStore {
@@ -39,6 +40,9 @@ object RoyalTVOfflineCommandStore {
 
     private const val KEY_TARGET_DEVICE_ID =
         "targetDeviceId"
+
+    private const val KEY_RESTAURANT_ID =
+        "restaurantId"
 
     private const val KEY_TYPE =
         "type"
@@ -75,13 +79,15 @@ object RoyalTVOfflineCommandStore {
     @Synchronized
     fun enqueue(
         targetDeviceId: String,
-        command: RoyalTVCommand
+        command: RoyalTVCommand,
+        restaurantId: String = ""
     ) {
 
         val cleanTarget =
             targetDeviceId.trim()
 
-        if (cleanTarget.isBlank()) {
+        val cleanRestaurantId = restaurantId.trim()
+        if (cleanTarget.isBlank() || cleanRestaurantId.isBlank()) {
             return
         }
 
@@ -91,7 +97,8 @@ object RoyalTVOfflineCommandStore {
         current.add(
             RoyalTVPendingCommand(
                 targetDeviceId = cleanTarget,
-                command = command
+                command = command,
+                restaurantId = cleanRestaurantId
             )
         )
 
@@ -180,6 +187,7 @@ object RoyalTVOfflineCommandStore {
 
                 it.targetDeviceId ==
                     pendingCommand.targetDeviceId &&
+                    it.restaurantId == pendingCommand.restaurantId &&
                     it.command.createdAt ==
                     pendingCommand.command.createdAt &&
                     it.command.type ==
@@ -290,6 +298,12 @@ object RoyalTVOfflineCommandStore {
                     continue
                 }
 
+                val restaurantId = item.optString(KEY_RESTAURANT_ID, "").trim()
+                if (restaurantId.isBlank()) {
+                    // Legacy entries are not replayable under tenant isolation.
+                    continue
+                }
+
                 val command =
                     parseCommand(item)
                         ?: continue
@@ -298,7 +312,8 @@ object RoyalTVOfflineCommandStore {
                     RoyalTVPendingCommand(
                         targetDeviceId =
                             targetDeviceId,
-                        command = command
+                        command = command,
+                        restaurantId = restaurantId
                     )
                 )
             }
@@ -451,6 +466,11 @@ object RoyalTVOfflineCommandStore {
             item.put(
                 KEY_TARGET_DEVICE_ID,
                 pending.targetDeviceId
+            )
+
+            item.put(
+                KEY_RESTAURANT_ID,
+                pending.restaurantId
             )
 
             item.put(
