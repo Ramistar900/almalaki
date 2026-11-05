@@ -102,6 +102,14 @@ revoke all on table public.royal_tv_activation_codes
 revoke all on table public.royal_tv_activation_attempts
     from public, anon, authenticated;
 
+-- The Edge Function uses the service-role key only on the server. RLS remains
+-- bypassed only for this trusted backend role; never grant it to an app client.
+grant all on table public.royal_tv_devices to service_role;
+grant all on table public.royal_tv_activation_codes to service_role;
+grant all on table public.royal_tv_activation_attempts to service_role;
+grant usage, select on sequence public.royal_tv_activation_attempts_id_seq
+    to service_role;
+
 -- Owners can request a short-lived one-time code only for an active restaurant
 -- they currently own. Codes are 16 hex characters (64 bits), expire in 10 minutes,
 -- and only one outstanding code is retained per owner/restaurant.
