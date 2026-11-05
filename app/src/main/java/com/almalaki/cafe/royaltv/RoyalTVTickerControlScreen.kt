@@ -15,6 +15,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,23 @@ fun RoyalTVTickerControlScreen(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+
+    val connectionManager = remember(accessToken, restaurantId) {
+        RoyalTVConnectionManager(context)
+    }
+    val tickerController = remember(connectionManager) {
+        RoyalTVTabletTickerController(connectionManager)
+    }
+
+    DisposableEffect(connectionManager, accessToken) {
+        connectionManager.start(
+            ownerAccessToken = accessToken,
+            onCommand = {}
+        )
+        onDispose {
+            connectionManager.stop()
+        }
+    }
 
     var devices by remember(restaurantId) {
         mutableStateOf<List<RoyalTVManagedDevice>>(emptyList())
@@ -90,7 +108,7 @@ fun RoyalTVTickerControlScreen(
     }
 
     fun sendTickerCommand(
-        payload: String,
+        action: suspend (String) -> Boolean,
         successMessage: String
     ) {
         val target = selectedDevice
@@ -104,12 +122,7 @@ fun RoyalTVTickerControlScreen(
         statusText = "جارٍ إرسال الأمر إلى ${target.displayId}..."
         scope.launch {
             try {
-                val sent = RoyalTVOwnerDeviceManager.sendCommand(
-                    accessToken = accessToken,
-                    channelTopic = target.channelTopic,
-                    commandType = RoyalTVCommandType.SHOW_CONTENT.name,
-                    payload = payload
-                )
+                val sent = action(target.channelTopic)
                 statusText = if (sent) {
                     successMessage
                 } else {
@@ -193,7 +206,12 @@ fun RoyalTVTickerControlScreen(
                     statusText = "اكتب نص الخبر أولًا"
                 } else {
                     sendTickerCommand(
-                        payload = "TICKER_UPDATE|$cleanText",
+                        action = { topic ->
+                            tickerController.updateTicker(
+                                targetDeviceId = topic,
+                                text = cleanText
+                            )
+                        },
                         successMessage = "تم إرسال أمر تحديث الخبر إلى الشاشة المحددة."
                     )
                 }
@@ -211,7 +229,9 @@ fun RoyalTVTickerControlScreen(
         Button(
             onClick = {
                 sendTickerCommand(
-                    payload = "TICKER_ENABLED|true",
+                    action = { topic ->
+                        tickerController.enableTicker(topic)
+                    },
                     successMessage = "تم إرسال أمر تشغيل الشريط."
                 )
             },
@@ -228,7 +248,9 @@ fun RoyalTVTickerControlScreen(
         Button(
             onClick = {
                 sendTickerCommand(
-                    payload = "TICKER_ENABLED|false",
+                    action = { topic ->
+                        tickerController.disableTicker(topic)
+                    },
                     successMessage = "تم إرسال أمر إيقاف الشريط."
                 )
             },
