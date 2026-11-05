@@ -147,7 +147,8 @@ class RoyalTVConnectionManager(
         if (!sent) {
             RoyalTVOfflineCommandStore.enqueue(
                 targetDeviceId = privateTopic,
-                command = command
+                command = command,
+                restaurantId = ownerRestaurantId
             )
         }
 
@@ -161,7 +162,7 @@ class RoyalTVConnectionManager(
     private fun syncOfflineCommands() {
         syncJob?.cancel()
         syncJob = scope.launch {
-            if (ownerAccessToken.isBlank()) return@launch
+            if (ownerAccessToken.isBlank() || ownerRestaurantId.isBlank()) return@launch
 
             val pendingCommands =
                 RoyalTVOfflineCommandStore.getPendingCommands()
