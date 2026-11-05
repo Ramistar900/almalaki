@@ -13,12 +13,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 
-private const val ROYAL_TV_URL =
-    "https://duvxxskgdmgrtaleedqu.supabase.co"
-
-private const val ROYAL_TV_KEY =
-    "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
-
 private const val ROYAL_TV_EVENT =
     "royal_tv_command"
 
