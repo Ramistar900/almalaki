@@ -5,7 +5,6 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import io.github.jan.supabase.auth.SessionManager
-import io.github.jan.supabase.auth.exception.AuthSessionMissingException
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
