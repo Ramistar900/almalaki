@@ -76,6 +76,10 @@ fun royalFoodIconResource(category: String): Int? {
             R.drawable.royal_food_tea_animated
         listOf("سلطة", "salad").any(value::contains) ->
             R.drawable.royal_food_salad_animated
+        listOf("آيس كريم", "ايس كريم", "بوظة", "ice cream", "ice_cream").any(value::contains) ->
+            R.drawable.royal_food_ice_cream_animated
+        listOf("ساندويش", "ساندويتش", "سندويش", "sandwich").any(value::contains) ->
+            R.drawable.royal_food_sandwich_animated
         else -> null
     }
 }
