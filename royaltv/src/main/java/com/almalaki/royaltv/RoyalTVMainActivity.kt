@@ -17,6 +17,10 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
@@ -127,6 +131,25 @@ class RoyalTVMainActivity : ComponentActivity() {
     private val remoteExitRequested =
         androidx.compose.runtime.mutableStateOf(false)
 
+    private val deviceRegistration =
+        mutableStateOf<RoyalTVDeviceRegistration?>(null)
+
+    private val deviceAuthChecking =
+        mutableStateOf(true)
+
+    private val deviceAuthBusy =
+        mutableStateOf(false)
+
+    private val deviceCanPair =
+        mutableStateOf(false)
+
+    private val deviceAuthMessage =
+        mutableStateOf("جارٍ التحقق من ربط شاشة ROYAL TV...")
+
+    private var deviceDisplayId: String = "ROYAL-TV-001"
+    private var deviceName: String = "ROYAL TV"
+    private var authorizationPollJob: Job? = null
+
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         if (
             event.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -149,38 +172,20 @@ class RoyalTVMainActivity : ComponentActivity() {
                 RoyalTVUpdateChecker.check(this)
                 
         /*
-         * بدء استقبال أوامر ROYAL TV.
+         * يحتفظ معرّف الشاشة المحلي بهويته السابقة.
+         * لا نفتح Realtime قبل أن يؤكد الخادم أن التلفاز مربوط بمطعم نشط.
          */
-        val royalTvDisplayId =
-            RoyalTVDisplayIdAllocator.getDisplayId(
-                applicationContext
-            )
+        deviceDisplayId =
+            RoyalTVDisplayIdAllocator.getDisplayId(applicationContext)
 
-                RoyalTVTickerManager.initialize(applicationContext)
+        deviceName = listOf(Build.MANUFACTURER, Build.MODEL)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .take(80)
+            .ifBlank { "ROYAL TV" }
 
-        RoyalTVRealtime.start(royalTvDisplayId) { command ->
-            Log.i(
-                "RoyalTVMainActivity",
-                "تم استقبال أمر ROYAL TV: ${command.type}"
-            )
-
-            val tickerHandled = RoyalTVTickerReceiver.receive(
-                applicationContext,
-                command
-            )
-
-            if (!tickerHandled) {
-                RoyalTVDisplayStateManager.executeCommand(command)
-            }
-
-            runOnUiThread {
-                Toast.makeText(
-                    this,
-                    "وصل أمر ROYAL TV: ${command.type}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+        RoyalTVTickerManager.initialize(applicationContext)
 
         val projectionManager =
             getSystemService(MEDIA_PROJECTION_SERVICE)
@@ -250,19 +255,199 @@ class RoyalTVMainActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                RoyalTVChannelScreen(
-                    remoteExitRequested = remoteExitRequested.value,
-                    onRemoteExitHandled = {
-                        remoteExitRequested.value = false
-                    },
-                    onRequestHomeScreenBroadcast = {
-                        screenCapturePermissionLauncher.launch(
-                            projectionManager.createScreenCaptureIntent()
-                        )
-                    }
-                )
+                val registration = deviceRegistration.value
+                if (registration == null) {
+                    RoyalTVDevicePairingScreen(
+                        displayId = deviceDisplayId,
+                        checking = deviceAuthChecking.value,
+                        busy = deviceAuthBusy.value,
+                        canPair = deviceCanPair.value,
+                        message = deviceAuthMessage.value,
+                        onPair = { code -> pairDevice(code) },
+                        onRetry = { beginDeviceAuthorizationCheck() }
+                    )
+                } else {
+                    RoyalTVChannelScreen(
+                        remoteExitRequested = remoteExitRequested.value,
+                        onRemoteExitHandled = {
+                            remoteExitRequested.value = false
+                        },
+                        onRequestHomeScreenBroadcast = {
+                            screenCapturePermissionLauncher.launch(
+                                projectionManager.createScreenCaptureIntent()
+                            )
+                        }
+                    )
+                }
             }
         }
+
+        beginDeviceAuthorizationCheck()
+    }
+
+    private fun beginDeviceAuthorizationCheck() {
+        deviceAuthChecking.value = true
+        deviceCanPair.value = false
+        deviceAuthMessage.value = "جارٍ التحقق من صلاحية هذا التلفاز..."
+
+        lifecycleScope.launch {
+            try {
+                val registration =
+                    RoyalTVDeviceAuthorization.checkRegistration(
+                        applicationContext
+                    )
+
+                if (registration == null) {
+                    authorizationPollJob?.cancel()
+                    authorizationPollJob = null
+                    RoyalTVRealtime.stop()
+                    deviceRegistration.value = null
+                    deviceCanPair.value = true
+                    deviceAuthMessage.value =
+                        "هذا التلفاز غير مربوط بعد. أنشئ رمز ربط من تطبيق المالك ثم أدخله هنا."
+                } else {
+                    startSecureDeviceListening(registration)
+                }
+            } catch (error: RoyalTVDeviceAuthException) {
+                authorizationPollJob?.cancel()
+                authorizationPollJob = null
+                RoyalTVRealtime.stop()
+                deviceRegistration.value = null
+                deviceCanPair.value = error.httpStatus == 409
+                deviceAuthMessage.value =
+                    error.message ?: "تعذر التحقق من ربط التلفاز"
+            } catch (error: Exception) {
+                authorizationPollJob?.cancel()
+                authorizationPollJob = null
+                RoyalTVRealtime.stop()
+                deviceRegistration.value = null
+                deviceCanPair.value = false
+                deviceAuthMessage.value =
+                    "تعذر الاتصال بخادم التحقق. تأكد من الإنترنت ثم أعد المحاولة."
+                Log.e(
+                    "RoyalTVMainActivity",
+                    "Device authorization check failed",
+                    error
+                )
+            } finally {
+                deviceAuthChecking.value = false
+            }
+        }
+    }
+
+    private fun pairDevice(activationCode: String) {
+        if (deviceAuthBusy.value) return
+
+        deviceAuthBusy.value = true
+        deviceAuthMessage.value = "جارٍ ربط التلفاز بالمطعم..."
+
+        lifecycleScope.launch {
+            try {
+                val registration =
+                    RoyalTVDeviceAuthorization.pair(
+                        context = applicationContext,
+                        activationCode = activationCode,
+                        displayId = deviceDisplayId,
+                        deviceName = deviceName
+                    )
+
+                startSecureDeviceListening(registration)
+            } catch (error: Exception) {
+                deviceCanPair.value = true
+                deviceAuthMessage.value =
+                    error.message ?: "تعذر ربط التلفاز. تحقق من الرمز وحاول مجددًا."
+                Log.e(
+                    "RoyalTVMainActivity",
+                    "Device pairing failed",
+                    error
+                )
+            } finally {
+                deviceAuthBusy.value = false
+                deviceAuthChecking.value = false
+            }
+        }
+    }
+
+    private fun startSecureDeviceListening(
+        registration: RoyalTVDeviceRegistration
+    ) {
+        authorizationPollJob?.cancel()
+        RoyalTVRealtime.stop()
+
+        RoyalTVRealtime.start(
+            supabase = RoyalTVDeviceAuthorization.client(applicationContext),
+            channelTopic = registration.channelTopic
+        ) { command ->
+            Log.i(
+                "RoyalTVMainActivity",
+                "تم استقبال أمر ROYAL TV: ${command.type}"
+            )
+
+            val tickerHandled = RoyalTVTickerReceiver.receive(
+                applicationContext,
+                command
+            )
+
+            if (!tickerHandled) {
+                RoyalTVDisplayStateManager.executeCommand(command)
+            }
+
+            runOnUiThread {
+                Toast.makeText(
+                    this,
+                    "وصل أمر ROYAL TV: ${command.type}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        deviceRegistration.value = registration
+        deviceCanPair.value = false
+        deviceAuthMessage.value = "تم التحقق من الربط. التلفاز جاهز."
+        deviceAuthChecking.value = false
+
+        authorizationPollJob = lifecycleScope.launch {
+            while (true) {
+                delay(45_000L)
+                try {
+                    val refreshed =
+                        RoyalTVDeviceAuthorization.refreshAuthorization(
+                            applicationContext
+                        )
+
+                    if (refreshed.deviceId != registration.deviceId ||
+                        refreshed.channelTopic != registration.channelTopic
+                    ) {
+                        throw SecurityException(
+                            "تغيرت هوية جهاز ROYAL TV أثناء الجلسة"
+                        )
+                    }
+                } catch (error: Exception) {
+                    RoyalTVRealtime.stop()
+                    deviceRegistration.value = null
+                    deviceAuthChecking.value = false
+                    deviceCanPair.value =
+                        error is RoyalTVDeviceAuthException &&
+                            error.httpStatus == 409
+                    deviceAuthMessage.value =
+                        error.message
+                            ?: "توقفت صلاحية الجهاز. أعد التحقق قبل استقبال أوامر جديدة."
+                    Log.e(
+                        "RoyalTVMainActivity",
+                        "Periodic device authorization failed",
+                        error
+                    )
+                    break
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        authorizationPollJob?.cancel()
+        authorizationPollJob = null
+        RoyalTVRealtime.stop()
+        super.onDestroy()
     }
 
     
