@@ -44,7 +44,7 @@ fun AdminSidebar(
         Spacer(modifier = Modifier.height(18.dp))
 
         AdminMenuItem(
-            "⌂",
+            RoyalIcon.HOME,
             "الرئيسية",
             section == AdminSection.HOME
         ) {
@@ -52,7 +52,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "🛍️",
+            RoyalIcon.PRODUCTS,
             "تعديل المنتجات",
             section == AdminSection.PRODUCTS
         ) {
@@ -60,7 +60,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "🧾",
+            RoyalIcon.ORDERS,
             "الطلبات",
             section == AdminSection.ORDERS
         ) {
@@ -68,7 +68,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "📅",
+            RoyalIcon.RESERVATIONS,
             "الحجوزات",
             section == AdminSection.RESERVATIONS
         ) {
@@ -76,7 +76,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "🗃️",
+            RoyalIcon.ARCHIVE,
             "الأرشيف",
             section == AdminSection.ARCHIVE
         ) {
@@ -84,7 +84,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "💰",
+            RoyalIcon.SALES,
             "المبيعات",
             section == AdminSection.SALES
         ) {
@@ -92,7 +92,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "⭐",
+            RoyalIcon.TOP_PRODUCTS,
             "الأكثر طلبًا",
             section == AdminSection.TOP_PRODUCTS
         ) {
@@ -100,7 +100,7 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
-            "⚙️",
+            RoyalIcon.SETTINGS,
             "إعدادات الحساب",
             section == AdminSection.ACCOUNT_SETTINGS
         ) {
@@ -108,7 +108,7 @@ fun AdminSidebar(
         }
         
         AdminMenuItem(
-            "📺",
+            RoyalIcon.TV,
             "مركز تحكم ROYAL TV",
             section == AdminSection.ROYAL_TV_CONTROL
         ) {
@@ -117,7 +117,7 @@ fun AdminSidebar(
         
 
         AdminMenuItem(
-            "🎨",
+            RoyalIcon.PALETTE,
             "تحرير الواجهة",
             section == AdminSection.INTERFACE_SETTINGS
         ) {
@@ -130,14 +130,19 @@ fun AdminSidebar(
             onClick = onLogout,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("🚪  تسجيل الخروج")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RoyalIconButton(icon = RoyalIcon.LOGOUT, contentDescription = "تسجيل الخروج",
+                    size = 22.dp, onClick = {}, interactive = false, tint = AdminGold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("تسجيل الخروج")
+            }
         }
     }
 }
 
 @Composable
 fun AdminMenuItem(
-    icon: String,
+    icon: RoyalIcon,
     title: String,
     selected: Boolean,
     onClick: () -> Unit
@@ -174,7 +179,18 @@ fun AdminMenuItem(
             contentColor = textColor
         )
     ) {
-        Text("$icon  $title")
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            RoyalIconButton(
+                icon = icon,
+                contentDescription = title,
+                size = 27.dp,
+                onClick = {},
+                interactive = false,
+                tint = if (selected) AdminBlack else AdminGold
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(title, modifier = Modifier.weight(1f))
+        }
     }
 }
 
@@ -196,13 +212,13 @@ fun AdminTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(onClick = onMenuClick) {
-            Text(
-                text = if (menuOpen) "✕" else "☰",
-                color = AdminGold,
-                fontSize = 27.sp
-            )
-        }
+        RoyalIconButton(
+            icon = if (menuOpen) RoyalIcon.CLOSE else RoyalIcon.MENU,
+            contentDescription = if (menuOpen) "إغلاق القائمة" else "فتح القائمة",
+            size = 28.dp,
+            onClick = onMenuClick,
+            tint = AdminGold
+        )
 
         Text(
             text = title,
@@ -220,10 +236,12 @@ fun AdminTopBar(
         )
 
         TextButton(onClick = onLogout) {
-            Text(
-                "🚪 خروج",
-                color = AdminGold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RoyalIconButton(icon = RoyalIcon.LOGOUT, contentDescription = "خروج",
+                    size = 20.dp, onClick = {}, interactive = false, tint = AdminGold)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("خروج", color = AdminGold)
+            }
         }
     }
 }
@@ -242,7 +260,7 @@ fun AdminHorizontalMenu(
     ) {
         item {
             AdminMenuItem(
-                "⌂",
+                RoyalIcon.HOME,
                 "الرئيسية",
                 section == AdminSection.HOME
             ) {
@@ -252,7 +270,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "🛍️",
+                RoyalIcon.PRODUCTS,
                 "تعديل المنتجات",
                 section == AdminSection.PRODUCTS
             ) {
@@ -262,7 +280,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "🧾",
+                RoyalIcon.ORDERS,
                 "الطلبات",
                 section == AdminSection.ORDERS
             ) {
@@ -272,7 +290,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "📅",
+                RoyalIcon.RESERVATIONS,
                 "الحجوزات",
                 section == AdminSection.RESERVATIONS
             ) {
@@ -282,7 +300,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "🗃️",
+                RoyalIcon.ARCHIVE,
                 "الأرشيف",
                 section == AdminSection.ARCHIVE
             ) {
@@ -292,7 +310,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "💰",
+                RoyalIcon.SALES,
                 "المبيعات",
                 section == AdminSection.SALES
             ) {
@@ -302,7 +320,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "🎨",
+                RoyalIcon.PALETTE,
                 "تحرير الواجهة",
                 section == AdminSection.INTERFACE_SETTINGS
             ) {
@@ -314,7 +332,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "⭐",
+                RoyalIcon.TOP_PRODUCTS,
                 "الأكثر طلبًا",
                 section == AdminSection.TOP_PRODUCTS
             ) {
@@ -324,7 +342,7 @@ fun AdminHorizontalMenu(
         
         item {
             AdminMenuItem(
-                "⚙️",
+                RoyalIcon.SETTINGS,
                 "إعدادات الحساب",
                 section == AdminSection.ACCOUNT_SETTINGS
             ) {
@@ -336,7 +354,7 @@ fun AdminHorizontalMenu(
 
         item {
             AdminMenuItem(
-                "📺",
+                RoyalIcon.TV,
                 "مركز تحكم ROYAL TV",
                 section == AdminSection.ROYAL_TV_CONTROL
             ) {
