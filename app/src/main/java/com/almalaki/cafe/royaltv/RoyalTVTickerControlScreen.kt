@@ -55,6 +55,7 @@ fun RoyalTVTickerControlScreen(
     DisposableEffect(connectionManager, accessToken) {
         connectionManager.start(
             ownerAccessToken = accessToken,
+            restaurantId = restaurantId,
             onCommand = {}
         )
         onDispose {
