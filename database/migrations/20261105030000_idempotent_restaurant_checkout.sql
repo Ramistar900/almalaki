@@ -36,6 +36,7 @@ begin
 
     v_hash := pg_catalog.md5(
         pg_catalog.jsonb_build_object(
+            'user_id', (select auth.uid()),
             'code', pg_catalog.upper(pg_catalog.btrim(coalesce(p_code, ''))),
             'customer_name', pg_catalog.btrim(coalesce(p_customer_name, '')),
             'customer_phone', pg_catalog.btrim(coalesce(p_customer_phone, '')),
