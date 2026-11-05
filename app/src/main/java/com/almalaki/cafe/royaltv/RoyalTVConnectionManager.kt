@@ -173,7 +173,10 @@ class RoyalTVConnectionManager(
                         ROYAL_TV_PRIVATE_TOPIC_PATTERN
                     )
                 ) {
-                    // Do not replay old commands addressed by public/local IDs.
+                    // Old queue entries addressed by display IDs are not
+                    // authorized anymore; discard them instead of retaining
+                    // unsafe stale targets forever.
+                    RoyalTVOfflineCommandStore.remove(pendingCommand)
                     continue
                 }
 
