@@ -128,7 +128,7 @@ fun RoyalTVTickerControlScreen(
                 statusText = if (sent) {
                     successMessage
                 } else {
-                    "فشل إرسال الأمر إلى الشاشة. تحقق من اتصالها ثم أعد المحاولة."
+                    "لم يصل الأمر مباشرة؛ احتفظنا به للمزامنة عند عودة الاتصال، وقد تحتاج إلى إعادة التحقق من صلاحية الشاشة."
                 }
             } catch (error: Exception) {
                 statusText = error.message ?: "تعذر إرسال الأمر."
