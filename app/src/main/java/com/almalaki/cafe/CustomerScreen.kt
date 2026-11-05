@@ -554,10 +554,15 @@ LaunchedEffect(syncedCustomerUserId) {
                 }
             },
             onReservationClick = {
-                if (customerIdentityReady && RoyalSupabaseAuth.currentUserId() != null && activeRestaurant.id != ROYAL_DEFAULT_RESTAURANT_ID) {
-                    showCustomerReservation = true
-                } else {
-                    orderMessage = "سجّل الدخول واربط المطعم بحسابك أولاً لإرسال طلب الحجز."
+                if (customerIdentityReady) {
+                    if (RoyalSupabaseAuth.currentUserId() == null) {
+                        showCustomerAccount = true
+                    } else if (activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID) {
+                        customerProfile = loadRoyalCustomerProfile(context)
+                        showCustomerProfileEditor = true
+                    } else {
+                        showCustomerReservation = true
+                    }
                 }
             },
             onDeveloperLogin = onDeveloper,
