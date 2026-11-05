@@ -49,16 +49,59 @@ VALUES
 (990000000000001, 'Tenant A Product', 'A Drinks', 3.50, '22222222-2222-4222-8222-222222222201'),
 (990000000000002, 'Tenant B Product', 'B Drinks', 8.25, '22222222-2222-4222-8222-222222222202');
 
+-- Both owners intentionally use the same local section key. The tenant
+-- assignment trigger must namespace it before the global legacy unique index.
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111101', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111101","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
 INSERT INTO public.customer_sections (
     restaurant_id, section_key, title, category_names, enabled, sort_order
-) VALUES
-('22222222-2222-4222-8222-222222222201', 'tenant-test-a-section', 'A Section', ARRAY['A Drinks'], true, 1),
-('22222222-2222-4222-8222-222222222202', 'tenant-test-b-section', 'B Section', ARRAY['B Drinks'], true, 1);
+) VALUES (
+    '22222222-2222-4222-8222-222222222201',
+    'tenant-test-shared-section', 'A Section', ARRAY['A Drinks'], true, 1
+);
+RESET ROLE;
+
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111102', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111102","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
+INSERT INTO public.customer_sections (
+    restaurant_id, section_key, title, category_names, enabled, sort_order
+) VALUES (
+    '22222222-2222-4222-8222-222222222202',
+    'tenant-test-shared-section', 'B Section', ARRAY['B Drinks'], true, 1
+);
+RESET ROLE;
 
 INSERT INTO public.customer_profiles (user_id, full_name, phone, address, fulfillment_type)
 VALUES
 ('11111111-1111-4111-8111-111111111103', 'Customer C', '', '', 'داخل المحل'),
 ('11111111-1111-4111-8111-111111111104', 'Customer D', '', '', 'داخل المحل');
+
+-- Pre-existing objects let the authenticated-owner tests prove that public
+-- image reads do not grant cross-tenant upload, update, or delete privileges.
+INSERT INTO storage.objects (bucket_id, name, metadata)
+VALUES
+(
+    'product-images',
+    '22222222-2222-4222-8222-222222222201/tenant-isolation-a-seed.jpg',
+    '{"mimetype":"image/jpeg","size":1}'::jsonb
+),
+(
+    'product-images',
+    '22222222-2222-4222-8222-222222222202/tenant-isolation-b-seed.jpg',
+    '{"mimetype":"image/jpeg","size":1}'::jsonb
+);
 
 -- Seed one order for the second customer in restaurant B. The order trigger
 -- takes the authenticated user from the request JWT, not from client input.
@@ -98,6 +141,7 @@ DO $test_owner_a$
 DECLARE
     v_count integer;
     v_rows integer;
+    v_rejected boolean := false;
 BEGIN
     SELECT count(*) INTO v_count
       FROM public.products
@@ -135,6 +179,53 @@ BEGIN
      WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
     GET DIAGNOSTICS v_rows = ROW_COUNT;
     IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner A modified Owner B section'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.customer_sections
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222201'
+       AND section_key = '22222222-2222-4222-8222-222222222201:tenant-test-shared-section';
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'Owner A section key was not tenant-namespaced';
+    END IF;
+
+    -- Owner A can write only inside restaurant A's image folder.
+    INSERT INTO storage.objects (bucket_id, name, metadata)
+    VALUES (
+        'product-images',
+        '22222222-2222-4222-8222-222222222201/tenant-isolation-a-owned.jpg',
+        '{"mimetype":"image/jpeg","size":1}'::jsonb
+    );
+
+    v_rejected := false;
+    BEGIN
+        INSERT INTO storage.objects (bucket_id, name, metadata)
+        VALUES (
+            'product-images',
+            '22222222-2222-4222-8222-222222222202/tenant-isolation-a-forbidden.jpg',
+            '{"mimetype":"image/jpeg","size":1}'::jsonb
+        );
+    EXCEPTION WHEN insufficient_privilege THEN
+        v_rejected := true;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Owner A uploaded an image into Owner B folder';
+    END IF;
+
+    UPDATE storage.objects
+       SET metadata = '{"mimetype":"image/jpeg","size":2}'::jsonb
+     WHERE bucket_id = 'product-images'
+       AND name = '22222222-2222-4222-8222-222222222202/tenant-isolation-b-seed.jpg';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner A modified Owner B image'; END IF;
+
+    -- Storage API enables this transaction-local guard before deletion.
+    -- Setting it here lets this SQL regression test reach the folder RLS policy.
+    PERFORM pg_catalog.set_config('storage.allow_delete_query', 'true', true);
+    DELETE FROM storage.objects
+     WHERE bucket_id = 'product-images'
+       AND name = '22222222-2222-4222-8222-222222222202/tenant-isolation-b-seed.jpg';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner A deleted Owner B image'; END IF;
 END;
 $test_owner_a$;
 
@@ -154,6 +245,7 @@ DO $test_owner_b$
 DECLARE
     v_count integer;
     v_rows integer;
+    v_rejected boolean := false;
 BEGIN
     SELECT count(*) INTO v_count
       FROM public.products
@@ -180,6 +272,52 @@ BEGIN
      WHERE id = 990000000000001;
     GET DIAGNOSTICS v_rows = ROW_COUNT;
     IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner B modified Owner A product'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.customer_sections
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222202'
+       AND section_key = '22222222-2222-4222-8222-222222222202:tenant-test-shared-section';
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'Owner B section key was not tenant-namespaced';
+    END IF;
+
+    -- The same storage boundary must hold in the opposite direction.
+    INSERT INTO storage.objects (bucket_id, name, metadata)
+    VALUES (
+        'product-images',
+        '22222222-2222-4222-8222-222222222202/tenant-isolation-b-owned.jpg',
+        '{"mimetype":"image/jpeg","size":1}'::jsonb
+    );
+
+    v_rejected := false;
+    BEGIN
+        INSERT INTO storage.objects (bucket_id, name, metadata)
+        VALUES (
+            'product-images',
+            '22222222-2222-4222-8222-222222222201/tenant-isolation-b-forbidden.jpg',
+            '{"mimetype":"image/jpeg","size":1}'::jsonb
+        );
+    EXCEPTION WHEN insufficient_privilege THEN
+        v_rejected := true;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Owner B uploaded an image into Owner A folder';
+    END IF;
+
+    UPDATE storage.objects
+       SET metadata = '{"mimetype":"image/jpeg","size":2}'::jsonb
+     WHERE bucket_id = 'product-images'
+       AND name = '22222222-2222-4222-8222-222222222201/tenant-isolation-a-seed.jpg';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner B modified Owner A image'; END IF;
+
+    -- The transaction-local Storage API guard is required for DELETE tests.
+    PERFORM pg_catalog.set_config('storage.allow_delete_query', 'true', true);
+    DELETE FROM storage.objects
+     WHERE bucket_id = 'product-images'
+       AND name = '22222222-2222-4222-8222-222222222201/tenant-isolation-a-seed.jpg';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 0 THEN RAISE EXCEPTION 'Owner B deleted Owner A image'; END IF;
 END;
 $test_owner_b$;
 
@@ -201,6 +339,10 @@ DECLARE
     v_count integer;
     v_first record;
     v_retry record;
+    v_reservation_a bigint;
+    v_reservation_b bigint;
+    v_reservation_status_a text;
+    v_reservation_status_b text;
     v_rejected boolean := false;
     v_key constant uuid := '33333333-3333-4333-8333-333333333301';
     v_items constant jsonb := '[{"product_id":990000000000001,"quantity":2}]'::jsonb;
@@ -216,6 +358,42 @@ BEGIN
 
     SELECT count(*) INTO v_count FROM public.customer_profiles;
     IF v_count <> 1 THEN RAISE EXCEPTION 'Customer C should see only their own profile'; END IF;
+
+    -- The same customer can reserve both linked restaurants, but each
+    -- reservation remains attached to the selected restaurant.
+    SELECT r.reservation_id, r.reservation_status
+      INTO v_reservation_a, v_reservation_status_a
+      FROM public.create_restaurant_reservation(
+          '22222222-2222-4222-8222-222222222201',
+          'Customer C A Reservation',
+          '+905550000003',
+          pg_catalog.now() + interval '2 days',
+          2,
+          'Tenant A reservation isolation test'
+      ) AS r;
+
+    SELECT r.reservation_id, r.reservation_status
+      INTO v_reservation_b, v_reservation_status_b
+      FROM public.create_restaurant_reservation(
+          '22222222-2222-4222-8222-222222222202',
+          'Customer C B Reservation',
+          '+905550000003',
+          pg_catalog.now() + interval '3 days',
+          2,
+          'Tenant B reservation isolation test'
+      ) AS r;
+
+    IF v_reservation_status_a <> 'pending' OR v_reservation_status_b <> 'pending' THEN
+        RAISE EXCEPTION 'New customer reservations should start pending';
+    END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE id IN (v_reservation_a, v_reservation_b)
+       AND customer_user_id = '11111111-1111-4111-8111-111111111103';
+    IF v_count <> 2 THEN
+        RAISE EXCEPTION 'Customer C should read only their two created reservations';
+    END IF;
 
     SELECT count(*) INTO v_count
       FROM public.get_restaurant_products('ROYAL-A1B2C3D4E5F6')
@@ -331,6 +509,51 @@ BEGIN
         RAISE EXCEPTION 'Checkout accepted a product from a different restaurant';
     END IF;
 
+    -- Older installed APKs still use these compatibility RPCs. Keep them
+    -- available, but prove they share the same restaurant/product validation.
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order(
+            'ROYAL-A1B2C3D4E5F6',
+            'Customer C',
+            '',
+            '',
+            'داخل المحل',
+            '[{"product_id":990000000000002,"quantity":1}]'::jsonb
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%One or more products do not belong to this restaurant%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Legacy checkout RPC accepted a product from another restaurant';
+    END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment(
+            'ROYAL-A1B2C3D4E5F6',
+            'Customer C',
+            '',
+            '',
+            'داخل المحل',
+            '[{"product_id":990000000000002,"quantity":1}]'::jsonb,
+            'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%One or more products do not belong to this restaurant%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Legacy payment RPC accepted a product from another restaurant';
+    END IF;
+
     -- Store A's order must not appear in another customer's order history.
     SELECT count(*) INTO v_count
       FROM public.orders
@@ -354,10 +577,14 @@ SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
 DO $test_customer_d$
 DECLARE
     v_count integer;
+    v_reservation_id bigint;
     v_rejected boolean := false;
 BEGIN
     SELECT count(*) INTO v_count FROM public.customer_profiles;
     IF v_count <> 1 THEN RAISE EXCEPTION 'Customer D should see only their own profile'; END IF;
+
+    SELECT count(*) INTO v_count FROM public.customer_restaurants;
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Customer D should see only their own restaurant links'; END IF;
 
     SELECT count(*) INTO v_count
       FROM public.orders
@@ -368,6 +595,50 @@ BEGIN
       FROM public.orders
      WHERE customer_user_id = '11111111-1111-4111-8111-111111111103';
     IF v_count <> 0 THEN RAISE EXCEPTION 'Customer D can read Customer C orders'; END IF;
+
+    -- Customer D links only restaurant B and creates one reservation there.
+    PERFORM * FROM public.link_customer_restaurant('ROYAL-B1B2C3D4E5F6');
+    SELECT r.reservation_id
+      INTO v_reservation_id
+      FROM public.create_restaurant_reservation(
+          '22222222-2222-4222-8222-222222222202',
+          'Customer D B Reservation',
+          '+905550000004',
+          pg_catalog.now() + interval '4 days',
+          3,
+          'Customer D reservation isolation test'
+      ) AS r;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111104';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Customer D should see only their own reservation'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111103';
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Customer D can read Customer C reservations'; END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_reservation(
+            '22222222-2222-4222-8222-222222222201',
+            'Customer D Unauthorized Reservation',
+            '+905550000004',
+            pg_catalog.now() + interval '5 days',
+            2,
+            'Must be rejected because Customer D is not linked to A'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%هذا المطعم غير مرتبط بحسابك أو غير نشط%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Customer D created a reservation for an unlinked restaurant';
+    END IF;
 
     BEGIN
         PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
@@ -395,6 +666,143 @@ END;
 $test_customer_d$;
 
 RESET ROLE;
+
+-- Re-check in the opposite direction after Customer D has created a row.
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111103', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111103","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
+
+DO $test_customer_c_reservations$
+DECLARE
+    v_count integer;
+BEGIN
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111103';
+    IF v_count <> 2 THEN
+        RAISE EXCEPTION 'Customer C should retain only its two reservations';
+    END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111104';
+    IF v_count <> 0 THEN
+        RAISE EXCEPTION 'Customer C can read Customer D reservations';
+    END IF;
+END;
+$test_customer_c_reservations$;
+
+RESET ROLE;
+
+-- Owners can see and manage reservations only for their own restaurant.
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111101', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111101","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
+
+DO $test_owner_a_reservations$
+DECLARE
+    v_count integer;
+    v_reservation_id bigint;
+    v_rejected boolean := false;
+BEGIN
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222201'
+       AND customer_name = 'Customer C A Reservation';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Owner A cannot read its own reservation'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Owner A can read Owner B reservations'; END IF;
+
+    SELECT id INTO v_reservation_id
+      FROM public.restaurant_reservations
+     WHERE customer_name = 'Customer C A Reservation';
+
+    BEGIN
+        PERFORM public.update_restaurant_reservation_status(
+            v_reservation_id,
+            '22222222-2222-4222-8222-222222222202',
+            'confirmed',
+            'unauthorized cross-tenant update'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%ليس لديك صلاحية إدارة حجوزات هذا المطعم%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN
+        RAISE EXCEPTION 'Owner A attempted to manage Owner B reservation scope';
+    END IF;
+
+    IF NOT public.update_restaurant_reservation_status(
+        v_reservation_id,
+        '22222222-2222-4222-8222-222222222201',
+        'confirmed',
+        'Owner A confirmation test'
+    ) THEN
+        RAISE EXCEPTION 'Owner A could not update its own reservation';
+    END IF;
+END;
+$test_owner_a_reservations$;
+
+RESET ROLE;
+
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111102', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111102","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
+
+DO $test_owner_b_reservations$
+DECLARE
+    v_count integer;
+    v_reservation_id bigint;
+BEGIN
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
+    IF v_count <> 2 THEN
+        RAISE EXCEPTION 'Owner B should see only its two reservations';
+    END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222201';
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Owner B can read Owner A reservations'; END IF;
+
+    SELECT id INTO v_reservation_id
+      FROM public.restaurant_reservations
+     WHERE customer_name = 'Customer D B Reservation';
+
+    IF NOT public.update_restaurant_reservation_status(
+        v_reservation_id,
+        '22222222-2222-4222-8222-222222222202',
+        'confirmed',
+        'Owner B confirmation test'
+    ) THEN
+        RAISE EXCEPTION 'Owner B could not update its own reservation';
+    END IF;
+END;
+$test_owner_b_reservations$;
+
+RESET ROLE;
 ROLLBACK;
 
 -- The rollback must leave no test accounts, stores, products, sections or orders.
@@ -412,7 +820,14 @@ SELECT
     (SELECT count(*) FROM public.products WHERE id IN (
         990000000000001, 990000000000002
     )) AS remaining_test_products,
-    (SELECT count(*) FROM public.customer_sections WHERE section_key IN (
-        'tenant-test-a-section', 'tenant-test-b-section'
-    )) AS remaining_test_sections,
-    (SELECT count(*) FROM public.orders WHERE order_number = 'TST-B-OTHER-CUSTOMER') AS remaining_test_orders;
+    (SELECT count(*) FROM public.customer_sections
+      WHERE section_key LIKE '%:tenant-test-shared-section') AS remaining_test_sections,
+    (SELECT count(*) FROM public.orders WHERE order_number = 'TST-B-OTHER-CUSTOMER') AS remaining_test_orders,
+    (SELECT count(*) FROM public.restaurant_reservations
+      WHERE customer_name IN (
+        'Customer C A Reservation',
+        'Customer C B Reservation',
+        'Customer D B Reservation'
+      )) AS remaining_test_reservations,
+    (SELECT count(*) FROM storage.objects
+      WHERE name LIKE '%/tenant-isolation-%') AS remaining_test_images;
