@@ -68,6 +68,14 @@ fun AdminSidebar(
         }
 
         AdminMenuItem(
+            "📅",
+            "الحجوزات",
+            section == AdminSection.RESERVATIONS
+        ) {
+            onSectionSelected(AdminSection.RESERVATIONS)
+        }
+
+        AdminMenuItem(
             "🗃️",
             "الأرشيف",
             section == AdminSection.ARCHIVE
@@ -259,6 +267,16 @@ fun AdminHorizontalMenu(
                 section == AdminSection.ORDERS
             ) {
                 onSectionSelected(AdminSection.ORDERS)
+            }
+        }
+
+        item {
+            AdminMenuItem(
+                "📅",
+                "الحجوزات",
+                section == AdminSection.RESERVATIONS
+            ) {
+                onSectionSelected(AdminSection.RESERVATIONS)
             }
         }
 

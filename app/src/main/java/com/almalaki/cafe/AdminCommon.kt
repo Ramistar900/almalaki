@@ -17,6 +17,7 @@ enum class AdminSection {
     HOME,
     PRODUCTS,
     ORDERS,
+    RESERVATIONS,
     ARCHIVE,
     ACCOUNT_SETTINGS,
     SALES,

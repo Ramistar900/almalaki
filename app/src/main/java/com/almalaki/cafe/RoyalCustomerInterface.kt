@@ -118,6 +118,7 @@ fun RoyalCustomerInterface(
     onCartClick: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
     onAccountClick: () -> Unit = {},
+    onReservationClick: () -> Unit = {},
     onDeveloperLogin: () -> Unit = {},
     onOwnerLogin: () -> Unit = {},
     onSettings: () -> Unit = {},
@@ -413,6 +414,7 @@ Box(
                     onCartClick = onCartClick,
                     onOrdersClick = onOrdersClick,
                     onAccountClick = onAccountClick,
+                    onReservationClick = onReservationClick,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .offset(y = 11.dp)
@@ -1558,7 +1560,8 @@ fun RoyalShinyInfoBox(
 private enum class RoyalCustomerNavIcon {
     CART,
     ORDERS,
-    ACCOUNT
+    ACCOUNT,
+    RESERVATION
 }
 
 private val RoyalCustomerNavInk = Color(0xFF0C2D24)
@@ -1574,6 +1577,7 @@ private fun RoyalCustomerNavigationActions(
     onCartClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onAccountClick: () -> Unit,
+    onReservationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     CompositionLocalProvider(
@@ -1608,6 +1612,13 @@ private fun RoyalCustomerNavigationActions(
                 modifier = Modifier.weight(1f),
                 onClick = onAccountClick
             )
+
+            RoyalCustomerNavigationAction(
+                icon = RoyalCustomerNavIcon.RESERVATION,
+                label = "احجز طاولة",
+                modifier = Modifier.weight(1f),
+                onClick = onReservationClick
+            )
         }
     }
 }
@@ -1620,6 +1631,15 @@ private fun RoyalCustomerNavigationAction(
     cartCount: Int = 0,
     onClick: () -> Unit
 ) {
+    val iconPulse by rememberInfiniteTransition(label = "customer_nav_icon_pulse").animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "customer_nav_icon_scale"
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -1629,7 +1649,11 @@ private fun RoyalCustomerNavigationAction(
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(30.dp),
+            modifier = Modifier.size(30.dp).graphicsLayer {
+                val scale = if (icon == RoyalCustomerNavIcon.RESERVATION) iconPulse else 1f
+                scaleX = scale
+                scaleY = scale
+            },
             contentAlignment = Alignment.Center
         ) {
             RoyalCustomerNavigationIcon(
@@ -1755,6 +1779,21 @@ private fun RoyalCustomerNavigationIcon(
                         cap = StrokeCap.Round
                     )
                 }
+            }
+
+            RoyalCustomerNavIcon.RESERVATION -> {
+                drawRoundRect(
+                    color = RoyalCustomerNavInk,
+                    topLeft = Offset(w * 0.16f, h * 0.18f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.68f, h * 0.70f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.08f, w * 0.08f),
+                    style = outline
+                )
+                drawLine(color = RoyalCustomerNavInk, start = Offset(w * 0.16f, h * 0.38f), end = Offset(w * 0.84f, h * 0.38f), strokeWidth = strokeWidth)
+                drawLine(color = RoyalCustomerNavInk, start = Offset(w * 0.34f, h * 0.10f), end = Offset(w * 0.34f, h * 0.29f), strokeWidth = strokeWidth)
+                drawLine(color = RoyalCustomerNavInk, start = Offset(w * 0.66f, h * 0.10f), end = Offset(w * 0.66f, h * 0.29f), strokeWidth = strokeWidth)
+                drawCircle(color = RoyalCustomerNavInk, radius = strokeWidth, center = Offset(w * 0.36f, h * 0.55f))
+                drawCircle(color = RoyalCustomerNavInk, radius = strokeWidth, center = Offset(w * 0.62f, h * 0.55f))
             }
 
             RoyalCustomerNavIcon.ACCOUNT -> {

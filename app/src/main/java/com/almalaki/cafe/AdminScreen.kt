@@ -393,6 +393,7 @@ fun openSection(target: AdminSection) {
         AdminSection.HOME, AdminSection.SALES, AdminSection.TOP_PRODUCTS -> refreshDashboard()
         AdminSection.PRODUCTS -> refreshProducts()
         AdminSection.ORDERS -> refreshOrders()
+        AdminSection.RESERVATIONS -> Unit
         AdminSection.ARCHIVE -> refreshArchive()
         AdminSection.ACCOUNT_SETTINGS -> refreshAccount()
         AdminSection.INTERFACE_SETTINGS -> Unit
