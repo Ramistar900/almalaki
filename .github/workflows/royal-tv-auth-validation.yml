@@ -6,6 +6,7 @@ on:
     paths:
       - 'supabase/functions/_shared/**'
       - 'supabase/functions/royal-tv-authorize/**'
+      - 'database/migrations/**'
       - '.github/workflows/royal-tv-auth-validation.yml'
   push:
     branches: [royal-tv-server-authorization-phase1]
@@ -33,4 +34,4 @@ jobs:
         run: deno check supabase/functions/royal-tv-authorize/index.ts
 
       - name: Run ROYAL TV authorization validation tests
-        run: deno test --allow-read=database/migrations supabase/functions/_shared/royal-tv-auth-validation_test.ts
+        run: deno test --allow-read=database/migrations,supabase/functions/royal-tv-authorize supabase/functions/_shared/royal-tv-auth-validation_test.ts
