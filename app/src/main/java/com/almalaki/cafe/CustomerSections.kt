@@ -92,6 +92,14 @@ private fun customerSectionsRequest(
     }
 }
 
+private fun requireValidSectionRestaurantId(restaurantId: String) {
+    require(
+        restaurantId.matches(
+            Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+        )
+    ) { "معرّف المطعم غير صالح." }
+}
+
 /**
  * Loads menu sections for the requested tenant.
  * Owner screens should always pass the restaurant selected in the admin UI.
