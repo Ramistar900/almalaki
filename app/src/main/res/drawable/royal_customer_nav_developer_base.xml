@@ -1,0 +1,6 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="36dp" android:height="36dp" android:viewportWidth="24" android:viewportHeight="24">
+    <group android:name="motion" android:pivotX="12" android:pivotY="12">
+        <path android:fillColor="@android:color/transparent" android:strokeColor="#0A382B" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M15.5,10.2a3.5,3.5 0,1 1,-7 0a3.5,3.5 0,1 1,7 0 M4.6,20.2c0.45,-3.6 3.4,-5.8 7.4,-5.8s6.95,2.2 7.4,5.8"/>
+        <path android:fillColor="@android:color/transparent" android:strokeColor="#B78B32" android:strokeWidth="1.55" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.1,5.5l1.7,-2.1l1.5,1.25l1.7,-2.05l1.7,2.05l1.5,-1.25l1.7,2.1z"/>
+    </group>
+</vector>

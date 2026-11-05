@@ -698,15 +698,12 @@ LaunchedEffect(syncedCustomerUserId) {
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        val categoryIcon = royalFoodIconResource(category)
-                                        if (categoryIcon != null) {
-                                            RoyalAnimatedIcon(
-                                                iconRes = categoryIcon,
-                                                contentDescription = category,
-                                                modifier = Modifier.size(34.dp)
-                                            )
-                                            Spacer(Modifier.width(8.dp))
-                                        }
+                                        RoyalAnimatedIcon(
+                                            iconRes = royalFoodIconResource(category),
+                                            contentDescription = category,
+                                            modifier = Modifier.size(34.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
                                         Text(
                                             text = category.ifBlank { "منتجات أخرى" },
                                             color = Gold,
@@ -1328,19 +1325,11 @@ private fun RoyalCategoryPill(
                 .size(if (compact) 25.dp else 38.dp),
             contentAlignment = Alignment.Center
         ) {
-            val categoryIcon = royalFoodIconResource(category)
-            if (categoryIcon != null) {
-                RoyalAnimatedIcon(
-                    iconRes = categoryIcon,
-                    contentDescription = category,
-                    modifier = Modifier.size(if (compact) 21.dp else 32.dp)
-                )
-            } else {
-                RoyalCategoryGlyph(
-                    category = category,
-                    modifier = Modifier.size(if (compact) 21.dp else 32.dp)
-                )
-            }
+            RoyalAnimatedIcon(
+                iconRes = royalFoodIconResource(category),
+                contentDescription = category,
+                modifier = Modifier.size(if (compact) 21.dp else 32.dp)
+            )
         }
         Spacer(Modifier.width(if (compact) 2.dp else 4.dp))
         Box(
@@ -1367,102 +1356,6 @@ private fun RoyalCategoryPill(
                 maxLines = 1,
                 softWrap = false
             )
-        }
-    }
-}
-
-/** أيقونات مصممة بالرسم لتبقى متناسقة مع المرجع ولا تتطلب ملفات إضافية. */
-@Composable
-private fun RoyalCategoryGlyph(
-    category: String,
-    modifier: Modifier = Modifier
-) {
-    val normalized = category.trim().lowercase()
-    val glyphColor = Color(0xFF765317)
-    val kind = when {
-        normalized == "الكل" || normalized.contains("جميع") ||
-            normalized.contains("all") || normalized.contains("قسم") -> "all"
-        normalized.contains("طعام") || normalized.contains("الطعام") ||
-            normalized.contains("أكل") || normalized.contains("food") -> "food"
-        normalized.contains("مشروب") || normalized.contains("قهوة") ||
-            normalized.contains("مشروبات") || normalized.contains("coffee") ||
-            normalized.contains("drink") -> "drink"
-        normalized.contains("حلو") || normalized.contains("كيك") ||
-            normalized.contains("حلويات") || normalized.contains("dessert") ||
-            normalized.contains("cake") -> "dessert"
-        else -> "all"
-    }
-
-    Canvas(modifier = modifier) {
-        val unit = size.minDimension / 48f
-        fun point(x: Float, y: Float) = androidx.compose.ui.geometry.Offset(x * unit, y * unit)
-        val strokeWidth = 2.8f * unit
-        val stroke = Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-
-        when (kind) {
-            "all" -> {
-                listOf(
-                    7f to 7f, 26f to 7f, 7f to 26f, 26f to 26f
-                ).forEach { (x, y) ->
-                    drawRoundRect(
-                        color = glyphColor,
-                        topLeft = point(x, y),
-                        size = androidx.compose.ui.geometry.Size(13f * unit, 13f * unit),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.2f * unit),
-                        style = stroke
-                    )
-                }
-            }
-            "food" -> {
-                // شوكة
-                drawLine(glyphColor, point(11f, 6f), point(11f, 18f), strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                drawLine(glyphColor, point(6f, 6f), point(6f, 13f), strokeWidth)
-                drawLine(glyphColor, point(11f, 6f), point(11f, 13f), strokeWidth)
-                drawLine(glyphColor, point(16f, 6f), point(16f, 13f), strokeWidth)
-                drawLine(glyphColor, point(6f, 13f), point(16f, 13f), strokeWidth)
-                drawLine(glyphColor, point(11f, 18f), point(11f, 42f), strokeWidth)
-                // ملعقة
-                drawOval(glyphColor, point(29f, 5f), androidx.compose.ui.geometry.Size(10f * unit, 14f * unit), style = stroke)
-                drawLine(glyphColor, point(34f, 19f), point(34f, 42f), strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-            }
-            "drink" -> {
-                val cup = Path().apply {
-                    moveTo(10f * unit, 18f * unit)
-                    lineTo(38f * unit, 18f * unit)
-                    lineTo(33f * unit, 41f * unit)
-                    quadraticTo(24f * unit, 44f * unit, 15f * unit, 41f * unit)
-                    close()
-                }
-                drawPath(cup, glyphColor, style = stroke)
-                drawLine(glyphColor, point(9f, 17f), point(39f, 17f), strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                drawLine(glyphColor, point(29f, 16f), point(34f, 5f), strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                drawLine(glyphColor, point(19f, 27f), point(29f, 27f), strokeWidth)
-                drawLine(glyphColor, point(18f, 33f), point(28f, 33f), strokeWidth)
-            }
-            "dessert" -> {
-                // طبقات الكعكة والصحن
-                drawLine(glyphColor, point(5f, 41f), point(43f, 41f), strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                val cake = Path().apply {
-                    moveTo(10f * unit, 25f * unit)
-                    lineTo(38f * unit, 25f * unit)
-                    lineTo(38f * unit, 39f * unit)
-                    lineTo(10f * unit, 39f * unit)
-                    close()
-                }
-                drawPath(cake, glyphColor, style = stroke)
-                val icing = Path().apply {
-                    moveTo(10f * unit, 25f * unit)
-                    quadraticTo(14f * unit, 19f * unit, 19f * unit, 24f * unit)
-                    quadraticTo(24f * unit, 18f * unit, 28f * unit, 24f * unit)
-                    quadraticTo(34f * unit, 19f * unit, 38f * unit, 25f * unit)
-                }
-                drawPath(icing, glyphColor, style = stroke)
-                drawLine(glyphColor, point(18f, 29f), point(18f, 35f), strokeWidth)
-                drawLine(glyphColor, point(29f, 29f), point(29f, 35f), strokeWidth)
-                drawLine(glyphColor, point(24f, 5f), point(24f, 16f), strokeWidth)
-                drawCircle(glyphColor, 3f * unit, point(24f, 5f), style = stroke)
-                drawLine(glyphColor, point(18f, 16f), point(30f, 16f), strokeWidth)
-            }
         }
     }
 }
