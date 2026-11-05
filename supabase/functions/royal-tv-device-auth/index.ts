@@ -255,15 +255,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return respond(403, { error: "The linked restaurant is not active" });
       }
 
-      const { error: updateError } = await admin
+      const { data: refreshedDevice, error: updateError } = await admin
         .from("royal_tv_devices")
         .update({ last_seen_at: new Date().toISOString() })
         .eq("device_id", device.device_id)
         .eq("auth_user_id", user.id)
-        .is("revoked_at", null);
+        .is("revoked_at", null)
+        .select("device_id")
+        .maybeSingle();
 
       if (updateError) {
         return respond(503, { error: "Unable to refresh device status" });
+      }
+      if (!refreshedDevice) {
+        return respond(409, { error: "This TV registration has been revoked" });
       }
 
       return respond(200, {
