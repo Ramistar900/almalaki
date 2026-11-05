@@ -30,6 +30,7 @@ class RoyalTVConnectionManager(
     private var syncJob: Job? = null
     private var deviceId: String = ""
     private var ownerAccessToken: String = ""
+    private var ownerRestaurantId: String = ""
     private var started = false
     private var lastNetworkState = RoyalTVNetworkState.OFFLINE
 
@@ -44,15 +45,18 @@ class RoyalTVConnectionManager(
      */
     fun start(
         ownerAccessToken: String = "",
+        restaurantId: String = "",
         onCommand: (RoyalTVCommand) -> Unit = {},
         onConnectionStateChanged: (RoyalTVNetworkState) -> Unit = {}
     ) {
         if (started) {
             this.ownerAccessToken = ownerAccessToken.trim()
+            this.ownerRestaurantId = restaurantId.trim()
             return
         }
 
         this.ownerAccessToken = ownerAccessToken.trim()
+        this.ownerRestaurantId = restaurantId.trim()
         started = true
 
         // Kept for compatibility with diagnostics only. This value is never
@@ -115,10 +119,10 @@ class RoyalTVConnectionManager(
             return false
         }
 
-        if (ownerAccessToken.isBlank()) {
+        if (ownerAccessToken.isBlank() || ownerRestaurantId.isBlank()) {
             android.util.Log.e(
                 "RoyalTVConnection",
-                "Owner authentication is required before queuing or sending"
+                "Owner authentication and restaurant scope are required"
             )
             return false
         }
@@ -128,7 +132,8 @@ class RoyalTVConnectionManager(
         ) {
             RoyalTVOfflineCommandStore.enqueue(
                 targetDeviceId = privateTopic,
-                command = command
+                command = command,
+                restaurantId = ownerRestaurantId
             )
             return false
         }
@@ -171,12 +176,17 @@ class RoyalTVConnectionManager(
 
                 if (!pendingCommand.targetDeviceId.matches(
                         ROYAL_TV_PRIVATE_TOPIC_PATTERN
-                    )
+                    ) || pendingCommand.restaurantId.isBlank()
                 ) {
-                    // Old queue entries addressed by display IDs are not
-                    // authorized anymore; discard them instead of retaining
-                    // unsafe stale targets forever.
+                    // Old queue entries addressed by display IDs or without a
+                    // known tenant are not safe to replay.
                     RoyalTVOfflineCommandStore.remove(pendingCommand)
+                    continue
+                }
+
+                if (pendingCommand.restaurantId != ownerRestaurantId) {
+                    // Keep another restaurant's queue for that restaurant's
+                    // next owner session; never replay it with this tenant.
                     continue
                 }
 
@@ -229,6 +239,7 @@ class RoyalTVConnectionManager(
 
         started = false
         ownerAccessToken = ""
+        ownerRestaurantId = ""
 
         cancelReconnect()
         cancelSync()
