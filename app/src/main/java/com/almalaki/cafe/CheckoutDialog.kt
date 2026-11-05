@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,6 +68,7 @@ fun CheckoutDialog(
         String,
         String,
         String,
+        String,
         String
     ) -> Unit
 ) {
@@ -87,6 +89,8 @@ fun CheckoutDialog(
     var fulfillmentType by remember(savedCustomerProfile) {
         mutableStateOf(savedCustomerProfile.fulfillmentType)
     }
+    var paymentMethod by remember { mutableStateOf("cash") }
+    var showOnlinePaymentMessage by remember { mutableStateOf(false) }
 
     LaunchedEffect(successOrderNumber) {
         if (successOrderNumber.isNotEmpty()) {
@@ -192,6 +196,17 @@ fun CheckoutDialog(
                         AppSounds.buttonClick(context)
                         fulfillmentType = it
                     },
+                    paymentMethod = paymentMethod,
+                    onPaymentMethodChange = {
+                        AppSounds.buttonClick(context)
+                        paymentMethod = it
+                        showOnlinePaymentMessage = false
+                    },
+                    showOnlinePaymentMessage = showOnlinePaymentMessage,
+                    onOnlinePaymentClick = {
+                        AppSounds.buttonClick(context)
+                        showOnlinePaymentMessage = true
+                    },
                     totalAmount = totalAmount,
                     loading = loading,
                     message = message,
@@ -206,7 +221,8 @@ fun CheckoutDialog(
                             customerName,
                             customerPhone,
                             deliveryAddress,
-                            fulfillmentType
+                            fulfillmentType,
+                            paymentMethod
                         )
                     }
                 )
@@ -384,6 +400,10 @@ private fun CheckoutFormContent(
     onDeliveryAddressChange: (String) -> Unit,
     fulfillmentType: String,
     onFulfillmentTypeChange: (String) -> Unit,
+    paymentMethod: String,
+    onPaymentMethodChange: (String) -> Unit,
+    showOnlinePaymentMessage: Boolean,
+    onOnlinePaymentClick: () -> Unit,
     totalAmount: Double,
     loading: Boolean,
     message: String,
@@ -479,6 +499,40 @@ private fun CheckoutFormContent(
                 enabled = !loading,
                 minLines = 2,
                 onFocus = { AppSounds.buttonClick(context) }
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "طريقة الدفع",
+            color = CheckoutGold,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(8.dp))
+        CheckoutPaymentCard(
+            selected = paymentMethod == "cash",
+            icon = "💵",
+            title = "الدفع نقداً",
+            subtitle = "عند الاستلام أو داخل المطعم",
+            enabled = !loading,
+            onClick = { onPaymentMethodChange("cash") }
+        )
+        Spacer(Modifier.height(8.dp))
+        CheckoutPaymentCard(
+            selected = false,
+            icon = "💳",
+            title = "الدفع الإلكتروني",
+            subtitle = "قريباً",
+            enabled = !loading,
+            onClick = onOnlinePaymentClick
+        )
+        if (showOnlinePaymentMessage) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "الدفع الإلكتروني قريباً، يمكنك إكمال طلبك بالدفع النقدي حالياً.",
+                color = CheckoutGoldLight.copy(alpha = 0.88f),
+                fontSize = 11.sp
             )
         }
 
@@ -674,6 +728,74 @@ private fun CheckoutChoiceCard(
                 color = if (selected) CheckoutGold.copy(alpha = 0.70f) else Color.White.copy(alpha = 0.48f),
                 fontSize = 10.sp
             )
+        }
+    }
+}
+
+
+@Composable
+private fun CheckoutPaymentCard(
+    selected: Boolean,
+    icon: String,
+    title: String,
+    subtitle: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val transition = rememberInfiniteTransition(label = "payment_icon_motion")
+    val iconScale by transition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1100),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "payment_icon_scale"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = if (selected) CheckoutGold.copy(alpha = 0.13f) else CheckoutBlack2,
+                shape = RoundedCornerShape(15.dp)
+            )
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) CheckoutGold.copy(alpha = 0.72f) else CheckoutGold.copy(alpha = 0.22f),
+                shape = RoundedCornerShape(15.dp)
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = icon,
+            modifier = Modifier
+                .size(34.dp)
+                .graphicsLayer {
+                    scaleX = iconScale
+                    scaleY = iconScale
+                },
+            fontSize = 25.sp
+        )
+        Spacer(Modifier.size(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = if (selected) CheckoutGoldLight else Color.White.copy(alpha = 0.9f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                color = if (selected) CheckoutGold.copy(alpha = 0.82f) else Color.White.copy(alpha = 0.55f),
+                fontSize = 10.sp
+            )
+        }
+        if (selected) {
+            Text("✓", color = CheckoutGoldLight, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

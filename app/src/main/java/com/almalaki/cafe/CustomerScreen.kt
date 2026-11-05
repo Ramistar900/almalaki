@@ -937,7 +937,8 @@ LaunchedEffect(syncedCustomerUserId) {
                     name,
                     phone,
                     address,
-                    type ->
+                    type,
+                    paymentMethod ->
 
                 when {
 
@@ -990,7 +991,8 @@ val invoiceTotalSnapshot = totalAmount
                                         products,
                                         cart,
                                         restaurantId = selectedRestaurantId,
-                                        restaurantCode = activeRestaurant.joinCode
+                                        restaurantCode = activeRestaurant.joinCode,
+                                        paymentMethod = paymentMethod
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
