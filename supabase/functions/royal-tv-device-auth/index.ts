@@ -242,7 +242,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return respond(404, { registered: false, error: "TV is not paired" });
       }
       if (device.revoked_at) {
-        return respond(403, { error: "This TV registration has been revoked" });
+        return respond(409, { error: "This TV registration has been revoked" });
       }
 
       const { data: restaurant, error: restaurantError } = await admin
