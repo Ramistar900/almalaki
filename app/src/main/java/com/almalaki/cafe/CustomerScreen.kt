@@ -976,8 +976,12 @@ val invoiceTotalSnapshot = totalAmount
                                     append(phone.trim()).append('|')
                                     append(address.trim()).append('|')
                                     append(type).append('|')
-                                    cart.toSortedMap().forEach { (productId, quantity) ->
-                                        append(productId).append(':').append(quantity).append(';')
+                                    append(RoyalSupabaseAuth.currentUserId().orEmpty()).append('|')
+                                    products.forEach { product ->
+                                        val quantity = cart[product.id] ?: 0
+                                        if (quantity > 0) {
+                                            append(product.id).append(':').append(quantity).append(';')
+                                        }
                                     }
                                 }
                                 val idempotencyKey =
