@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -82,7 +84,7 @@ private fun requestPlusApi(
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
         val response = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
         if (code !in 200..299) {
-            throw IllegalStateException("تعذر التحقق من Plus (HTTP $code). قد تحتاج قاعدة البيانات إلى تفعيل ميزة الاشتراك أولًا.")
+            throw IllegalStateException("تعذر التحقق من Premium (HTTP $code). قد تحتاج قاعدة البيانات إلى تفعيل ميزة الاشتراك أولًا.")
         }
         return response
     } finally {
@@ -193,13 +195,25 @@ fun RoyalTVPlusScreen(
         modifier = modifier.fillMaxSize().background(PlusBlack).padding(18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "ROYAL TV PLUS",
-            color = PlusGold,
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.royal_badge_premium),
+                contentDescription = "Premium",
+                modifier = Modifier.size(30.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "ROYAL TV PREMIUM",
+                color = PlusGold,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+
         Spacer(Modifier.height(8.dp))
         Text(
             text = "إدارة صلاحية الميزات المتقدمة",
@@ -209,7 +223,7 @@ fun RoyalTVPlusScreen(
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = "المشاهدة والتشغيل الأساسي دون اتصال يبقيان متاحين. انتهاء Plus لا يحذف الوسائط أو إعداداتك.",
+            text = "المشاهدة والتشغيل الأساسي دون اتصال يبقيان متاحين. انتهاء Premium لا يحذف الوسائط أو إعداداتك.",
             color = PlusCream,
             fontSize = 13.sp,
             textAlign = TextAlign.Center
@@ -279,7 +293,7 @@ fun RoyalTVPlusScreen(
                                     status = "ROYAL TV غير مثبت. فتحنا رابط التنزيل الاحتياطي على MediaFire؛ بعد التثبيت ارجع إلى هنا وأعد فحص الاشتراك لمتابعة الربط."
                                 }
                             } else {
-                                status = "اشتراك Plus غير فعال لهذا المطعم. لم يتم تنفيذ أي عملية دفع؛ ربط بوابة الدفع سيُضاف بعد اختيارها."
+                                status = "اشتراك Premium غير فعال لهذا المطعم. لم يتم تنفيذ أي عملية دفع؛ ربط بوابة الدفع سيُضاف بعد اختيارها."
                             }
                         } catch (error: Exception) {
                             status = error.message ?: "تعذر التحقق من الاشتراك."
