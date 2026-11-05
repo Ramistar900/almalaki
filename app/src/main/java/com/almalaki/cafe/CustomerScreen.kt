@@ -970,6 +970,19 @@ val invoiceTotalSnapshot = totalAmount
 
                             try {
 
+                                val checkoutFingerprint = buildString {
+                                    append(activeRestaurant.joinCode.trim().uppercase()).append('|')
+                                    append(name.trim()).append('|')
+                                    append(phone.trim()).append('|')
+                                    append(address.trim()).append('|')
+                                    append(type).append('|')
+                                    cart.toSortedMap().forEach { (productId, quantity) ->
+                                        append(productId).append(':').append(quantity).append(';')
+                                    }
+                                }
+                                val idempotencyKey =
+                                    getOrCreateRoyalCheckoutKey(context, checkoutFingerprint)
+
                                 val result =
                                     createOrder(
                                         name,
@@ -980,7 +993,8 @@ val invoiceTotalSnapshot = totalAmount
                                         products,
                                         cart,
                                         restaurantId = selectedRestaurantId,
-                                        restaurantCode = activeRestaurant.joinCode
+                                        restaurantCode = activeRestaurant.joinCode,
+                                        idempotencyKey = idempotencyKey
                                     )
 
                                 invoiceOrderNumber = result.orderNumber
@@ -1003,7 +1017,7 @@ val invoiceTotalSnapshot = totalAmount
                                 }
                                 customerProfile = savedProfile
 
-                                saveRoyalCustomerOrder(
+                                val orderSaved = saveRoyalCustomerOrder(
                                     context,
                                     RoyalCustomerOrderRecord(
                                         orderNumber = result.orderNumber,
@@ -1015,6 +1029,10 @@ val invoiceTotalSnapshot = totalAmount
                                         items = invoiceItemsSnapshot
                                     )
                                 )
+                                if (!orderSaved) {
+                                    throw Exception("تم استلام الطلب من الخادم، لكن تعذر حفظ سجل الطلب على الجهاز. أعد المحاولة دون تغيير السلة.")
+                                }
+                                clearRoyalCheckoutKey(context, idempotencyKey)
                                 customerOrderHistory = loadRoyalCustomerOrders(context)
 
                                 orderSuccessNumber = result.orderNumber
