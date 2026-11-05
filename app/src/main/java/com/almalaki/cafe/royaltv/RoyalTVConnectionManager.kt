@@ -9,92 +9,65 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancel
 
+private val ROYAL_TV_PRIVATE_TOPIC_PATTERN = Regex(
+    "^royal-tv:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    RegexOption.IGNORE_CASE
+)
+
 class RoyalTVConnectionManager(
     context: Context
 ) {
 
-    private val appContext =
-        context.applicationContext
+    private val appContext = context.applicationContext
 
-    private val scope =
-        CoroutineScope(
-            SupervisorJob() +
-                Dispatchers.IO
-        )
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO
+    )
 
-    private val networkMonitor =
-        RoyalTVNetworkMonitor(
-            appContext
-        )
+    private val networkMonitor = RoyalTVNetworkMonitor(appContext)
 
-    private var reconnectJob:
-        Job? = null
-
-    private var syncJob:
-        Job? = null
-
-    private var deviceId:
-        String = ""
-
-    private var started =
-        false
-
-    private var lastNetworkState =
-        RoyalTVNetworkState.OFFLINE
+    private var reconnectJob: Job? = null
+    private var syncJob: Job? = null
+    private var deviceId: String = ""
+    private var ownerAccessToken: String = ""
+    private var started = false
+    private var lastNetworkState = RoyalTVNetworkState.OFFLINE
 
     init {
-
-        RoyalTVOfflineCommandStore
-            .initialize(
-                appContext
-            )
+        RoyalTVOfflineCommandStore.initialize(appContext)
     }
 
     /**
-     * بدء مراقبة الاتصال وربط جهاز ROYAL TV.
+     * Owner-side command manager.
+     * targetDeviceId parameters below now mean a server-issued private
+     * channel topic, never the physical TV's local display ID.
      */
     fun start(
-        onCommand:
-            (RoyalTVCommand) -> Unit,
-        onConnectionStateChanged:
-            (RoyalTVNetworkState) -> Unit = {}
+        ownerAccessToken: String = "",
+        onCommand: (RoyalTVCommand) -> Unit = {},
+        onConnectionStateChanged: (RoyalTVNetworkState) -> Unit = {}
     ) {
-
         if (started) {
+            this.ownerAccessToken = ownerAccessToken.trim()
             return
         }
 
+        this.ownerAccessToken = ownerAccessToken.trim()
         started = true
 
-        deviceId =
-            RoyalTVDeviceIdentity
-                .getDeviceId(
-                    appContext
-                )
+        // Kept for compatibility with diagnostics only. This value is never
+        // used as an authorization identity or Realtime topic.
+        deviceId = RoyalTVDeviceIdentity.getDeviceId(appContext)
 
         networkMonitor.start { state ->
-
-            lastNetworkState =
-                state
-
-            onConnectionStateChanged(
-                state
-            )
+            lastNetworkState = state
+            onConnectionStateChanged(state)
 
             when (state) {
-
-                RoyalTVNetworkState.ONLINE -> {
-
-                    scheduleReconnect(
-                        onCommand
-                    )
-                }
-
+                RoyalTVNetworkState.ONLINE -> scheduleReconnect()
                 RoyalTVNetworkState.OFFLINE -> {
-
                     cancelReconnect()
                     cancelSync()
-
                     RoyalTVRealtime.stop()
                 }
             }
@@ -102,252 +75,163 @@ class RoyalTVConnectionManager(
     }
 
     /**
-     * تجهيز اتصال ROYAL TV بعد عودة الشبكة.
+     * Wait for network recovery, then replay only queued server-issued private
+     * channel topics. No owner-side public subscription is ever opened.
      */
-    private fun scheduleReconnect(
-        onCommand:
-            (RoyalTVCommand) -> Unit
-    ) {
-
+    private fun scheduleReconnect() {
         reconnectJob?.cancel()
+        reconnectJob = scope.launch {
+            delay(2_000L)
 
-        reconnectJob =
-            scope.launch {
-
-                delay(2000L)
-
-                if (
-                    !started ||
-                    lastNetworkState !=
-                    RoyalTVNetworkState.ONLINE
-                ) {
-                    return@launch
-                }
-
-                try {
-
-                    RoyalTVRealtime.start(
-                        deviceId =
-                            deviceId,
-                        onCommand =
-                            onCommand
-                    )
-
-                    /*
-                     * بعد نجاح تشغيل قناة Realtime
-                     * نحاول إرسال جميع الأوامر
-                     * التي تم حفظها أثناء Offline.
-                     */
-                    syncOfflineCommands()
-
-                } catch (e: Exception) {
-
-                    android.util.Log.e(
-                        "RoyalTVConnection",
-                        "Reconnect error: " +
-                            "${e.message}",
-                        e
-                    )
-                }
+            if (!started ||
+                ownerAccessToken.isBlank() ||
+                lastNetworkState != RoyalTVNetworkState.ONLINE
+            ) {
+                return@launch
             }
+
+            syncOfflineCommands()
+        }
     }
 
     /**
-     * إرسال أمر جديد.
+     * targetDeviceId must be the server-issued channel topic
+     * (royal-tv:<server-device-uuid>), not a legacy display identifier.
      *
-     * إذا كان الجهاز Online:
-     * يحاول الإرسال مباشرة.
-     *
-     * إذا فشل الإرسال:
-     * يتم حفظ الأمر محليًا.
-     *
-     * إذا كان Offline:
-     * يتم حفظ الأمر مباشرة.
-     *
-     * true  = تم الإرسال.
-     * false = تم الحفظ للـ Offline.
+     * true  = sent successfully.
+     * false = not sent; the command is retained only when it can safely be
+     *         replayed later using the private topic.
      */
     suspend fun sendCommand(
         targetDeviceId: String,
         command: RoyalTVCommand
     ): Boolean {
-
-        if (
-            !started ||
-            lastNetworkState !=
-                RoyalTVNetworkState.ONLINE
-        ) {
-
-            RoyalTVOfflineCommandStore
-                .enqueue(
-                    targetDeviceId =
-                        targetDeviceId,
-                    command =
-                        command
-                )
-
+        val privateTopic = targetDeviceId.trim()
+        if (!privateTopic.matches(ROYAL_TV_PRIVATE_TOPIC_PATTERN)) {
+            android.util.Log.e(
+                "RoyalTVConnection",
+                "Rejected non-private or invalid ROYAL TV target"
+            )
             return false
         }
 
-        val sent =
-            RoyalTVRealtime.sendCommand(
-                targetDeviceId =
-                    targetDeviceId,
-                command =
-                    command
+        if (ownerAccessToken.isBlank()) {
+            android.util.Log.e(
+                "RoyalTVConnection",
+                "Owner authentication is required before queuing or sending"
             )
+            return false
+        }
+
+        if (!started ||
+            lastNetworkState != RoyalTVNetworkState.ONLINE
+        ) {
+            RoyalTVOfflineCommandStore.enqueue(
+                targetDeviceId = privateTopic,
+                command = command
+            )
+            return false
+        }
+
+        val sent = RoyalTVRealtime.sendCommand(
+            ownerAccessToken = ownerAccessToken,
+            channelTopic = privateTopic,
+            command = command
+        )
 
         if (!sent) {
-
-            RoyalTVOfflineCommandStore
-                .enqueue(
-                    targetDeviceId =
-                        targetDeviceId,
-                    command =
-                        command
-                )
+            RoyalTVOfflineCommandStore.enqueue(
+                targetDeviceId = privateTopic,
+                command = command
+            )
         }
 
         return sent
     }
 
     /**
-     * إرسال جميع الأوامر التي تم حفظها
-     * أثناء انقطاع الاتصال.
-     *
-     * الأمر لا يُحذف إلا بعد نجاح الإرسال.
+     * Replay persisted commands only while the current owner session is
+     * present. Failed commands remain in the queue.
      */
     private fun syncOfflineCommands() {
-
         syncJob?.cancel()
+        syncJob = scope.launch {
+            if (ownerAccessToken.isBlank()) return@launch
 
-        syncJob =
-            scope.launch {
+            val pendingCommands =
+                RoyalTVOfflineCommandStore.getPendingCommands()
 
-                val pendingCommands =
-                    RoyalTVOfflineCommandStore
-                        .getPendingCommands()
-
-                if (
-                    pendingCommands.isEmpty()
+            for (pendingCommand in pendingCommands) {
+                if (!started ||
+                    ownerAccessToken.isBlank() ||
+                    lastNetworkState != RoyalTVNetworkState.ONLINE
                 ) {
                     return@launch
                 }
 
-                for (
-                    pendingCommand
-                    in pendingCommands
+                if (!pendingCommand.targetDeviceId.matches(
+                        ROYAL_TV_PRIVATE_TOPIC_PATTERN
+                    )
                 ) {
+                    // Do not replay old commands addressed by public/local IDs.
+                    continue
+                }
 
-                    if (
-                        !started ||
-                        lastNetworkState !=
-                            RoyalTVNetworkState.ONLINE
-                    ) {
-                        return@launch
-                    }
+                val sent = RoyalTVRealtime.sendCommand(
+                    ownerAccessToken = ownerAccessToken,
+                    channelTopic = pendingCommand.targetDeviceId,
+                    command = pendingCommand.command
+                )
 
-                    val sent =
-                        RoyalTVRealtime.sendCommand(
-                            targetDeviceId =
-                                pendingCommand
-                                    .targetDeviceId,
-                            command =
-                                pendingCommand.command
-                        )
-
-                    if (sent) {
-
-                        RoyalTVOfflineCommandStore
-                            .remove(
-                                pendingCommand
-                            )
-
-                    } else {
-
-                        /*
-                         * إذا فشل أمر واحد،
-                         * لا نحذف أي أمر فاشل.
-                         *
-                         * نوقف المزامنة الحالية
-                         * وننتظر عودة الاتصال.
-                         */
-                        return@launch
-                    }
+                if (sent) {
+                    RoyalTVOfflineCommandStore.remove(pendingCommand)
+                } else {
+                    return@launch
                 }
             }
+        }
     }
 
-    /**
-     * مزامنة يدوية عند الحاجة.
-     */
     fun syncNow() {
-
-        if (
-            !started ||
-            lastNetworkState !=
-                RoyalTVNetworkState.ONLINE
+        if (!started ||
+            ownerAccessToken.isBlank() ||
+            lastNetworkState != RoyalTVNetworkState.ONLINE
         ) {
             return
         }
-
         syncOfflineCommands()
     }
 
     private fun cancelReconnect() {
-
         reconnectJob?.cancel()
-
-        reconnectJob =
-            null
+        reconnectJob = null
     }
 
     private fun cancelSync() {
-
         syncJob?.cancel()
-
-        syncJob =
-            null
+        syncJob = null
     }
 
-    fun getNetworkState():
-        RoyalTVNetworkState {
+    fun getNetworkState(): RoyalTVNetworkState = lastNetworkState
 
-        return lastNetworkState
-    }
-
-    fun isStarted(): Boolean {
-
-        return started
-    }
-
-    fun getDeviceId(): String {
-
-        return deviceId
-    }
+    fun isStarted(): Boolean = started
 
     /**
-     * إيقاف مدير الاتصال.
-     *
-     * لا يمسح الأوامر Offline.
-     * ولا يمسح حالة الشاشة.
+     * Local display ID retained for diagnostics only.
      */
+    fun getDeviceId(): String = deviceId
+
     fun stop() {
+        if (!started) return
 
-        if (!started) {
-            return
-        }
-
-        started =
-            false
+        started = false
+        ownerAccessToken = ""
 
         cancelReconnect()
         cancelSync()
 
         networkMonitor.stop()
-
         RoyalTVRealtime.stop()
-
         scope.cancel()
     }
 }
