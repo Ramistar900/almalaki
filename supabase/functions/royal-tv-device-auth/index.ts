@@ -56,12 +56,10 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 function getClientIp(req: Request): string | null {
-  const direct = req.headers.get("cf-connecting-ip")?.trim();
-  if (direct) return direct;
-
-  const forwarded = req.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
-  return first || null;
+  // Trust the proxy-provided Cloudflare address only. Client-controlled
+  // X-Forwarded-For values must not be allowed to reset the guess limit.
+  const cloudflareIp = req.headers.get("cf-connecting-ip")?.trim();
+  return cloudflareIp || null;
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
