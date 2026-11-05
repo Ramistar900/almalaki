@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
 
 private const val ORDER_SUPABASE_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
@@ -24,7 +25,8 @@ fun createOrder(
     products: List<Product>,
     cart: Map<Int, Int>,
     @Suppress("UNUSED_PARAMETER") restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
-    restaurantCode: String = ""
+    restaurantCode: String = "",
+    idempotencyKey: String = UUID.randomUUID().toString()
 ): OrderResult {
     if (cart.isEmpty()) {
         throw Exception("السلة فارغة.")
@@ -53,7 +55,8 @@ fun createOrder(
         deliveryAddress = deliveryAddress,
         fulfillmentType = fulfillmentType,
         products = products,
-        cart = cart
+        cart = cart,
+        idempotencyKey = idempotencyKey
     )
 }
 
@@ -64,7 +67,8 @@ private fun createRestaurantOrderViaRpc(
     deliveryAddress: String,
     fulfillmentType: String,
     products: List<Product>,
-    cart: Map<Int, Int>
+    cart: Map<Int, Int>,
+    idempotencyKey: String
 ): OrderResult {
     val items = JSONArray()
     products.forEach { product ->
@@ -86,6 +90,7 @@ private fun createRestaurantOrderViaRpc(
         .put("p_delivery_address", deliveryAddress.trim())
         .put("p_fulfillment_type", fulfillmentType)
         .put("p_items", items)
+        .put("p_idempotency_key", idempotencyKey)
 
     val connection = URL("$ORDER_SUPABASE_URL/rest/v1/rpc/create_restaurant_order")
         .openConnection() as HttpURLConnection
