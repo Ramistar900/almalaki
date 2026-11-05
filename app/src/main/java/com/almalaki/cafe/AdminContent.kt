@@ -150,6 +150,16 @@ if (section == AdminSection.ROYAL_TV_CONTROL) {
                 }
             }
 
+            AdminSection.RESERVATIONS -> {
+                item {
+                    OwnerReservationsSection(
+                        accessToken = accessToken,
+                        restaurantId = restaurantId,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
             AdminSection.ORDERS -> {
                 item { SectionTitle("الطلبات") }
                 if (orders.isEmpty()) {
