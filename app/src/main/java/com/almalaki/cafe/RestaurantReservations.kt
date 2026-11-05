@@ -168,7 +168,7 @@ fun CustomerReservationDialog(
         },
         confirmButton = {
             Button(
-                enabled = !loading && name.isNotBlank() && phone.isNotBlank() && date.isNotBlank() && party.toIntOrNull() in 1..20,
+                enabled = !loading && name.isNotBlank() && phone.isNotBlank() && date.isNotBlank() && party.toIntOrNull()?.let { it in 1..20 } == true,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4AF37), contentColor = Color.Black),
                 onClick = {
                     loading = true
@@ -259,7 +259,7 @@ fun OwnerReservationsSection(
                                     Thread {
                                         try {
                                             RoyalReservationCloud.updateStatus(accessToken, restaurantId, reservation.id, "confirmed")
-                                            refresh()
+                                            android.os.Handler(android.os.Looper.getMainLooper()).post { refresh() }
                                         } catch (error: Exception) {
                                             android.os.Handler(android.os.Looper.getMainLooper()).post { message = error.message ?: "تعذر تأكيد الحجز." }
                                         }
