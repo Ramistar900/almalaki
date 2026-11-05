@@ -94,7 +94,18 @@ var showInvoice by remember(order.id) { mutableStateOf(false) }
 
                 Text("النوع: ${order.fulfillmentType}", color = AdminCream)
                 Text("المجموع: ${formatPrice(order.totalAmount)}", color = AdminGold)
-                Text("الحالة: ${adminStatusText(order.status)}", color = AdminCream)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val statusIcon = royalOrderStatusIconResource(order.status)
+                    if (statusIcon != null) {
+                        RoyalAnimatedIcon(
+                            iconRes = statusIcon,
+                            contentDescription = adminStatusText(order.status),
+                            modifier = Modifier.size(34.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text("الحالة: ${adminStatusText(order.status)}", color = AdminCream)
+                }
             }
 
             Spacer(modifier = Modifier.height(7.dp))

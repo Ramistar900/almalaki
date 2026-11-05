@@ -619,17 +619,27 @@ LaunchedEffect(syncedCustomerUserId) {
                                         .fillMaxWidth()
                                         .padding(top = 8.dp, bottom = 2.dp)
                                 ) {
-                                    Text(
-                                        text = category.ifBlank {
-                                            "منتجات أخرى"
-                                        },
-                                        color = Gold,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(
-                                            vertical = 4.dp
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val categoryIcon = royalFoodIconResource(category)
+                                        if (categoryIcon != null) {
+                                            RoyalAnimatedIcon(
+                                                iconRes = categoryIcon,
+                                                contentDescription = category,
+                                                modifier = Modifier.size(34.dp)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                        }
+                                        Text(
+                                            text = category.ifBlank { "منتجات أخرى" },
+                                            color = Gold,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(vertical = 4.dp)
                                         )
-                                    )
+                                    }
 
                                     HorizontalDivider(
                                         color = Gold.copy(alpha = 0.45f),
@@ -1189,10 +1199,19 @@ private fun RoyalCategoryPill(
                 .size(if (compact) 25.dp else 38.dp),
             contentAlignment = Alignment.Center
         ) {
-            RoyalCategoryGlyph(
-                category = category,
-                modifier = Modifier.size(if (compact) 21.dp else 32.dp)
-            )
+            val categoryIcon = royalFoodIconResource(category)
+            if (categoryIcon != null) {
+                RoyalAnimatedIcon(
+                    iconRes = categoryIcon,
+                    contentDescription = category,
+                    modifier = Modifier.size(if (compact) 21.dp else 32.dp)
+                )
+            } else {
+                RoyalCategoryGlyph(
+                    category = category,
+                    modifier = Modifier.size(if (compact) 21.dp else 32.dp)
+                )
+            }
         }
         Spacer(Modifier.width(if (compact) 2.dp else 4.dp))
         Box(
