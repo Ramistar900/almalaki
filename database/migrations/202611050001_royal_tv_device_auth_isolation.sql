@@ -17,14 +17,18 @@ create table if not exists public.royal_tv_devices (
     created_at timestamptz not null default now(),
     last_seen_at timestamptz,
     revoked_at timestamptz,
-    constraint royal_tv_devices_restaurant_display_id_unique
-        unique (restaurant_id, channel_device_id),
     constraint royal_tv_devices_channel_topic_unique
         unique (channel_topic)
 );
 
 create index if not exists royal_tv_devices_restaurant_id_idx
     on public.royal_tv_devices (restaurant_id);
+
+-- A revoked registration must not prevent the same physical TV from pairing
+-- again with the same restaurant and its preserved local display ID.
+create unique index if not exists royal_tv_devices_active_display_id_unique
+    on public.royal_tv_devices (restaurant_id, channel_device_id)
+    where revoked_at is null;
 
 create table if not exists public.royal_tv_activation_codes (
     id uuid primary key default gen_random_uuid(),
@@ -332,6 +336,9 @@ begin
 
     perform pg_catalog.pg_advisory_xact_lock(
         pg_catalog.hashtextextended(p_ip_hash, 0)
+    );
+    perform pg_catalog.pg_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_auth_user_id::text, 1)
     );
 
     select count(*)::integer
