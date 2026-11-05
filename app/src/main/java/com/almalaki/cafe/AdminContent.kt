@@ -290,6 +290,7 @@ AdminSection.INTERFACE_SETTINGS -> {
 
             AdminCustomerSections(
                 accessToken = accessToken,
+                restaurantId = restaurantId,
                 modifier = Modifier.fillMaxWidth()
             )
         }
