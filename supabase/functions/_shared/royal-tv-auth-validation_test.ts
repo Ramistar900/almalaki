@@ -105,3 +105,41 @@ Deno.test("ROYAL TV pairing RPC is atomic and server-role only", async () => {
     throw new Error("Pairing RPC must be executable only by service_role");
   }
 });
+
+
+Deno.test("ROYAL TV rate-limit migration is server-only and atomically enforces fixed windows", async () => {
+  const sql = await Deno.readTextFile(
+    new URL("../../../database/migrations/202611050001_royal_tv_rate_limits.sql", import.meta.url),
+  );
+  for (const required of [
+    "alter table public.royal_tv_rate_limits enable row level security",
+    "revoke all on table public.royal_tv_rate_limits from public, anon, authenticated",
+    "grant all on table public.royal_tv_rate_limits to service_role",
+    "security definer",
+    "set search_path = ''",
+    "where public.royal_tv_rate_limits.request_count < p_limit",
+    "grant execute on function public.consume_royal_tv_rate_limit(text, integer, integer)",
+  ]) {
+    if (!sql.toLowerCase().includes(required.toLowerCase())) {
+      throw new Error(`rate-limit migration is missing: ${required}`);
+    }
+  }
+});
+
+Deno.test("ROYAL TV Edge Function applies action-specific server rate limits", async () => {
+  const source = await Deno.readTextFile(
+    new URL("../royal-tv-authorize/index.ts", import.meta.url),
+  );
+  for (const action of [
+    "list_owned_restaurants", "create_challenge", "pair_device",
+    "list_paired_devices", "send_command", "poll_commands",
+    "acknowledge", "revoke_device",
+  ]) {
+    if (!source.includes(`enforceRateLimit("${action}"`)) {
+      throw new Error(`rate limit missing for action: ${action}`);
+    }
+  }
+  if (!source.includes('fail(429, "Too many requests; try again later")')) {
+    throw new Error("HTTP 429 response is missing");
+  }
+});
