@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/royal_order_cancelled">
+<target android:name="motion" android:animation="@animator/royal_order_cancelled_motion"/>
+</animated-vector>
