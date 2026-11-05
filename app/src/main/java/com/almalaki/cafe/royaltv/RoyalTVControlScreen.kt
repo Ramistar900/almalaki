@@ -72,6 +72,8 @@ val description: String
 @Composable
 fun RoyalTVControlScreen(
 modifier: Modifier = Modifier,
+accessToken: String = "",
+restaurantId: String = "",
 onItemSelected: (RoyalTVControlItem) -> Unit = {}
 ) {
 val context = LocalContext.current
@@ -94,6 +96,19 @@ var tickerOpen by remember {
     mutableStateOf(false)
 }
 
+var deviceManagementOpen by remember {
+    mutableStateOf(false)
+}
+
+if (deviceManagementOpen) {
+    RoyalTVDeviceManagementScreen(
+        accessToken = accessToken,
+        restaurantId = restaurantId,
+        modifier = modifier,
+        onBack = { deviceManagementOpen = false }
+    )
+    return
+}
 
 if (identityOpen) {
     RoyalTVLayoutControl(
@@ -204,6 +219,12 @@ RoyalTVIconKey.DISPLAY,
     ),
 
     RoyalTVControlItem(
+        RoyalTVIconKey.DEVICE_MEDIA,
+        "إدارة أجهزة ROYAL TV",
+        "إنشاء رموز ربط الشاشات وعرضها وإلغاء ربط جهاز محدد"
+    ),
+
+    RoyalTVControlItem(
         RoyalTVIconKey.SPORTS,
         "الوضع الرياضي",
         "إدارة وضع المباريات والمحتوى الرياضي"
@@ -283,6 +304,9 @@ onClick = {
 
 } else if (item.title == "شريط الأخبار") {
     tickerOpen = true
+
+} else if (item.title == "إدارة أجهزة ROYAL TV") {
+    deviceManagementOpen = true
 
 } else {
 
