@@ -1557,6 +1557,7 @@ fun RoyalShinyInfoBox(
  * الشريط السفلي
  * ============================================================
  */
+private val RoyalCustomerNavInk = Color(0xFF0C2D24)
 private val RoyalCustomerNavBadge = Color(0xFF0A382B)
 
 @Composable
