@@ -1,12 +1,5 @@
 package com.almalaki.cafe.royaltv
 
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.broadcast
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.realtime
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -153,37 +146,21 @@ object RoyalTVOwnerDeviceManager {
         require(channelTopic.matches(TOPIC_PATTERN))
         require(commandType.isNotBlank())
 
-        val client = createSupabaseClient(
-            supabaseUrl = ROYAL_TV_OWNER_SUPABASE_URL,
-            supabaseKey = ROYAL_TV_OWNER_PUBLISHABLE_KEY
-        ) {
-            install(Realtime)
+        val enumType = try {
+            RoyalTVCommandType.valueOf(commandType)
+        } catch (_: IllegalArgumentException) {
+            return false
         }
 
-        return try {
-            client.realtime.setAuth(accessToken)
-            val channel = client.channel(channelTopic) {
-                isPrivate = true
-            }
-            channel.subscribe(blockUntilSubscribed = true)
-            channel.broadcast(
-                event = "royal_tv_command",
-                message = buildJsonObject {
-                    put("type", commandType)
-                    put("payload", payload)
-                    put("createdAt", createdAt)
-                }
+        return RoyalTVRealtime.sendCommand(
+            ownerAccessToken = accessToken,
+            channelTopic = channelTopic,
+            command = RoyalTVCommand(
+                type = enumType,
+                payload = payload,
+                createdAt = createdAt
             )
-            channel.unsubscribe()
-            true
-        } catch (error: Exception) {
-            android.util.Log.e(
-                "RoyalTVOwnerDeviceManager",
-                "Failed to send command to private TV channel",
-                error
-            )
-            false
-        }
+        )
     }
 
     private suspend fun invoke(
