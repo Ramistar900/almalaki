@@ -242,6 +242,7 @@ DO $test_owner_b$
 DECLARE
     v_count integer;
     v_rows integer;
+    v_rejected boolean := false;
 BEGIN
     SELECT count(*) INTO v_count
       FROM public.products
@@ -621,7 +622,7 @@ BEGIN
             'Must be rejected because Customer D is not linked to A'
         );
     EXCEPTION WHEN OTHERS THEN
-        IF SQLERRM LIKE '%not linked to your account%' THEN
+        IF SQLERRM LIKE '%هذا المطعم غير مرتبط بحسابك أو غير نشط%' THEN
             v_rejected := true;
         ELSE
             RAISE;
