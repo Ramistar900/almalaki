@@ -42,10 +42,14 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 private const val CUSTOMER_PROFILE_PREFS = "royal_customer_profile"
 private const val CUSTOMER_ORDERS_PREFS = "royal_customer_orders"
 private const val CUSTOMER_ORDERS_KEY = "orders_json"
+private const val CUSTOMER_CHECKOUT_PREFS = "royal_checkout_idempotency"
+private const val CUSTOMER_CHECKOUT_KEY = "pending_key"
+private const val CUSTOMER_CHECKOUT_FINGERPRINT = "pending_fingerprint"
 private const val CUSTOMER_ACCOUNT_PREFS = "royal_customer_account"
 private const val CUSTOMER_ACCOUNT_USER_KEY = "user_id"
 
@@ -185,7 +189,7 @@ fun loadRoyalCustomerOrders(context: Context): List<RoyalCustomerOrderRecord> {
 fun saveRoyalCustomerOrder(
     context: Context,
     newOrder: RoyalCustomerOrderRecord
-) {
+): Boolean {
     val savedOrders = loadRoyalCustomerOrders(context)
         .filterNot { it.orderNumber == newOrder.orderNumber }
 
@@ -217,15 +221,41 @@ fun saveRoyalCustomerOrder(
         )
     }
 
-    context.getSharedPreferences(
+    val saved = context.getSharedPreferences(
         CUSTOMER_ORDERS_PREFS,
         Context.MODE_PRIVATE
     ).edit()
         .putString(CUSTOMER_ORDERS_KEY, array.toString())
-        .apply()
-    RoyalSupabaseAuth.currentUserId()?.let { userId ->
-        context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
-            .edit().putString(CUSTOMER_ACCOUNT_USER_KEY, userId).apply()
+        .commit()
+    if (saved) {
+        RoyalSupabaseAuth.currentUserId()?.let { userId ->
+            context.getSharedPreferences(CUSTOMER_ACCOUNT_PREFS, Context.MODE_PRIVATE)
+                .edit().putString(CUSTOMER_ACCOUNT_USER_KEY, userId).commit()
+        }
+    }
+    return saved
+}
+
+fun getOrCreateRoyalCheckoutKey(context: Context, fingerprint: String): String {
+    val prefs = context.getSharedPreferences(CUSTOMER_CHECKOUT_PREFS, Context.MODE_PRIVATE)
+    val savedFingerprint = prefs.getString(CUSTOMER_CHECKOUT_FINGERPRINT, null)
+    val savedKey = prefs.getString(CUSTOMER_CHECKOUT_KEY, null)
+    if (savedFingerprint == fingerprint && !savedKey.isNullOrBlank()) return savedKey
+
+    val newKey = UUID.randomUUID().toString()
+    check(
+        prefs.edit()
+            .putString(CUSTOMER_CHECKOUT_FINGERPRINT, fingerprint)
+            .putString(CUSTOMER_CHECKOUT_KEY, newKey)
+            .commit()
+    ) { "تعذر حفظ مفتاح الطلب لإعادة المحاولة بأمان." }
+    return newKey
+}
+
+fun clearRoyalCheckoutKey(context: Context, idempotencyKey: String) {
+    val prefs = context.getSharedPreferences(CUSTOMER_CHECKOUT_PREFS, Context.MODE_PRIVATE)
+    if (prefs.getString(CUSTOMER_CHECKOUT_KEY, null) == idempotencyKey) {
+        prefs.edit().clear().commit()
     }
 }
 
