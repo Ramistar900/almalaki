@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -612,6 +613,62 @@ LaunchedEffect(syncedCustomerUserId) {
                         .groupBy { it.category.trim() }
                         .toList()
 
+                    if (activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID) {
+                        // The default ID means this customer has not linked a restaurant yet.
+                        // Keep the surrounding customer interface untouched and use only the
+                        // existing product-card area for the linking instructions.
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    top = titleBannerHeight + 62.dp,
+                                    bottom = 12.dp
+                                ),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "يرجى الربط",
+                                color = Gold,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                text = "لعرض المنتجات، اطلب من مالك المطعم أو المتجر أو المقهى رمز الربط الخاص به.",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp),
+                                color = textColor.copy(alpha = 0.82f),
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = "من «حسابي» اختر «بياناتي والمطاعم المرتبطة»، ثم «مطاعمي المرتبطة وتبديل المطعم».",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp),
+                                color = textColor.copy(alpha = 0.72f),
+                                fontSize = 11.sp,
+                                lineHeight = 17.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "أدخل الرمز واضغط «التحقق والربط». بعد نجاح الربط ستظهر بطاقات المنتجات هنا تلقائيًا.",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp),
+                                color = Gold.copy(alpha = 0.9f),
+                                fontSize = 11.sp,
+                                lineHeight = 17.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(columns),
                         modifier = Modifier.fillMaxSize(),
@@ -720,6 +777,7 @@ LaunchedEffect(syncedCustomerUserId) {
                             color = Gold.copy(alpha = 0.35f),
                             thickness = 1.dp
                         )
+                    }
                     }
                 }
         
