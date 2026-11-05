@@ -115,6 +115,9 @@ var restaurantLinkMessage by remember {
 var showCustomerOrders by remember {
     mutableStateOf(false)
 }
+var showCustomerReservation by remember {
+    mutableStateOf(false)
+}
 
 fun syncCustomerAccount() {
     customerSyncGeneration += 1
@@ -335,6 +338,7 @@ LaunchedEffect(customerIdentityReady) {
         showCustomerProfileEditor = false
         showRestaurantLinks = false
         showCustomerOrders = false
+        showCustomerReservation = false
         showCart = false
         showCheckout = false
         showInvoice = false
@@ -353,6 +357,7 @@ LaunchedEffect(syncedCustomerUserId) {
     showCustomerProfileEditor = false
     showRestaurantLinks = false
     showCustomerOrders = false
+    showCustomerReservation = false
     showCart = false
     showCheckout = false
     showInvoice = false
@@ -546,6 +551,13 @@ LaunchedEffect(syncedCustomerUserId) {
                 if (customerIdentityReady) {
                     customerProfile = loadRoyalCustomerProfile(context)
                     showCustomerAccount = true
+                }
+            },
+            onReservationClick = {
+                if (customerIdentityReady && RoyalSupabaseAuth.currentUserId() != null && activeRestaurant.id != ROYAL_DEFAULT_RESTAURANT_ID) {
+                    showCustomerReservation = true
+                } else {
+                    orderMessage = "سجّل الدخول واربط المطعم بحسابك أولاً لإرسال طلب الحجز."
                 }
             },
             onDeveloperLogin = onDeveloper,
@@ -1148,6 +1160,18 @@ if (showRestaurantLinks) {
         },
         onDismiss = {
             if (!restaurantLinkLoading) showRestaurantLinks = false
+        }
+    )
+}
+
+if (showCustomerReservation) {
+    CustomerReservationDialog(
+        restaurantId = activeRestaurant.id,
+        profile = customerProfile,
+        onDismiss = { showCustomerReservation = false },
+        onSubmitted = {
+            showCustomerReservation = false
+            orderMessage = "تم إرسال طلب الحجز، بانتظار تأكيد المطعم."
         }
     )
 }
