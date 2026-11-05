@@ -74,9 +74,10 @@ devices with distinct anonymous Auth sessions.
 - The TV checks registration periodically. Realtime RLS blocks new owner
   broadcasts to a revoked device immediately at the database policy boundary;
   an already-open receiver may take until its next check to close its socket.
-- The owner command queue stores the server-issued private topic, not the
-  physical display ID. Legacy queued entries are discarded rather than sent
-  through the old public route.
+- The owner command queue stores both the server-issued private topic and the
+  restaurant ID, not the physical display ID. A command queued by restaurant A
+  is never replayed while restaurant B is selected. Legacy entries without a
+  trusted tenant/topic are discarded rather than sent through the old public route.
 - The currently passed owner access token is a point-in-time token. If it
   expires while the owner screen remains open, the owner should refresh/sign in
   again before issuing commands or replaying the offline queue.
