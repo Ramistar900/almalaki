@@ -1,17 +1,11 @@
 package com.almalaki.cafe.royaltv
 
+import android.util.Log
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.broadcastFlow
+import io.github.jan.supabase.realtime.broadcast
 import io.github.jan.supabase.realtime.channel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonObject
+import io.github.jan.supabase.realtime.realtime
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -19,328 +13,117 @@ private const val ROYAL_TV_URL =
     "https://duvxxskgdmgrtaleedqu.supabase.co"
 
 private const val ROYAL_TV_KEY =
-    "sb_publishable_L-BfALjb0TkdTlyLTWbFBIg_aez3fjQd"
+    "sb_publishable_L-BfALjb0TkdTlyLTWbFIg_aez3fjQd"
 
-private const val ROYAL_TV_EVENT =
-    "royal_tv_command"
+private val ROYAL_TV_PRIVATE_TOPIC = Regex(
+    "^royal-tv:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    RegexOption.IGNORE_CASE
+)
 
-/**
- * قناة الاتصال المشتركة لنظام ROYAL TV.
- *
- * مستقلة عن SupabaseRealtime.kt الحالي
- * الخاص بإشعارات الطلبات.
- *
- * مسؤوليتها:
- *
- * 1. استقبال أوامر ROYAL TV.
- * 2. إرسال أوامر إلى جهاز محدد.
- * 3. إرجاع نتيجة حقيقية لعملية الإرسال:
- *
- * true  = تم الإرسال بنجاح.
- * false = فشل الإرسال.
- *
- * هذا مهم جدًا للمزامنة Offline → Online،
- * لأن الأمر لا يجب أن يُحذف من المخزن المحلي
- * إلا بعد نجاح الإرسال فعليًا.
- */
 object RoyalTVRealtime {
 
-    private var scope:
-        CoroutineScope? = null
-
-    private var channel:
-        RealtimeChannel? = null
-
-    private var listenJob:
-        Job? = null
-
     /**
-     * الاتصال بقناة جهاز ROYAL TV
-     * والاستماع للأوامر.
+     * Legacy API retained only so older call sites still compile.
+     * Public display-ID subscriptions are deliberately disabled.
      */
+    @Deprecated(
+        message = "Use the registered device's private channel topic.",
+        level = DeprecationLevel.WARNING
+    )
     fun start(
         deviceId: String,
-        onCommand:
-            (RoyalTVCommand) -> Unit
+        onCommand: (RoyalTVCommand) -> Unit
     ) {
-
-        stop()
-
-        val newScope =
-            CoroutineScope(
-                SupervisorJob() +
-                    Dispatchers.IO
-            )
-
-        scope =
-            newScope
-
-        newScope.launch {
-
-            try {
-
-                val supabase =
-                    createSupabaseClient(
-                        supabaseUrl =
-                            ROYAL_TV_URL,
-                        supabaseKey =
-                            ROYAL_TV_KEY
-                    ) {
-
-                        install(
-                            Realtime
-                        )
-                    }
-
-                val deviceChannel =
-                    supabase.channel(
-                        "royal-tv-$deviceId"
-                    )
-
-                channel =
-                    deviceChannel
-
-                val commandFlow =
-                    deviceChannel
-                        .broadcastFlow<JsonObject>(
-                            event =
-                                ROYAL_TV_EVENT
-                        )
-
-                listenJob =
-                    launch {
-
-                        commandFlow.collect {
-                            payload ->
-
-                            val typeName =
-                                payload["type"]
-                                    ?.toString()
-                                    ?.trim('"')
-                                    ?: return@collect
-
-                            val commandType =
-                                try {
-
-                                    RoyalTVCommandType
-                                        .valueOf(
-                                            typeName
-                                        )
-
-                                } catch (_: Exception) {
-
-                                    return@collect
-                                }
-
-                            val commandPayload =
-                                payload["payload"]
-                                    ?.toString()
-                                    ?.trim('"')
-                                    ?: ""
-
-                            val createdAt =
-                                payload["createdAt"]
-                                    ?.toString()
-                                    ?.trim('"')
-                                    ?.toLongOrNull()
-                                    ?: System
-                                        .currentTimeMillis()
-
-                            onCommand(
-                                RoyalTVCommand(
-                                    type =
-                                        commandType,
-                                    payload =
-                                        commandPayload,
-                                    createdAt =
-                                        createdAt
-                                )
-                            )
-                        }
-                    }
-
-                deviceChannel.subscribe(
-                    blockUntilSubscribed =
-                        true
-                )
-
-            } catch (e: Exception) {
-
-                android.util.Log.e(
-                    "RoyalTVRealtime",
-                    "Connection error: ${e.message}",
-                    e
-                )
-            }
-        }
+        Log.w(
+            "RoyalTVRealtime",
+            "Legacy public-channel listener disabled. Pair the TV and use its private server topic."
+        )
     }
 
     /**
-     * إرسال أمر إلى جهاز ROYAL TV محدد.
-     *
-     * النتيجة:
-     *
-     * true
-     * = تم إنشاء القناة والاشتراك
-     *   وإرسال الأمر بنجاح.
-     *
-     * false
-     * = حدث خطأ أثناء الإرسال.
-     *
-     * مهم:
-     * لا نقوم هنا بحذف الأمر من Offline Store.
-     *
-     * ConnectionManager هو المسؤول
-     * عن حذف الأمر بعد نجاح الإرسال.
+     * Legacy API fails closed. A display ID is not an authorization credential.
      */
+    @Deprecated(
+        message = "Use sendCommand(ownerAccessToken, channelTopic, command).",
+        level = DeprecationLevel.WARNING
+    )
     suspend fun sendCommand(
         targetDeviceId: String,
         command: RoyalTVCommand
     ): Boolean {
-
-        if (
-            targetDeviceId
-                .trim()
-                .isBlank()
-        ) {
-
-            android.util.Log.e(
-                "RoyalTVRealtime",
-                "Send error: empty target device ID"
-            )
-
-            return false
-        }
-
-        return try {
-
-            val supabase =
-                createSupabaseClient(
-                    supabaseUrl =
-                        ROYAL_TV_URL,
-                    supabaseKey =
-                        ROYAL_TV_KEY
-                ) {
-
-                    install(
-                        Realtime
-                    )
-                }
-
-            val targetChannel =
-                supabase.channel(
-                    "royal-tv-$targetDeviceId"
-                )
-
-            targetChannel.subscribe(
-                blockUntilSubscribed =
-                    true
-            )
-
-            targetChannel.broadcast(
-                event =
-                    ROYAL_TV_EVENT,
-                message =
-                    buildJsonObject {
-
-                        put(
-                            "type",
-                            command.type.name
-                        )
-
-                        put(
-                            "payload",
-                            command.payload
-                        )
-
-                        put(
-                            "createdAt",
-                            command.createdAt
-                        )
-                    }
-            )
-
-            targetChannel.unsubscribe()
-
-            android.util.Log.d(
-                "RoyalTVRealtime",
-                "Command sent successfully: " +
-                    "${command.type} → " +
-                    targetDeviceId
-            )
-
-            true
-
-        } catch (e: Exception) {
-
-            android.util.Log.e(
-                "RoyalTVRealtime",
-                "Send error: ${e.message}",
-                e
-            )
-
-            false
-        }
+        Log.w(
+            "RoyalTVRealtime",
+            "Legacy public-channel send blocked for display ID: $targetDeviceId"
+        )
+        return false
     }
 
     /**
-     * إيقاف قناة ROYAL TV الحالية.
-     *
-     * هذا يوقف اتصال Realtime فقط.
-     *
-     * لا يمسح:
-     * - حالة العرض المحلية.
-     * - الأوامر Offline.
-     * - Resume State.
+     * Sends only through a private topic returned by the server for a paired TV.
+     * Database RLS checks both the current restaurant owner and device ownership.
      */
-    fun stop() {
-
-        listenJob?.cancel()
-
-        listenJob =
-            null
-
-        val currentScope =
-            scope
-
-        val currentChannel =
-            channel
-
-        channel =
-            null
-
-        scope =
-            null
-
-        if (
-            currentScope != null &&
-            currentChannel != null
+    suspend fun sendCommand(
+        ownerAccessToken: String,
+        channelTopic: String,
+        command: RoyalTVCommand
+    ): Boolean {
+        if (ownerAccessToken.isBlank() ||
+            !channelTopic.matches(ROYAL_TV_PRIVATE_TOPIC)
         ) {
-
-            currentScope.launch {
-
-                try {
-
-                    currentChannel.unsubscribe()
-
-                } catch (e: Exception) {
-
-                    android.util.Log.e(
-                        "RoyalTVRealtime",
-                        "Disconnect error: " +
-                            "${e.message}",
-                        e
-                    )
-
-                } finally {
-
-                    currentScope.cancel()
-                }
-            }
-
-        } else {
-
-            currentScope?.cancel()
+            Log.e("RoyalTVRealtime", "Invalid owner token or private TV topic")
+            return false
         }
+
+        val supabase = createSupabaseClient(
+            supabaseUrl = ROYAL_TV_URL,
+            supabaseKey = ROYAL_TV_KEY
+        ) {
+            install(Realtime)
+        }
+
+        var targetChannel: io.github.jan.supabase.realtime.RealtimeChannel? = null
+        return try {
+            supabase.realtime.setAuth(ownerAccessToken)
+            targetChannel = supabase.channel(channelTopic) {
+                isPrivate = true
+            }
+            targetChannel.subscribe(blockUntilSubscribed = true)
+            targetChannel.broadcast(
+                event = "royal_tv_command",
+                message = buildJsonObject {
+                    put("type", command.type.name)
+                    put("payload", command.payload)
+                    put("createdAt", command.createdAt)
+                }
+            )
+            true
+        } catch (error: Exception) {
+            Log.e(
+                "RoyalTVRealtime",
+                "Private ROYAL TV command failed",
+                error
+            )
+            false
+        } finally {
+            try {
+                targetChannel?.unsubscribe()
+            } catch (error: Exception) {
+                Log.w(
+                    "RoyalTVRealtime",
+                    "Could not close private TV channel",
+                    error
+                )
+            }
+            try {
+                supabase.realtime.disconnect()
+            } catch (_: Exception) {
+                // Closing a transient sender connection is best-effort.
+            }
+        }
+    }
+
+    fun stop() {
+        // The owner now uses one private channel per send. No persistent
+        // owner-side public subscription is kept.
     }
 }
