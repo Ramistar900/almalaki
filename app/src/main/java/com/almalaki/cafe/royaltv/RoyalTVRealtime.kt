@@ -114,11 +114,6 @@ object RoyalTVRealtime {
                     error
                 )
             }
-            try {
-                supabase.realtime.disconnect()
-            } catch (_: Exception) {
-                // Closing a transient sender connection is best-effort.
-            }
         }
     }
 
