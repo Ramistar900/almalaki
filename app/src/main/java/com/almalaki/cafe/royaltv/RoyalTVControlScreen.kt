@@ -153,6 +153,8 @@ if (senderOpen) {
 }
 if (tickerOpen) {
     RoyalTVTickerControlScreen(
+        accessToken = accessToken,
+        restaurantId = restaurantId,
         modifier = modifier,
         onBack = {
             tickerOpen = false
