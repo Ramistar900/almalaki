@@ -578,6 +578,9 @@ BEGIN
     SELECT count(*) INTO v_count FROM public.customer_profiles;
     IF v_count <> 1 THEN RAISE EXCEPTION 'Customer D should see only their own profile'; END IF;
 
+    SELECT count(*) INTO v_count FROM public.customer_restaurants;
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Customer D should see only their own restaurant links'; END IF;
+
     SELECT count(*) INTO v_count
       FROM public.orders
      WHERE order_number = 'TST-B-OTHER-CUSTOMER';
@@ -656,6 +659,38 @@ BEGIN
     END IF;
 END;
 $test_customer_d$;
+
+RESET ROLE;
+
+-- Re-check in the opposite direction after Customer D has created a row.
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111103', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111103","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
+
+DO $test_customer_c_reservations$
+DECLARE
+    v_count integer;
+BEGIN
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111103';
+    IF v_count <> 2 THEN
+        RAISE EXCEPTION 'Customer C should retain only its two reservations';
+    END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.restaurant_reservations
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111104';
+    IF v_count <> 0 THEN
+        RAISE EXCEPTION 'Customer C can read Customer D reservations';
+    END IF;
+END;
+$test_customer_c_reservations$;
 
 RESET ROLE;
 
