@@ -1,0 +1,204 @@
+-- Tenant-scoped customer sections and idempotent customer checkout.
+-- Existing data is preserved. The legacy unique key index remains temporarily
+-- so already-installed APKs using on_conflict=section_key continue to work.
+
+DO $migration$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM public.customer_sections
+        WHERE restaurant_id IS NULL
+    ) THEN
+        RAISE EXCEPTION 'customer_sections contains rows without restaurant_id; refusing tenant key migration';
+    END IF;
+END;
+$migration$;
+
+ALTER TABLE public.customer_sections
+    ALTER COLUMN restaurant_id SET NOT NULL;
+
+ALTER TABLE public.customer_sections
+    DROP CONSTRAINT IF EXISTS customer_sections_pkey;
+
+ALTER TABLE public.customer_sections
+    ADD CONSTRAINT customer_sections_pkey
+    PRIMARY KEY (restaurant_id, section_key);
+
+-- Compatibility for previously released APKs that still send
+-- on_conflict=section_key. New APKs use the composite conflict target.
+CREATE UNIQUE INDEX IF NOT EXISTS customer_sections_legacy_section_key_uidx
+    ON public.customer_sections (section_key);
+
+CREATE INDEX IF NOT EXISTS customer_sections_tenant_sort_idx
+    ON public.customer_sections (restaurant_id, sort_order, section_key);
+
+CREATE TABLE IF NOT EXISTS private.checkout_idempotency (
+    idempotency_key uuid PRIMARY KEY,
+    request_hash text NOT NULL,
+    order_number text NOT NULL,
+    total_amount numeric(12,2) NOT NULL,
+    items jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT pg_catalog.now()
+);
+
+REVOKE ALL ON TABLE private.checkout_idempotency
+    FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.create_restaurant_order_with_payment_idempotent(
+    p_idempotency_key uuid,
+    p_code text,
+    p_customer_name text,
+    p_customer_phone text,
+    p_delivery_address text,
+    p_fulfillment_type text,
+    p_items jsonb,
+    p_payment_method text
+)
+RETURNS TABLE (
+    order_number text,
+    total_amount numeric,
+    items jsonb
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE
+    v_request_hash text;
+    v_existing_hash text;
+    v_order_number text;
+    v_total_amount numeric(12,2);
+    v_items jsonb;
+BEGIN
+    IF p_idempotency_key IS NULL THEN
+        RAISE EXCEPTION 'Idempotency key is required';
+    END IF;
+
+    IF p_payment_method IS DISTINCT FROM 'cash' THEN
+        RAISE EXCEPTION 'Online payment is not enabled yet';
+    END IF;
+
+    IF pg_catalog.char_length(pg_catalog.btrim(coalesce(p_code, ''))) NOT BETWEEN 1 AND 128 THEN
+        RAISE EXCEPTION 'Invalid restaurant code';
+    END IF;
+
+    IF pg_catalog.char_length(pg_catalog.btrim(coalesce(p_customer_name, ''))) NOT BETWEEN 1 AND 120 THEN
+        RAISE EXCEPTION 'Invalid customer name';
+    END IF;
+
+    IF pg_catalog.char_length(coalesce(p_customer_phone, '')) > 40 THEN
+        RAISE EXCEPTION 'Invalid customer phone';
+    END IF;
+
+    IF pg_catalog.char_length(coalesce(p_delivery_address, '')) > 500 THEN
+        RAISE EXCEPTION 'Invalid delivery address';
+    END IF;
+
+    IF p_fulfillment_type NOT IN ('داخل المحل', 'توصيل إلى المنزل') THEN
+        RAISE EXCEPTION 'Invalid fulfillment type';
+    END IF;
+
+    IF p_fulfillment_type = 'توصيل إلى المنزل'
+       AND pg_catalog.nullif(pg_catalog.btrim(coalesce(p_delivery_address, '')), '') IS NULL THEN
+        RAISE EXCEPTION 'Delivery address is required';
+    END IF;
+
+    IF pg_catalog.jsonb_typeof(p_items) IS DISTINCT FROM 'array' THEN
+        RAISE EXCEPTION 'Order items must be an array';
+    END IF;
+
+    IF pg_catalog.jsonb_array_length(p_items) < 1
+       OR pg_catalog.jsonb_array_length(p_items) > 100 THEN
+        RAISE EXCEPTION 'Order must contain between 1 and 100 items';
+    END IF;
+
+    -- Bind the key to the authenticated customer (or anonymous checkout).
+    -- Another user cannot replay a key to retrieve an existing customer's order.
+    v_request_hash := pg_catalog.md5(
+        pg_catalog.jsonb_build_object(
+            'customer_user_id', coalesce((select auth.uid())::text, 'anonymous'),
+            'code', pg_catalog.upper(pg_catalog.btrim(p_code)),
+            'customer_name', pg_catalog.btrim(p_customer_name),
+            'customer_phone', pg_catalog.btrim(coalesce(p_customer_phone, '')),
+            'delivery_address', pg_catalog.btrim(coalesce(p_delivery_address, '')),
+            'fulfillment_type', p_fulfillment_type,
+            'payment_method', p_payment_method,
+            'items', p_items
+        )::text
+    );
+
+    -- Concurrent retries with the same key are serialized.
+    PERFORM pg_catalog.pg_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_idempotency_key::text, 0)
+    );
+
+    SELECT c.request_hash, c.order_number, c.total_amount, c.items
+      INTO v_existing_hash, v_order_number, v_total_amount, v_items
+      FROM private.checkout_idempotency AS c
+     WHERE c.idempotency_key = p_idempotency_key;
+
+    IF FOUND THEN
+        IF v_existing_hash IS DISTINCT FROM v_request_hash THEN
+            RAISE EXCEPTION 'Idempotency key was already used for a different checkout';
+        END IF;
+
+        RETURN QUERY
+        SELECT v_order_number, v_total_amount, v_items;
+        RETURN;
+    END IF;
+
+    -- Required by existing order/item guard triggers. The order implementation
+    -- validates the restaurant code, product ownership, quantities and prices.
+    PERFORM pg_catalog.set_config('royal.atomic_checkout', 'on', true);
+
+    SELECT result.order_number, result.total_amount, result.items
+      INTO v_order_number, v_total_amount, v_items
+      FROM private.create_restaurant_order_impl(
+          p_code,
+          p_customer_name,
+          p_customer_phone,
+          p_delivery_address,
+          p_fulfillment_type,
+          p_items
+      ) AS result;
+
+    IF v_order_number IS NULL OR v_total_amount IS NULL OR v_items IS NULL THEN
+        RAISE EXCEPTION 'Checkout did not return a complete order';
+    END IF;
+
+    UPDATE public.orders AS o
+       SET payment_method = 'cash',
+           payment_status = 'unpaid'
+     WHERE o.order_number = v_order_number;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Created order could not be finalized';
+    END IF;
+
+    INSERT INTO private.checkout_idempotency (
+        idempotency_key,
+        request_hash,
+        order_number,
+        total_amount,
+        items
+    )
+    VALUES (
+        p_idempotency_key,
+        v_request_hash,
+        v_order_number,
+        v_total_amount,
+        v_items
+    );
+
+    RETURN QUERY
+    SELECT v_order_number, v_total_amount, v_items;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.create_restaurant_order_with_payment_idempotent(
+    uuid, text, text, text, text, text, jsonb, text
+) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.create_restaurant_order_with_payment_idempotent(
+    uuid, text, text, text, text, text, jsonb, text
+) TO anon, authenticated;
