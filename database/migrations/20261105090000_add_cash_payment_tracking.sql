@@ -66,7 +66,7 @@ begin
         update public.orders
            set payment_method = 'cash',
                payment_status = 'unpaid'
-         where order_number = v_result.order_number;
+         where public.orders.order_number = v_result.order_number;
 
         order_number := v_result.order_number;
         total_amount := v_result.total_amount;
