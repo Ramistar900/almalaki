@@ -47,11 +47,6 @@ fun RoyalAnimatedIcon(
             if (imageView.drawable !== drawable) {
                 imageView.setImageDrawable(drawable)
             }
-            if (animated) {
-                (drawable as? Animatable)?.start()
-            } else {
-                (drawable as? Animatable)?.stop()
-            }
         }
     )
 }
