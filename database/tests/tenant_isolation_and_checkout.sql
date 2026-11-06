@@ -1,6 +1,7 @@
 -- Integration-style RLS and checkout regression tests.
 -- All fixture rows are created inside one transaction and rolled back.
--- Run with a database role allowed to SET ROLE authenticated.
+-- Run only on an isolated test database, using its database owner (the script creates/drops a test trigger)
+-- with permission to SET ROLE authenticated. Never run this fixture script on production.
 
 BEGIN;
 
