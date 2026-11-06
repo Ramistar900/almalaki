@@ -284,6 +284,32 @@ BEGIN
      WHERE id = 990000000000002;
     IF v_count <> 1 THEN RAISE EXCEPTION 'Restaurant B menu RPC returned the wrong product'; END IF;
 
+    -- Menu sections must be resolved by the same restaurant code as products.
+    SELECT count(*) INTO v_count
+      FROM public.get_restaurant_sections('ROYAL-A1B2C3D4E5F6')
+     WHERE section_key = 'tenant-test-a-section'
+       AND title = 'A Section';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Restaurant A sections RPC returned the wrong section'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.get_restaurant_sections('ROYAL-B1B2C3D4E5F6')
+     WHERE section_key = 'tenant-test-b-section'
+       AND title = 'B Section';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Restaurant B sections RPC returned the wrong section'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.get_restaurant_sections('ROYAL-A1B2C3D4E5F6')
+     WHERE section_key = 'tenant-test-b-section';
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Restaurant A sections RPC leaked Restaurant B section'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.get_restaurant_products('ROYAL-INVALID-CODE');
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Menu RPC returned products for an invalid restaurant code'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.get_restaurant_sections('ROYAL-INVALID-CODE');
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Sections RPC returned rows for an invalid restaurant code'; END IF;
+
     -- First attempt creates one order and calculates 2 * 3.50 = 7.00 on server.
     SELECT * INTO v_first
       FROM public.create_restaurant_order_with_payment_idempotent(
