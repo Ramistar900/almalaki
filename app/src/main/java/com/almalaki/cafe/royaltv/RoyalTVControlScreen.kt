@@ -22,7 +22,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +59,8 @@ import com.almalaki.cafe.RoyalTVScreen
 import com.almalaki.cafe.RoyalRemoteDiagnosticsScreen
 import com.almalaki.cafe.resetRoyalTVLayoutSettings
 import com.almalaki.cafe.saveRoyalTVLayoutSettings
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 private val RoyalGold = Color(0xFFD4AF37)
 private val RoyalGoldLight = Color(0xFFFFE9A3)
@@ -328,6 +333,16 @@ loadRoyalTVLayoutSettings(context)
 var directEditorOpen by remember {
     mutableStateOf(false)
 }
+var targetDeviceId by remember { mutableStateOf("") }
+var syncStatus by remember { mutableStateOf("أدخل معرّف شاشة ROYAL TV لمزامنة التخطيط") }
+var syncBusy by remember { mutableStateOf(false) }
+val scope = rememberCoroutineScope()
+val connectionManager = remember(context) { RoyalTVConnectionManager(context) }
+
+DisposableEffect(connectionManager) {
+    connectionManager.start(onCommand = {})
+    onDispose { connectionManager.stop() }
+}
 
 if (directEditorOpen) {
 
@@ -567,6 +582,83 @@ Column(
             fontWeight = FontWeight.Bold
         )
     }
+
+    OutlinedTextField(
+        value = targetDeviceId,
+        onValueChange = { targetDeviceId = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("معرّف شاشة ROYAL TV المستهدفة") },
+        placeholder = { Text("أدخل معرّف التلفزيون") },
+        singleLine = true
+    )
+
+    Button(
+        onClick = {
+            val target = targetDeviceId.trim()
+            if (target.isBlank()) {
+                syncStatus = "أدخل معرّف شاشة ROYAL TV أولًا"
+            } else if (!syncBusy) {
+                syncBusy = true
+                syncStatus = "جارٍ إرسال إعدادات التخطيط..."
+                val payload = JSONObject()
+                    .put("logoSizePercent", settings.logoSizePercent)
+                    .put("logoOffsetXPercent", settings.logoOffsetXPercent)
+                    .put("logoOffsetYPercent", settings.logoOffsetYPercent)
+                    .put("tickerSizePercent", settings.tickerSizePercent)
+                    .put("tickerOffsetXPercent", settings.tickerOffsetXPercent)
+                    .put("tickerOffsetYPercent", settings.tickerOffsetYPercent)
+                    .put("timeSizePercent", settings.timeSizePercent)
+                    .put("timeOffsetXPercent", settings.timeOffsetXPercent)
+                    .put("timeOffsetYPercent", settings.timeOffsetYPercent)
+                    .put("dateSizePercent", settings.dateSizePercent)
+                    .put("dateOffsetXPercent", settings.dateOffsetXPercent)
+                    .put("dateOffsetYPercent", settings.dateOffsetYPercent)
+                    .put("showDate", settings.showDate)
+                    .put("showTicker", settings.showTicker)
+                    .put("liveSizePercent", settings.liveSizePercent)
+                    .put("liveOffsetXPercent", settings.liveOffsetXPercent)
+                    .put("liveOffsetYPercent", settings.liveOffsetYPercent)
+                    .toString()
+
+                scope.launch {
+                    try {
+                        val sent = connectionManager.sendCommand(
+                            targetDeviceId = target,
+                            command = RoyalTVCommand(
+                                type = RoyalTVCommandType.SHOW_CONTENT,
+                                payload = "LAYOUT_SETTINGS|$payload"
+                            )
+                        )
+                        syncStatus = if (sent) {
+                            "تم إرسال إعدادات التخطيط إلى الشاشة"
+                        } else {
+                            "تعذر تأكيد الإرسال؛ قد يكون الأمر محفوظًا للمزامنة عند عودة الاتصال"
+                        }
+                    } catch (error: Exception) {
+                        syncStatus = "فشل الإرسال: " + (error.message ?: "خطأ غير معروف")
+                    } finally {
+                        syncBusy = false
+                    }
+                }
+            }
+        },
+        enabled = !syncBusy,
+        modifier = Modifier.fillMaxWidth().height(52.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = RoyalGold,
+            contentColor = RoyalBlack
+        )
+    ) {
+        Text(if (syncBusy) "جارٍ الإرسال..." else "مزامنة التخطيط مع التلفزيون")
+    }
+
+    Text(
+        text = syncStatus,
+        color = RoyalGoldLight,
+        fontSize = 13.sp,
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center
+    )
 
     Spacer(
         modifier = Modifier.height(14.dp)
