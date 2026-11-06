@@ -109,6 +109,24 @@ BEGIN
      WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
     IF v_count <> 0 THEN RAISE EXCEPTION 'Owner A can read Owner B products'; END IF;
 
+
+    SELECT count(*) INTO v_count
+      FROM public.customer_sections
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222201';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Owner A should see its own section'; END IF;
+
+    UPDATE public.products
+       SET name = 'Tenant A Product Updated'
+     WHERE id = 990000000000001;
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 1 THEN RAISE EXCEPTION 'Owner A cannot update its own product'; END IF;
+
+    UPDATE public.customer_sections
+       SET enabled = false
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222201';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 1 THEN RAISE EXCEPTION 'Owner A cannot update its own section'; END IF;
+
     SELECT count(*) INTO v_count
       FROM public.customer_sections
      WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
@@ -160,6 +178,18 @@ BEGIN
      WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
     IF v_count <> 1 THEN RAISE EXCEPTION 'Owner B should see exactly its own product'; END IF;
 
+
+    SELECT count(*) INTO v_count
+      FROM public.customer_sections
+     WHERE restaurant_id = '22222222-2222-4222-8222-222222222202';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Owner B should see its own section'; END IF;
+
+    UPDATE public.products
+       SET name = 'Tenant B Product Updated'
+     WHERE id = 990000000000002;
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 1 THEN RAISE EXCEPTION 'Owner B cannot update its own product'; END IF;
+
     SELECT count(*) INTO v_count
       FROM public.products
      WHERE restaurant_id = '22222222-2222-4222-8222-222222222201';
@@ -184,6 +214,32 @@ END;
 $test_owner_b$;
 
 RESET ROLE;
+
+
+-- Test-only failure injection: prove the whole RPC rolls back even when an
+-- error occurs after the idempotency row has been inserted. Requires the
+-- migration/database owner because it creates and drops a temporary trigger.
+DROP TRIGGER IF EXISTS _almalaki_test_fail_idempotency_insert
+    ON private.checkout_idempotency;
+DROP FUNCTION IF EXISTS public._almalaki_test_fail_idempotency_insert();
+
+CREATE FUNCTION public._almalaki_test_fail_idempotency_insert()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $function$
+BEGIN
+    IF NEW.idempotency_key = '33333333-3333-4333-8333-333333333399'::uuid THEN
+        RAISE EXCEPTION 'Injected atomic checkout rollback test failure';
+    END IF;
+    RETURN NEW;
+END;
+$function$;
+
+CREATE TRIGGER _almalaki_test_fail_idempotency_insert
+AFTER INSERT ON private.checkout_idempotency
+FOR EACH ROW
+EXECUTE FUNCTION public._almalaki_test_fail_idempotency_insert();
 
 -- Customer C links two different stores using their permanent store codes,
 -- can read their own profile only, and uses the idempotent checkout RPC.
@@ -331,6 +387,137 @@ BEGIN
         RAISE EXCEPTION 'Checkout accepted a product from a different restaurant';
     END IF;
 
+
+    -- Boundary/validation regressions: all invalid checkouts must be rejected.
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333310',
+            'ROYAL-A1B2C3D4E5F6', 'Customer C', '', '',
+            'داخل المحل', v_items, 'online'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Online payment is not enabled yet%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Online payment was not rejected'; END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333311',
+            'ROYAL-A1B2C3D4E5F6', 'Customer C', '', '',
+            'توصيل إلى المنزل', v_items, 'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Delivery address is required%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Delivery without address was accepted'; END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333312',
+            'ROYAL-A1B2C3D4E5F6', 'Customer C', '', '',
+            'داخل المحل', '[]'::jsonb, 'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Order must contain between 1 and 100 items%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Empty cart was accepted'; END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333313',
+            'ROYAL-A1B2C3D4E5F6', 'Customer C', '', '',
+            'داخل المحل', '[{"product_id":990000000000001,"quantity":0}]'::jsonb, 'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Invalid product ID or quantity%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Zero quantity was accepted'; END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333314',
+            'ROYAL-A1B2C3D4E5F6', 'Customer C', '', '',
+            'داخل المحل',
+            '[{"product_id":990000000000001,"quantity":1},{"product_id":990000000000001,"quantity":2}]'::jsonb,
+            'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Duplicate product IDs are not allowed%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Duplicate product IDs were accepted'; END IF;
+
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333315',
+            'ROYAL-INVALID-CODE', 'Customer C', '', '',
+            'داخل المحل', v_items, 'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Invalid or inactive restaurant code%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Invalid restaurant code was accepted'; END IF;
+
+    -- Inject a failure after the idempotency row is inserted. The failed RPC
+    -- statement must roll back its order header, lines, payment update and key.
+    v_rejected := false;
+    BEGIN
+        PERFORM * FROM public.create_restaurant_order_with_payment_idempotent(
+            '33333333-3333-4333-8333-333333333399',
+            'ROYAL-A1B2C3D4E5F6', 'Atomic Rollback Probe', '', '',
+            'داخل المحل', v_items, 'cash'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM LIKE '%Injected atomic checkout rollback test failure%' THEN
+            v_rejected := true;
+        ELSE
+            RAISE;
+        END IF;
+    END;
+    IF NOT v_rejected THEN RAISE EXCEPTION 'Injected failure did not abort checkout'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.orders
+     WHERE customer_user_id = '11111111-1111-4111-8111-111111111103'
+       AND customer_name = 'Atomic Rollback Probe';
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Failed checkout left an order header'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.order_items oi
+      JOIN public.orders o ON o.id = oi.order_id
+     WHERE o.customer_user_id = '11111111-1111-4111-8111-111111111103'
+       AND o.customer_name = 'Atomic Rollback Probe';
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Failed checkout left order items'; END IF;
+
     -- Store A's order must not appear in another customer's order history.
     SELECT count(*) INTO v_count
       FROM public.orders
@@ -338,6 +525,65 @@ BEGIN
     IF v_count <> 0 THEN RAISE EXCEPTION 'Customer C can read another customer order'; END IF;
 END;
 $test_customer_c$;
+
+RESET ROLE;
+
+
+-- Remove the injected trigger, then retry the same key. A successful fresh
+-- order proves the failed RPC did not leave an idempotency record behind.
+RESET ROLE;
+DROP TRIGGER _almalaki_test_fail_idempotency_insert
+    ON private.checkout_idempotency;
+DROP FUNCTION public._almalaki_test_fail_idempotency_insert();
+
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111103', true);
+SELECT pg_catalog.set_config(
+    'request.jwt.claims',
+    '{"sub":"11111111-1111-4111-8111-111111111103","role":"authenticated"}',
+    true
+);
+SELECT pg_catalog.set_config('request.jwt.claim.role', 'authenticated', true);
+
+DO $test_atomic_retry$
+DECLARE
+    v_first record;
+    v_retry record;
+    v_count integer;
+BEGIN
+    SELECT * INTO v_first
+      FROM public.create_restaurant_order_with_payment_idempotent(
+          '33333333-3333-4333-8333-333333333399',
+          'ROYAL-A1B2C3D4E5F6', 'Atomic Rollback Probe', '', '',
+          'داخل المحل',
+          '[{"product_id":990000000000001,"quantity":2}]'::jsonb,
+          'cash'
+      );
+    SELECT * INTO v_retry
+      FROM public.create_restaurant_order_with_payment_idempotent(
+          '33333333-3333-4333-8333-333333333399',
+          'ROYAL-A1B2C3D4E5F6', 'Atomic Rollback Probe', '', '',
+          'داخل المحل',
+          '[{"product_id":990000000000001,"quantity":2}]'::jsonb,
+          'cash'
+      );
+
+    IF v_first.order_number IS DISTINCT FROM v_retry.order_number THEN
+        RAISE EXCEPTION 'Retry after rollback returned a different order';
+    END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.orders
+     WHERE order_number = v_first.order_number;
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Expected one order after retry'; END IF;
+
+    SELECT count(*) INTO v_count
+      FROM public.order_items oi
+      JOIN public.orders o ON o.id = oi.order_id
+     WHERE o.order_number = v_first.order_number;
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Expected one order item after retry'; END IF;
+END;
+$test_atomic_retry$;
 
 RESET ROLE;
 
@@ -358,6 +604,8 @@ DECLARE
 BEGIN
     SELECT count(*) INTO v_count FROM public.customer_profiles;
     IF v_count <> 1 THEN RAISE EXCEPTION 'Customer D should see only their own profile'; END IF;
+    SELECT count(*) INTO v_count FROM public.customer_restaurants;
+    IF v_count <> 0 THEN RAISE EXCEPTION 'Customer D can see another customer restaurant links'; END IF;
 
     SELECT count(*) INTO v_count
       FROM public.orders
@@ -397,22 +645,84 @@ $test_customer_d$;
 RESET ROLE;
 ROLLBACK;
 
--- The rollback must leave no test accounts, stores, products, sections or orders.
-SELECT
-    (SELECT count(*) FROM auth.users WHERE id IN (
+-- Assert rollback removed every fixture, including private idempotency rows.
+DO $test_cleanup$
+DECLARE
+    v_remaining bigint;
+BEGIN
+    SELECT count(*) INTO v_remaining
+      FROM auth.users
+     WHERE id IN (
         '11111111-1111-4111-8111-111111111101'::uuid,
         '11111111-1111-4111-8111-111111111102'::uuid,
         '11111111-1111-4111-8111-111111111103'::uuid,
         '11111111-1111-4111-8111-111111111104'::uuid
-    )) AS remaining_test_users,
-    (SELECT count(*) FROM public.restaurants WHERE id IN (
+     );
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test users'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.restaurants
+     WHERE id IN (
         '22222222-2222-4222-8222-222222222201'::uuid,
         '22222222-2222-4222-8222-222222222202'::uuid
-    )) AS remaining_test_restaurants,
-    (SELECT count(*) FROM public.products WHERE id IN (
-        990000000000001, 990000000000002
-    )) AS remaining_test_products,
-    (SELECT count(*) FROM public.customer_sections WHERE section_key IN (
-        'tenant-test-a-section', 'tenant-test-b-section'
-    )) AS remaining_test_sections,
-    (SELECT count(*) FROM public.orders WHERE order_number = 'TST-B-OTHER-CUSTOMER') AS remaining_test_orders;
+     );
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test restaurants'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.products
+     WHERE id IN (990000000000001, 990000000000002);
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test products'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.customer_profiles
+     WHERE user_id IN (
+        '11111111-1111-4111-8111-111111111103'::uuid,
+        '11111111-1111-4111-8111-111111111104'::uuid
+     );
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test customer profiles'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.customer_restaurants
+     WHERE user_id IN (
+        '11111111-1111-4111-8111-111111111103'::uuid,
+        '11111111-1111-4111-8111-111111111104'::uuid
+     );
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left customer restaurant links'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.customer_sections
+     WHERE section_key IN ('tenant-test-a-section', 'tenant-test-b-section');
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test sections'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.restaurant_join_codes
+     WHERE join_code IN ('ROYAL-A1B2C3D4E5F6', 'ROYAL-B1B2C3D4E5F6');
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test join codes'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.orders
+     WHERE order_number = 'TST-B-OTHER-CUSTOMER'
+        OR customer_name = 'Atomic Rollback Probe';
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test orders'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM public.order_items
+     WHERE product_id IN (990000000000001, 990000000000002);
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left test order items'; END IF;
+
+    SELECT count(*) INTO v_remaining
+      FROM private.checkout_idempotency
+     WHERE idempotency_key IN (
+        '33333333-3333-4333-8333-333333333301'::uuid,
+        '33333333-3333-4333-8333-333333333302'::uuid,
+        '33333333-3333-4333-8333-333333333310'::uuid,
+        '33333333-3333-4333-8333-333333333311'::uuid,
+        '33333333-3333-4333-8333-333333333312'::uuid,
+        '33333333-3333-4333-8333-333333333313'::uuid,
+        '33333333-3333-4333-8333-333333333314'::uuid,
+        '33333333-3333-4333-8333-333333333315'::uuid,
+        '33333333-3333-4333-8333-333333333399'::uuid
+     );
+    IF v_remaining <> 0 THEN RAISE EXCEPTION 'Rollback left idempotency records'; END IF;
+END;
+$test_cleanup$;
