@@ -126,6 +126,62 @@ async function enforceRateLimit(
   if (data !== true) throw new Error("RATE_LIMITED");
 }
 
+type RoyalTvAuditAction =
+  | "create_challenge"
+  | "pair_device"
+  | "send_command"
+  | "acknowledge"
+  | "revoke_device";
+
+type RoyalTvAuditContext = {
+  actorUserId?: string | null;
+  restaurantId?: string | null;
+  pairedDeviceId?: string | null;
+  targetCommandId?: string | null;
+  details?: Record<string, string | number | boolean | null>;
+};
+
+async function recordAuditAttempt(
+  action: RoyalTvAuditAction,
+  context: RoyalTvAuditContext = {},
+): Promise<string> {
+  const requestId = crypto.randomUUID();
+  const { error } = await admin.from("royal_tv_audit_events").insert({
+    request_id: requestId,
+    action,
+    outcome: "attempted",
+    actor_user_id: context.actorUserId ?? null,
+    restaurant_id: context.restaurantId ?? null,
+    paired_device_id: context.pairedDeviceId ?? null,
+    target_command_id: context.targetCommandId ?? null,
+    details: context.details ?? {},
+  });
+  // Fail closed: a security-sensitive operation does not start unless its
+  // attempt has been durably recorded.
+  if (error) throw new Error("AUDIT_LOG_FAILED");
+  return requestId;
+}
+
+async function recordAuditCompletion(
+  action: RoyalTvAuditAction,
+  requestId: string,
+  context: RoyalTvAuditContext = {},
+): Promise<void> {
+  const { error } = await admin.from("royal_tv_audit_events").insert({
+    request_id: requestId,
+    action,
+    outcome: "succeeded",
+    actor_user_id: context.actorUserId ?? null,
+    restaurant_id: context.restaurantId ?? null,
+    paired_device_id: context.pairedDeviceId ?? null,
+    target_command_id: context.targetCommandId ?? null,
+    details: context.details ?? {},
+  });
+  // The attempt row remains durable. A completion-write failure must not
+  // misreport or roll back a mutation that has already succeeded.
+  if (error) console.error("ROYAL TV audit completion event could not be persisted");
+}
+
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
   if (message === "AUTH_REQUIRED") return fail(401, "Authentication required");
@@ -199,6 +255,10 @@ Deno.serve(async (request: Request) => {
       if (!isCanonicalUuid(restaurantId)) return fail(400, "Invalid restaurant");
       await assertOwner(user.id, restaurantId);
       await enforceRateLimit("create_challenge", `${user.id}:${restaurantId}`, 10, 600);
+      const auditRequestId = await recordAuditAttempt("create_challenge", {
+        actorUserId: user.id,
+        restaurantId,
+      });
 
       // High-entropy code; store only its digest and return plaintext once.
       const code = randomToken(24);
@@ -211,6 +271,10 @@ Deno.serve(async (request: Request) => {
         expires_at: expiresAt,
       });
       if (error) return fail(503, "Could not create pairing challenge");
+      await recordAuditCompletion("create_challenge", auditRequestId, {
+        actorUserId: user.id,
+        restaurantId,
+      });
       return response(200, { pairing_code: code, expires_at: expiresAt });
     }
 
@@ -223,6 +287,7 @@ Deno.serve(async (request: Request) => {
       if (!isValidDeviceName(deviceName)) return fail(400, "Invalid device name");
       const clientIp = request.headers.get("cf-connecting-ip") ?? "";
       await enforceRateLimit("pair_device", clientIp || deviceId, 10, 300);
+      const auditRequestId = await recordAuditAttempt("pair_device");
 
       const codeHash = await sha256(code);
       const credential = randomToken(32);
@@ -247,6 +312,18 @@ Deno.serve(async (request: Request) => {
       if (!pairedRow?.restaurant_id) {
         return fail(503, "Pairing registration returned an invalid result");
       }
+      // Resolve only internal identifiers for audit correlation. Never read or
+      // store the raw pairing code or newly issued device credential.
+      const { data: pairedDevice } = await admin.from("royal_tv_paired_devices")
+        .select("id,paired_by")
+        .eq("restaurant_id", pairedRow.restaurant_id)
+        .eq("device_id", deviceId)
+        .maybeSingle();
+      await recordAuditCompletion("pair_device", auditRequestId, {
+        actorUserId: pairedDevice?.paired_by ?? null,
+        restaurantId: pairedRow.restaurant_id,
+        pairedDeviceId: pairedDevice?.id ?? null,
+      });
       // This is the only response containing the raw device credential.
       return response(200, {
         device_credential: credential,
@@ -294,6 +371,12 @@ Deno.serve(async (request: Request) => {
       if (!device) return fail(404, "No active paired device for this restaurant");
 
       const createdAt = new Date();
+      const auditRequestId = await recordAuditAttempt("send_command", {
+        actorUserId: user.id,
+        restaurantId,
+        pairedDeviceId: device.id,
+        details: { command_type: commandType },
+      });
       const { data: command, error } = await admin.from("royal_tv_commands").insert({
         restaurant_id: restaurantId,
         paired_device_id: device.id,
@@ -303,6 +386,13 @@ Deno.serve(async (request: Request) => {
         expires_at: new Date(createdAt.getTime() + 2 * 60 * 1000).toISOString(),
       }).select("id,created_at,expires_at").single();
       if (error) return fail(503, "Could not queue command");
+      await recordAuditCompletion("send_command", auditRequestId, {
+        actorUserId: user.id,
+        restaurantId,
+        pairedDeviceId: device.id,
+        targetCommandId: command.id,
+        details: { command_type: commandType },
+      });
       return response(200, { command });
     }
 
@@ -371,6 +461,10 @@ Deno.serve(async (request: Request) => {
       await enforceRateLimit("acknowledge", device.id, 120, 60);
       const commandId = String(body.command_id ?? "");
       if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(commandId)) return fail(400, "Invalid command id");
+      const auditRequestId = await recordAuditAttempt("acknowledge", {
+        pairedDeviceId: device.id,
+        targetCommandId: commandId,
+      });
       const acknowledgedAt = new Date();
       const acknowledgementTime = acknowledgedAt.toISOString();
       const activeLeaseCutoff = new Date(acknowledgedAt.getTime() - CLAIM_LEASE_MS).toISOString();
@@ -387,6 +481,11 @@ Deno.serve(async (request: Request) => {
         .maybeSingle();
       if (error) return fail(503, "Could not acknowledge command");
       if (!data) return fail(409, "Command expired, already processed, or belongs to another device");
+      await recordAuditCompletion("acknowledge", auditRequestId, {
+        pairedDeviceId: device.id,
+        targetCommandId: commandId,
+        restaurantId: device.restaurant_id,
+      });
       return response(200, { acknowledged: true });
     }
 
@@ -398,15 +497,33 @@ Deno.serve(async (request: Request) => {
       if (!isValidDeviceId(deviceId)) return fail(400, "Invalid device identifier");
       await assertOwner(user.id, restaurantId);
       await enforceRateLimit("revoke_device", `${user.id}:${restaurantId}`, 10, 60);
-      const { data, error } = await admin.from("royal_tv_paired_devices")
-        .update({ status: "revoked", revoked_at: new Date().toISOString() })
+      const { data: targetDevice, error: targetDeviceError } = await admin.from("royal_tv_paired_devices")
+        .select("id")
         .eq("restaurant_id", restaurantId)
         .eq("device_id", deviceId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (targetDeviceError) return fail(503, "Could not verify target device");
+      if (!targetDevice) return fail(404, "Active paired device not found");
+      const auditRequestId = await recordAuditAttempt("revoke_device", {
+        actorUserId: user.id,
+        restaurantId,
+        pairedDeviceId: targetDevice.id,
+      });
+      const { data, error } = await admin.from("royal_tv_paired_devices")
+        .update({ status: "revoked", revoked_at: new Date().toISOString() })
+        .eq("id", targetDevice.id)
+        .eq("restaurant_id", restaurantId)
         .eq("status", "active")
         .select("id")
         .maybeSingle();
       if (error) return fail(503, "Could not revoke device");
       if (!data) return fail(404, "Active paired device not found");
+      await recordAuditCompletion("revoke_device", auditRequestId, {
+        actorUserId: user.id,
+        restaurantId,
+        pairedDeviceId: data.id,
+      });
       return response(200, { revoked: true });
     }
 
