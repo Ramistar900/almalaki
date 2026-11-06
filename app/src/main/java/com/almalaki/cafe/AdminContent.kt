@@ -68,7 +68,8 @@ if (section == AdminSection.ROYAL_TV) {
 }
 if (section == AdminSection.ROYAL_TV_CONTROL) {
     RoyalTVControlScreen(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        accessToken = accessToken
     )
     return
 }

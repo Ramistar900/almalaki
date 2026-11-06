@@ -72,6 +72,7 @@ val description: String
 @Composable
 fun RoyalTVControlScreen(
 modifier: Modifier = Modifier,
+accessToken: String = "",
 onItemSelected: (RoyalTVControlItem) -> Unit = {}
 ) {
 val context = LocalContext.current
@@ -93,7 +94,16 @@ var senderOpen by remember {
 var tickerOpen by remember {
     mutableStateOf(false)
 }
+var plusOpen by remember { mutableStateOf(false) }
 
+if (plusOpen) {
+    RoyalTVPlusScreen(
+        accessToken = accessToken,
+        modifier = modifier,
+        onBack = { plusOpen = false }
+    )
+    return
+}
 
 if (identityOpen) {
     RoyalTVLayoutControl(
@@ -256,12 +266,37 @@ Column(
         textAlign = TextAlign.Center
     )
 
+    Button(
+        onClick = { plusOpen = true },
+        modifier = Modifier.fillMaxWidth().height(48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = RoyalGold,
+            contentColor = RoyalBlack
+        )
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = com.almalaki.cafe.R.drawable.royal_badge_premium),
+                contentDescription = "Premium",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "اشتراك ROYAL TV Premium",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
     Spacer(
-        modifier = Modifier.height(18.dp)
+        modifier = Modifier.height(10.dp)
     )
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.weight(1f).fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
 
