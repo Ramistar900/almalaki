@@ -162,34 +162,71 @@ val imagePicker = rememberLauncherForActivityResult(
 }
 
 fun refreshProducts() {
+    val requestedRestaurantId = ownerRestaurantId
+    if (requestedRestaurantId.isBlank()) return
+
     Thread {
-        try { products = loadProducts(accessToken, ownerRestaurantId) }
-        catch (e: Exception) { message = e.message ?: "تعذر تحميل المنتجات." }
+        try {
+            val loadedProducts = loadProducts(accessToken, requestedRestaurantId)
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    products = loadedProducts
+                }
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    message = e.message ?: "تعذر تحميل المنتجات."
+                }
+            }
+        }
     }.start()
 }
 
 fun refreshOrders() {
+    val requestedRestaurantId = ownerRestaurantId
+    if (requestedRestaurantId.isBlank()) return
+
     Thread {
         try {
-            val loadedOrders = loadAdminOrders(accessToken, ownerRestaurantId)
-
+            val loadedOrders = loadAdminOrders(accessToken, requestedRestaurantId)
             Handler(Looper.getMainLooper()).post {
-                orders = loadedOrders
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    orders = loadedOrders
+                }
             }
         } catch (e: Exception) {
             Handler(Looper.getMainLooper()).post {
-                message = e.message ?: "تعذر تحميل الطلبات."
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    message = e.message ?: "تعذر تحميل الطلبات."
+                }
             }
         }
     }.start()
 }
 
 fun refreshArchive() {
+    val requestedRestaurantId = ownerRestaurantId
+    if (requestedRestaurantId.isBlank()) return
     loadingArchive = true
+
     Thread {
-        try { archivedOrders = loadArchivedOrders(accessToken, ownerRestaurantId) }
-        catch (e: Exception) { message = e.message ?: "تعذر تحميل الأرشيف." }
-        finally { loadingArchive = false }
+        try {
+            val loadedArchive = loadArchivedOrders(accessToken, requestedRestaurantId)
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    archivedOrders = loadedArchive
+                    loadingArchive = false
+                }
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    message = e.message ?: "تعذر تحميل الأرشيف."
+                    loadingArchive = false
+                }
+            }
+        }
     }.start()
 }
 
@@ -242,19 +279,43 @@ fun changePassword(currentPassword: String, newPassword: String, confirmPassword
 }
 
 fun refreshDashboard() {
+    val requestedRestaurantId = ownerRestaurantId
+    if (requestedRestaurantId.isBlank()) return
     loadingDashboard = true
+
     Thread {
         try {
-            val currentProducts = loadProducts(accessToken, ownerRestaurantId)
-            val currentOrders = loadAdminOrders(accessToken, ownerRestaurantId)
+            val currentProducts = loadProducts(accessToken, requestedRestaurantId)
+            val currentOrders = loadAdminOrders(accessToken, requestedRestaurantId)
             val completedOrders = currentOrders.filter { it.status.equals("completed", ignoreCase = true) }
-            products = currentProducts
-            orders = currentOrders
-            salesStats = calculateSalesStats(accessToken, ownerRestaurantId)
-            topProducts = calculateTopProducts(accessToken, completedOrders, currentProducts, ownerRestaurantId)
+            val currentSalesStats = calculateSalesStats(accessToken, requestedRestaurantId)
+            val currentTopProducts = calculateTopProducts(
+                accessToken,
+                completedOrders,
+                currentProducts,
+                requestedRestaurantId
+            )
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    products = currentProducts
+                    orders = currentOrders
+                    salesStats = currentSalesStats
+                    topProducts = currentTopProducts
+                }
+            }
         } catch (e: Exception) {
-            message = e.message ?: "تعذر تحديث لوحة التحكم."
-        } finally { loadingDashboard = false }
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    message = e.message ?: "تعذر تحديث لوحة التحكم."
+                }
+            }
+        } finally {
+            Handler(Looper.getMainLooper()).post {
+                if (ownerRestaurantId == requestedRestaurantId) {
+                    loadingDashboard = false
+                }
+            }
+        }
     }.start()
 }
 LaunchedEffect(Unit) {
@@ -269,6 +330,9 @@ LaunchedEffect(ownerRestaurantId) {
     migrateLegacyRoyalInterfaceSettings(context, ownerRestaurantId)
     RoyalTextLogoSettings.migrateLegacy(context, ownerRestaurantId)
     interfaceSettings = loadRoyalInterfaceSettings(context, ownerRestaurantId)
+    loading = false
+    loadingDashboard = false
+    loadingArchive = false
     products = emptyList()
     orders = emptyList()
     archivedOrders = emptyList()
@@ -506,24 +570,114 @@ Column(
                     editingProductId = it.id; name = it.name; category = it.category; price = it.price.toString()
                     selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن."; section = AdminSection.PRODUCTS
                 },
-                onDeleteProduct = { product -> Thread {
-                    try { deleteProduct(accessToken, product.id, ownerRestaurantId); products = loadProducts(accessToken, ownerRestaurantId); message = "تم حذف المنتج بنجاح ✅" }
-                    catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." }
-                }.start() },
-                onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId, ownerRestaurantId,
-                    { loading = it }, { message = it }, { products = it }, {
-                        name = ""; category = ""; price = ""; selectedImageUri = null; editingProductId = null
-                    }) },
+                onDeleteProduct = { product ->
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) Thread {
+                        try {
+                            deleteProduct(accessToken, product.id, requestedRestaurantId)
+                            val loadedProducts = loadProducts(accessToken, requestedRestaurantId)
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    products = loadedProducts
+                                    message = "تم حذف المنتج بنجاح ✅"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    message = e.message ?: "تعذر حذف المنتج."
+                                }
+                            }
+                        }
+                    }.start()
+                },
+                onSaveProduct = {
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) {
+                        saveProduct(
+                            context,
+                            accessToken,
+                            name,
+                            category,
+                            price,
+                            selectedImageUri,
+                            editingProductId,
+                            requestedRestaurantId,
+                            { value ->
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) loading = value
+                                }
+                            },
+                            { value ->
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) message = value
+                                }
+                            },
+                            { value ->
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) products = value
+                                }
+                            },
+                            {
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) {
+                                        name = ""
+                                        category = ""
+                                        price = ""
+                                        selectedImageUri = null
+                                        editingProductId = null
+                                    }
+                                }
+                            }
+                        )
+                    }
+                },
                 onCancelEdit = { editingProductId = null; name = ""; category = ""; price = ""; selectedImageUri = null; message = "" },
                 onRefresh = { refreshDashboard() }, onRefreshArchive = { refreshArchive() },
-                onOrderStatus = { orderId, status -> Thread {
-                    try { updateOrderStatusAsync(accessToken, orderId, status, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); salesStats = calculateSalesStats(accessToken, ownerRestaurantId); message = "تم تحديث حالة الطلب ✅" }
-                    catch (e: Exception) { message = e.message ?: "تعذر تحديث حالة الطلب." }
-                }.start() },
-                onDeleteOrder = { orderId -> Thread {
-                    try { deleteCancelledOrder(accessToken, orderId, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); message = "تم حذف الطلب الملغى ✅" }
-                    catch (e: Exception) { message = e.message ?: "تعذر حذف الطلب." }
-                }.start() }
+                onOrderStatus = { orderId, status ->
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) Thread {
+                        try {
+                            updateOrderStatusAsync(accessToken, orderId, status, requestedRestaurantId)
+                            val loadedOrders = loadAdminOrders(accessToken, requestedRestaurantId)
+                            val loadedStats = calculateSalesStats(accessToken, requestedRestaurantId)
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    orders = loadedOrders
+                                    salesStats = loadedStats
+                                    message = "تم تحديث حالة الطلب ✅"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    message = e.message ?: "تعذر تحديث حالة الطلب."
+                                }
+                            }
+                        }
+                    }.start()
+                },
+                onDeleteOrder = { orderId ->
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) Thread {
+                        try {
+                            deleteCancelledOrder(accessToken, orderId, requestedRestaurantId)
+                            val loadedOrders = loadAdminOrders(accessToken, requestedRestaurantId)
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    orders = loadedOrders
+                                    message = "تم حذف الطلب الملغى ✅"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    message = e.message ?: "تعذر حذف الطلب."
+                                }
+                            }
+                        }
+                    }.start()
+                }
             )
                 }
 
@@ -575,24 +729,114 @@ Column(
                     editingProductId = it.id; name = it.name; category = it.category; price = it.price.toString()
                     selectedImageUri = null; message = "يمكنك تعديل بيانات المنتج الآن."; section = AdminSection.PRODUCTS
                 },
-                onDeleteProduct = { product -> Thread {
-                    try { deleteProduct(accessToken, product.id, ownerRestaurantId); products = loadProducts(accessToken, ownerRestaurantId); message = "تم حذف المنتج بنجاح ✅" }
-                    catch (e: Exception) { message = e.message ?: "تعذر حذف المنتج." }
-                }.start() },
-                onSaveProduct = { saveProduct(context, accessToken, name, category, price, selectedImageUri, editingProductId, ownerRestaurantId,
-                    { loading = it }, { message = it }, { products = it }, {
-                        name = ""; category = ""; price = ""; selectedImageUri = null; editingProductId = null
-                    }) },
+                onDeleteProduct = { product ->
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) Thread {
+                        try {
+                            deleteProduct(accessToken, product.id, requestedRestaurantId)
+                            val loadedProducts = loadProducts(accessToken, requestedRestaurantId)
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    products = loadedProducts
+                                    message = "تم حذف المنتج بنجاح ✅"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    message = e.message ?: "تعذر حذف المنتج."
+                                }
+                            }
+                        }
+                    }.start()
+                },
+                onSaveProduct = {
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) {
+                        saveProduct(
+                            context,
+                            accessToken,
+                            name,
+                            category,
+                            price,
+                            selectedImageUri,
+                            editingProductId,
+                            requestedRestaurantId,
+                            { value ->
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) loading = value
+                                }
+                            },
+                            { value ->
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) message = value
+                                }
+                            },
+                            { value ->
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) products = value
+                                }
+                            },
+                            {
+                                Handler(Looper.getMainLooper()).post {
+                                    if (ownerRestaurantId == requestedRestaurantId) {
+                                        name = ""
+                                        category = ""
+                                        price = ""
+                                        selectedImageUri = null
+                                        editingProductId = null
+                                    }
+                                }
+                            }
+                        )
+                    }
+                },
                 onCancelEdit = { editingProductId = null; name = ""; category = ""; price = ""; selectedImageUri = null; message = "" },
                 onRefresh = { refreshDashboard() }, onRefreshArchive = { refreshArchive() },
-                onOrderStatus = { orderId, status -> Thread {
-                    try { updateOrderStatusAsync(accessToken, orderId, status, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); salesStats = calculateSalesStats(accessToken, ownerRestaurantId); message = "تم تحديث حالة الطلب ✅" }
-                    catch (e: Exception) { message = e.message ?: "تعذر تحديث حالة الطلب." }
-                }.start() },
-                onDeleteOrder = { orderId -> Thread {
-                    try { deleteCancelledOrder(accessToken, orderId, ownerRestaurantId); orders = loadAdminOrders(accessToken, ownerRestaurantId); message = "تم حذف الطلب الملغى ✅" }
-                    catch (e: Exception) { message = e.message ?: "تعذر حذف الطلب." }
-                }.start() },
+                onOrderStatus = { orderId, status ->
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) Thread {
+                        try {
+                            updateOrderStatusAsync(accessToken, orderId, status, requestedRestaurantId)
+                            val loadedOrders = loadAdminOrders(accessToken, requestedRestaurantId)
+                            val loadedStats = calculateSalesStats(accessToken, requestedRestaurantId)
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    orders = loadedOrders
+                                    salesStats = loadedStats
+                                    message = "تم تحديث حالة الطلب ✅"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    message = e.message ?: "تعذر تحديث حالة الطلب."
+                                }
+                            }
+                        }
+                    }.start()
+                },
+                onDeleteOrder = { orderId ->
+                    val requestedRestaurantId = ownerRestaurantId
+                    if (requestedRestaurantId.isNotBlank()) Thread {
+                        try {
+                            deleteCancelledOrder(accessToken, orderId, requestedRestaurantId)
+                            val loadedOrders = loadAdminOrders(accessToken, requestedRestaurantId)
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    orders = loadedOrders
+                                    message = "تم حذف الطلب الملغى ✅"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Handler(Looper.getMainLooper()).post {
+                                if (ownerRestaurantId == requestedRestaurantId) {
+                                    message = e.message ?: "تعذر حذف الطلب."
+                                }
+                            }
+                        }
+                    }.start()
+                },
                 highlightedOrderId = highlightedOrderId
             )
                         }

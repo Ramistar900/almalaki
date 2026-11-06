@@ -339,6 +339,7 @@ AdminSection.SALES -> {
     item {
         RoyalSalesRecordsScreen(
             accessToken = accessToken,
+            restaurantId = restaurantId,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(600.dp)
