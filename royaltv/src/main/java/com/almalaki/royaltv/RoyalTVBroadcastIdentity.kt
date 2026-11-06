@@ -139,11 +139,11 @@ fun RoyalTVBroadcastIdentity(
                 modifier = Modifier.size(logoSize),
                 contentAlignment = Alignment.Center
             ) {
-                RoyalLayeredLogoAnimation(
-                    crownShieldRes = R.drawable.royal_crest_layer,
-                    rcRes = R.drawable.royal_rc_layer,
+                Image(
+                    painter = painterResource(R.drawable.royal_tv_logo),
+                    contentDescription = "ROYAL TV",
                     modifier = Modifier.fillMaxSize(),
-                    contentDescription = "ROYAL TV"
+                    contentScale = ContentScale.Fit
                 )
             }
 

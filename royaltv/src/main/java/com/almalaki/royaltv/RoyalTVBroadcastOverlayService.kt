@@ -207,54 +207,13 @@ class RoyalTVBroadcastOverlayService : Service() {
      * بناء الشعار من طبقتي الشعار الموجودتين في المشروع.
      */
     private fun buildLogo(): View {
-        val size = dp(72)
-
-        return FrameLayout(this).apply {
-            val crest =
-                ImageView(
-                    this@RoyalTVBroadcastOverlayService
-                ).apply {
-                    setImageResource(
-                        R.drawable.royal_crest_layer
-                    )
-                    scaleType =
-                        ImageView.ScaleType.FIT_CENTER
-                    contentDescription = "شعار الملكي"
-                }
-
-            val rc =
-                ImageView(
-                    this@RoyalTVBroadcastOverlayService
-                ).apply {
-                    setImageResource(
-                        R.drawable.royal_rc_layer
-                    )
-                    scaleType =
-                        ImageView.ScaleType.FIT_CENTER
-                    contentDescription = "ROYAL"
-                }
-
-            addView(
-                crest,
-                FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            )
-
-            addView(
-                rc,
-                FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            )
-
-            layoutParams =
-                LinearLayout.LayoutParams(size, size)
+        return ImageView(this).apply {
+            setImageResource(R.drawable.royal_tv_logo)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = "ROYAL TV"
+            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72))
         }
     }
-
     /**
      * إنشاء الهوية العائمة أسفل التطبيقات الخارجية.
      */
