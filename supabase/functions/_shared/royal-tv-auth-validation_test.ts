@@ -143,3 +143,58 @@ Deno.test("ROYAL TV Edge Function applies action-specific server rate limits", a
     throw new Error("HTTP 429 response is missing");
   }
 });
+
+Deno.test("ROYAL TV audit migration is server-only and stores no raw credentials", async () => {
+  const sql = await Deno.readTextFile(
+    new URL("../../../database/migrations/202611060001_royal_tv_audit_events.sql", import.meta.url),
+  );
+  for (const required of [
+    "alter table public.royal_tv_audit_events enable row level security",
+    "revoke all on table public.royal_tv_audit_events from public, anon, authenticated",
+    "revoke all on table public.royal_tv_audit_events from service_role",
+    "grant insert on table public.royal_tv_audit_events to service_role",
+    "'attempted', 'succeeded'",
+    "request_id uuid not null",
+    "paired_device_id uuid",
+    "target_command_id uuid",
+  ]) {
+    if (!sql.toLowerCase().includes(required.toLowerCase())) {
+      throw new Error(`audit migration is missing: ${required}`);
+    }
+  }
+  const tableDefinition = sql.match(
+    /create table if not exists public\\.royal_tv_audit_events \\(([\\s\\S]*?)\\n\\);/i,
+  )?.[1] ?? "";
+  if (!tableDefinition) throw new Error("audit table definition could not be inspected");
+  for (const forbidden of [
+    "pairing_code", "device_credential", "credential_hash",
+    "access_token", "refresh_token", "command_payload",
+  ]) {
+    if (tableDefinition.toLowerCase().includes(forbidden)) {
+      throw new Error(`raw sensitive field must not be stored in audit table: ${forbidden}`);
+    }
+  }
+});
+
+Deno.test("ROYAL TV sensitive mutations require durable audit attempts", async () => {
+  const source = await Deno.readTextFile(
+    new URL("../royal-tv-authorize/index.ts", import.meta.url),
+  );
+  for (const action of [
+    "create_challenge", "pair_device", "send_command",
+    "acknowledge", "revoke_device",
+  ]) {
+    if (!source.includes(`recordAuditAttempt("${action}"`)) {
+      throw new Error(`durable audit attempt missing for action: ${action}`);
+    }
+    if (!source.includes(`recordAuditCompletion("${action}"`)) {
+      throw new Error(`audit success event missing for action: ${action}`);
+    }
+  }
+  if (!source.includes('throw new Error("AUDIT_LOG_FAILED")')) {
+    throw new Error("audit failure must fail closed before sensitive mutations");
+  }
+  if (!source.includes("ROYAL TV audit completion event could not be persisted")) {
+    throw new Error("completion event failure handling is missing");
+  }
+});
