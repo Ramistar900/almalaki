@@ -66,7 +66,7 @@ as $function$
     limit 1;
 $function$;
 
--- The globally oldest tenant belongs to another owner. Owner A has two tenants.
+-- Tenant 1 is globally oldest and belongs to owner B. Owner A owns tenants 2 and 3.
 insert into public.restaurants (id, created_at) values
     ('00000000-0000-0000-0000-000000000001', '2025-01-01T00:00:00Z'),
     ('00000000-0000-0000-0000-000000000002', '2025-02-01T00:00:00Z'),
@@ -76,7 +76,7 @@ insert into public.restaurant_members
     (restaurant_id, user_id, role, is_active, created_at)
 values
     ('00000000-0000-0000-0000-000000000001',
-     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', true, '2025-01-01T00:00:00Z'),
+     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', true, '2025-02-01T00:00:00Z'),
     ('00000000-0000-0000-0000-000000000002',
      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'owner', true, '2025-02-01T00:00:00Z'),
     ('00000000-0000-0000-0000-000000000003',
@@ -93,7 +93,7 @@ create trigger assign_restaurant_to_customer_sections
 before insert on public.customer_sections
 for each row execute function private.assign_owner_restaurant_id();
 
--- Authenticated owner B owns tenant 1; owner A owns tenants 2 and 3.
+-- Owner B owns the globally oldest tenant.
 select set_config('request.jwt.claim.sub', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', false);
 
 do $test$
@@ -101,16 +101,14 @@ declare
     v_restaurant_id uuid;
     v_rejected boolean := false;
 begin
-    -- An explicitly selected, owned restaurant must be preserved.
     insert into public.products (restaurant_id, name)
-    values ('00000000-0000-0000-0000-000000000003', 'owned tenant')
+    values ('00000000-0000-0000-0000-000000000001', 'owned tenant')
     returning restaurant_id into v_restaurant_id;
 
-    if v_restaurant_id <> '00000000-0000-0000-0000-000000000003' then
+    if v_restaurant_id <> '00000000-0000-0000-0000-000000000001' then
         raise exception 'Explicitly selected owned tenant was changed';
     end if;
 
-    -- A tenant belonging to another account must be rejected, not remapped.
     begin
         insert into public.products (restaurant_id, name)
         values ('00000000-0000-0000-0000-000000000002', 'foreign tenant');
@@ -123,7 +121,6 @@ begin
         raise exception 'Foreign tenant id was not rejected with SQLSTATE 42501';
     end if;
 
-    -- The no-id compatibility path still falls back to the owner's oldest tenant.
     insert into public.products (restaurant_id, name)
     values (null, 'legacy insert')
     returning restaurant_id into v_restaurant_id;
@@ -134,12 +131,13 @@ begin
 end;
 $test$;
 
--- Re-test with owner A, who owns two restaurants.
+-- Owner A has two tenants. Explicit selection must not fall back to the first.
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', false);
 
 do $test$
 declare
     v_restaurant_id uuid;
+    v_section_key text;
     v_rejected boolean := false;
 begin
     insert into public.products (restaurant_id, name)
@@ -162,18 +160,50 @@ begin
         raise exception 'Other account tenant was not rejected';
     end if;
 
-    -- Tenant-specific section keys are namespaced, without double-prefixing.
+    insert into public.products (restaurant_id, name)
+    values (null, 'owner A legacy fallback')
+    returning restaurant_id into v_restaurant_id;
+
+    if v_restaurant_id <> '00000000-0000-0000-0000-000000000002' then
+        raise exception 'Multi-tenant fallback did not choose owner A first tenant';
+    end if;
+
+    insert into public.customer_sections (restaurant_id, section_key)
+    values ('00000000-0000-0000-0000-000000000003', 'drinks')
+    returning section_key into v_section_key;
+
+    if v_section_key <> '00000000-0000-0000-0000-000000000003:drinks' then
+        raise exception 'Customer section key was not namespaced for tenant 3: %', v_section_key;
+    end if;
+
     insert into public.customer_sections (restaurant_id, section_key)
     values (
         '00000000-0000-0000-0000-000000000003',
-        'drinks'
+        '00000000-0000-0000-0000-000000000003:desserts'
     )
-    returning section_key into strict v_restaurant_id;
+    returning section_key into v_section_key;
 
-exception
-    when datatype_mismatch then
-        -- This exception branch is intentionally not used; section-key checks
-        -- are performed below in a separate block with the correct variable type.
-        raise;
+    if v_section_key <> '00000000-0000-0000-0000-000000000003:desserts' then
+        raise exception 'Already namespaced section key was modified twice';
+    end if;
 end;
 $test$;
+
+-- The unauthenticated trigger path must retain its existing no-op behavior.
+select set_config('request.jwt.claim.sub', '', false);
+
+do $test$
+declare
+    v_restaurant_id uuid;
+begin
+    insert into public.products (restaurant_id, name)
+    values (null, 'anonymous legacy path')
+    returning restaurant_id into v_restaurant_id;
+
+    if v_restaurant_id is not null then
+        raise exception 'Unauthenticated insert unexpectedly received a tenant id';
+    end if;
+end;
+$test$;
+
+select 'strict_owner_restaurant_scope: all tests passed' as test_result;
