@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'database/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -20,6 +21,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'database/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -32,6 +34,39 @@ permissions:
   contents: read
 
 jobs:
+  tenant-scope-sql:
+    name: Test strict owner restaurant scope migration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: almalaki_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d almalaki_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Run tenant-scope migration tests
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: almalaki_test
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/strict_owner_restaurant_scope.sql
+
   debug-build:
     name: Compile Almalaki Debug APK
     runs-on: ubuntu-latest
