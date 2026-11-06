@@ -38,6 +38,9 @@ import java.time.temporal.ChronoUnit
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class RoyalSalesRecord(
     val id: Long,
@@ -101,8 +104,11 @@ private fun royalSalesGet(
     return body
 }
 
-private fun loadRoyalSalesRecords(accessToken: String): List<RoyalSalesRecord> {
-    val restaurantId = resolveOwnerRestaurantId(accessToken)
+private fun loadRoyalSalesRecords(
+    accessToken: String,
+    restaurantId: String
+): List<RoyalSalesRecord> {
+    require(restaurantId.isNotBlank()) { "اختر مطعمًا قبل تحميل سجلات المبيعات." }
     val records = mutableListOf<RoyalSalesRecord>()
     var offset = 0
 
@@ -172,11 +178,13 @@ private fun loadRoyalSalesRecords(accessToken: String): List<RoyalSalesRecord> {
 @Composable
 fun RoyalSalesRecordsScreen(
     accessToken: String,
+    restaurantId: String,
     modifier: Modifier = Modifier
 ) {
-    var records by remember { mutableStateOf<List<RoyalSalesRecord>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf("") }
+    var records by remember(restaurantId) { mutableStateOf<List<RoyalSalesRecord>>(emptyList()) }
+    var loading by remember(restaurantId) { mutableStateOf(true) }
+    var error by remember(restaurantId) { mutableStateOf("") }
+    var reloadKey by remember(restaurantId) { mutableStateOf(0) }
     var search by remember { mutableStateOf("") }
     var dateFrom by remember { mutableStateOf("") }
     var dateTo by remember { mutableStateOf("") }
@@ -186,21 +194,30 @@ fun RoyalSalesRecordsScreen(
     var minQuantity by remember { mutableStateOf("") }
     var maxQuantity by remember { mutableStateOf("") }
 
-    fun refresh() {
+    LaunchedEffect(accessToken, restaurantId, reloadKey) {
+        if (restaurantId.isBlank()) {
+            records = emptyList()
+            loading = false
+            error = "اختر مطعمًا قبل تحميل سجلات المبيعات."
+            return@LaunchedEffect
+        }
+
+        records = emptyList()
         loading = true
         error = ""
-        Thread {
-            try {
-                records = loadRoyalSalesRecords(accessToken)
-            } catch (e: Exception) {
-                error = e.message ?: "تعذر تحميل سجلات المبيعات."
-            } finally {
-                loading = false
+        try {
+            records = withContext(Dispatchers.IO) {
+                loadRoyalSalesRecords(accessToken, restaurantId)
             }
-        }.start()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            records = emptyList()
+            error = e.message ?: "تعذر تحميل سجلات المبيعات."
+        } finally {
+            loading = false
+        }
     }
-
-    LaunchedEffect(Unit) { refresh() }
 
     val filtered = records.filter { record ->
         val q = search.trim()
@@ -329,7 +346,7 @@ val yearAverageOrder =
                 Text("سجلات المبيعات 📊", color = AdminGold, fontSize = 24.sp)
                 Text("بحث وتصفية وتقارير المبيعات المكتملة", color = AdminCream, fontSize = 13.sp)
             }
-            OutlinedButton(onClick = { refresh() }, enabled = !loading) {
+            OutlinedButton(onClick = { reloadKey++ }, enabled = !loading) {
                 Text(if (loading) "جاري..." else "تحديث")
             }
         }
