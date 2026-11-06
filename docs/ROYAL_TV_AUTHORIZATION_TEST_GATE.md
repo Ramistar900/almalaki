@@ -41,7 +41,7 @@ Actions:
 
 - This is a first server endpoint implementation, not a production security certification.
 - A command claim now has a 30-second lease. An expired claim is returned to the pending queue only for the same device and restaurant, while expired commands are marked expired. Android stores accepted command IDs before acknowledgement to suppress replay after a lost ACK. This remains at-least-once delivery: a process crash between a local side effect and persisting its ID can still produce a duplicate, so command handlers should remain idempotent.
-- Server-side rate limiting and durable audit-event recording are not implemented yet. The Android Keystore code is present but still needs real-device verification. The Edge Function and migrations remain undeployed, and isolated negative/end-to-end tests are required before production.
+- Server-side rate limiting and durable audit-event recording are implemented on this review branch, but neither is deployed. The Android Keystore code is present but still needs real-device verification. The Edge Function and migrations remain undeployed, and isolated negative/end-to-end tests are required before production.
 - The endpoint has not been deployed, and no production database has been changed.
 
 ## Android TV client progress (2026-10-31)
@@ -120,3 +120,13 @@ Still incomplete:
 - HTTP 429 is returned when a bucket reaches its configured limit. A rate-limit storage/RPC failure fails closed with HTTP 503 rather than silently disabling the limit.
 - Added Deno static tests for migration privileges, fixed-window atomic enforcement, and presence of all action gates. The validation workflow now watches database migration changes and grants read access only to the migration and Edge Function source directories required by those tests.
 - This is source implementation only. The migration has not been applied, the Edge Function has not been deployed, and live load/concurrency behavior has not been tested. Rate-limit row retention/cleanup still needs an operational policy before production.
+
+
+## Durable audit events (2026-11-06)
+
+- Added `202611060001_royal_tv_audit_events.sql` with a server-only `royal_tv_audit_events` table. Client roles have no privileges; the Edge Function service role receives INSERT only, with no table SELECT/UPDATE/DELETE grant.
+- The table records a request UUID, action/outcome, optional actor/restaurant/paired-device/command UUIDs, and small allow-listed metadata. It deliberately has no columns for pairing codes, device credentials, credential hashes, access tokens, refresh tokens, or command payloads.
+- Durable attempt events are written before the security-sensitive mutations `create_challenge`, `pair_device`, `send_command`, `acknowledge`, and `revoke_device`. If the attempt cannot be stored, the operation fails closed with HTTP 503 before the mutation starts.
+- A separate success event is appended after a mutation succeeds. If that completion insert fails, the durable attempt remains and the already-completed operation is not misreported as failed; the server emits only a static non-sensitive diagnostic.
+- Routine device polling and read-only listing are intentionally not written as individual audit rows to avoid high-volume noise. Rate-limit counters continue to cover request volume.
+- Static tests verify table privileges, absence of raw credential fields, and attempt/success instrumentation. This is not a live database test: the migration is not applied, the Edge Function is not deployed, and audit retention/cleanup policy plus isolated staging tests remain required before production.
