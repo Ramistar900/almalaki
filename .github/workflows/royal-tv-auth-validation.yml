@@ -1,0 +1,38 @@
+name: ROYAL TV Authorization Validation Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/_shared/**'
+      - 'supabase/functions/royal-tv-authorize/**'
+      - 'database/migrations/**'
+      - '.github/workflows/royal-tv-auth-validation.yml'
+  push:
+    branches: [royal-tv-server-authorization-phase1]
+    paths:
+      - 'supabase/functions/_shared/**'
+      - 'supabase/functions/royal-tv-authorize/**'
+      - 'database/migrations/**'
+      - '.github/workflows/royal-tv-auth-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deno-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check ROYAL TV authorization Edge Function
+        run: deno check supabase/functions/royal-tv-authorize/index.ts
+
+      - name: Run ROYAL TV authorization validation tests
+        run: deno test --allow-read=database/migrations,supabase/functions/royal-tv-authorize supabase/functions/_shared/royal-tv-auth-validation_test.ts
