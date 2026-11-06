@@ -76,11 +76,11 @@ insert into public.restaurant_members
     (restaurant_id, user_id, role, is_active, created_at)
 values
     ('00000000-0000-0000-0000-000000000001',
-     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', true, '2025-02-01T00:00:00Z'),
+     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'owner', true, '2025-01-01T00:00:00Z'),
     ('00000000-0000-0000-0000-000000000002',
-     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'owner', true, '2025-02-01T00:00:00Z'),
+     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', true, '2025-02-01T00:00:00Z'),
     ('00000000-0000-0000-0000-000000000003',
-     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'owner', true, '2025-03-01T00:00:00Z');
+     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', true, '2025-03-01T00:00:00Z');
 
 -- Execute the exact migration under test.
 \ir ../migrations/20261105080000_enforce_explicit_owner_restaurant_scope.sql
