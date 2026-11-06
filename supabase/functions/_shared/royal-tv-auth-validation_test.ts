@@ -162,9 +162,11 @@ Deno.test("ROYAL TV audit migration is server-only and stores no raw credentials
       throw new Error(`audit migration is missing: ${required}`);
     }
   }
-  const tableDefinition = sql.match(
-    /create table if not exists public\\.royal_tv_audit_events \\(([\\s\\S]*?)\\n\\);/i,
-  )?.[1] ?? "";
+  const tableStart = sql.indexOf("create table if not exists public.royal_tv_audit_events (");
+  const tableEnd = sql.indexOf("\n);", tableStart);
+  const tableDefinition = tableStart >= 0 && tableEnd > tableStart
+    ? sql.slice(tableStart, tableEnd)
+    : "";
   if (!tableDefinition) throw new Error("audit table definition could not be inspected");
   for (const forbidden of [
     "pairing_code", "device_credential", "credential_hash",
