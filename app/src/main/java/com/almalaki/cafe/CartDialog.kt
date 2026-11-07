@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun CartDialog(
@@ -257,8 +259,9 @@ fun CartDialog(
                     Column(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 360.dp)
+    .fillMaxWidth()
+    .heightIn(max = 360.dp)
+    .verticalScroll(rememberScrollState())
                     ) {
                         selectedProducts.forEach { product ->
 
