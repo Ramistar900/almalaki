@@ -12,6 +12,7 @@ create schema private;
 create schema realtime;
 create schema extensions;
 create extension pgcrypto with schema extensions;
+grant usage on schema extensions to service_role;
 
 create table auth.users (
     id uuid primary key,
