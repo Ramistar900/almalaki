@@ -98,6 +98,23 @@ Deno.serve(async (req: Request) => {
         return respond(400, { error: "invalid_activation_request" });
       }
 
+      const codeHash = await sha256Hex(activationCode);
+      const { data: codeRow, error: codeLookupError } = await admin
+        .from("royal_tv_activation_codes")
+        .select("id, expires_at, consumed_at, restaurants!inner(status)")
+        .eq("code_hash", codeHash)
+        .maybeSingle();
+
+      const restaurantStatus = (codeRow as { restaurants?: { status?: string } } | null)
+        ?.restaurants?.status;
+      if (codeLookupError ||
+          !codeRow ||
+          codeRow.consumed_at !== null ||
+          Date.parse(codeRow.expires_at) <= Date.now() ||
+          restaurantStatus !== "active") {
+        return respond(403, { error: "activation_code_invalid_or_used" });
+      }
+
       // Each TV receives its own isolated Supabase Auth identity. The random
       // credentials never leave this function; only the resulting session is
       // returned to the TV once over TLS.
@@ -118,7 +135,6 @@ Deno.serve(async (req: Request) => {
         return respond(409, { error: "device_registration_unavailable" });
       }
 
-      const codeHash = await sha256Hex(activationCode);
       const { data: redeemed, error: redeemError } = await admin.rpc(
         "redeem_royal_tv_activation_code",
         {
