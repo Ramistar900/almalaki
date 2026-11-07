@@ -69,7 +69,8 @@ jobs:
           PGDATABASE: almalaki_test
         run: |
           psql -v ON_ERROR_STOP=1 -f database/tests/strict_owner_restaurant_scope.sql
-          psql -v ON_ERROR_STOP=1 -f database/tests/royal_tv_device_realtime_isolation.sql
+          createdb almalaki_royal_tv_test
+          PGDATABASE=almalaki_royal_tv_test psql -v ON_ERROR_STOP=1 -f database/tests/royal_tv_device_realtime_isolation.sql
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
