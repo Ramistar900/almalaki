@@ -183,13 +183,12 @@ fun RoyalCustomerSettings(
                 onClick = onBack
             ) {
 
-                Icon(
-                    imageVector =
-                        Icons.Default.ArrowBack,
-
-                    contentDescription =
-                        "رجوع",
-
+                RoyalIconButton(
+                    icon = RoyalIcon.BACK,
+                    contentDescription = "رجوع",
+                    size = 24.dp,
+                    onClick = {},
+                    interactive = false,
                     tint = gold
                 )
             }
