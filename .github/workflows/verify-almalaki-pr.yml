@@ -23,6 +23,7 @@ on:
     paths:
       - 'app/**'
       - 'database/**'
+      - 'supabase/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
