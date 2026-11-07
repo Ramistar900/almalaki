@@ -59,6 +59,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import androidx.compose.material.icons.filled.ShoppingCart
 
 @Composable
 fun CustomerScreen(
@@ -245,24 +246,6 @@ DisposableEffect(activeRestaurant.id, customerIdentityReady) {
     onDispose { stopRoyalRestaurantBrandingRealtime() }
 }
 
-if (showCustomerSettings && customerIdentityReady) {
-    RoyalCustomerSettings(
-        isDarkMode = darkMode,
-        onBack = {
-            showCustomerSettings = false
-        },
-        onAccountClick = {
-            customerProfile = loadRoyalCustomerProfile(context)
-            showCustomerAccount = true
-        },
-        onOrdersClick = {
-            customerOrderHistory = loadRoyalCustomerOrders(context)
-            showCustomerOrders = true
-        },
-        onThemeToggle = onTheme
-    )
-    return
-}
     var products by remember {
         mutableStateOf<List<Product>>(emptyList())
     }
@@ -531,7 +514,24 @@ LaunchedEffect(syncedCustomerUserId) {
 
         matchesSearch && matchesCategory
     }
-        
+       if (showCustomerSettings && customerIdentityReady) {
+    RoyalCustomerSettings(
+        isDarkMode = darkMode,
+        onBack = {
+            showCustomerSettings = false
+        },
+        onAccountClick = {
+            customerProfile = loadRoyalCustomerProfile(context)
+            showCustomerAccount = true
+        },
+        onOrdersClick = {
+            customerOrderHistory = loadRoyalCustomerOrders(context)
+            showCustomerOrders = true
+        },
+        onThemeToggle = onTheme
+    )
+    return
+       } 
         
         RoyalCustomerInterface(
             brandingRevision = brandingRevision,
@@ -843,10 +843,12 @@ LaunchedEffect(syncedCustomerUserId) {
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "🛒",
-                                    fontSize = 17.sp
-                                )
+                                Icon(
+    imageVector = Icons.Filled.ShoppingCart,
+    contentDescription = null,
+    tint = Gold,
+    modifier = Modifier.size(18.dp)
+)
                             }
 
                             Spacer(
