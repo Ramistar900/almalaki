@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Crown and RC retain their original transparent brand artwork within the 72dp safe zone. -->
-    <item><shape android:shape="rectangle"><size android:width="108dp" android:height="108dp" /><solid android:color="#00000000" /></shape></item>
-    <item android:drawable="@drawable/royal_crest_layer" android:width="68dp" android:height="72dp" android:gravity="center" />
-    <item android:drawable="@drawable/royal_rc_layer" android:width="58dp" android:height="64dp" android:gravity="center" />
+    <!-- Both original brand layers share the same canvas and stay within the 72dp safe zone. -->
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="108dp" android:height="108dp" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+    <item
+        android:drawable="@drawable/royal_crest_layer"
+        android:width="68dp"
+        android:height="72dp"
+        android:gravity="center" />
+    <item
+        android:drawable="@drawable/royal_rc_layer"
+        android:width="68dp"
+        android:height="72dp"
+        android:gravity="center" />
 </layer-list>
