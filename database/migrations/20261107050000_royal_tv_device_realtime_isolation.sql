@@ -268,6 +268,8 @@ as $$
     );
 $$;
 
+grant usage on schema private to authenticated;
+
 revoke all on function private.royal_tv_can_receive_topic()
     from public, anon;
 revoke all on function private.royal_tv_owner_can_send_topic()
