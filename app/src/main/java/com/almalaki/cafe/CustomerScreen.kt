@@ -30,6 +30,15 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.animateFloat
+import androidx.compose.runtime.infiniteRepeatable
+import androidx.compose.runtime.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -114,6 +123,32 @@ var restaurantLinkLoading by remember {
 }
 var restaurantLinkMessage by remember {
     mutableStateOf("")
+}
+var restaurantLinkCode by remember { mutableStateOf("") }
+var showRestaurantLinkSuccess by remember { mutableStateOf(false) }
+
+fun linkRestaurantFromHome() {
+    val code = restaurantLinkCode.trim()
+    if (code.isBlank() || restaurantLinkLoading) return
+    restaurantLinkLoading = true
+    restaurantLinkMessage = ""
+    customerScope.launch {
+        try {
+            val linked = withContext(Dispatchers.IO) {
+                linkRoyalRestaurant(context, code)
+            }
+            linkedRestaurants = loadRoyalLinkedRestaurants(context)
+            selectedCategory = "الكل"
+            cart = emptyMap()
+            activeRestaurant = linked
+            restaurantLinkCode = ""
+            showRestaurantLinkSuccess = true
+        } catch (error: Exception) {
+            restaurantLinkMessage = error.message ?: "تعذر ربط المطعم."
+        } finally {
+            restaurantLinkLoading = false
+        }
+    }
 }
 var showCustomerOrders by remember {
     mutableStateOf(false)
@@ -614,19 +649,58 @@ LaunchedEffect(syncedCustomerUserId) {
                         .toList()
 
                     if (activeRestaurant.id == ROYAL_DEFAULT_RESTAURANT_ID) {
-                        // The default ID means this customer has not linked a restaurant yet.
-                        // Keep the surrounding customer interface untouched and use only the
-                        // existing product-card area for the linking instructions.
+                        // Direct restaurant linking stays in the existing empty product area.
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(
                                     top = titleBannerHeight + 62.dp,
-                                    bottom = 12.dp
+                                    bottom = 12.dp,
+                                    start = 18.dp,
+                                    end = 18.dp
                                 ),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            OutlinedTextField(
+                                value = restaurantLinkCode,
+                                onValueChange = { restaurantLinkCode = it.uppercase() },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                enabled = !restaurantLinkLoading,
+                                label = { Text("رمز المطعم") },
+                                placeholder = { Text("ROYAL-…") }
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = ::linkRestaurantFromHome,
+                                enabled = restaurantLinkCode.isNotBlank() && !restaurantLinkLoading,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Gold,
+                                    contentColor = Black
+                                )
+                            ) {
+                                if (restaurantLinkLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        color = Black,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text("ربط المطعم", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            if (restaurantLinkMessage.isNotBlank()) {
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    text = restaurantLinkMessage,
+                                    color = Color(0xFFFF7777),
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
                             Text(
                                 text = "يرجى الربط",
                                 color = Gold,
@@ -636,35 +710,13 @@ LaunchedEffect(syncedCustomerUserId) {
                             )
                             Spacer(Modifier.height(10.dp))
                             Text(
-                                text = "لعرض المنتجات، اطلب من مالك المطعم أو المتجر أو المقهى رمز الربط الخاص به.",
+                                text = "أدخل رمز الربط الذي يعطيك إياه مالك المطعم لعرض منتجاته وأسعاره.",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp),
+                                    .padding(horizontal = 8.dp),
                                 color = textColor.copy(alpha = 0.82f),
                                 fontSize = 12.sp,
                                 lineHeight = 18.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                text = "من «حسابي» اختر «بياناتي والمطاعم المرتبطة»، ثم «مطاعمي المرتبطة وتبديل المطعم».",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp),
-                                color = textColor.copy(alpha = 0.72f),
-                                fontSize = 11.sp,
-                                lineHeight = 17.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "أدخل الرمز واضغط «التحقق والربط». بعد نجاح الربط ستظهر بطاقات المنتجات هنا تلقائيًا.",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp),
-                                color = Gold.copy(alpha = 0.9f),
-                                fontSize = 11.sp,
-                                lineHeight = 17.sp,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -1221,6 +1273,55 @@ if (showCustomerProfileEditor) {
             activeRestaurant = loadRoyalActiveRestaurant(context)
             restaurantLinkMessage = ""
             showRestaurantLinks = true
+        }
+    )
+}
+
+if (showRestaurantLinkSuccess) {
+    val linkPulse by rememberInfiniteTransition(label = "restaurant-link-success")
+        .animateFloat(
+            initialValue = 1f,
+            targetValue = 1.06f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 850),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "restaurant-link-success-pulse"
+        )
+    AlertDialog(
+        onDismissRequest = { showRestaurantLinkSuccess = false },
+        containerColor = if (darkMode) Color(0xFF111111) else Color.White,
+        title = {
+            Text(
+                "تم ربط المطعم بنجاح",
+                color = Gold,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.royal_purchase_started),
+                    contentDescription = "أيقونة نجاح ربط المطعم",
+                    modifier = Modifier
+                        .size(96.dp)
+                        .graphicsLayer(scaleX = linkPulse, scaleY = linkPulse)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "تم الاتصال بـ ${activeRestaurant.name}، وستظهر منتجاته في الواجهة.",
+                    color = textColor,
+                    textAlign = TextAlign.Center
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { showRestaurantLinkSuccess = false }) {
+                Text("متابعة", color = Gold)
+            }
         }
     )
 }
