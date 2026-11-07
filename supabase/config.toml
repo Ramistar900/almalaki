@@ -1,0 +1,2 @@
+[functions.royal-tv-device-auth]
+verify_jwt = false
