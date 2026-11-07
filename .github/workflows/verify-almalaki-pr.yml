@@ -65,7 +65,9 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGDATABASE: almalaki_test
-        run: psql -v ON_ERROR_STOP=1 -f database/tests/strict_owner_restaurant_scope.sql
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/tests/strict_owner_restaurant_scope.sql
+          psql -v ON_ERROR_STOP=1 -f database/tests/royal_tv_device_realtime_isolation.sql
 
   debug-build:
     name: Compile Almalaki Debug APK
