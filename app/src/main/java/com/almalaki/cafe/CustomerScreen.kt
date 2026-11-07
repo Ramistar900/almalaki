@@ -843,12 +843,14 @@ LaunchedEffect(syncedCustomerUserId) {
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-    imageVector = Icons.Filled.ShoppingCart,
-    contentDescription = null,
-    tint = Gold,
-    modifier = Modifier.size(18.dp)
-)
+                                RoyalIconButton(
+                                    icon = RoyalIcon.CART,
+                                    contentDescription = null,
+                                    size = 18.dp,
+                                    onClick = {},
+                                    interactive = false,
+                                    tint = Gold
+                                )
                             }
 
                             Spacer(
