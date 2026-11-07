@@ -9,6 +9,7 @@ on:
     paths:
       - 'app/**'
       - 'database/**'
+      - 'supabase/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -68,6 +69,14 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f database/tests/strict_owner_restaurant_scope.sql
           psql -v ON_ERROR_STOP=1 -f database/tests/royal_tv_device_realtime_isolation.sql
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check ROYAL TV device auth Edge Function
+        run: deno check supabase/functions/royal-tv-device-auth/index.ts
 
   debug-build:
     name: Compile Almalaki Debug APK
