@@ -33,9 +33,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.animateFloat
-import androidx.compose.runtime.infiniteRepeatable
-import androidx.compose.runtime.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
@@ -126,6 +126,16 @@ var restaurantLinkMessage by remember {
 }
 var restaurantLinkCode by remember { mutableStateOf("") }
 var showRestaurantLinkSuccess by remember { mutableStateOf(false) }
+val linkPulse by rememberInfiniteTransition(label = "restaurant-link-success")
+    .animateFloat(
+        initialValue = 1f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 850),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "restaurant-link-success-pulse"
+    )
 
 fun linkRestaurantFromHome() {
     val code = restaurantLinkCode.trim()
@@ -138,8 +148,6 @@ fun linkRestaurantFromHome() {
                 linkRoyalRestaurant(context, code)
             }
             linkedRestaurants = loadRoyalLinkedRestaurants(context)
-            selectedCategory = "الكل"
-            cart = emptyMap()
             activeRestaurant = linked
             restaurantLinkCode = ""
             showRestaurantLinkSuccess = true
@@ -1278,16 +1286,6 @@ if (showCustomerProfileEditor) {
 }
 
 if (showRestaurantLinkSuccess) {
-    val linkPulse by rememberInfiniteTransition(label = "restaurant-link-success")
-        .animateFloat(
-            initialValue = 1f,
-            targetValue = 1.06f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 850),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "restaurant-link-success-pulse"
-        )
     AlertDialog(
         onDismissRequest = { showRestaurantLinkSuccess = false },
         containerColor = if (darkMode) Color(0xFF111111) else Color.White,
