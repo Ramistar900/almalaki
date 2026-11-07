@@ -174,7 +174,11 @@ do $$
 declare
     v_count integer;
 begin
-    select count(*) into v_count from realtime.messages;
+    -- Realtime evaluates authorization for the channel being joined; emulate
+    -- its topic-scoped message query rather than scanning every topic globally.
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
     if v_count <> 1 then
         raise exception 'TV A should see exactly its own broadcast, got %', v_count;
     end if;
@@ -186,7 +190,9 @@ do $$
 declare
     v_count integer;
 begin
-    select count(*) into v_count from realtime.messages;
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
     if v_count <> 0 then
         raise exception 'TV A read Restaurant B broadcast';
     end if;
