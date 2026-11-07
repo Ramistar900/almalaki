@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="320dp" android:height="180dp" />
+            <solid android:color="#052D31" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/royal_tv_logo" android:width="112dp" android:height="112dp" android:gravity="left|center_vertical" android:left="22dp" />
+    <item android:drawable="@drawable/royal_tv_banner_wordmark" />
+</layer-list>
