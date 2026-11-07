@@ -887,11 +887,13 @@ fun RoyalTopBar(
                         }
                     )
             ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
+                RoyalIconButton(
+                    icon = RoyalIcon.MENU,
                     contentDescription = "القائمة",
-                    tint = if (isFocused) RoyalGoldLight else RoyalGold,
-                    modifier = Modifier.size(27.dp)
+                    size = 27.dp,
+                    onClick = {},
+                    interactive = false,
+                    tint = if (isFocused) RoyalGoldLight else RoyalGold
                 )
             }
 

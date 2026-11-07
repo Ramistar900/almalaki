@@ -1,7 +1,5 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="36dp" android:height="36dp" android:viewportWidth="24" android:viewportHeight="24">
     <group android:name="motion" android:pivotX="12" android:pivotY="12">
-        <path android:fillColor="@android:color/transparent" android:strokeColor="#0A382B" android:strokeWidth="1.65" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5,5.7h14a1.7,1.7 0,0 1,1.7 1.7v11a1.7,1.7 0,0 1,-1.7 1.7H5a1.7,1.7 0,0 1,-1.7 -1.7v-11A1.7,1.7 0,0 1,5 5.7z M7.5,3.4v4.5 M16.5,3.4v4.5 M3.4,9.1h17.2"/>
-        <path android:fillColor="@android:color/transparent" android:strokeColor="#B78B32" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.2,12.2h2.1 M7.2,15.4h2.1 M11.7,12.2h2.1"/>
-        <path android:fillColor="@android:color/transparent" android:strokeColor="#B78B32" android:strokeWidth="1.6" android:strokeLineCap="round" android:pathData="M15.2,14.1v2.1l1.45,0.9"/>
+        <path android:fillColor="#B78B32" android:pathData="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3zm12 8H5v10h14zM7 13h3v3H7zm5 0h3v3h-3z"/>
     </group>
 </vector>
