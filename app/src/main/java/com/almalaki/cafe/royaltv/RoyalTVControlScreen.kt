@@ -72,6 +72,7 @@ val description: String
 @Composable
 fun RoyalTVControlScreen(
 modifier: Modifier = Modifier,
+accessToken: String,
 onItemSelected: (RoyalTVControlItem) -> Unit = {}
 ) {
 val context = LocalContext.current
@@ -139,6 +140,7 @@ if (senderOpen) {
 if (tickerOpen) {
     RoyalTVTickerControlScreen(
         modifier = modifier,
+        accessToken = accessToken,
         onBack = {
             tickerOpen = false
         }

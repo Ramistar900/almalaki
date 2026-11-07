@@ -195,7 +195,8 @@ object RoyalTVRealtime {
      */
     suspend fun sendCommand(
         targetDeviceId: String,
-        command: RoyalTVCommand
+        command: RoyalTVCommand,
+        ownerAccessToken: String
     ): Boolean {
 
         if (
@@ -226,6 +227,10 @@ object RoyalTVRealtime {
                         Realtime
                     )
                 }
+
+            // Authenticate the owner before joining/publishing. This is a prerequisite
+            // for server-side authorization; it does not alone enforce tenant isolation.
+            supabase.realtime.setAuth(ownerAccessToken)
 
             val targetChannel =
                 supabase.channel(
