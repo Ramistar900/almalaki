@@ -36,6 +36,9 @@ import android.content.Context
   private const val KEY_DEVICE_ID =
   "device_id"
   
+  private const val KEY_REGISTRATION_ID =
+  "registration_id"
+  
   private const val KEY_DEVICE_NAME =
   "device_name"
   
@@ -93,6 +96,50 @@ import android.content.Context
     
     return newId
     }
+  
+  /**
+   * UUID مستقل لتسجيل الجهاز في سجل المطعم.
+   *
+   * لا يستبدل Device ID القديم المستخدم في قنوات ROYAL TV،
+   * حتى تبقى هوية القناة وبروتوكول الاتصال الحاليان متوافقين.
+   */
+  fun getRegistrationId(
+    context: Context
+    ): String {
+    
+    val prefs =
+    context.applicationContext
+    .getSharedPreferences(
+    PREFS_NAME,
+    Context.MODE_PRIVATE
+    )
+    
+    val savedId =
+    prefs.getString(
+    KEY_REGISTRATION_ID,
+    null
+    )
+    
+    val isValid = !savedId.isNullOrBlank() && runCatching {
+      java.util.UUID.fromString(savedId).toString()
+        .equals(savedId, ignoreCase = true)
+    }.getOrDefault(false)
+    
+    if (isValid) {
+      return savedId!!
+    }
+    
+    val newId = java.util.UUID.randomUUID().toString()
+    
+    prefs.edit()
+    .putString(
+    KEY_REGISTRATION_ID,
+    newId
+    )
+    .apply()
+    
+    return newId
+  }
   
   /**
   
