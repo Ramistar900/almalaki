@@ -125,7 +125,7 @@ select *
   from public.redeem_royal_tv_activation_code(
     encode(extensions.digest(convert_to(:'code_a', 'UTF8'), 'sha256'), 'hex'),
     'aaaaaaaa-1111-4111-8111-111111111111',
-    'ROYAL-TV-AAAAAAAAAAAA',
+    'ROYAL-TV-001',
     'TV A',
     'a1000000-0000-4000-8000-000000000001'
   );
@@ -144,9 +144,9 @@ reset role;
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
-select set_config('realtime.topic', 'royal-tv-ROYAL-TV-AAAAAAAAAAAA', false);
+select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
 insert into realtime.messages(topic, extension, payload)
-values ('royal-tv-ROYAL-TV-AAAAAAAAAAAA', 'broadcast', '{"command":"A"}');
+values ('royal-tv-ROYAL-TV-001', 'broadcast', '{"command":"A"}');
 
 select set_config('realtime.topic', 'royal-tv-ROYAL-TV-BBBBBBBBBBBB', false);
 do $$
@@ -169,7 +169,7 @@ values ('royal-tv-ROYAL-TV-BBBBBBBBBBBB', 'broadcast', '{"command":"B"}');
 
 -- TV A receives A's message, never B's, and cannot publish commands.
 select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', false);
-select set_config('realtime.topic', 'royal-tv-ROYAL-TV-AAAAAAAAAAAA', false);
+select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
 do $$
 declare
     v_count integer;
@@ -199,12 +199,12 @@ begin
 end;
 $$;
 
-select set_config('realtime.topic', 'royal-tv-ROYAL-TV-AAAAAAAAAAAA', false);
+select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
 do $$
 begin
     begin
         insert into realtime.messages(topic, extension, payload)
-        values ('royal-tv-ROYAL-TV-AAAAAAAAAAAA', 'broadcast', '{"command":"device-forgery"}');
+        values ('royal-tv-ROYAL-TV-001', 'broadcast', '{"command":"device-forgery"}');
         raise exception 'TV A unexpectedly published a command';
     exception when insufficient_privilege then
         null;
@@ -223,7 +223,7 @@ reset role;
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
 select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', false);
-select set_config('realtime.topic', 'royal-tv-ROYAL-TV-AAAAAAAAAAAA', false);
+select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
 do $$
 begin
     if private.royal_tv_can_receive_topic() then
