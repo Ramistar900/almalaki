@@ -13,7 +13,7 @@ Status: client integration is implemented on the draft branch `feature/royal-tv-
 
 ## Channel compatibility
 
-The topic stays `royal-tv-ROYAL-TV-XXXXXXXXXXXX` for compatibility with existing topic naming. Both Android clients must set `private = true` when creating the channel. The owner sender must attach its current owner JWT; the TV receiver must import the device session returned by the Edge Function and use that JWT. The standalone TV module currently includes only the Realtime SDK; Auth/session integration is a required next implementation step.
+The topic keeps the exact saved display ID, including legacy numeric IDs such as `ROYAL-TV-001` and existing 12-hex IDs. Registration uses a separate UUID and does not rename the channel. Both Android clients must set `private = true` when creating the channel. The owner sender must attach its current owner JWT; the TV receiver must import the device session returned by the Edge Function and use that JWT. The standalone TV module currently includes only the Realtime SDK; Auth/session integration is a required next implementation step.
 
 ## Revocation behavior
 
@@ -42,3 +42,10 @@ Revocation marks the registry row, bans the device Auth user to prevent future t
 - The TV receiver starts only when an encrypted device session exists. If a session is missing or cannot be refreshed, it shows/requires activation instead of joining a public channel.
 - The Almalaki sender's Realtime method refuses to send without a non-empty owner JWT and always marks the channel private.
 - The Almalaki `royal-orders` topic remains outside this ROYAL TV change; it must be reviewed separately before any project-wide Realtime setting is changed.
+
+
+## Legacy display-ID compatibility
+
+- The receiver continues using `RoyalTVDisplayIdAllocator.getDisplayId()` for the channel topic, exactly as before this work.
+- The registration UUID is a separate UUID and is never used as the channel topic.
+- The migration and Edge Function accept the currently generated numeric display IDs and the existing 12-hex `RoyalTVDeviceIdentity` IDs. This avoids breaking existing sender configurations and TVs already paired under numeric display IDs.
