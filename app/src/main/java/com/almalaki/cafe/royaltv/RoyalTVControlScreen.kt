@@ -71,8 +71,10 @@ val description: String
 
 @Composable
 fun RoyalTVControlScreen(
-modifier: Modifier = Modifier,
-onItemSelected: (RoyalTVControlItem) -> Unit = {}
+    accessToken: String,
+    restaurantId: String,
+    modifier: Modifier = Modifier,
+    onItemSelected: (RoyalTVControlItem) -> Unit = {}
 ) {
 val context = LocalContext.current
 
@@ -93,7 +95,22 @@ var senderOpen by remember {
 var tickerOpen by remember {
     mutableStateOf(false)
 }
+var devicePairingOpen by remember {
+    mutableStateOf(false)
+}
 
+
+if (devicePairingOpen) {
+    RoyalTVDevicePairingScreen(
+        accessToken = accessToken,
+        restaurantId = restaurantId,
+        modifier = modifier,
+        onBack = {
+            devicePairingOpen = false
+        }
+    )
+    return
+}
 
 if (identityOpen) {
     RoyalTVLayoutControl(
@@ -138,6 +155,7 @@ if (senderOpen) {
 }
 if (tickerOpen) {
     RoyalTVTickerControlScreen(
+        accessToken = accessToken,
         modifier = modifier,
         onBack = {
             tickerOpen = false
@@ -216,6 +234,12 @@ RoyalTVIconKey.DISPLAY,
     ),
 
     RoyalTVControlItem(
+        RoyalTVIconKey.IDENTITY,
+        "ربط أجهزة ROYAL TV",
+        "إصدار رمز آمن لربط كل تلفاز بمطعمه"
+    ),
+
+    RoyalTVControlItem(
         RoyalTVIconKey.REMOTE,
         "التحكم عن بُعد",
         "التحكم بالتلفزيون من شاشة المالك"
@@ -283,6 +307,9 @@ onClick = {
 
 } else if (item.title == "شريط الأخبار") {
     tickerOpen = true
+
+} else if (item.title == "ربط أجهزة ROYAL TV") {
+    devicePairingOpen = true
 
 } else {
 
