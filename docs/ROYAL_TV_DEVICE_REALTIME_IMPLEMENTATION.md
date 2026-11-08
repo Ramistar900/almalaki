@@ -1,6 +1,6 @@
 # ROYAL TV tenant-bound registration and Realtime authorization
 
-Status: implementation draft on `feature/royal-tv-device-registration-uuid`. No production migration, Edge Function deployment, or Realtime project setting has been changed.
+Status: client integration is implemented on the draft branch `feature/royal-tv-device-registration-uuid`; CI verification and real-device/staging validation are pending. No production migration, Edge Function deployment, or Realtime project setting has been changed.
 
 ## What this stage adds
 
@@ -21,13 +21,11 @@ Revocation marks the registry row, bans the device Auth user to prevent future t
 
 ## Safety gates still open
 
-1. Add TV pairing UI and securely import/persist the returned `UserSession` using the Kotlin Auth plugin and Android Keystore-backed storage.
-2. Pass the signed-in owner JWT into the Almalaki sender and set it on Realtime before joining.
-3. Set both channel builders to private mode.
+1. Run CI after the latest client changes: Almalaki Debug build, standalone ROYAL TV Debug build, tenant-scope SQL tests, ROYAL TV Realtime SQL test, and Deno Edge Function type-check.
+2. Test the SQL migration and Edge Function in a disposable/staging Supabase project. Verify owner A cannot send to owner B, TV A cannot subscribe to TV B, TV identities cannot publish, and revoked/expired/reused codes fail.
+3. Review and add abuse controls/monitoring for invalid pairing attempts before production.
 4. Inventory every Realtime topic, especially `royal-orders`, before disabling project-wide public channel access. Do not toggle that project setting as part of this PR.
-5. Test the SQL migration and Edge Function in a disposable/staging Supabase project. Verify owner A cannot send to owner B, TV A cannot subscribe to TV B, TV identities cannot publish, and revoked/expired/reused codes fail.
-6. Add abuse controls and monitoring for invalid pairing attempts before production.
-7. Build both Android modules and test existing Wi-Fi Direct/video transport unchanged (including port 39872).
+5. On real devices, test pairing, restart/session refresh, revocation behavior, two restaurants/two TVs, and confirm Wi-Fi Direct/H.264 transport (including port 39872) is unchanged.
 
 ## Deployment boundary
 
@@ -36,3 +34,11 @@ Revocation marks the registry row, bans the device Auth user to prevent future t
 - `verify_jwt = false` is required because TV redemption starts before a device JWT exists. The function manually validates owner JWTs for all owner actions; the redeem action is protected by the high-entropy one-use code.
 - No service-role key is embedded in Android.
 - No changes to `main`, production Auth settings, Realtime settings, or production data.
+
+
+## Client-side implementation notes
+
+- `RoyalTVDeviceAuthManager` intentionally uses the Auth REST refresh endpoint rather than raising the standalone TV module's Android minimum SDK by adding another Supabase Auth dependency. Session material is encrypted at rest; a failed refresh never falls back to an expired access token.
+- The TV receiver starts only when an encrypted device session exists. If a session is missing or cannot be refreshed, it shows/requires activation instead of joining a public channel.
+- The Almalaki sender's Realtime method refuses to send without a non-empty owner JWT and always marks the channel private.
+- The Almalaki `royal-orders` topic remains outside this ROYAL TV change; it must be reviewed separately before any project-wide Realtime setting is changed.
