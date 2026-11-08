@@ -48,13 +48,15 @@ object RoyalTVDeviceAuthManager {
         }
 
         val appContext = context.applicationContext
+        // The receiver listens with this legacy display ID. Keep it separate from
+        // the UUID registration ID sent as device_id above.
         val response = postJson(
             "$PROJECT_URL/functions/v1/royal-tv-device-auth",
             JSONObject()
                 .put("action", "redeem")
                 .put("activation_code", code)
                 .put("device_id", RoyalTVDeviceIdentity.getRegistrationId(appContext))
-                .put("channel_device_id", RoyalTVDeviceIdentity.getDeviceId(appContext))
+                .put("channel_device_id", RoyalTVDisplayIdAllocator.getDisplayId(appContext))
                 .put("device_name", RoyalTVDeviceIdentity.getDeviceName(appContext))
         )
 
