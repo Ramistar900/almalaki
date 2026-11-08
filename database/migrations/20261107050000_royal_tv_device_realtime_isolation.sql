@@ -6,7 +6,7 @@ create table if not exists public.royal_tv_devices (
     device_id uuid primary key,
     auth_user_id uuid not null unique references auth.users(id) on delete restrict,
     channel_device_id text not null unique
-        check (channel_device_id ~ '^ROYAL-TV-[A-F0-9]{12}$'),
+        check (channel_device_id ~ '^ROYAL-TV-(?:[A-F0-9]{12}|[0-9]{1,})$'),
     restaurant_id uuid not null references public.restaurants(id) on delete restrict,
     device_name text not null
         check (char_length(btrim(device_name)) between 1 and 80),
@@ -160,7 +160,7 @@ begin
        or p_code_hash !~ '^[0-9a-f]{64}$'
        or p_device_id is null
        or p_auth_user_id is null
-       or v_channel_id !~ '^ROYAL-TV-[A-F0-9]{12}$'
+       or v_channel_id !~ '^ROYAL-TV-(?:[A-F0-9]{12}|[0-9]{1,})$'
        or char_length(v_name) not between 1 and 80 then
         raise exception using errcode = '22023',
             message = 'Invalid device activation request';
