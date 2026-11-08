@@ -5,6 +5,7 @@ import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -195,8 +196,17 @@ object RoyalTVRealtime {
      */
     suspend fun sendCommand(
         targetDeviceId: String,
+        ownerAccessToken: String,
         command: RoyalTVCommand
     ): Boolean {
+
+        if (ownerAccessToken.isBlank()) {
+            android.util.Log.e(
+                "RoyalTVRealtime",
+                "Send error: owner authentication is missing"
+            )
+            return false
+        }
 
         if (
             targetDeviceId
@@ -227,10 +237,15 @@ object RoyalTVRealtime {
                     )
                 }
 
+            // Authenticate as the current restaurant owner before joining.
+            supabase.realtime.setAuth(ownerAccessToken)
+
             val targetChannel =
                 supabase.channel(
                     "royal-tv-$targetDeviceId"
-                )
+                ) {
+                    isPrivate = true
+                }
 
             targetChannel.subscribe(
                 blockUntilSubscribed =
