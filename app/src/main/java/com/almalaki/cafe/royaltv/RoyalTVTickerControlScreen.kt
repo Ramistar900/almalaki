@@ -34,14 +34,18 @@ private val TickerWhite = Color(0xFFF5F0E5)
 
 @Composable
 fun RoyalTVTickerControlScreen(
+    accessToken: String,
     modifier: Modifier = Modifier,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val connectionManager = remember(context) {
-        RoyalTVConnectionManager(context)
+    val connectionManager = remember(context, accessToken) {
+        RoyalTVConnectionManager(
+            context = context,
+            ownerAccessToken = accessToken
+        )
     }
 
     val tickerController = remember(connectionManager) {
