@@ -323,6 +323,8 @@ AdminSection.INTERFACE_SETTINGS -> {
 AdminSection.ROYAL_TV_CONTROL -> {
     item {
         RoyalTVControlScreen(
+            accessToken = accessToken,
+            restaurantId = restaurantId,
             modifier = Modifier.fillMaxWidth()
         )
     }
