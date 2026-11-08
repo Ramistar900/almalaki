@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'royaltv/**'
       - 'database/**'
       - 'supabase/**'
       - 'gradle/**'
@@ -22,6 +23,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'royaltv/**'
       - 'database/**'
       - 'supabase/**'
       - 'gradle/**'
@@ -81,7 +83,7 @@ jobs:
         run: deno check supabase/functions/royal-tv-device-auth/index.ts
 
   debug-build:
-    name: Compile Almalaki Debug APK
+    name: Compile Almalaki and ROYAL TV Debug APKs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -107,11 +109,13 @@ jobs:
           gradle-version: '8.10.2'
 
       - name: Assemble Debug
-        run: gradle :app:assembleDebug --no-daemon
+        run: gradle :app:assembleDebug :royaltv:assembleDebug --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: Almalaki-PR-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            royaltv/build/outputs/apk/debug/royaltv-debug.apk
           if-no-files-found: error
