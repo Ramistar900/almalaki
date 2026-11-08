@@ -1,6 +1,8 @@
 name: Stage APK Builds as Draft Releases
 
 on:
+  pull_request:
+    branches: [main]
   workflow_run:
     workflows:
       - Build Almalaki APK
@@ -13,6 +15,23 @@ permissions:
   contents: write
 
 jobs:
+  validate-publish-workflow:
+    name: Validate automatic release workflow
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Parse workflow YAML
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/stage-apk-drafts.yml")'
+
+      - name: Confirm publishing is restricted to successful main builds
+        shell: bash
+        run: |
+          grep -F "github.event.workflow_run.conclusion == 'success'" .github/workflows/stage-apk-drafts.yml
+          grep -F "github.event.workflow_run.head_branch == 'main'" .github/workflows/stage-apk-drafts.yml
+
   stage-draft:
     name: Create or refresh the app draft
     if: >-
