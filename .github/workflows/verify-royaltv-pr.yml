@@ -12,6 +12,7 @@ on:
       - 'gradle.properties'
       - 'gradlew'
       - 'gradle/libs.versions.toml'
+      - '.github/workflows/**'
       - '.github/workflows/verify-royaltv-pr.yml'
   pull_request:
     branches:
@@ -24,6 +25,7 @@ on:
       - 'gradle.properties'
       - 'gradlew'
       - 'gradle/libs.versions.toml'
+      - '.github/workflows/**'
       - '.github/workflows/verify-royaltv-pr.yml'
 
 permissions:
