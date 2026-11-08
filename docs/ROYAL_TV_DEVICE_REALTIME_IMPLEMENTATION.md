@@ -4,16 +4,16 @@ Status: client integration is implemented on the draft branch `feature/royal-tv-
 
 ## What this stage adds
 
-- A separate server-side registration UUID for each TV, while preserving the legacy `ROYAL-TV-XXXXXXXXXXXX` channel identity.
+- A separate server-side registration UUID for each TV, while preserving the saved channel/display identity, including numeric IDs such as `ROYAL-TV-001` and existing 12-hex IDs.
 - A one-use, 256-bit activation code bound to one active restaurant, expiring after 10 minutes.
-- A separate Supabase Auth identity for each registered TV. The Edge Function creates the identity and returns its session once; the app must import and securely persist that session.
+- A separate Supabase Auth identity for each registered TV. The Edge Function creates the identity and returns its session once; the TV app encrypts the session at rest with Android Keystore AES-GCM and refreshes it through the Auth REST endpoint.
 - A server registry linking `auth_user_id`, device UUID, legacy channel ID, and restaurant ID.
 - Realtime RLS policies: a TV identity may receive broadcasts only on its own registered topic; a restaurant owner may send only to an active device belonging to a restaurant they own. Device identities cannot publish.
 - Owner-only server actions to list devices and revoke a device.
 
 ## Channel compatibility
 
-The topic keeps the exact saved display ID, including legacy numeric IDs such as `ROYAL-TV-001` and existing 12-hex IDs. Registration uses a separate UUID and does not rename the channel. Both Android clients must set `private = true` when creating the channel. The owner sender must attach its current owner JWT; the TV receiver must import the device session returned by the Edge Function and use that JWT. The standalone TV module currently includes only the Realtime SDK; Auth/session integration is a required next implementation step.
+The topic keeps the exact saved display ID, including legacy numeric IDs such as `ROYAL-TV-001` and existing 12-hex IDs. Registration uses a separate UUID and does not rename the channel. Both Android clients now set `private = true` when creating the channel. The owner sender attaches its current owner JWT; the TV receiver sets the registered device JWT before joining.
 
 ## Revocation behavior
 
@@ -39,7 +39,7 @@ Revocation marks the registry row, bans the device Auth user to prevent future t
 ## Client-side implementation notes
 
 - `RoyalTVDeviceAuthManager` intentionally uses the Auth REST refresh endpoint rather than raising the standalone TV module's Android minimum SDK by adding another Supabase Auth dependency. Session material is encrypted at rest; a failed refresh never falls back to an expired access token.
-- The TV receiver starts only when an encrypted device session exists. If a session is missing or cannot be refreshed, it shows/requires activation instead of joining a public channel.
+- The TV receiver starts only when an encrypted device session exists. A missing or unusable session never falls back to a public channel; re-pairing may be required if the device session has been revoked or is no longer refreshable.
 - The Almalaki sender's Realtime method refuses to send without a non-empty owner JWT and always marks the channel private.
 - The Almalaki `royal-orders` topic remains outside this ROYAL TV change; it must be reviewed separately before any project-wide Realtime setting is changed.
 
