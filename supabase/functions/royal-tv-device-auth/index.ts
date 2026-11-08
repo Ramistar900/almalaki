@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
 
       if (!/^[0-9a-f]{64}$/.test(activationCode) ||
           !isUuid(deviceId) ||
-          !/^ROYAL-TV-[0-9A-F]{12}$/.test(channelDeviceId) ||
+          !/^ROYAL-TV-(?:[0-9A-F]{12}|[0-9]{1,})$/.test(channelDeviceId) ||
           deviceName.length < 1) {
         return respond(400, { error: "invalid_activation_request" });
       }
