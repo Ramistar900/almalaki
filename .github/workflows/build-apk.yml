@@ -16,6 +16,9 @@ on:
       - 'gradle/libs.versions.toml'
       - '.github/workflows/build-apk.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build-almalaki:
     runs-on: ubuntu-latest
