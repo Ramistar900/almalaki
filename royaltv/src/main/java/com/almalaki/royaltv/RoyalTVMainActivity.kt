@@ -153,7 +153,7 @@ class RoyalTVMainActivity : ComponentActivity() {
          * إلا بعد ربط التلفاز بجلسة مصادقة خاصة به.
          */
         val channelDeviceId =
-            RoyalTVDeviceIdentity.getDeviceId(applicationContext)
+            RoyalTVDisplayIdAllocator.getDisplayId(applicationContext)
 
         RoyalTVTickerManager.initialize(applicationContext)
 
