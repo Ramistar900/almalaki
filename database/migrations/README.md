@@ -19,7 +19,6 @@ The migration filename prefix is the Supabase migration version. Keep it identic
 | 20261104021748 | owner_activation_codes | 20261104021748_owner_activation_codes.sql |
 | 20261104022220 | owner_activation_user_lock | 20261104022220_owner_activation_user_lock.sql |
 
-
 ## Edge Functions
 
 - `supabase/functions/owner-activation/index.ts` — issues one-time owner activation codes, lists and pauses/revokes them for dashboard administrators, and redeems an active code only after the new owner's email is confirmed. The full code is returned once; only its SHA-256 hash is stored.
@@ -34,19 +33,40 @@ The live Almalaki Supabase project reports these migrations as already applied, 
 - 20261029021146 — royal_link_atomic_checkout
 - 20261029021342 — royal_link_legacy_write_guard
 - 20261029033908 — revoke_anon_orders_select
+- 20261105015756 — create_tenant_scoped_restaurant_reservations
+- 20261105015922 — restrict_reservation_sequence_access
 
-Do not create empty or guessed replacement files for these versions. They must be recovered from the original deployment source or backup and reviewed against the live schema before being committed.
+Do not create empty or guessed replacement files for these eight versions. Recover the original SQL from the deployment source or a backup, then review it against the live schema before committing it.
+
+## Repository migrations not yet reported as applied
+
+The live migration list inspected during the isolation audit did not include these repository files:
+
+- `20261105080000_enforce_explicit_owner_restaurant_scope.sql`
+- `20261105090000_add_cash_payment_tracking.sql`
+- `20261105110000_create_tenant_scoped_restaurant_reservations.sql`
+
+The live database already contains `public.restaurant_reservations` and both reservation RPCs, introduced by the applied versions `20261105015756` and `20261105015922`. Therefore, the later `20261105110000` file overlaps an already-applied feature but is not the original applied migration source. Do not apply it or record it as a replacement version until it has been reconciled with the two original migrations, including sequence privileges and the live constraints, indexes, policies, and function grants.
+
+The explicit owner-scope migration `20261105080000` is also not listed as applied in the live project. Its isolated PostgreSQL harness is `database/tests/strict_owner_restaurant_scope.sql`; a passing harness does not mean the migration has been applied to production.
+
+## Integration-test environment requirements
+
+`database/tests/tenant_isolation_and_checkout.sql` is an integration fixture, not a standalone PostgreSQL script. It depends on Supabase Auth objects, Storage objects and policies, private helper functions, and the applied tenant/checkout migration history. A bare `postgres:16` service does not provide those Supabase schemas or policies.
+
+The repository currently has no `supabase/config.toml` local-stack configuration, and the eight applied historical migration sources above are missing. Do not claim the full integration suite passed by running it against a bare PostgreSQL container or production. First recover the original migration sources and prepare a reproducible isolated Supabase test stack. Storage upload/update/delete behavior must be tested through the Storage API; direct writes to `storage.objects` do not simulate real Storage API operations.
 
 ## Safe workflow
 
 1. Inspect the live schema and current migration list before changing SQL.
-2. Create the migration file with the exact next version/name before applying it.
-3. Review the SQL against current application code and existing data.
-4. Apply once to the intended Supabase project.
-5. Verify RLS, grants, constraints, policies, and a rollback-only test.
-6. Commit the exact applied SQL to `main`; never publish a second filename/version for an already-applied migration.
+2. Recover and review missing applied migration sources; never guess or create empty replacements.
+3. Create a new migration with the exact next version/name only for a genuinely new change.
+4. Review SQL against current application code and existing data.
+5. Test on an isolated Supabase environment before applying to production.
+6. Verify RLS, grants, constraints, policies, and rollback behavior.
+7. Commit the exact applied SQL to `main`; never publish a second filename/version for an already-applied migration.
 
-A live database with all migrations applied is not automatically reproducible from GitHub until the six historical source files above are recovered.
+A live database with all migrations applied is not automatically reproducible from GitHub until the eight historical source files above are recovered.
 
 ## Current tenant domains
 
