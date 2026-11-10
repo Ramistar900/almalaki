@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
+
 import androidx.compose.foundation.layout.size
 import android.graphics.Bitmap
 import android.os.CancellationSignal
@@ -1050,6 +1053,12 @@ private fun RoyalVideoButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val sound = when {
+        text.contains("رجوع") -> RoyalUiSound.NAV_BACK
+        text.contains("ملء الشاشة") -> RoyalUiSound.MEDIA_FULLSCREEN_ENTER
+        else -> RoyalUiSound.NAV_SELECT
+    }
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
@@ -1059,7 +1068,10 @@ private fun RoyalVideoButton(
                 color = VideoGold.copy(alpha = 0.65f),
                 shape = RoundedCornerShape(10.dp)
             )
-            .clickable(onClick = onClick)
+            .clickable(onClick = {
+                RoyalUiSounds.play(context, sound)
+                onClick()
+            })
             .padding(
                 horizontal = 16.dp,
                 vertical = 11.dp
@@ -1082,6 +1094,7 @@ private fun RoyalVideoIconButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = modifier
             .size(44.dp)
@@ -1092,7 +1105,10 @@ private fun RoyalVideoIconButton(
                 color = VideoGold,
                 shape = RoundedCornerShape(50)
             )
-            .clickable(onClick = onClick),
+            .clickable(onClick = {
+                RoyalUiSounds.play(context, RoyalUiSound.NAV_SELECT)
+                onClick()
+            }),
         contentAlignment = Alignment.Center
     ) {
         Text(
