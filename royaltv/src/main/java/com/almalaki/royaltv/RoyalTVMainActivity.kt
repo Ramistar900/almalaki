@@ -283,6 +283,11 @@ class RoyalTVMainActivity : ComponentActivity() {
     }
 
     
+    override fun onDestroy() {
+        RoyalUiSounds.release()
+        super.onDestroy()
+    }
+
     override fun onResume() {
         super.onResume()
 
