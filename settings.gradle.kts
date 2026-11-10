@@ -19,3 +19,4 @@ rootProject.name = "Almalaki"
 
 include(":app")
 include(":royaltv")
+include(":royal-ui-sounds")
