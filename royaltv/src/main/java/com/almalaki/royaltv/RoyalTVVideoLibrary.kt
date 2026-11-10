@@ -1056,7 +1056,12 @@ private fun RoyalVideoButton(
     val context = LocalContext.current
     val sound = when {
         text.contains("رجوع") -> RoyalUiSound.NAV_BACK
+        text.contains("السابق") -> RoyalUiSound.MEDIA_PREV
+        text.contains("التالي") -> RoyalUiSound.MEDIA_NEXT
+        text == "استئناف" -> RoyalUiSound.MEDIA_PLAY
+        text == "إيقاف" -> RoyalUiSound.MEDIA_STOP
         text.contains("ملء الشاشة") -> RoyalUiSound.MEDIA_FULLSCREEN_ENTER
+        text == "احتواء" -> RoyalUiSound.MEDIA_FULLSCREEN_EXIT
         else -> RoyalUiSound.NAV_SELECT
     }
     Box(
