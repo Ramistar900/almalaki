@@ -37,6 +37,11 @@ object RoyalTVIconAssets {
     const val TV_VOLUME = "royal_icons/v16/tv/volume_up.svg"
     const val TV_FAVORITE = "royal_icons/v16/tv/heart.svg"
     const val TV_POWER = "royal_icons/v16/tv/power.svg"
+    const val TV_WIFI = "royal_icons/v16/tv/wifi.svg"
+    const val TV_LOCK = "royal_icons/v16/tv/lock.svg"
+    const val TV_SHARE = "royal_icons/v16/tv/share.svg"
+    const val TV_CLOSE = "royal_icons/v16/tv/close.svg"
+    const val TV_GRID = "royal_icons/v16/tv/grid.svg"
 
     const val LAUNCHER_APPS = "royal_icons/v17/launcher/apps.svg"
     const val LAUNCHER_MUSIC = "royal_icons/v17/launcher/music.svg"

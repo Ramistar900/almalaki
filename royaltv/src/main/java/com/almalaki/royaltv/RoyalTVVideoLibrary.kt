@@ -250,6 +250,7 @@ fun RoyalTVVideoLibrary(
     var slideshowSeconds by remember { mutableIntStateOf(5) }
     var fitImage by remember { mutableStateOf(true) }
     var immersiveImage by remember { mutableStateOf(false) }
+    var immersiveVideo by remember { mutableStateOf(false) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -300,7 +301,13 @@ fun RoyalTVVideoLibrary(
     
     fun goBack() {
         when {
-            selectedVideo != null -> selectedVideo = null
+            selectedVideo != null -> {
+                if (immersiveVideo) {
+                    immersiveVideo = false
+                } else {
+                    selectedVideo = null
+                }
+            }
 
             section == "معاينة" -> {
                 section = "شبكة الصور"
@@ -344,9 +351,12 @@ Box(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 22.dp, vertical = 14.dp)
+            .padding(
+                horizontal = if (immersiveVideo) 0.dp else 22.dp,
+                vertical = if (immersiveVideo) 0.dp else 14.dp
+            )
     ) {
-        if (!immersiveImage) {
+        if (!immersiveImage && !immersiveVideo) {
             
         Row(
             modifier = Modifier
@@ -372,19 +382,24 @@ Box(
                 media = media,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .weight(1f),
+                onFullscreenToggle = {
+                    immersiveVideo = !immersiveVideo
+                }
             )
 
-            Text(
-                text = media.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                color = pearl,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (!immersiveVideo) {
+                Text(
+                    text = media.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    color = pearl,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         } else if (!canReadImages && !canReadVideos) {
             Box(
                 modifier = Modifier
@@ -962,12 +977,14 @@ AndroidView(
             }
         }
     }
-        RoyalTVBroadcastIdentity(
-    modifier = Modifier
-        .align(Alignment.BottomCenter)
-        .fillMaxWidth()
-        .height(60.dp)
-)
+        if (!immersiveVideo) {
+            RoyalTVBroadcastIdentity(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(60.dp)
+            )
+        }
 }
 }
 
@@ -1004,7 +1021,8 @@ private fun RoyalMediaEmptyState(
 @Composable
 private fun keyVideoPlayer(
     media: RoyalLocalMedia,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onFullscreenToggle: () -> Unit
 ) {
     var videoView by remember { mutableStateOf<VideoView?>(null) }
     var preparedPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
@@ -1141,6 +1159,10 @@ private fun keyVideoPlayer(
                                 view.pause()
                                 isPlaying = false
                             } else {
+                                if (durationMs > 0 && view.currentPosition >= durationMs) {
+                                    view.seekTo(0)
+                                    positionMs = 0
+                                }
                                 view.start()
                                 isPlaying = true
                             }
@@ -1180,6 +1202,14 @@ private fun keyVideoPlayer(
                             if (isMuted) 0f else 1f
                         )
                     }
+                )
+
+                Spacer(Modifier.width(14.dp))
+
+                RoyalVideoIconButton(
+                    assetPath = RoyalTVIconAssets.VIDEO_FULLSCREEN,
+                    description = "ملء الشاشة",
+                    onClick = onFullscreenToggle
                 )
             }
         }

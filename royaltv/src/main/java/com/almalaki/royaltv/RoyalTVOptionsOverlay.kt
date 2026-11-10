@@ -65,12 +65,12 @@ title = "البلوتوث",
 description = "اكتشاف الأجهزة القريبة وإدارة الاتصال"
 ),
 RoyalOption(
-iconAsset = RoyalTVIconAssets.TV_CAST,
+iconAsset = RoyalTVIconAssets.TV_WIFI,
 title = "Wi-Fi و Wi-Fi Direct",
 description = "الاتصال المحلي والمباشر بين الأجهزة"
 ),
 RoyalOption(
-iconAsset = RoyalTVIconAssets.TV_REMOTE,
+iconAsset = RoyalTVIconAssets.TV_LOCK,
 title = "أذونات الاتصال",
 description = "متابعة أذونات البلوتوث والشبكة"
 ),
@@ -90,7 +90,7 @@ title = "إعدادات القناة",
 description = "خيارات العرض والتحكم بالقناة"
 ),
 RoyalOption(
-iconAsset = RoyalTVIconAssets.TV_SOURCE,
+iconAsset = RoyalTVIconAssets.TV_GRID,
 title = "الحفظ والاستعادة",
 description = "خيارات حفظ إعدادات ROYAL TV"
 ),
@@ -100,7 +100,7 @@ RoyalOption(
     description = "مشاركة الشاشة بعد موافقة Android"
 ),
 RoyalOption(
-    iconAsset = RoyalTVIconAssets.TV_LIVE,
+    iconAsset = RoyalTVIconAssets.TV_SHARE,
     title = "مشاركة التطبيق",
     description = "شارك رابط تنزيل ROYAL TV الرسمي"
 )
@@ -213,7 +213,7 @@ Box(
                 }
 
                 RoyalTVIcon(
-                    assetPath = RoyalTVIconAssets.TV_BACK,
+                    assetPath = RoyalTVIconAssets.TV_CLOSE,
                     contentDescription = "إغلاق القائمة",
                     modifier = Modifier
                         .size(28.dp)
