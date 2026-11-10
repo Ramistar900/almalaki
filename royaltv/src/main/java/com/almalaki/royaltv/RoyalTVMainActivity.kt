@@ -161,7 +161,23 @@ class RoyalTVMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        RoyalUiSounds.initialize(applicationContext)
+        RoyalUiSounds.initialize(applicationContext, setOf(
+            RoyalUiSound.NAV_TV_FOCUS,
+            RoyalUiSound.NAV_BACK,
+            RoyalUiSound.MEDIA_SEEK,
+            RoyalUiSound.MEDIA_PREV,
+            RoyalUiSound.MEDIA_NEXT,
+            RoyalUiSound.MEDIA_PLAY,
+            RoyalUiSound.MEDIA_PAUSE,
+            RoyalUiSound.SELECT_TOGGLE_OFF,
+            RoyalUiSound.SELECT_TOGGLE_ON,
+            RoyalUiSound.NAV_SELECT,
+            RoyalUiSound.ACTION_REMOVE,
+            RoyalUiSound.ACTION_FAVORITE,
+            RoyalUiSound.MEDIA_STOP,
+            RoyalUiSound.MEDIA_FULLSCREEN_ENTER,
+            RoyalUiSound.MEDIA_FULLSCREEN_EXIT
+        ))
         
                 RoyalTVUpdateChecker.check(this)
                 
