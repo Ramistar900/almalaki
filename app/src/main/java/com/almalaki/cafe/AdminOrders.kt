@@ -159,7 +159,7 @@ Row(
             text = "حذف",
             backgroundColor = Color(0xFFB3261E),
             onClick = {
-                RoyalSoundManager.playClick()
+                RoyalSoundManager.playDelete()
                 onDelete(order.id)
             },
             modifier = Modifier.weight(1f)
@@ -175,7 +175,7 @@ Row(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            RoyalSoundManager.playClick()
+                            RoyalSoundManager.playConfirm()
                             onStatus(order.id, "preparing")
                         },
                         modifier = Modifier.weight(1f)
@@ -190,7 +190,7 @@ Row(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            RoyalSoundManager.playClick()
+                            RoyalSoundManager.playSuccess()
                             onStatus(order.id, "ready")
                         },
                         modifier = Modifier.weight(1f)
@@ -200,7 +200,7 @@ Row(
 
                     OutlinedButton(
                         onClick = {
-                            RoyalSoundManager.playClick()
+                            RoyalSoundManager.playSuccess()
                             onStatus(order.id, "completed")
                         },
                         modifier = Modifier.weight(1f)
@@ -219,7 +219,7 @@ Row(
                     ) {
                         OutlinedButton(
                             onClick = {
-                                RoyalSoundManager.playClick()
+                                RoyalSoundManager.playWarning()
                                 onStatus(order.id, "cancelled")
                             },
                             modifier = Modifier.weight(1f)
