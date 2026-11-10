@@ -68,9 +68,27 @@ object RoyalSoundManager {
     }
 
     fun playOrderSent() {
-        if (!RoyalUiSounds.play(RoyalUiSound.ACTION_CONFIRM)) {
-            playOrderNotification()
-        }
+        playEffect(RoyalUiSound.ACTION_CONFIRM) { playOrderNotification() }
+    }
+
+    fun playConfirm() {
+        playEffect(RoyalUiSound.ACTION_CONFIRM) { playClick() }
+    }
+
+    fun playSuccess() {
+        playEffect(RoyalUiSound.ACTION_SUCCESS) { playOrderNotification() }
+    }
+
+    fun playWarning() {
+        playEffect(RoyalUiSound.ACTION_WARNING) { playClick() }
+    }
+
+    fun playDelete() {
+        playEffect(RoyalUiSound.ACTION_DELETE) { playClick() }
+    }
+
+    private fun playEffect(sound: RoyalUiSound, fallback: () -> Unit) {
+        if (!RoyalUiSounds.play(sound)) fallback()
     }
 
     private fun play(samples: ShortArray) {
