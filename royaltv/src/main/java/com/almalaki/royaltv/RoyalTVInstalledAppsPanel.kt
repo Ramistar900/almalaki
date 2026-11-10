@@ -1,6 +1,9 @@
 
 package com.almalaki.royaltv
 
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -81,7 +84,10 @@ fun RoyalTVInstalledAppsPanel(
             }
 
             Button(
-                onClick = { refreshApps() },
+                onClick = {
+                RoyalUiSounds.play(context, RoyalUiSound.SYSTEM_LOADING_TICK)
+                refreshApps()
+            },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppsCard,
                     contentColor = AppsGold
@@ -131,10 +137,12 @@ fun RoyalTVInstalledAppsPanel(
                                         app.packageName
                                     )
 
-                                message = if (opened) {
-                                    "أُرسل أمر فتح ${app.label}."
+                                if (opened) {
+                                    RoyalUiSounds.play(context, RoyalUiSound.ACTION_SUCCESS)
+                                    message = "أُرسل أمر فتح ${app.label}."
                                 } else {
-                                    "تعذر فتح ${app.label}."
+                                    RoyalUiSounds.play(context, RoyalUiSound.ACTION_ERROR)
+                                    message = "تعذر فتح ${app.label}."
                                 }
                             },
                         shape = RoundedCornerShape(12.dp),
