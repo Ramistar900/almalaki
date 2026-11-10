@@ -1,5 +1,8 @@
 package com.almalaki.cafe
 
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
+
 import androidx.compose.ui.platform.LocalConfiguration
 import android.content.Context
 import android.content.Intent
@@ -57,14 +60,26 @@ class MainActivity : ComponentActivity() {
     private var recoveryTokenState = mutableStateOf("")
     
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
-
-    RoyalUniversalRemoteDetector.detect(event)
-
-    return super.dispatchKeyEvent(event)
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+            when (event.keyCode) {
+                android.view.KeyEvent.KEYCODE_DPAD_UP,
+                android.view.KeyEvent.KEYCODE_DPAD_DOWN,
+                android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+                android.view.KeyEvent.KEYCODE_DPAD_RIGHT ->
+                    RoyalUiSounds.play(RoyalUiSound.NAV_FOCUS_MOVE)
+                android.view.KeyEvent.KEYCODE_BACK,
+                android.view.KeyEvent.KEYCODE_ESCAPE,
+                android.view.KeyEvent.KEYCODE_BUTTON_B ->
+                    RoyalUiSounds.play(RoyalUiSound.NAV_BACK)
+            }
+        }
+        RoyalUniversalRemoteDetector.detect(event)
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        RoyalUiSounds.initialize(applicationContext)
         RoyalFontManager.initialize(this)
         RoyalSupabaseAuth.handleDeepLink(intent)
         recoveryTokenState.value = extractRecoveryToken(intent)
