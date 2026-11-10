@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -128,6 +131,19 @@ class RoyalTVMainActivity : ComponentActivity() {
         androidx.compose.runtime.mutableStateOf(false)
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+            when (event.keyCode) {
+                android.view.KeyEvent.KEYCODE_DPAD_UP,
+                android.view.KeyEvent.KEYCODE_DPAD_DOWN,
+                android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+                android.view.KeyEvent.KEYCODE_DPAD_RIGHT ->
+                    RoyalUiSounds.play(RoyalUiSound.NAV_TV_FOCUS)
+                android.view.KeyEvent.KEYCODE_ESCAPE,
+                android.view.KeyEvent.KEYCODE_BUTTON_B,
+                android.view.KeyEvent.KEYCODE_BACK ->
+                    RoyalUiSounds.play(RoyalUiSound.NAV_BACK)
+            }
+        }
         if (
             event.action == android.view.KeyEvent.ACTION_DOWN &&
             event.repeatCount == 0 &&
@@ -145,6 +161,7 @@ class RoyalTVMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        RoyalUiSounds.initialize(applicationContext)
         
                 RoyalTVUpdateChecker.check(this)
                 
