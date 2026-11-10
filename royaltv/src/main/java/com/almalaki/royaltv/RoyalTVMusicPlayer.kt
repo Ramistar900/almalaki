@@ -603,6 +603,7 @@ Box(
 
                     MusicButton(
                         "إغلاق المكتبة",
+                        iconPath = RoyalTVIconAssets.MUSIC_BACK,
                         onClick = { showLibrary = false }
                     )
                 }
@@ -623,10 +624,10 @@ Box(
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "⌕",
-                        color = MusicGold,
-                        fontSize = 27.sp
+                    RoyalTVIcon(
+                        assetPath = RoyalTVIconAssets.MUSIC_SEARCH,
+                        contentDescription = "بحث",
+                        modifier = Modifier.size(28.dp)
                     )
 
                     Spacer(Modifier.width(10.dp))
@@ -666,24 +667,28 @@ Box(
                 ) {
                     MusicButton(
                         "كل الأغاني",
+                        iconPath = RoyalTVIconAssets.MUSIC_NOTE,
                         active = libraryTab == 0,
                         onClick = { libraryTab = 0 }
                     )
 
                     MusicButton(
-                        "المفضلة ♥",
+                        "المفضلة",
+                        iconPath = RoyalTVIconAssets.MUSIC_FAVORITE,
                         active = libraryTab == 1,
                         onClick = { libraryTab = 1 }
                     )
 
                     MusicButton(
                         "الفنانون",
+                        iconPath = RoyalTVIconAssets.MUSIC_EQUALIZER,
                         active = libraryTab == 2,
                         onClick = { libraryTab = 2 }
                     )
 
                     MusicButton(
                         "تحديث",
+                        iconPath = RoyalTVIconAssets.TV_REFRESH,
                         onClick = {
                             if (
                                 ContextCompat.checkSelfPermission(
@@ -810,7 +815,8 @@ Box(
                                 Spacer(Modifier.width(12.dp))
 
                                 MusicButton(
-                                    if (isFavorite) "♥" else "♡",
+                                    "",
+                                    iconPath = RoyalTVIconAssets.MUSIC_FAVORITE,
                                     compact = true,
                                     active = isFavorite,
                                     onClick = {
@@ -870,12 +876,14 @@ Box(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         MusicButton(
-                            "المكتبة  ☷",
+                            "المكتبة",
+                            iconPath = RoyalTVIconAssets.MUSIC_QUEUE,
                             onClick = { showLibrary = true }
                         )
 
                         MusicButton(
                               "رجوع",
+                            iconPath = RoyalTVIconAssets.MUSIC_BACK,
                             onClick = onBack
                         )
                     }
@@ -1208,7 +1216,7 @@ Row(
 ) {
     // السابق: اتجاه السهمين إلى اليمين
     MusicImageButton(
-        iconRes = R.drawable.royal_music_next,
+        iconPath = RoyalTVIconAssets.MUSIC_PREVIOUS,
         description = "الأغنية السابقة",
         modifier = Modifier.weight(1f),
         onClick = { moveTrack(-1) }
@@ -1216,14 +1224,15 @@ Row(
 
     // تشغيل وإيقاف
     MusicImageButton(
-        iconRes = if (isPlaying) {
-            R.drawable.royal_music_pause
+        iconPath = if (isPlaying) {
+            RoyalTVIconAssets.MUSIC_PAUSE
         } else {
-            R.drawable.royal_music_play
+            RoyalTVIconAssets.MUSIC_PLAY
         },
         description = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
         modifier = Modifier.weight(1f),
         primary = true,
+        active = isPlaying,
         enabled = tracks.isNotEmpty(),
         onClick = {
     if (selectedId == null) {
@@ -1250,7 +1259,7 @@ Row(
 
     // التالي: اتجاه السهمين إلى اليسار
     MusicImageButton(
-        iconRes = R.drawable.royal_music_previous,
+        iconPath = RoyalTVIconAssets.MUSIC_NEXT,
         description = "الأغنية التالية",
         modifier = Modifier.weight(1f),
         onClick = { moveTrack(1) }
@@ -1265,7 +1274,7 @@ Row(
     verticalAlignment = Alignment.CenterVertically
 ) {
     MusicImageButton(
-        iconRes = R.drawable.royal_music_shuffle,
+        iconPath = RoyalTVIconAssets.MUSIC_SHUFFLE,
         description = "تشغيل عشوائي",
         modifier = Modifier.weight(1f),
         active = shuffleEnabled,
@@ -1275,7 +1284,7 @@ Row(
     )
 
     MusicImageButton(
-        iconRes = R.drawable.royal_music_repeat,
+        iconPath = RoyalTVIconAssets.MUSIC_REPEAT,
         description = "تكرار قائمة الأغاني",
         modifier = Modifier.weight(1f),
         active = repeatMode == 2,
@@ -1305,7 +1314,7 @@ Row(
     )
 
 MusicImageButton(
-    iconRes = R.drawable.royal_music_repeat_one,
+    iconPath = RoyalTVIconAssets.MUSIC_REPEAT,
     description = "تكرار الأغنية الحالية",
     modifier = Modifier.weight(1f),
     active = repeatMode == 1,
@@ -1336,10 +1345,8 @@ MusicImageButton(
 
 
     MusicButton(
-        if (
-            currentTrack != null &&
-            favorites.contains(currentTrack.id.toString())
-        ) "♥" else "♡",
+        "",
+        iconPath = RoyalTVIconAssets.MUSIC_FAVORITE,
         modifier = Modifier.weight(1f),
         active = currentTrack != null &&
             favorites.contains(currentTrack.id.toString()),
@@ -1419,7 +1426,7 @@ private fun AlbumArtwork(
 }
 @Composable
 private fun MusicImageButton(
-    iconRes: Int,
+    iconPath: String,
     description: String,
     modifier: Modifier = Modifier,
     primary: Boolean = false,
@@ -1479,9 +1486,10 @@ private fun MusicImageButton(
                 .focusable(),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = iconRes),
+            RoyalTVIcon(
+                assetPath = iconPath,
                 contentDescription = description,
+                active = active || (primary && enabled),
                 modifier = Modifier
                     .fillMaxSize(0.70f)
                     .then(
@@ -1505,6 +1513,7 @@ private fun MusicButton(
     compact: Boolean = false,
     round: Boolean = false,
     square: Boolean = false,
+    iconPath: String? = null,
     onClick: () -> Unit
 ) {
     val shape = when {
@@ -1544,19 +1553,45 @@ private fun MusicButton(
             .focusable(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            color = when {
-                !enabled -> MusicPearl.copy(alpha = 0.3f)
-                primary -> MusicPanel
-                else -> MusicPearl
-            },
-            fontSize = if (compact) 11.sp else 13.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
+        if (iconPath != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                RoyalTVIcon(
+                    assetPath = iconPath,
+                    contentDescription = label.ifBlank { null },
+                    modifier = Modifier.size(if (compact) 22.dp else 25.dp),
+                    active = active || primary
+                )
+                if (label.isNotBlank()) {
+                    Text(
+                        text = label,
+                        color = if (enabled) MusicPearl else MusicPearl.copy(alpha = 0.3f),
+                        fontSize = if (compact) 11.sp else 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = label,
+                color = when {
+                    !enabled -> MusicPearl.copy(alpha = 0.3f)
+                    primary -> MusicPanel
+                    else -> MusicPearl
+                },
+                fontSize = if (compact) 11.sp else 13.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
     }
 }

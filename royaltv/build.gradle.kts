@@ -13,7 +13,7 @@ android {
         minSdk = 23
         targetSdk = 35
         versionCode = 36
-versionName = "1.35"
+        versionName = "1.35"
     }
 
     signingConfigs {
@@ -60,6 +60,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("com.caverock:androidsvg-aar:1.4")
 
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.1"))
     implementation("io.github.jan-tennert.supabase:realtime-kt")
