@@ -1152,6 +1152,7 @@ Box(
 
                     context.startService(intent)
                     positionMs = target.toInt()
+                    RoyalUiSounds.play(context, RoyalUiSound.MEDIA_SEEK)
                 } catch (_: Exception) {
                     message = "تعذّر تغيير موضع الأغنية."
                 }
@@ -1525,7 +1526,8 @@ private fun MusicButton(
 ) {
     val context = LocalContext.current
     val sound = when {
-        label == "♥" || label == "♡" -> RoyalUiSound.ACTION_FAVORITE
+        label == "♥" -> RoyalUiSound.ACTION_REMOVE
+        label == "♡" -> RoyalUiSound.ACTION_FAVORITE
         label.contains("رجوع") -> RoyalUiSound.NAV_BACK
         label.contains("مسح") -> RoyalUiSound.ACTION_REMOVE
         active -> RoyalUiSound.SELECT_TOGGLE_OFF
