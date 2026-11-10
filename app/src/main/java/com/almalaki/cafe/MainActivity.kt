@@ -79,7 +79,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        RoyalUiSounds.initialize(applicationContext)
+        RoyalUiSounds.initialize(applicationContext, setOf(
+            RoyalUiSound.NAV_FOCUS_MOVE,
+            RoyalUiSound.NAV_BACK,
+            RoyalUiSound.NAV_SELECT,
+            RoyalUiSound.ACTION_ADD_TO_CART,
+            RoyalUiSound.ACTION_REMOVE,
+            RoyalUiSound.ACTION_ERROR,
+            RoyalUiSound.ACTION_SUCCESS,
+            RoyalUiSound.SYSTEM_NOTIFICATION,
+            RoyalUiSound.ACTION_CONFIRM,
+            RoyalUiSound.ACTION_WARNING,
+            RoyalUiSound.ACTION_DELETE
+        ))
         RoyalFontManager.initialize(this)
         RoyalSupabaseAuth.handleDeepLink(intent)
         recoveryTokenState.value = extractRecoveryToken(intent)
