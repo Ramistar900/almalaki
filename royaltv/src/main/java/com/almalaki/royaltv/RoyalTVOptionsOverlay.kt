@@ -53,54 +53,54 @@ private const val HOME_SCREEN_BROADCAST_TITLE =
 "بث محتوى الشاشة الرئيسية"
 
 private data class RoyalOption(
-val icon: String,
+val iconAsset: String,
 val title: String,
 val description: String
 )
 
 private val royalOptions = listOf(
 RoyalOption(
-icon = "📶",
+iconAsset = RoyalTVIconAssets.TV_REMOTE,
 title = "البلوتوث",
 description = "اكتشاف الأجهزة القريبة وإدارة الاتصال"
 ),
 RoyalOption(
-icon = "📡",
+iconAsset = RoyalTVIconAssets.TV_CAST,
 title = "Wi-Fi و Wi-Fi Direct",
 description = "الاتصال المحلي والمباشر بين الأجهزة"
 ),
 RoyalOption(
-icon = "🔐",
+iconAsset = RoyalTVIconAssets.TV_REMOTE,
 title = "أذونات الاتصال",
 description = "متابعة أذونات البلوتوث والشبكة"
 ),
 RoyalOption(
-icon = "📺",
+iconAsset = RoyalTVIconAssets.TV_CHANNELS,
 title = "إدارة الشاشات",
 description = "إعداد الأجهزة وأسماء الشاشات"
 ),
 RoyalOption(
-icon = "🔄",
+iconAsset = RoyalTVIconAssets.TV_REFRESH,
 title = "الاتصال التلقائي",
 description = "إعدادات إعادة الاتصال عند الانقطاع"
 ),
 RoyalOption(
-icon = "🎛️",
+iconAsset = RoyalTVIconAssets.TV_SETTINGS,
 title = "إعدادات القناة",
 description = "خيارات العرض والتحكم بالقناة"
 ),
 RoyalOption(
-icon = "💾",
+iconAsset = RoyalTVIconAssets.TV_SOURCE,
 title = "الحفظ والاستعادة",
 description = "خيارات حفظ إعدادات ROYAL TV"
 ),
 RoyalOption(
-    icon = "📺",
+    iconAsset = RoyalTVIconAssets.TV_CAST,
     title = HOME_SCREEN_BROADCAST_TITLE,
     description = "مشاركة الشاشة بعد موافقة Android"
 ),
 RoyalOption(
-    icon = "📤",
+    iconAsset = RoyalTVIconAssets.TV_LIVE,
     title = "مشاركة التطبيق",
     description = "شارك رابط تنزيل ROYAL TV الرسمي"
 )
@@ -212,16 +212,16 @@ Box(
                     )
                 }
 
-                Text(
-                    text = "✕",
-                    color = OptionsGold,
-                    fontSize = 22.sp,
+                RoyalTVIcon(
+                    assetPath = RoyalTVIconAssets.TV_BACK,
+                    contentDescription = "إغلاق القائمة",
                     modifier = Modifier
+                        .size(28.dp)
                         .clip(CircleShape)
                         .clickable {
                             menuOpen = false
                         }
-                        .padding(10.dp)
+                        .padding(3.dp)
                 )
             }
 
@@ -307,9 +307,11 @@ Box(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = option.icon,
-                            fontSize = 23.sp
+                        RoyalTVIcon(
+                            assetPath = option.iconAsset,
+                            contentDescription = option.title,
+                            modifier = Modifier.size(30.dp),
+                            active = isSelected
                         )
 
                         Column(
@@ -401,13 +403,13 @@ Box(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Text(
-            text = "⚙",
-            color = OptionsGold,
-            fontSize = 22.sp,
-            modifier = Modifier.graphicsLayer {
-                rotationZ = rotation
-            }
+        RoyalTVIcon(
+            assetPath = RoyalTVIconAssets.TV_SETTINGS,
+            contentDescription = "الإعدادات",
+            modifier = Modifier
+                .size(27.dp)
+                .graphicsLayer { rotationZ = rotation },
+            active = menuOpen
         )
 
         Text(
@@ -439,10 +441,10 @@ Box(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(
-            text = "⏻",
-            color = OptionsGold,
-            fontSize = 20.sp
+        RoyalTVIcon(
+            assetPath = RoyalTVIconAssets.TV_POWER,
+            contentDescription = "خروج",
+            modifier = Modifier.size(23.dp)
         )
         Text(
             text = "خروج",

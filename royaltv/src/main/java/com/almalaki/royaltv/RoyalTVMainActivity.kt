@@ -23,6 +23,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -36,6 +37,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -64,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -1473,7 +1478,8 @@ selectedSource == "الفيديو" -> {
                             "التطبيقات",
                             "اكتشاف تطبيقات الجهاز",
                             R.drawable.ic_royal_apps,
-                            Modifier.weight(1f)
+                            Modifier.weight(1f),
+                            iconPath = RoyalTVIconAssets.LAUNCHER_APPS
                         ) {
                             selectedSource = "التطبيقات"
                         }
@@ -1496,7 +1502,8 @@ selectedSource == "الفيديو" -> {
                             "موسيقى",
                             "مكتبة الموسيقى",
                             R.drawable.ic_royal_music,
-                            Modifier.weight(1f)
+                            Modifier.weight(1f),
+                            iconPath = RoyalTVIconAssets.LAUNCHER_MUSIC
                         ) {
                             selectedSource = "موسيقى"
                         }
@@ -1505,7 +1512,8 @@ selectedSource == "الفيديو" -> {
                             "الفيديو",
                             "مكتبة الصور والفيديو",
                             R.drawable.ic_royal_video,
-                            Modifier.weight(1f)
+                            Modifier.weight(1f),
+                            iconPath = RoyalTVIconAssets.LAUNCHER_MOVIES
                         ) {
                             selectedSource = "الفيديو"
                         }
@@ -1519,7 +1527,8 @@ selectedSource == "الفيديو" -> {
                             "بث الملكي",
                             "استقبال H.264",
                             R.drawable.ic_royal_cast,
-                            Modifier.fillMaxWidth(0.5f)
+                            Modifier.fillMaxWidth(0.5f),
+                            iconPath = RoyalTVIconAssets.TV_CAST
                         ) {
                             incomingStreamActive = false
                             selectedSource = "بث الملكي"
@@ -1758,24 +1767,52 @@ private fun RoyalTVSourceTile(
     subtitle: String,
     iconRes: Int,
     modifier: Modifier = Modifier,
+    iconPath: String? = null,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
+    val cardScale by animateFloatAsState(
+        targetValue = if (focused) 1.045f else 1f,
+        animationSpec = tween(180),
+        label = "royal_source_focus_scale"
+    )
+
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .scale(cardScale)
+            .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFF111722))
-            .border(1.dp, RoyalGold, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .border(
+                1.dp,
+                if (focused) RoyalGold else RoyalGold.copy(alpha = 0.72f),
+                RoundedCornerShape(14.dp)
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .focusable(interactionSource = interactionSource)
             .padding(horizontal = 8.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Image(
-    painter = painterResource(id = iconRes),
-    contentDescription = title,
-    modifier = Modifier.size(48.dp),
-    contentScale = ContentScale.Fit
-)
+        if (iconPath != null) {
+            RoyalTVIcon(
+                assetPath = iconPath,
+                contentDescription = title,
+                modifier = Modifier.size(48.dp),
+                active = focused
+            )
+        } else {
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = title,
+                modifier = Modifier.size(48.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
         Text(
             title,
             color = RoyalPearl,

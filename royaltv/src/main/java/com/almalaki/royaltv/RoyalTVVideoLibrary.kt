@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import android.Manifest
 import android.content.Context
+import android.media.MediaPlayer
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -357,7 +358,8 @@ Box(
             
 
                         RoyalVideoButton(
-                text = "‹ رجوع",
+                text = "رجوع",
+                iconPath = RoyalTVIconAssets.VIDEO_BACK,
                 onClick = { goBack() }
             )
         }
@@ -508,7 +510,8 @@ Image(
                         ) {
                             
                             RoyalVideoIconButton(
-    symbol = "↻",
+    assetPath = RoyalTVIconAssets.TV_REFRESH,
+    description = "تحديث المكتبة",
     onClick = { refreshLibrary() }
 )
                         }
@@ -613,23 +616,23 @@ Box(
             }
         )
     } else {
-        Text(
-            text = "▶",
-            color = gold,
-            fontWeight = FontWeight.ExtraBold
+        RoyalTVIcon(
+            assetPath = RoyalTVIconAssets.VIDEO_PLAY,
+            contentDescription = "تشغيل الفيديو",
+            modifier = Modifier.size(36.dp)
         )
     }
 
-    Text(
-        text = "▶",
+    RoyalTVIcon(
+        assetPath = RoyalTVIconAssets.VIDEO_PLAY,
+        contentDescription = "تشغيل الفيديو",
         modifier = Modifier
             .background(
                 VideoBlack.copy(alpha = 0.65f),
                 RoundedCornerShape(50)
             )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        color = gold,
-        fontWeight = FontWeight.ExtraBold
+            .padding(7.dp)
+            .size(34.dp)
     )
 }
 
@@ -1003,43 +1006,189 @@ private fun keyVideoPlayer(
     media: RoyalLocalMedia,
     modifier: Modifier = Modifier
 ) {
-    var videoView by remember {
-        mutableStateOf<VideoView?>(null)
-    }
+    var videoView by remember { mutableStateOf<VideoView?>(null) }
+    var preparedPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var isMuted by remember { mutableStateOf(false) }
+    var durationMs by remember { mutableIntStateOf(0) }
+    var positionMs by remember { mutableIntStateOf(0) }
+    var draggingPosition by remember { mutableStateOf<Float?>(null) }
 
-    AndroidView(
-        modifier = modifier
-            .background(Color.Black),
-        factory = { ctx ->
-            VideoView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-
-                val controller = MediaController(ctx)
-                controller.setAnchorView(this)
-                setMediaController(controller)
-
-                videoView = this
-            }
-        },
-        update = { view ->
-            if (view.tag != media.uri.toString()) {
-                view.tag = media.uri.toString()
-                view.setVideoURI(media.uri)
-
-                view.setOnPreparedListener { player ->
-                    player.isLooping = false
-                    player.start()
+    LaunchedEffect(videoView, media.uri) {
+        while (videoView != null) {
+            videoView?.let { view ->
+                if (view.tag == media.uri.toString()) {
+                    positionMs = view.currentPosition.coerceAtLeast(0)
+                    isPlaying = view.isPlaying
                 }
             }
+            delay(400)
         }
-    )
+    }
+
+    Column(modifier = modifier.background(VideoBlack)) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color.Black),
+            factory = { ctx ->
+                VideoView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    videoView = this
+                }
+            },
+            update = { view ->
+                if (view.tag != media.uri.toString()) {
+                    view.tag = media.uri.toString()
+                    view.setOnPreparedListener { player ->
+                        preparedPlayer = player
+                        player.isLooping = false
+                        durationMs = player.duration.coerceAtLeast(0)
+                        player.setVolume(
+                            if (isMuted) 0f else 1f,
+                            if (isMuted) 0f else 1f
+                        )
+                        player.start()
+                        isPlaying = true
+                    }
+                    view.setOnCompletionListener {
+                        isPlaying = false
+                        positionMs = durationMs
+                    }
+                    view.setVideoURI(media.uri)
+                }
+            }
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+        ) {
+            Slider(
+                value = (draggingPosition ?: positionMs.toFloat()).coerceIn(
+                    0f,
+                    durationMs.coerceAtLeast(1).toFloat()
+                ),
+                onValueChange = { draggingPosition = it },
+                onValueChangeFinished = {
+                    draggingPosition?.let { target ->
+                        videoView?.seekTo(target.toInt().coerceAtLeast(0))
+                        positionMs = target.toInt().coerceAtLeast(0)
+                    }
+                    draggingPosition = null
+                },
+                valueRange = 0f..durationMs.coerceAtLeast(1).toFloat(),
+                enabled = durationMs > 0
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    royalDurationLabel(
+                        (draggingPosition?.toLong() ?: positionMs.toLong())
+                    ),
+                    color = VideoPearl.copy(alpha = 0.76f),
+                    fontSize = 11.sp
+                )
+                Text(
+                    royalDurationLabel(durationMs.toLong()),
+                    color = VideoPearl.copy(alpha = 0.76f),
+                    fontSize = 11.sp
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RoyalVideoIconButton(
+                    assetPath = RoyalTVIconAssets.VIDEO_SEEK_BACK,
+                    description = "رجوع 10 ثوانٍ",
+                    onClick = {
+                        videoView?.let { view ->
+                            val target = (view.currentPosition - 10_000).coerceAtLeast(0)
+                            view.seekTo(target)
+                            positionMs = target
+                        }
+                    }
+                )
+
+                Spacer(Modifier.width(14.dp))
+
+                RoyalVideoIconButton(
+                    assetPath = if (isPlaying) {
+                        RoyalTVIconAssets.VIDEO_PAUSE
+                    } else {
+                        RoyalTVIconAssets.VIDEO_PLAY
+                    },
+                    description = if (isPlaying) "إيقاف مؤقت" else "تشغيل",
+                    primary = true,
+                    active = isPlaying,
+                    onClick = {
+                        videoView?.let { view ->
+                            if (view.isPlaying) {
+                                view.pause()
+                                isPlaying = false
+                            } else {
+                                view.start()
+                                isPlaying = true
+                            }
+                        }
+                    }
+                )
+
+                Spacer(Modifier.width(14.dp))
+
+                RoyalVideoIconButton(
+                    assetPath = RoyalTVIconAssets.VIDEO_SEEK_FORWARD,
+                    description = "تقديم 10 ثوانٍ",
+                    onClick = {
+                        videoView?.let { view ->
+                            val target = (view.currentPosition + 10_000)
+                                .coerceAtMost(durationMs)
+                            view.seekTo(target)
+                            positionMs = target
+                        }
+                    }
+                )
+
+                Spacer(Modifier.width(14.dp))
+
+                RoyalVideoIconButton(
+                    assetPath = if (isMuted) {
+                        RoyalTVIconAssets.VIDEO_MUTE
+                    } else {
+                        RoyalTVIconAssets.VIDEO_VOLUME
+                    },
+                    description = if (isMuted) "إلغاء كتم الصوت" else "كتم الصوت",
+                    active = isMuted,
+                    onClick = {
+                        isMuted = !isMuted
+                        preparedPlayer?.setVolume(
+                            if (isMuted) 0f else 1f,
+                            if (isMuted) 0f else 1f
+                        )
+                    }
+                )
+            }
+        }
+    }
 
     DisposableEffect(media.uri, videoView) {
         onDispose {
             videoView?.stopPlayback()
+            preparedPlayer = null
         }
     }
 }
@@ -1048,9 +1197,10 @@ private fun keyVideoPlayer(
 private fun RoyalVideoButton(
     text: String,
     modifier: Modifier = Modifier,
+    iconPath: String? = null,
     onClick: () -> Unit
 ) {
-    Box(
+    Row(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .background(VideoBlue.copy(alpha = 0.85f))
@@ -1060,12 +1210,17 @@ private fun RoyalVideoButton(
                 shape = RoundedCornerShape(10.dp)
             )
             .clickable(onClick = onClick)
-            .padding(
-                horizontal = 16.dp,
-                vertical = 11.dp
-            ),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp, vertical = 11.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (iconPath != null) {
+            RoyalTVIcon(
+                assetPath = iconPath,
+                contentDescription = text,
+                modifier = Modifier.size(22.dp)
+            )
+        }
         Text(
             text = text,
             color = VideoPearl,
@@ -1076,30 +1231,37 @@ private fun RoyalVideoButton(
         )
     }
 }
+
 @Composable
 private fun RoyalVideoIconButton(
-    symbol: String,
+    assetPath: String,
+    description: String,
     modifier: Modifier = Modifier,
+    primary: Boolean = false,
+    active: Boolean = false,
     onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
-            .size(44.dp)
+            .size(if (primary) 54.dp else 44.dp)
             .clip(RoundedCornerShape(50))
-            .background(VideoBlue.copy(alpha = 0.88f))
+            .background(
+                if (primary) VideoGold.copy(alpha = 0.18f)
+                else VideoBlue.copy(alpha = 0.88f)
+            )
             .border(
-                width = 1.dp,
+                width = if (active || primary) 1.6.dp else 1.dp,
                 color = VideoGold,
                 shape = RoundedCornerShape(50)
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = symbol,
-            color = VideoGold,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
+        RoyalTVIcon(
+            assetPath = assetPath,
+            contentDescription = description,
+            modifier = Modifier.size(if (primary) 34.dp else 28.dp),
+            active = active || primary
         )
     }
 }
