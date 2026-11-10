@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.rememberScrollState
@@ -47,6 +48,7 @@ fun CartDialog(
     onIncrease: (Int) -> Unit,
     onDecrease: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     val selectedProducts =
         products.filter { (cart[it.id] ?: 0) > 0 }
 
@@ -338,9 +340,8 @@ fun CartDialog(
                                     CartQuantityButton(
                                         text = "−",
                                         onClick = {
-                                            onDecrease(
-                                                product.id
-                                            )
+                                            AppSounds.productRemoved(context)
+                                            onDecrease(product.id)
                                         }
                                     )
 
@@ -360,9 +361,8 @@ fun CartDialog(
                                     CartQuantityButton(
                                         text = "+",
                                         onClick = {
-                                            onIncrease(
-                                                product.id
-                                            )
+                                            AppSounds.productAdded(context)
+                                            onIncrease(product.id)
                                         }
                                     )
                                 }
@@ -471,7 +471,10 @@ fun CartDialog(
                 ) {
 
                     TextButton(
-                        onClick = onClose,
+                        onClick = {
+                            AppSounds.buttonClick(context)
+                            onClose()
+                        },
                         modifier =
                             Modifier.weight(1f)
                     ) {
@@ -483,7 +486,10 @@ fun CartDialog(
                     }
 
                     Button(
-                        onClick = onCheckout,
+                        onClick = {
+                            AppSounds.buttonClick(context)
+                            onCheckout()
+                        },
                         enabled =
                             selectedProducts.isNotEmpty(),
                         modifier =
