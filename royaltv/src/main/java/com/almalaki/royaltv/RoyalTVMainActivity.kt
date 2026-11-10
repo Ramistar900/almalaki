@@ -1777,12 +1777,16 @@ private fun RoyalTVSourceTile(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF111722))
             .border(1.dp, RoyalGold, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .clickable(onClick = {
+                RoyalUiSounds.play(context, RoyalUiSound.NAV_SELECT)
+                onClick()
+            })
             .padding(horizontal = 8.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp)
