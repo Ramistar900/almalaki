@@ -1802,14 +1802,14 @@ private fun RoyalTVSourceTile(
             RoyalTVIcon(
                 assetPath = iconPath,
                 contentDescription = title,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(64.dp),
                 active = focused
             )
         } else {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = title,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(64.dp),
                 contentScale = ContentScale.Fit
             )
         }
