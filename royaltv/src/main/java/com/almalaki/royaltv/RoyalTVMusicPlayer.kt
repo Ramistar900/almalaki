@@ -627,7 +627,7 @@ Box(
                     RoyalTVIcon(
                         assetPath = RoyalTVIconAssets.MUSIC_SEARCH,
                         contentDescription = "بحث",
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(36.dp)
                     )
 
                     Spacer(Modifier.width(10.dp))
@@ -1491,7 +1491,7 @@ private fun MusicImageButton(
                 contentDescription = description,
                 active = active || (primary && enabled),
                 modifier = Modifier
-                    .fillMaxSize(0.70f)
+                    .fillMaxSize(0.84f)
                     .then(
                         if (enabled) Modifier
                         else Modifier.alpha(0.35f)
@@ -1525,7 +1525,7 @@ private fun MusicButton(
 
     Box(
         modifier = modifier
-            .height(if (compact) 34.dp else 44.dp)
+            .height(if (compact) 44.dp else 56.dp)
             .clip(shape)
             .background(
                 when {
@@ -1562,7 +1562,7 @@ private fun MusicButton(
                 RoyalTVIcon(
                     assetPath = iconPath,
                     contentDescription = label.ifBlank { null },
-                    modifier = Modifier.size(if (compact) 22.dp else 25.dp),
+                    modifier = Modifier.size(if (compact) 30.dp else 36.dp),
                     active = active || primary
                 )
                 if (label.isNotBlank()) {
