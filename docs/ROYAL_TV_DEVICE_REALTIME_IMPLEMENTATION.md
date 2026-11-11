@@ -1,6 +1,6 @@
 # ROYAL TV tenant-bound registration and Realtime authorization
 
-Status: implementation and automated regression coverage are on the draft branch `feature/royal-tv-device-registration-uuid`. Production migration, Edge Function deployment, Auth changes, and Realtime project settings remain untouched. Keep PR #40 as a draft until the latest commit passes CI and the staging/physical-device gates below.
+Status: implementation and automated regression coverage are on the draft branch `feature/royal-tv-device-registration-uuid`. CI passed on PR head `5e63ddb40c956ac21dc730e70e86660811946053` (Almalaki Debug APK, standalone ROYAL TV Debug APK, PostgreSQL authorization suites, and Deno type-check). Production migration, Edge Function deployment, Auth changes, and Realtime project settings remain untouched. Keep PR #40 as a draft until staging and physical-device gates below pass.
 
 ## What this stage implements
 
@@ -10,7 +10,7 @@ Status: implementation and automated regression coverage are on the draft branch
 - Encrypted local persistence of the device access/refresh tokens using Android Keystore AES-GCM. The TV refreshes its own session and does not fall back to expired credentials.
 - A private server registry mapping Auth identity, registration UUID, channel display ID, restaurant ID, owner, and revocation state.
 - Owner-only code issuance, device listing, and device revocation. Each list/revoke request revalidates the caller's signed-in user against active owner membership server-side.
-- Revocation marks the registry row and bans the device Auth user. When the TV's refresh is rejected, it clears its local session and returns to the activation screen.
+- Revocation marks the registry row and bans the device Auth user. When the TV can no longer refresh/reauthorize its session, it closes the receiver, clears its local session, and returns to the activation screen. A later pairing uses the same durable device UUID/channel ID but a fresh Auth identity; the old identity remains revoked. The database refuses to replace a still-active device with a new code.
 
 ## Realtime channel authorization
 
@@ -32,15 +32,14 @@ Supabase caches channel authorization for an already-open WebSocket until the JW
 
 ## Automated verification
 
-The latest fully green run before the final revoked-session UI callback change verified:
+CI passed on PR head `5e63ddb40c956ac21dc730e70e86660811946053`:
 
-- Almalaki Debug APK build.
-- Standalone ROYAL TV Debug APK build.
+- Almalaki Debug APK build and standalone ROYAL TV Debug APK build.
 - Existing strict owner/restaurant-scope SQL suite.
-- ROYAL TV registration, one-use/expiry, cross-tenant, read/write, revocation, anonymous-denial, owner-order-topic, and customer-interface-topic SQL regression fixture.
+- ROYAL TV registration, one-use/expiry, active-device replacement denial, revoked-device re-pair with a fresh Auth identity, cross-tenant, read/write, revocation, anonymous-denial, owner-order-topic, and customer-interface-topic SQL regression fixture.
 - Deno type-check of `supabase/functions/royal-tv-device-auth/index.ts`.
 
-The follow-up change that returns a revoked TV to its activation screen must pass CI on the resulting PR head before this work is considered validated. A successful build or disposable PostgreSQL test is not a substitute for the staging and physical-device checks below.
+A successful build and disposable PostgreSQL test do not replace the staging and physical-device checks below.
 
 ## Remaining gates before production
 
