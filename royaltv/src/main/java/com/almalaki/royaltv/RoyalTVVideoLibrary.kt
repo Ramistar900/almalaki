@@ -899,6 +899,7 @@ AndroidView(
                                 RoyalVideoButton(
                                     text = "السابق",
                                     modifier = Modifier.weight(1f),
+                                    iconPath = RoyalTVIconAssets.VIDEO_PREVIOUS,
                                     onClick = {
                                         selectedImageIndex =
                                             if (safeIndex == 0) {
@@ -912,6 +913,7 @@ AndroidView(
                                 RoyalVideoButton(
                                     text = "التالي",
                                     modifier = Modifier.weight(1f),
+                                    iconPath = RoyalTVIconAssets.VIDEO_NEXT,
                                     onClick = {
                                         selectedImageIndex =
                                             (safeIndex + 1) % images.size
