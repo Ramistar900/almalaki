@@ -639,9 +639,10 @@ LaunchedEffect(syncedCustomerUserId) {
                     // ارتفاع تقريبي مطابق لبنر الاسم، لتبقى التصنيفات تحته.
                     val titleBannerHeight = (maxWidth / 2.6f) + 6.dp
                     val columns = when {
-                        maxWidth < 600.dp -> 3
-                        maxWidth < 900.dp -> 4
-                        maxWidth < 1400.dp -> 5
+                        maxWidth < 420.dp -> 2
+                        maxWidth < 840.dp -> 3
+                        maxWidth < 1200.dp -> 4
+                        maxWidth < 1600.dp -> 5
                         else -> 6
                     }
                     // احسب أبعاد كبسولات التصنيفات ضمن نطاق BoxWithConstraints.
