@@ -77,6 +77,7 @@ fun AdminScreen(
 val context = LocalContext.current
 val configuration = LocalConfiguration.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+val useWideAdminLayout = isLandscape && configuration.screenWidthDp >= 840
     var ownerRestaurantId by remember { mutableStateOf("") }
     var ownerRestaurants by remember { mutableStateOf<List<OwnerRestaurant>>(emptyList()) }
     var restaurantMenuExpanded by remember { mutableStateOf(false) }
@@ -524,7 +525,7 @@ Column(
 
         RoyalShinyLogo(restaurantId = ownerRestaurantId)
     }
-    if (isLandscape) {
+    if (useWideAdminLayout) {
     Column(
     modifier = Modifier
         .fillMaxWidth()
