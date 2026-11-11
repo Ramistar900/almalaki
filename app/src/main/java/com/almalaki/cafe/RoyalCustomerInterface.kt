@@ -129,7 +129,7 @@ onSearchQueryChange: (String) -> Unit = {},
     restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
     brandingRevision: Int = 0,
     content: @Composable () -> Unit
- ) {
+) {
 
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val bottomBannerHeight = when {
@@ -846,7 +846,7 @@ fun RoyalTopBar(
     onSearchQueryChange: (String) -> Unit,
     onMenuClick: () -> Unit,
     brandingRevision: Int = 0
- ) {
+) {
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val topBarHeight = when {
         screenWidthDp < 360 -> 96.dp
