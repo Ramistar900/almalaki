@@ -164,7 +164,7 @@ insert into realtime.messages(topic, extension, payload)
 values ('royal-tv-ROYAL-TV-001', 'broadcast', '{"command":"A"}');
 
 select set_config('realtime.topic', 'royal-tv-ROYAL-TV-BBBBBBBBBBBB', false);
-do $
+do $$
 declare
     v_count integer;
 begin
@@ -183,7 +183,7 @@ begin
         null;
     end;
 end;
-$;
+$$;
 
 -- Owner B can publish only to B's TV.
 select set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', false);
@@ -195,7 +195,7 @@ values ('royal-tv-ROYAL-TV-BBBBBBBBBBBB', 'broadcast', '{"command":"B"}');
 select set_config('realtime.topic', 'royal-orders:restaurant-b', false);
 insert into realtime.messages(topic, extension, payload)
 values ('royal-orders:restaurant-b', 'broadcast', '{"command":"legacy-topic-still-works"}');
-do $
+do $$
 declare
     v_count integer;
 begin
@@ -206,7 +206,7 @@ begin
         raise exception 'Restrictive guard unexpectedly blocked a non-ROYAL-TV topic';
     end if;
 end;
-$;
+$$;
 
 -- TV A receives A's message, never B's, and cannot publish commands.
 select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', false);
@@ -260,7 +260,7 @@ set role anon;
 select set_config('request.jwt.claim.role', 'anon', false);
 select set_config('request.jwt.claim.sub', '', false);
 select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
-do $
+do $$
 declare
     v_count integer;
 begin
@@ -279,7 +279,7 @@ begin
         null;
     end;
 end;
-$;
+$$;
 reset role;
 
 -- Revocation immediately blocks new authorization checks and owner publishes.
