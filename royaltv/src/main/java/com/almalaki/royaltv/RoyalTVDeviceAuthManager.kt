@@ -158,6 +158,8 @@ object RoyalTVDeviceAuthManager {
                     when (code) {
                         "activation_code_invalid_or_used" ->
                             "رمز التفعيل منتهي أو مستخدم أو غير صالح. اطلب رمزًا جديدًا من المالك."
+                        "device_already_registered" ->
+                            "هذا التلفاز مرتبط بالفعل. اطلب من المالك إلغاء ربطه أولًا قبل نقله إلى مطعم آخر."
                         "device_registration_unavailable" ->
                             "تعذر تسجيل هذا التلفاز الآن. حاول إصدار رمز جديد."
                         "service_not_configured" ->
