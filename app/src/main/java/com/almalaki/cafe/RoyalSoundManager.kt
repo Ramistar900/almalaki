@@ -2,13 +2,13 @@ package com.almalaki.cafe
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
 import kotlin.math.PI
-import kotlin.math.exp
 import kotlin.math.sin
 
-/** Elegant short UI sounds generated locally; no audio files or network needed. */
+/** UI feedback uses the shared offline sound library; generated tones remain a safe fallback. */
 object RoyalSoundManager {
     private const val SAMPLE_RATE = 44100
     private var clickSamples: ShortArray? = null
@@ -28,7 +28,7 @@ object RoyalSoundManager {
         return ShortArray(count) { i ->
             val t = i.toDouble() / SAMPLE_RATE
             val tone = sin(2.0 * PI * 1550.0 * t) * 0.62 +
-                    sin(2.0 * PI * 2300.0 * t) * 0.28
+                sin(2.0 * PI * 2300.0 * t) * 0.28
             (tone * envelope(t, duration) * Short.MAX_VALUE * 0.34).toInt().toShort()
         }
     }
@@ -48,20 +48,48 @@ object RoyalSoundManager {
                 if (local >= 0.0 && local < noteLength) {
                     val e = envelope(local, noteLength)
                     value += (sin(2.0 * PI * notes[n] * local) * 0.55 +
-                            sin(2.0 * PI * notes[n] * 2.0 * local) * 0.18) * e
+                        sin(2.0 * PI * notes[n] * 2.0 * local) * 0.18) * e
                 }
             }
-            // Gentle overall fade so the notification feels polished rather than harsh.
             (value * Short.MAX_VALUE * 0.24).toInt().toShort()
         }
     }
 
-    fun playClick() = play(clickSamples ?: makeClick().also { clickSamples = it })
+    fun playClick() {
+        if (!RoyalUiSounds.play(RoyalUiSound.NAV_SELECT)) {
+            play(clickSamples ?: makeClick().also { clickSamples = it })
+        }
+    }
 
-    fun playOrderNotification() =
-        play(orderSamples ?: makeOrder().also { orderSamples = it })
+    fun playOrderNotification() {
+        if (!RoyalUiSounds.play(RoyalUiSound.SYSTEM_NOTIFICATION)) {
+            play(orderSamples ?: makeOrder().also { orderSamples = it })
+        }
+    }
 
-    fun playOrderSent() = playOrderNotification()
+    fun playOrderSent() {
+        playEffect(RoyalUiSound.ACTION_CONFIRM) { playOrderNotification() }
+    }
+
+    fun playConfirm() {
+        playEffect(RoyalUiSound.ACTION_CONFIRM) { playClick() }
+    }
+
+    fun playSuccess() {
+        playEffect(RoyalUiSound.ACTION_SUCCESS) { playOrderNotification() }
+    }
+
+    fun playWarning() {
+        playEffect(RoyalUiSound.ACTION_WARNING) { playClick() }
+    }
+
+    fun playDelete() {
+        playEffect(RoyalUiSound.ACTION_DELETE) { playClick() }
+    }
+
+    private fun playEffect(sound: RoyalUiSound, fallback: () -> Unit) {
+        if (!RoyalUiSounds.play(sound)) fallback()
+    }
 
     private fun play(samples: ShortArray) {
         Thread {
@@ -96,7 +124,7 @@ object RoyalSoundManager {
                 track.stop()
                 track.release()
             } catch (_: Exception) {
-                // Sound is optional; never let audio failure affect the app.
+                // UI sound failures must never affect the order flow.
             }
         }.start()
     }

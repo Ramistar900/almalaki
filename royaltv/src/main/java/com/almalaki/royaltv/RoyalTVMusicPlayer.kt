@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
+
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
@@ -1149,6 +1152,7 @@ Box(
 
                     context.startService(intent)
                     positionMs = target.toInt()
+                    RoyalUiSounds.play(context, RoyalUiSound.MEDIA_SEEK)
                 } catch (_: Exception) {
                     message = "تعذّر تغيير موضع الأغنية."
                 }
@@ -1427,6 +1431,16 @@ private fun MusicImageButton(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val sound = when {
+        description.contains("السابق") -> RoyalUiSound.MEDIA_PREV
+        description.contains("التالية") -> RoyalUiSound.MEDIA_NEXT
+        description == "تشغيل" -> RoyalUiSound.MEDIA_PLAY
+        description == "إيقاف مؤقت" -> RoyalUiSound.MEDIA_PAUSE
+        description.contains("عشوائي") || description.contains("تكرار") ->
+            if (active) RoyalUiSound.SELECT_TOGGLE_OFF else RoyalUiSound.SELECT_TOGGLE_ON
+        else -> RoyalUiSound.NAV_SELECT
+    }
     val shape = CircleShape
 
     BoxWithConstraints(
@@ -1474,7 +1488,10 @@ private fun MusicImageButton(
                 
                 .clickable(
                     enabled = enabled,
-                    onClick = onClick
+                    onClick = {
+                        RoyalUiSounds.play(context, sound)
+                        onClick()
+                    }
                 )
                 .focusable(),
             contentAlignment = Alignment.Center
@@ -1507,6 +1524,15 @@ private fun MusicButton(
     square: Boolean = false,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val sound = when {
+        label == "♥" -> RoyalUiSound.ACTION_REMOVE
+        label == "♡" -> RoyalUiSound.ACTION_FAVORITE
+        label.contains("رجوع") -> RoyalUiSound.NAV_BACK
+        label.contains("مسح") -> RoyalUiSound.ACTION_REMOVE
+        active -> RoyalUiSound.SELECT_TOGGLE_OFF
+        else -> RoyalUiSound.NAV_SELECT
+    }
     val shape = when {
         round -> CircleShape
         square -> RoundedCornerShape(8.dp)
@@ -1539,7 +1565,10 @@ private fun MusicButton(
             )
             .clickable(
                 enabled = enabled,
-                onClick = onClick
+                onClick = {
+                    RoyalUiSounds.play(context, sound)
+                    onClick()
+                }
             )
             .focusable(),
         contentAlignment = Alignment.Center

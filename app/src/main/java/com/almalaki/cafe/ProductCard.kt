@@ -124,7 +124,7 @@ fun ProductCard(
                         key.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
                     )
                 ) {
-                    AppSounds.productClick(context)
+                    AppSounds.productAdded(context)
                     onAdd()
                     true
                 } else {
@@ -304,7 +304,7 @@ fun ProductCard(
                             text = "+",
                             modifier = Modifier.weight(1f),
                             onClick = {
-                                AppSounds.productClick(context)
+                                AppSounds.productAdded(context)
                                 onAdd()
                             }
                         )
