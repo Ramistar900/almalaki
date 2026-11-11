@@ -162,7 +162,7 @@ reset role;
 select set_config('test.code_a', :'code_a', true);
 set role service_role;
 select set_config('request.jwt.claim.role', 'service_role', false);
-do $
+do $replay$
 begin
     begin
         perform *
@@ -178,7 +178,7 @@ begin
         null;
     end;
 end;
-$;
+$replay$;
 reset role;
 
 -- Expired activation codes must fail even when their hash is correct.
@@ -199,7 +199,7 @@ update public.royal_tv_activation_codes
      extensions.digest(convert_to(current_setting('test.expired_code'), 'UTF8'), 'sha256'),
      'hex'
  );
-do $
+do $expired$
 begin
     begin
         perform *
@@ -215,11 +215,11 @@ begin
         null;
     end;
 end;
-$;
+$expired$;
 reset role;
 
 -- Public clients and signed-in owners cannot read the server-only registry directly.
-do $
+do $privileges$
 begin
     if has_table_privilege('anon', 'public.royal_tv_devices', 'SELECT')
        or has_table_privilege('authenticated', 'public.royal_tv_devices', 'SELECT')
@@ -234,7 +234,7 @@ begin
         raise exception 'Anonymous users can issue ROYAL TV activation codes';
     end if;
 end;
-$;
+$privileges$;
 
 -- Owner A can publish to A's registered TV, but not B's.
 set role authenticated;
