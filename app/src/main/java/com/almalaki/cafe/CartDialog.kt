@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -49,6 +51,17 @@ fun CartDialog(
     onDecrease: (Int) -> Unit
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp
+    val screenHeightDp = configuration.screenHeightDp
+    val dialogMaxHeight = (screenHeightDp - 24).coerceAtLeast(320).dp
+    val itemsMaxHeight = when {
+        screenHeightDp < 520 -> 112.dp
+        screenHeightDp < 680 -> 190.dp
+        screenHeightDp < 820 -> 260.dp
+        else -> 360.dp
+    }
+    val quantityButtonSize = if (screenWidthDp < 360) 32.dp else 38.dp
     val selectedProducts =
         products.filter { (cart[it.id] ?: 0) > 0 }
 
@@ -128,6 +141,8 @@ fun CartDialog(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .widthIn(max = if (screenWidthDp >= 600) 640.dp else 480.dp)
+                    .heightIn(max = dialogMaxHeight)
                     .background(
                         brush = dialogBackground,
                         shape = RoundedCornerShape(24.dp)
@@ -262,7 +277,7 @@ fun CartDialog(
                         modifier =
                             Modifier
     .fillMaxWidth()
-    .heightIn(max = 360.dp)
+    .heightIn(max = itemsMaxHeight)
     .verticalScroll(rememberScrollState())
                     ) {
                         selectedProducts.forEach { product ->
@@ -291,7 +306,7 @@ fun CartDialog(
                                     Text(
                                         text = product.name,
                                         color = Color.White,
-                                        fontSize = 15.sp,
+                                        fontSize = if (screenWidthDp < 360) 13.sp else 15.sp,
                                         fontWeight =
                                             FontWeight.SemiBold
                                     )
@@ -339,6 +354,7 @@ fun CartDialog(
 
                                     CartQuantityButton(
                                         text = "−",
+                                        size = quantityButtonSize,
                                         onClick = {
                                             AppSounds.productRemoved(context)
                                             onDecrease(product.id)
@@ -360,6 +376,7 @@ fun CartDialog(
 
                                     CartQuantityButton(
                                         text = "+",
+                                        size = quantityButtonSize,
                                         onClick = {
                                             AppSounds.productAdded(context)
                                             onIncrease(product.id)
@@ -526,11 +543,12 @@ fun CartDialog(
 @Composable
 private fun CartQuantityButton(
     text: String,
+    size: androidx.compose.ui.unit.Dp = 38.dp,
     onClick: () -> Unit
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier.size(38.dp),
+        modifier = Modifier.size(size),
         contentPadding =
             androidx.compose.foundation.layout.PaddingValues(
                 0.dp
