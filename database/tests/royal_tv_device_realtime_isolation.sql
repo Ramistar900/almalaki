@@ -134,6 +134,7 @@ select activation_code as code_b
 reset role;
 
 -- Trusted Edge Function redeems the codes and binds each TV Auth identity.
+select set_config('test.code_a', :'code_a', true);
 set role service_role;
 select set_config('request.jwt.claim.role', 'service_role', false);
 select *
@@ -166,7 +167,7 @@ begin
     begin
         perform *
           from public.redeem_royal_tv_activation_code(
-            encode(extensions.digest(convert_to(:'code_a', 'UTF8'), 'sha256'), 'hex'),
+            encode(extensions.digest(convert_to(current_setting('test.code_a'), 'UTF8'), 'sha256'), 'hex'),
             'aaaaaaaa-3333-4333-8333-333333333333',
             'ROYAL-TV-003',
             'TV A duplicate',
@@ -203,7 +204,7 @@ begin
     begin
         perform *
           from public.redeem_royal_tv_activation_code(
-            encode(extensions.digest(convert_to(:'expired_code', 'UTF8'), 'sha256'), 'hex'),
+            encode(extensions.digest(convert_to(current_setting('test.expired_code'), 'UTF8'), 'sha256'), 'hex'),
             'aaaaaaaa-4444-4444-8444-444444444444',
             'ROYAL-TV-004',
             'TV A expired',
