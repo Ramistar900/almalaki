@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.onFocusChanged
@@ -131,14 +133,21 @@ onSearchQueryChange: (String) -> Unit = {},
     content: @Composable () -> Unit
 ) {
 
+    val adaptiveProfile = LocalRoyalAdaptiveProfile.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val bottomBannerHeight = when {
+        adaptiveProfile.isTelevision -> 136.dp
         screenWidthDp < 360 -> 92.dp
-        screenWidthDp >= 840 -> 120.dp
+        adaptiveProfile.widthClass.name == "EXPANDED" -> 120.dp
         screenWidthDp >= 600 -> 112.dp
         else -> 102.dp
     }
-    val drawerWidth = if (screenWidthDp < 360) 280.dp else 300.dp
+    val drawerWidth = when {
+        adaptiveProfile.isTelevision -> 420.dp
+        screenWidthDp < 360 -> 280.dp
+        adaptiveProfile.isTablet -> 340.dp
+        else -> 300.dp
+    }
     val drawerState =
         rememberDrawerState(DrawerValue.Closed)
 
@@ -1064,6 +1073,7 @@ private fun RoyalDrawerItem(
     subtitle: String? = null,
     onClick: () -> Unit
 ) {
+    val adaptiveProfile = LocalRoyalAdaptiveProfile.current
     var isFocused by remember {
         mutableStateOf(false)
     }
@@ -1081,7 +1091,7 @@ private fun RoyalDrawerItem(
                 .fillMaxWidth()
                 .padding(
                     horizontal = 12.dp,
-                    vertical = 5.dp
+                    vertical = if (adaptiveProfile.isTelevision) 10.dp else 5.dp
                 )
                 .clip(
                     RoundedCornerShape(14.dp)
@@ -1119,7 +1129,7 @@ private fun RoyalDrawerItem(
         RoyalAnimatedIcon(
             iconRes = royalDrawerIconResource(icon),
             contentDescription = title,
-            modifier = Modifier.size(42.dp)
+            modifier = Modifier.size(adaptiveProfile.iconSize(42.dp))
         )
 
         Spacer(Modifier.width(12.dp))

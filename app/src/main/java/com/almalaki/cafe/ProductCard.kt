@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.clip
@@ -64,18 +66,17 @@ fun ProductCard(
     onRemove: () -> Unit
 ) {
     val context = LocalContext.current
+    val adaptiveProfile = LocalRoyalAdaptiveProfile.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val productImageHeight = when {
+        adaptiveProfile.isTelevision -> 180.dp
         screenWidthDp < 360 -> 84.dp
         screenWidthDp >= 840 -> 148.dp
         screenWidthDp >= 600 -> 122.dp
         else -> 96.dp
     }
-    val cartButtonSize = when {
-        screenWidthDp < 360 -> 27.dp
-        screenWidthDp >= 600 -> 36.dp
-        else -> 32.dp
-    }
+    val cartButtonSize = adaptiveProfile.iconSize(32.dp)
+        .coerceIn(27.dp, 44.dp)
     var isFocused by remember { mutableStateOf(false) }
 
     val transition =

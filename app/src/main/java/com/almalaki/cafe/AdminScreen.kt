@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Handler
@@ -76,8 +78,10 @@ fun AdminScreen(
 ) {
 val context = LocalContext.current
 val configuration = LocalConfiguration.current
+val adaptiveProfile = LocalRoyalAdaptiveProfile.current
 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-val useWideAdminLayout = isLandscape && configuration.screenWidthDp >= 840
+val useWideAdminLayout = isLandscape &&
+    (adaptiveProfile.isTelevision || adaptiveProfile.windowWidthDp >= 840.dp)
     var ownerRestaurantId by remember { mutableStateOf("") }
     var ownerRestaurants by remember { mutableStateOf<List<OwnerRestaurant>>(emptyList()) }
     var restaurantMenuExpanded by remember { mutableStateOf(false) }

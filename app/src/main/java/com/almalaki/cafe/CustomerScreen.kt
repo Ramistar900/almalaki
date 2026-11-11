@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
@@ -79,6 +81,7 @@ fun CustomerScreen(
     onDeveloper: () -> Unit
 ) {
     val context = LocalContext.current
+    val adaptiveProfile = LocalRoyalAdaptiveProfile.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val cartBannerHeight = when {
         screenWidthDp < 360 -> 78.dp
@@ -645,13 +648,7 @@ LaunchedEffect(syncedCustomerUserId) {
                 ) {
                     // ارتفاع تقريبي مطابق لبنر الاسم، لتبقى التصنيفات تحته.
                     val titleBannerHeight = (maxWidth / 2.6f) + 6.dp
-                    val columns = when {
-                        maxWidth < 480.dp -> 2
-                        maxWidth < 840.dp -> 3
-                        maxWidth < 1200.dp -> 4
-                        maxWidth < 1600.dp -> 5
-                        else -> 6
-                    }
+                    val columns = adaptiveProfile.customerProductColumns(maxWidth)
                     // احسب أبعاد كبسولات التصنيفات ضمن نطاق BoxWithConstraints.
                     val compactCategories = maxWidth < 480.dp
                     val categoryPillWidth = if (compactCategories) {
@@ -744,8 +741,8 @@ LaunchedEffect(syncedCustomerUserId) {
                          top = titleBannerHeight + 62.dp,
                          bottom = 120.dp
                      ),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(adaptiveProfile.itemSpacing),
+                        verticalArrangement = Arrangement.spacedBy(adaptiveProfile.itemSpacing)
                     ) {
                         groupedProducts.forEach { (category, categoryProducts) ->
 
@@ -769,7 +766,7 @@ LaunchedEffect(syncedCustomerUserId) {
                                         RoyalAnimatedIcon(
                                             iconRes = royalFoodIconResource(category),
                                             contentDescription = category,
-                                            modifier = Modifier.size(34.dp)
+                                            modifier = Modifier.size(adaptiveProfile.iconSize(34.dp))
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
