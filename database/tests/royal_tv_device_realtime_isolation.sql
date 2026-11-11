@@ -119,6 +119,12 @@ insert into public.restaurant_members (restaurant_id, user_id, role, is_active) 
 
 \ir ../migrations/20261107050000_royal_tv_device_realtime_isolation.sql
 
+-- Seed unrelated application topics to verify their legacy readers are migrated
+-- to narrowly authorized private-channel rules without losing visible updates.
+insert into realtime.messages(topic, extension, payload) values
+('royal-orders', 'broadcast', '{"fixture":"order-update"}'),
+('restaurant-interface-aaaaaaaa-0000-4000-8000-000000000001', 'broadcast', '{"fixture":"branding-update"}');
+
 -- Each owner issues an independent one-use code for their own restaurant.
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
@@ -272,6 +278,107 @@ select set_config('realtime.topic', 'royal-tv-ROYAL-TV-BBBBBBBBBBBB', false);
 insert into realtime.messages(topic, extension, payload)
 values ('royal-tv-ROYAL-TV-BBBBBBBBBBBB', 'broadcast', '{"command":"B"}');
 
+-- Private order notifications are joinable only by restaurant owners.
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
+select set_config('realtime.topic', 'royal-orders', false);
+do $order_owner$
+declare
+    v_count integer;
+begin
+    if not private.royal_orders_can_join_topic() then
+        raise exception 'Restaurant A owner could not join the private order topic';
+    end if;
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 1 then
+        raise exception 'Restaurant A owner should receive the order update, got %', v_count;
+    end if;
+    begin
+        insert into realtime.messages(topic, extension, payload)
+        values ('royal-orders', 'broadcast', '{"fixture":"forbidden-owner-broadcast"}');
+        raise exception 'Owner unexpectedly broadcast to the read-only order topic';
+    exception when insufficient_privilege then
+        null;
+    end;
+end;
+$order_owner$;
+
+-- A registered TV identity is not an owner and cannot join order notifications.
+select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', false);
+do $order_device$
+declare
+    v_count integer;
+begin
+    if private.royal_orders_can_join_topic() then
+        raise exception 'A TV device identity was treated as a restaurant owner';
+    end if;
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 0 then
+        raise exception 'A TV device read owner order notifications';
+    end if;
+end;
+$order_device$;
+
+-- Customer branding uses a private channel but remains publicly readable only
+-- for an active restaurant whose UUID is embedded in the topic.
+reset role;
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select set_config('realtime.topic', 'restaurant-interface-aaaaaaaa-0000-4000-8000-000000000001', false);
+do $interface_customer$
+declare
+    v_count integer;
+begin
+    if not private.restaurant_interface_can_join_topic() then
+        raise exception 'Customer could not join an active restaurant interface channel';
+    end if;
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 1 then
+        raise exception 'Customer should receive the active restaurant branding update, got %', v_count;
+    end if;
+    begin
+        insert into realtime.messages(topic, extension, payload)
+        values (
+            'restaurant-interface-aaaaaaaa-0000-4000-8000-000000000001',
+            'broadcast',
+            '{"fixture":"forbidden-branding-broadcast"}'
+        );
+        raise exception 'Customer unexpectedly published to the read-only interface topic';
+    exception when insufficient_privilege then
+        null;
+    end;
+end;
+$interface_customer$;
+
+select set_config('realtime.topic', 'restaurant-interface-cccccccc-0000-4000-8000-000000000003', false);
+do $interface_unknown$
+declare
+    v_count integer;
+begin
+    if private.restaurant_interface_can_join_topic() then
+        raise exception 'Customer joined an unknown restaurant interface channel';
+    end if;
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 0 then
+        raise exception 'Customer read an unknown restaurant interface channel';
+    end if;
+end;
+$interface_unknown$;
+reset role;
+
+-- Existing unrelated public topics remain unaffected until their own migration.
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
+select set_config('realtime.topic', 'royal-orders:restaurant-b', false);
 -- Existing policies for unrelated topics remain effective.
 select set_config('realtime.topic', 'royal-orders:restaurant-b', false);
 insert into realtime.messages(topic, extension, payload)
