@@ -1,5 +1,8 @@
 package com.almalaki.royaltv
 
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
+
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
@@ -29,6 +32,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -116,6 +121,12 @@ var menuOpen by remember {
 mutableStateOf(false)
 }
 val context = LocalContext.current
+var uiSoundsEnabled by remember(context) {
+    mutableStateOf(RoyalUiSounds.isEnabled(context))
+}
+var uiSoundsVolume by remember(context) {
+    mutableStateOf(RoyalUiSounds.getVolume(context).coerceIn(0f, 0.3f))
+}
 
 var selectedOption by remember {
     mutableStateOf<RoyalOption?>(null)
@@ -219,6 +230,7 @@ Box(
                     modifier = Modifier
                         .clip(CircleShape)
                         .clickable {
+                            RoyalUiSounds.play(context, RoyalUiSound.NAV_SELECT)
                             menuOpen = false
                         }
                         .padding(10.dp)
@@ -244,6 +256,60 @@ Box(
                     .padding(top = 10.dp, bottom = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(OptionsCard)
+                        .border(
+                            width = 1.dp,
+                            color = OptionsGold.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "أصوات الواجهة",
+                                color = OptionsGold,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = if (uiSoundsEnabled) "مفعّلة" else "مكتومة",
+                                color = OptionsText.copy(alpha = 0.8f),
+                                fontSize = 11.sp
+                            )
+                        }
+                        Switch(
+                            checked = uiSoundsEnabled,
+                            onCheckedChange = { enabled ->
+                                uiSoundsEnabled = enabled
+                                RoyalUiSounds.setEnabled(context, enabled)
+                            }
+                        )
+                    }
+                    Text(
+                        text = "مستوى الصوت: ${(uiSoundsVolume * 100f).toInt()}%",
+                        color = OptionsText,
+                        fontSize = 11.sp
+                    )
+                    Slider(
+                        value = uiSoundsVolume,
+                        onValueChange = { value ->
+                            uiSoundsVolume = value
+                            RoyalUiSounds.setVolume(context, value)
+                        },
+                        valueRange = 0f..0.3f,
+                        enabled = uiSoundsEnabled
+                    )
+                }
+
                 royalOptions.forEach { option ->
                     val isSelected = selectedOption == option
 
@@ -270,6 +336,7 @@ Box(
                                 shape = RoundedCornerShape(12.dp)
                             )
                             .clickable {
+                                RoyalUiSounds.play(context, RoyalUiSound.NAV_SELECT)
                                 selectedOption = option
 
                                 if (
@@ -377,6 +444,7 @@ Box(
                 shape = RoundedCornerShape(14.dp)
             )
             .clickable {
+                RoyalUiSounds.play(context, RoyalUiSound.NAV_SELECT)
                 scope.launch {
                     buttonScale.animateTo(
                         targetValue = 0.88f,
