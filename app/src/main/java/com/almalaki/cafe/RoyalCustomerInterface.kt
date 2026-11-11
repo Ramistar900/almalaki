@@ -70,6 +70,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -128,8 +129,16 @@ onSearchQueryChange: (String) -> Unit = {},
     restaurantId: String = ROYAL_DEFAULT_RESTAURANT_ID,
     brandingRevision: Int = 0,
     content: @Composable () -> Unit
-) {
+ ) {
 
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val bottomBannerHeight = when {
+        screenWidthDp < 360 -> 92.dp
+        screenWidthDp >= 840 -> 120.dp
+        screenWidthDp >= 600 -> 112.dp
+        else -> 102.dp
+    }
+    val drawerWidth = if (screenWidthDp < 360) 280.dp else 300.dp
     val drawerState =
         rememberDrawerState(DrawerValue.Closed)
 
@@ -193,7 +202,7 @@ onSearchQueryChange: (String) -> Unit = {},
             ModalDrawerSheet(
 
                 modifier =
-                    Modifier.width(300.dp),
+                    Modifier.width(drawerWidth),
 
                 drawerContainerColor =
                     if (isDarkMode) {
@@ -370,7 +379,7 @@ Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(bottom = 102.dp)
+                .padding(bottom = bottomBannerHeight)
         ) {
             // يبقى المحتوى قابلاً للتمرير تحت بنر اسم القائمة.
             Box(modifier = Modifier.fillMaxSize()) {
@@ -397,7 +406,7 @@ Box(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(102.dp)
+                    .height(bottomBannerHeight)
                     .align(Alignment.BottomCenter)
             ) {
                 Image(
@@ -417,7 +426,7 @@ Box(
                     onReservationClick = onReservationClick,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .offset(y = 11.dp)
+                        .offset(y = if (screenWidthDp < 360) 7.dp else 11.dp)
                 )
 
                 Box(
@@ -837,7 +846,20 @@ fun RoyalTopBar(
     onSearchQueryChange: (String) -> Unit,
     onMenuClick: () -> Unit,
     brandingRevision: Int = 0
-) {
+ ) {
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val topBarHeight = when {
+        screenWidthDp < 360 -> 96.dp
+        screenWidthDp >= 840 -> 118.dp
+        screenWidthDp >= 600 -> 112.dp
+        else -> 106.dp
+    }
+    val topBannerHeight = when {
+        screenWidthDp < 360 -> 60.dp
+        screenWidthDp >= 600 -> 74.dp
+        else -> 68.dp
+    }
+    val searchHeight = if (screenWidthDp < 360) 32.dp else 35.dp
     var isFocused by remember {
         mutableStateOf(false)
     }
@@ -848,14 +870,14 @@ fun RoyalTopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(106.dp)
+            .height(topBarHeight)
             .clipToBounds()
     ) {
         // البنر العلوي يمتد بعرض الواجهة وينتهي قريباً من مربع البحث.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(68.dp)
+                .height(topBannerHeight)
                 .paint(
                     painter = painterResource(
                         id = R.drawable.royal_customer_top_banner
@@ -903,7 +925,7 @@ fun RoyalTopBar(
                     .padding(start = 38.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                RoyalActiveLogo(size = 32.dp, brandingRevision = brandingRevision)
+                RoyalActiveLogo(size = if (screenWidthDp < 360) 28.dp else if (screenWidthDp >= 600) 36.dp else 32.dp, brandingRevision = brandingRevision)
                 Spacer(Modifier.width(6.dp))
                 RoyalShinyLogo(brandingRevision = brandingRevision)
             }
@@ -916,7 +938,7 @@ fun RoyalTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp)
-                .height(35.dp)
+                .height(searchHeight)
                 .clip(RoundedCornerShape(11.dp))
                 .background(Color(0xFF06452F))
                 .background(Color.Black.copy(alpha = 0.06f))
@@ -968,11 +990,12 @@ fun RoyalTopBar(
 private fun RoyalTitleFrame(
     isDarkMode: Boolean
 ) {
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = 16.dp,
+                horizontal = if (screenWidthDp < 360) 10.dp else 16.dp,
                 vertical = 3.dp
             )
             // زيادة ارتفاع بنر اسم القائمة حتى تبقى النصوص داخله بوضوح.
@@ -1001,7 +1024,12 @@ private fun RoyalTitleFrame(
             Text(
                 text = "القائمة",
                 color = RoyalGoldLight,
-                fontSize = 25.sp,
+                fontSize = when {
+                    screenWidthDp < 360 -> 21.sp
+                    screenWidthDp >= 840 -> 29.sp
+                    screenWidthDp >= 600 -> 27.sp
+                    else -> 25.sp
+                },
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
@@ -1571,12 +1599,18 @@ private fun RoyalCustomerNavigationActions(
     onReservationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val navigationHeight = when {
+        screenWidthDp < 360 -> 52.dp
+        screenWidthDp >= 600 -> 64.dp
+        else -> 58.dp
+    }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .height(58.dp)
-                .padding(horizontal = 10.dp),
+                .height(navigationHeight)
+                .padding(horizontal = if (screenWidthDp < 360) 5.dp else 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1617,6 +1651,12 @@ private fun RoyalCustomerNavigationAction(
     cartCount: Int = 0,
     onClick: () -> Unit
 ) {
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val navigationIconSize = when {
+        screenWidthDp < 360 -> 25.dp
+        screenWidthDp >= 600 -> 34.dp
+        else -> 30.dp
+    }
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -1626,7 +1666,7 @@ private fun RoyalCustomerNavigationAction(
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(30.dp),
+            modifier = Modifier.size(navigationIconSize),
             contentAlignment = Alignment.Center
         ) {
             RoyalAnimatedIcon(
@@ -1656,7 +1696,7 @@ private fun RoyalCustomerNavigationAction(
         Text(
             text = label,
             color = RoyalCustomerNavInk,
-            fontSize = 12.sp,
+            fontSize = if (screenWidthDp < 360) 10.sp else if (screenWidthDp >= 600) 13.sp else 12.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             textAlign = TextAlign.Center
