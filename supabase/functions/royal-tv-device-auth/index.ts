@@ -129,10 +129,25 @@ Deno.serve(async (req: Request) => {
         return respond(403, { error: "activation_code_invalid_or_used" });
       }
 
-      // Each TV receives its own isolated Supabase Auth identity. The random
-      // credentials never leave this function; only the resulting session is
-      // returned to the TV once over TLS.
-      const email = `tv-${deviceId}@royal-tv.invalid`;
+      // Do not silently replace a still-active registration. A revoked TV
+      // may pair again; it receives a fresh Auth identity and the database
+      // atomically rebinds the stable device UUID to that identity.
+      const { data: existingDevice, error: existingDeviceError } = await admin
+        .from("royal_tv_devices")
+        .select("revoked_at")
+        .eq("device_id", deviceId)
+        .maybeSingle();
+
+      if (existingDeviceError) {
+        return respond(503, { error: "device_registration_unavailable" });
+      }
+      if (existingDevice && existingDevice.revoked_at === null) {
+        return respond(409, { error: "device_already_registered" });
+      }
+
+      // A unique registration suffix avoids colliding with the banned Auth
+      // identity from a prior revoked registration of this same physical TV.
+      const email = `tv-${deviceId}-${crypto.randomUUID()}@royal-tv.invalid`;
       const password = makePassword();
       const { data: created, error: createError } =
         await admin.auth.admin.createUser({
@@ -162,6 +177,9 @@ Deno.serve(async (req: Request) => {
 
       if (redeemError || !Array.isArray(redeemed) || redeemed.length !== 1) {
         await admin.auth.admin.deleteUser(created.user.id);
+        if (redeemError?.code === "55000") {
+          return respond(409, { error: "device_already_registered" });
+        }
         return respond(403, { error: "activation_code_invalid_or_used" });
       }
 
