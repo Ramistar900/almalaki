@@ -17,6 +17,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 
 private const val ROYAL_TV_URL =
@@ -45,7 +46,8 @@ object RoyalTVRealtime {
     fun start(
         context: Context,
         deviceId: String,
-        onCommand: (RoyalTVCommand) -> Unit
+        onCommand: (RoyalTVCommand) -> Unit,
+        onAuthenticationInvalid: () -> Unit = {}
     ) {
         if (deviceId.isBlank()) {
             Log.e("RoyalTVRealtime", "معرّف الجهاز فارغ")
@@ -62,9 +64,15 @@ object RoyalTVRealtime {
         receiverScope.launch {
             try {
                 val accessToken = RoyalTVDeviceAuthManager.validAccessToken(context)
-                    ?: throw IllegalStateException(
+                if (accessToken.isNullOrBlank()) {
+                    RoyalTVDeviceAuthManager.clearSession(context)
+                    withContext(Dispatchers.Main) {
+                        onAuthenticationInvalid()
+                    }
+                    throw IllegalStateException(
                         "هذا التلفاز غير مسجل أو انتهت جلسته. أعد ربطه برمز تفعيل جديد."
                     )
+                }
 
                 val supabase = createSupabaseClient(
                     supabaseUrl = ROYAL_TV_URL,
@@ -147,9 +155,13 @@ object RoyalTVRealtime {
                         if (renewedToken.isNullOrBlank()) {
                             Log.e(
                                 "RoyalTVRealtime",
-                                "تعذر تجديد جلسة التلفاز؛ سيتم إغلاق قناة الاستقبال."
+                                "تعذر تجديد جلسة التلفاز؛ سيتم إغلاق قناة الاستقبال وطلب إعادة التفعيل."
                             )
+                            RoyalTVDeviceAuthManager.clearSession(context)
                             deviceChannel.unsubscribe()
+                            withContext(Dispatchers.Main) {
+                                onAuthenticationInvalid()
+                            }
                             break
                         }
 
