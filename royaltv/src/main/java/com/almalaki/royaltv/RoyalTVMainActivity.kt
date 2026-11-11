@@ -1,5 +1,7 @@
 package com.almalaki.royaltv
 
+import com.royal.adaptive.RoyalAdaptiveHost
+
 import com.almalaki.royalsounds.RoyalUiSound
 import com.almalaki.royalsounds.RoyalUiSounds
 
@@ -282,18 +284,20 @@ class RoyalTVMainActivity : ComponentActivity() {
             android.graphics.Color.rgb(8, 12, 18)
 
         setContent {
-            MaterialTheme {
-                RoyalTVChannelScreen(
-                    remoteExitRequested = remoteExitRequested.value,
-                    onRemoteExitHandled = {
-                        remoteExitRequested.value = false
-                    },
-                    onRequestHomeScreenBroadcast = {
-                        screenCapturePermissionLauncher.launch(
-                            projectionManager.createScreenCaptureIntent()
-                        )
-                    }
-                )
+            RoyalAdaptiveHost {
+                MaterialTheme {
+                    RoyalTVChannelScreen(
+                        remoteExitRequested = remoteExitRequested.value,
+                        onRemoteExitHandled = {
+                            remoteExitRequested.value = false
+                        },
+                        onRequestHomeScreenBroadcast = {
+                            screenCapturePermissionLauncher.launch(
+                                projectionManager.createScreenCaptureIntent()
+                            )
+                        }
+                    )
+                }
             }
         }
     }

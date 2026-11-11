@@ -59,6 +59,7 @@ configurations.configureEach {
 }
 
 dependencies {
+    implementation(project(":royal-adaptive-ui"))
     implementation(project(":royal-ui-sounds"))
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-ktx:1.15.0")

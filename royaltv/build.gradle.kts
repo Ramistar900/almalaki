@@ -52,6 +52,7 @@ versionName = "1.35"
 }
 
 dependencies {
+    implementation(project(":royal-adaptive-ui"))
     implementation(project(":royal-ui-sounds"))
     implementation("androidx.lifecycle:lifecycle-runtime-android:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
