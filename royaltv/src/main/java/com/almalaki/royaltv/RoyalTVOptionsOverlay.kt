@@ -216,7 +216,7 @@ Box(
                     assetPath = RoyalTVIconAssets.TV_CLOSE,
                     contentDescription = "إغلاق القائمة",
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .clickable {
                             menuOpen = false
@@ -310,7 +310,7 @@ Box(
                         RoyalTVIcon(
                             assetPath = option.iconAsset,
                             contentDescription = option.title,
-                            modifier = Modifier.size(42.dp),
+                            modifier = Modifier.size(56.dp),
                             active = isSelected
                         )
 
@@ -407,7 +407,7 @@ Box(
             assetPath = RoyalTVIconAssets.TV_SETTINGS,
             contentDescription = "الإعدادات",
             modifier = Modifier
-                .size(36.dp)
+                .size(44.dp)
                 .graphicsLayer { rotationZ = rotation },
             active = menuOpen
         )
@@ -444,7 +444,7 @@ Box(
         RoyalTVIcon(
             assetPath = RoyalTVIconAssets.TV_POWER,
             contentDescription = "خروج",
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(40.dp)
         )
         Text(
             text = "خروج",
