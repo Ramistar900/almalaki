@@ -268,16 +268,16 @@ as $$
     );
 $$;
 
-grant usage on schema private to authenticated;
+grant usage on schema private to anon, authenticated;
 
 revoke all on function private.royal_tv_can_receive_topic()
     from public, anon;
 revoke all on function private.royal_tv_owner_can_send_topic()
     from public, anon;
 grant execute on function private.royal_tv_can_receive_topic()
-    to authenticated;
+    to anon, authenticated;
 grant execute on function private.royal_tv_owner_can_send_topic()
-    to authenticated;
+    to anon, authenticated;
 
 drop policy if exists "ROYAL TV registered device can receive its own broadcasts"
     on realtime.messages;
@@ -310,4 +310,51 @@ create policy "Restaurant owner can send commands to own ROYAL TV"
     with check (
         extension = 'broadcast'
         and private.royal_tv_owner_can_send_topic()
+    );
+
+
+-- Defense in depth for legacy policies.
+-- PostgreSQL ORs permissive policies together, so an older broad policy such as
+-- USING (true) or WITH CHECK (true) would otherwise bypass the policies above.
+-- These restrictive guards apply to every role, including anon, and constrain
+-- only the reserved ROYAL TV topic namespace. Other Realtime topics keep their
+-- existing policy behavior unchanged.
+drop policy if exists "ROYAL TV reserved topics require tenant authorization for reads"
+    on realtime.messages;
+create policy "ROYAL TV reserved topics require tenant authorization for reads"
+    on realtime.messages
+    as restrictive
+    for select
+    to public
+    using (
+        coalesce(
+            (select realtime.topic()) not like 'royal-tv-ROYAL-TV-%',
+            false
+        )
+        or (
+            extension = 'broadcast'
+            and (
+                (select private.royal_tv_can_receive_topic())
+                or (select private.royal_tv_owner_can_send_topic())
+            )
+        )
+    );
+
+drop policy if exists "ROYAL TV reserved topics require owner authorization for writes"
+    on realtime.messages;
+create policy "ROYAL TV reserved topics require owner authorization for writes"
+    on realtime.messages
+    as restrictive
+    for insert
+    to public
+    with check (
+        coalesce(
+            (select realtime.topic()) not like 'royal-tv-ROYAL-TV-%',
+            false
+        )
+        or (
+            extension = 'broadcast'
+            and (select realtime.topic()) like 'royal-tv-ROYAL-TV-%'
+            and (select private.royal_tv_owner_can_send_topic())
+        )
     );
