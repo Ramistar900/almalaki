@@ -635,7 +635,7 @@ Box(
         RoyalTVIcon(
             assetPath = RoyalTVIconAssets.VIDEO_PLAY,
             contentDescription = "تشغيل الفيديو",
-            modifier = Modifier.size(36.dp)
+            modifier = Modifier.size(48.dp)
         )
     }
 
@@ -1251,7 +1251,7 @@ private fun RoyalVideoButton(
             RoyalTVIcon(
                 assetPath = iconPath,
                 contentDescription = text,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(34.dp)
             )
         }
         Text(
@@ -1276,7 +1276,7 @@ private fun RoyalVideoIconButton(
 ) {
     Box(
         modifier = modifier
-            .size(if (primary) 54.dp else 44.dp)
+            .size(if (primary) 70.dp else 58.dp)
             .clip(RoundedCornerShape(50))
             .background(
                 if (primary) VideoGold.copy(alpha = 0.18f)
@@ -1293,7 +1293,7 @@ private fun RoyalVideoIconButton(
         RoyalTVIcon(
             assetPath = assetPath,
             contentDescription = description,
-            modifier = Modifier.size(if (primary) 34.dp else 28.dp),
+            modifier = Modifier.size(if (primary) 50.dp else 42.dp),
             active = active || primary
         )
     }
