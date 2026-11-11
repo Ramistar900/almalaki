@@ -133,11 +133,6 @@ class RoyalTVMainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             when (event.keyCode) {
-                android.view.KeyEvent.KEYCODE_DPAD_UP,
-                android.view.KeyEvent.KEYCODE_DPAD_DOWN,
-                android.view.KeyEvent.KEYCODE_DPAD_LEFT,
-                android.view.KeyEvent.KEYCODE_DPAD_RIGHT ->
-                    RoyalUiSounds.play(RoyalUiSound.NAV_TV_FOCUS)
                 android.view.KeyEvent.KEYCODE_ESCAPE,
                 android.view.KeyEvent.KEYCODE_BUTTON_B,
                 android.view.KeyEvent.KEYCODE_BACK ->
@@ -162,7 +157,6 @@ class RoyalTVMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         RoyalUiSounds.initialize(applicationContext, setOf(
-            RoyalUiSound.NAV_TV_FOCUS,
             RoyalUiSound.NAV_BACK,
             RoyalUiSound.MEDIA_SEEK,
             RoyalUiSound.MEDIA_PREV,
@@ -1017,6 +1011,7 @@ private fun BroadcastWindow(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var selectedSource by selectedSourceState
     var selectedApp by selectedAppState
     
@@ -1468,6 +1463,7 @@ selectedSource == "الفيديو" -> {
                                 RoundedCornerShape(8.dp)
                             )
                             .clickable {
+                                RoyalUiSounds.play(context, RoyalUiSound.NAV_BACK)
                                 selectedSource = null
                             }
                             .padding(
@@ -1653,6 +1649,11 @@ selectedSource == "الفيديو" -> {
                         shape = RoundedCornerShape(14.dp)
                     )
                     .clickable {
+                        RoyalUiSounds.play(
+                            context,
+                            if (fullscreen) RoyalUiSound.MEDIA_FULLSCREEN_EXIT
+                            else RoyalUiSound.MEDIA_FULLSCREEN_ENTER
+                        )
                         onToggleFullscreen()
                     }
                     .padding(

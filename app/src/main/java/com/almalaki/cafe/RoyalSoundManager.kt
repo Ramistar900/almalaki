@@ -56,13 +56,13 @@ object RoyalSoundManager {
     }
 
     fun playClick() {
-        if (!RoyalUiSounds.play(RoyalUiSound.NAV_SELECT)) {
+        playEffect(RoyalUiSound.NAV_SELECT) {
             play(clickSamples ?: makeClick().also { clickSamples = it })
         }
     }
 
     fun playOrderNotification() {
-        if (!RoyalUiSounds.play(RoyalUiSound.SYSTEM_NOTIFICATION)) {
+        playEffect(RoyalUiSound.SYSTEM_NOTIFICATION) {
             play(orderSamples ?: makeOrder().also { orderSamples = it })
         }
     }
@@ -88,6 +88,7 @@ object RoyalSoundManager {
     }
 
     private fun playEffect(sound: RoyalUiSound, fallback: () -> Unit) {
+        if (!RoyalUiSounds.isEnabled()) return
         if (!RoyalUiSounds.play(sound)) fallback()
     }
 

@@ -43,6 +43,7 @@ object AppSounds {
         duration: Int,
         volume: Int
     ) {
+        if (!RoyalUiSounds.isEnabled(context)) return
         if (!RoyalUiSounds.play(context, sound)) {
             playLegacy(fallbackTone, duration, volume)
         }

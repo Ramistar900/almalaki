@@ -1432,11 +1432,8 @@ private fun MusicImageButton(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
+    // Keep music controls quiet and consistent; avoid the harsher media stingers.
     val sound = when {
-        description.contains("السابق") -> RoyalUiSound.MEDIA_PREV
-        description.contains("التالية") -> RoyalUiSound.MEDIA_NEXT
-        description == "تشغيل" -> RoyalUiSound.MEDIA_PLAY
-        description == "إيقاف مؤقت" -> RoyalUiSound.MEDIA_PAUSE
         description.contains("عشوائي") || description.contains("تكرار") ->
             if (active) RoyalUiSound.SELECT_TOGGLE_OFF else RoyalUiSound.SELECT_TOGGLE_ON
         else -> RoyalUiSound.NAV_SELECT
