@@ -61,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -78,6 +79,12 @@ fun CustomerScreen(
     onDeveloper: () -> Unit
 ) {
     val context = LocalContext.current
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val cartBannerHeight = when {
+        screenWidthDp < 360 -> 78.dp
+        screenWidthDp >= 600 -> 104.dp
+        else -> 88.dp
+    }
     val customerScope = rememberCoroutineScope()
     var customerSyncGeneration by remember { mutableStateOf(0) }
     var customerIdentityReady by remember { mutableStateOf(false) }
@@ -639,7 +646,7 @@ LaunchedEffect(syncedCustomerUserId) {
                     // ارتفاع تقريبي مطابق لبنر الاسم، لتبقى التصنيفات تحته.
                     val titleBannerHeight = (maxWidth / 2.6f) + 6.dp
                     val columns = when {
-                        maxWidth < 420.dp -> 2
+                        maxWidth < 480.dp -> 2
                         maxWidth < 840.dp -> 3
                         maxWidth < 1200.dp -> 4
                         maxWidth < 1600.dp -> 5
@@ -851,7 +858,7 @@ LaunchedEffect(syncedCustomerUserId) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
-                    .height(88.dp)
+                    .height(cartBannerHeight)
                     .clip(
                         androidx.compose.foundation.shape
                             .RoundedCornerShape(16.dp)
