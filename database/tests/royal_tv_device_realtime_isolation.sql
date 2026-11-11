@@ -138,7 +138,7 @@ set role service_role;
 select set_config('request.jwt.claim.role', 'service_role', false);
 select *
   from public.redeem_royal_tv_activation_code(
-    encode(extensions.digest(convert_to(:'code_a', 'UTF8'), 'sha256'), 'hex'),
+    encode(extensions.digest(convert_to(current_setting('test.code_a'), 'UTF8'), 'sha256'), 'hex'),
     'aaaaaaaa-1111-4111-8111-111111111111',
     'ROYAL-TV-001',
     'TV A',
@@ -158,6 +158,7 @@ reset role;
 reset role;
 
 -- Reusing a consumed activation code must fail and must not create a second device.
+select set_config('test.code_a', :'code_a', true);
 set role service_role;
 select set_config('request.jwt.claim.role', 'service_role', false);
 do $
@@ -187,13 +188,14 @@ select activation_code as expired_code
   from public.issue_royal_tv_activation_code('aaaaaaaa-0000-4000-8000-000000000001')
 \gset
 reset role;
+select set_config('test.expired_code', :'expired_code', true);
 
 set role service_role;
 select set_config('request.jwt.claim.role', 'service_role', false);
 update public.royal_tv_activation_codes
    set expires_at = now() - interval '1 minute'
  where code_hash = encode(
-     extensions.digest(convert_to(:'expired_code', 'UTF8'), 'sha256'),
+     extensions.digest(convert_to(current_setting('test.expired_code'), 'UTF8'), 'sha256'),
      'hex'
  );
 do $
