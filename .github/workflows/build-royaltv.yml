@@ -17,7 +17,7 @@ name: Build ROYAL TV APK
       - '.github/workflows/build-royaltv.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: royaltv-versioned-build
@@ -78,11 +78,14 @@ jobs:
 
       - name: Prepare next ROYAL TV version
         id: version
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         shell: bash
         run: |
           set -euo pipefail
 
           python3 - <<'PY'
+          import os
           import pathlib
           import re
 
@@ -99,26 +102,24 @@ jobs:
           )
 
           if not code_match or not name_match:
-              raise SystemExit(
-                  "Could not safely find versionCode and versionName."
-              )
+              raise SystemExit("Could not safely find versionCode and versionName.")
 
           old_code = int(code_match.group(2))
           old_name = name_match.group(2)
           parts = old_name.split(".")
 
           if len(parts) < 2 or not all(part.isdigit() for part in parts):
-              raise SystemExit(
-                  f"Unsupported versionName format: {old_name}"
-              )
+              raise SystemExit(f"Unsupported versionName format: {old_name}")
 
-          parts[1] = str(int(parts[1]) + 1)
+          run_number = int(os.environ["GITHUB_RUN_NUMBER"])
+          new_code = max(old_code + 1, run_number)
+          increment = new_code - old_code
+          parts[1] = str(int(parts[1]) + increment)
 
           if len(parts) > 2:
               parts[2:] = ["0"] * (len(parts) - 2)
 
           new_name = ".".join(parts)
-          new_code = old_code + 1
 
           content = re.sub(
               r'(?m)^(\s*versionCode\s*=\s*)\d+\s*$',
@@ -126,21 +127,15 @@ jobs:
               content,
               count=1
           )
-
           content = re.sub(
               r'(?m)^(\s*versionName\s*=\s*)"[^"]+"\s*$',
               lambda match: match.group(1) + '"' + new_name + '"',
               content,
               count=1
           )
-
           path.write_text(content, encoding="utf-8")
 
-          with open(
-              __import__("os").environ["GITHUB_OUTPUT"],
-              "a",
-              encoding="utf-8"
-          ) as output:
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               output.write(f"new_version={new_name}\n")
               output.write(f"new_code={new_code}\n")
 
@@ -192,26 +187,3 @@ jobs:
           name: ROYAL-TV-Release-APK
           path: royaltv/build/outputs/apk/release/royaltv-release.apk
           if-no-files-found: error
-
-      - name: Save version after successful build
-        env:
-          NEW_VERSION: ${{ steps.version.outputs.new_version }}
-          NEW_CODE: ${{ steps.version.outputs.new_code }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add royaltv/build.gradle.kts
-
-          if git diff --cached --quiet; then
-            echo "No version change to save."
-            exit 1
-          fi
-
-                    git commit -m "chore(royaltv): bump version to $NEW_VERSION ($NEW_CODE)"
-          git pull --rebase origin main
-          git push origin HEAD:main
-          
