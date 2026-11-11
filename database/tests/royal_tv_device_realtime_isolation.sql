@@ -107,7 +107,8 @@ insert into auth.users (id, email) values
 ('10000000-0000-4000-8000-000000000001', 'owner-a@example.invalid'),
 ('20000000-0000-4000-8000-000000000002', 'owner-b@example.invalid'),
 ('a1000000-0000-4000-8000-000000000001', 'tv-a@royal-tv.invalid'),
-('b2000000-0000-4000-8000-000000000002', 'tv-b@royal-tv.invalid');
+('b2000000-0000-4000-8000-000000000002', 'tv-b@royal-tv.invalid'),
+('a3000000-0000-4000-8000-000000000003', 'tv-a-reactivated@royal-tv.invalid');
 
 insert into public.restaurants (id, name, status) values
 ('aaaaaaaa-0000-4000-8000-000000000001', 'Restaurant A', 'active'),
@@ -162,6 +163,57 @@ select *
   );
 reset role;
 
+reset role;
+
+-- An active registration cannot be silently replaced with a new code.
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
+select activation_code as active_duplicate_code
+  from public.issue_royal_tv_activation_code('aaaaaaaa-0000-4000-8000-000000000001')
+\gset
+select set_config('test.active_duplicate_code', :'active_duplicate_code', true);
+reset role;
+
+set role service_role;
+select set_config('request.jwt.claim.role', 'service_role', false);
+do $active_duplicate$
+begin
+    begin
+        perform *
+          from public.redeem_royal_tv_activation_code(
+            encode(extensions.digest(convert_to(current_setting('test.active_duplicate_code'), 'UTF8'), 'sha256'), 'hex'),
+            'aaaaaaaa-1111-4111-8111-111111111111',
+            'ROYAL-TV-001',
+            'TV A duplicate active',
+            'a3000000-0000-4000-8000-000000000003'
+          );
+        raise exception 'An active TV registration was replaced without revocation';
+    exception when sqlstate '55000' then
+        null;
+    end;
+end;
+$active_duplicate$;
+
+do $active_duplicate_code_unused$
+begin
+    if not exists (
+        select 1
+          from public.royal_tv_activation_codes
+         where code_hash = encode(
+             extensions.digest(
+                 convert_to(current_setting('test.active_duplicate_code'), 'UTF8'),
+                 'sha256'
+             ),
+             'hex'
+         )
+           and consumed_at is null
+           and expires_at > now()
+    ) then
+        raise exception 'Rejected active-device pairing consumed or invalidated its code';
+    end if;
+end;
+$active_duplicate_code_unused$;
 reset role;
 
 -- Reusing a consumed activation code must fail and must not create a second device.
@@ -497,6 +549,75 @@ begin
     end if;
 end;
 $$;
+-- A previously revoked TV can pair again using the same durable device
+-- UUID and channel ID, but receives a fresh Auth identity.
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
+select activation_code as reactivation_code
+  from public.issue_royal_tv_activation_code('aaaaaaaa-0000-4000-8000-000000000001')
+\gset
+select set_config('test.reactivation_code', :'reactivation_code', true);
+reset role;
+
+set role service_role;
+select set_config('request.jwt.claim.role', 'service_role', false);
+select *
+  from public.redeem_royal_tv_activation_code(
+    encode(extensions.digest(convert_to(current_setting('test.reactivation_code'), 'UTF8'), 'sha256'), 'hex'),
+    'aaaaaaaa-1111-4111-8111-111111111111',
+    'ROYAL-TV-001',
+    'TV A reactivated',
+    'a3000000-0000-4000-8000-000000000003'
+  );
+
+do $reactivation_registry$
+begin
+    if (
+        select count(*)
+          from public.royal_tv_devices
+         where device_id = 'aaaaaaaa-1111-4111-8111-111111111111'
+    ) <> 1 then
+        raise exception 'Reactivation created a duplicate device registry row';
+    end if;
+
+    if not exists (
+        select 1
+          from public.royal_tv_devices
+         where device_id = 'aaaaaaaa-1111-4111-8111-111111111111'
+           and auth_user_id = 'a3000000-0000-4000-8000-000000000003'
+           and restaurant_id = 'aaaaaaaa-0000-4000-8000-000000000001'
+           and channel_device_id = 'ROYAL-TV-001'
+           and revoked_at is null
+    ) then
+        raise exception 'Reactivation did not rebind the device to the fresh Auth identity';
+    end if;
+end;
+$reactivation_registry$;
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
+select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', false);
+do $old_identity$
+begin
+    if private.royal_tv_can_receive_topic() then
+        raise exception 'The revoked Auth identity retained access after reactivation';
+    end if;
+end;
+$old_identity$;
+
+select set_config('request.jwt.claim.sub', 'a3000000-0000-4000-8000-000000000003', false);
+do $new_identity$
+begin
+    if not private.royal_tv_can_receive_topic() then
+        raise exception 'The newly paired Auth identity cannot receive its own TV channel';
+    end if;
+end;
+$new_identity$;
+reset role;
+
 reset role;
 
 rollback;
