@@ -138,7 +138,7 @@ onSearchQueryChange: (String) -> Unit = {},
     val bottomBannerHeight = when {
         adaptiveProfile.isTelevision -> 136.dp
         screenWidthDp < 360 -> 92.dp
-        adaptiveProfile.widthClass.name == "EXPANDED" -> 120.dp
+        adaptiveProfile.windowWidthDp >= 840.dp -> 120.dp
         screenWidthDp >= 600 -> 112.dp
         else -> 102.dp
     }
