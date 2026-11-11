@@ -1011,6 +1011,7 @@ private fun BroadcastWindow(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var selectedSource by selectedSourceState
     var selectedApp by selectedAppState
     
@@ -1462,6 +1463,7 @@ selectedSource == "الفيديو" -> {
                                 RoundedCornerShape(8.dp)
                             )
                             .clickable {
+                                RoyalUiSounds.play(context, RoyalUiSound.NAV_BACK)
                                 selectedSource = null
                             }
                             .padding(
@@ -1647,6 +1649,11 @@ selectedSource == "الفيديو" -> {
                         shape = RoundedCornerShape(14.dp)
                     )
                     .clickable {
+                        RoyalUiSounds.play(
+                            context,
+                            if (fullscreen) RoyalUiSound.MEDIA_FULLSCREEN_EXIT
+                            else RoyalUiSound.MEDIA_FULLSCREEN_ENTER
+                        )
                         onToggleFullscreen()
                     }
                     .padding(
