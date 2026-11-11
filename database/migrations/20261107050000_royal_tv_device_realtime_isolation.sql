@@ -152,6 +152,7 @@ set search_path = ''
 as $$
 declare
     v_code public.royal_tv_activation_codes%rowtype;
+    v_registered_device_id uuid;
     v_name text := pg_catalog.btrim(coalesce(p_device_name, ''));
     v_channel_id text := pg_catalog.upper(pg_catalog.btrim(coalesce(p_channel_device_id, '')));
 begin
@@ -193,6 +194,9 @@ begin
             message = 'Restaurant is not active';
     end if;
 
+    -- A device may be registered again only after its previous registration
+    -- was explicitly revoked. Reuse the durable registration UUID and legacy
+    -- channel ID, but bind the new registration to a fresh Auth identity.
     insert into public.royal_tv_devices (
         device_id,
         auth_user_id,
@@ -208,7 +212,23 @@ begin
         v_code.restaurant_id,
         v_name,
         v_code.owner_user_id
-    );
+    )
+    on conflict (device_id) do update
+       set auth_user_id = excluded.auth_user_id,
+           channel_device_id = excluded.channel_device_id,
+           restaurant_id = excluded.restaurant_id,
+           device_name = excluded.device_name,
+           registered_by = excluded.registered_by,
+           created_at = now(),
+           last_seen_at = now(),
+           revoked_at = null
+     where public.royal_tv_devices.revoked_at is not null
+    returning device_id into v_registered_device_id;
+
+    if not found then
+        raise exception using errcode = '55000',
+            message = 'Device is already registered and active';
+    end if;
 
     update public.royal_tv_activation_codes
        set consumed_at = now()
@@ -221,7 +241,7 @@ begin
     end if;
 
     return query
-    select p_device_id, v_code.restaurant_id;
+    select v_registered_device_id, v_code.restaurant_id;
 end;
 $$;
 
