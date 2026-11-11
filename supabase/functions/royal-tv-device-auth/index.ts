@@ -57,6 +57,23 @@ function adminClient() {
   });
 }
 
+async function isRestaurantOwner(
+  admin: ReturnType<typeof adminClient>,
+  userId: string,
+  restaurantId: string,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("restaurant_members")
+    .select("restaurant_id")
+    .eq("restaurant_id", restaurantId)
+    .eq("user_id", userId)
+    .eq("role", "owner")
+    .eq("is_active", true)
+    .maybeSingle();
+
+  return !error && data !== null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return respond(405, { error: "method_not_allowed" });
@@ -101,17 +118,14 @@ Deno.serve(async (req: Request) => {
       const codeHash = await sha256Hex(activationCode);
       const { data: codeRow, error: codeLookupError } = await admin
         .from("royal_tv_activation_codes")
-        .select("id, expires_at, consumed_at, restaurants!inner(status)")
+        .select("id, expires_at, consumed_at")
         .eq("code_hash", codeHash)
         .maybeSingle();
 
-      const restaurantStatus = (codeRow as { restaurants?: { status?: string } } | null)
-        ?.restaurants?.status;
       if (codeLookupError ||
           !codeRow ||
           codeRow.consumed_at !== null ||
-          Date.parse(codeRow.expires_at) <= Date.now() ||
-          restaurantStatus !== "active") {
+          Date.parse(codeRow.expires_at) <= Date.now()) {
         return respond(403, { error: "activation_code_invalid_or_used" });
       }
 
@@ -193,12 +207,8 @@ Deno.serve(async (req: Request) => {
       const restaurantId = clean(body.restaurant_id, 36).toLowerCase();
       if (!isUuid(restaurantId)) return respond(400, { error: "invalid_restaurant" });
 
-      const { data: isOwner, error: ownerError } = await owner.rpc(
-        "is_restaurant_owner",
-        { p_restaurant_id: restaurantId },
-      );
-      if (ownerError || isOwner !== true) return respond(403, { error: "restaurant_owner_required" });
-
+      // The issuance RPC performs the authoritative owner + active-restaurant
+      // checks through private.is_restaurant_owner() using this owner's JWT.
       const { data, error } = await owner.rpc("issue_royal_tv_activation_code", {
         p_restaurant_id: restaurantId,
       });
@@ -215,11 +225,9 @@ Deno.serve(async (req: Request) => {
       const restaurantId = clean(body.restaurant_id, 36).toLowerCase();
       if (!isUuid(restaurantId)) return respond(400, { error: "invalid_restaurant" });
 
-      const { data: isOwner, error: ownerError } = await owner.rpc(
-        "is_restaurant_owner",
-        { p_restaurant_id: restaurantId },
-      );
-      if (ownerError || isOwner !== true) return respond(403, { error: "restaurant_owner_required" });
+      if (!(await isRestaurantOwner(admin, userData.user.id, restaurantId))) {
+        return respond(403, { error: "restaurant_owner_required" });
+      }
 
       const { data, error } = await admin
         .from("royal_tv_devices")
@@ -241,11 +249,9 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (lookupError || !device) return respond(404, { error: "device_not_found" });
 
-      const { data: isOwner, error: ownerError } = await owner.rpc(
-        "is_restaurant_owner",
-        { p_restaurant_id: device.restaurant_id },
-      );
-      if (ownerError || isOwner !== true) return respond(403, { error: "restaurant_owner_required" });
+      if (!(await isRestaurantOwner(admin, userData.user.id, device.restaurant_id))) {
+        return respond(403, { error: "restaurant_owner_required" });
+      }
       if (device.revoked_at) return respond(409, { error: "device_already_revoked" });
 
       const revokedAt = new Date().toISOString();
