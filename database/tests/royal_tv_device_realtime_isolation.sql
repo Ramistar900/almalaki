@@ -39,7 +39,22 @@ create table realtime.messages (
     payload jsonb
 );
 alter table realtime.messages enable row level security;
-grant select, insert on realtime.messages to authenticated;
+grant select, insert on realtime.messages to anon, authenticated;
+
+-- Simulate legacy permissive policies that commonly exist in older projects.
+-- The migration must protect the reserved ROYAL TV namespace without deleting
+-- these policies or changing access to unrelated topics.
+create policy "legacy generic realtime read"
+    on realtime.messages
+    for select
+    to public
+    using (true);
+
+create policy "legacy generic realtime write"
+    on realtime.messages
+    for insert
+    to public
+    with check (true);
 
 create or replace function auth.uid()
 returns uuid
@@ -82,10 +97,10 @@ as $$
     );
 $$;
 
-grant usage on schema auth, private, realtime to authenticated, service_role;
-grant execute on function auth.uid() to authenticated, service_role;
+grant usage on schema auth, private, realtime to anon, authenticated, service_role;
+grant execute on function auth.uid() to anon, authenticated, service_role;
 grant execute on function auth.role() to authenticated, service_role;
-grant execute on function realtime.topic() to authenticated, service_role;
+grant execute on function realtime.topic() to anon, authenticated, service_role;
 grant execute on function private.is_restaurant_owner(uuid) to authenticated, service_role;
 
 insert into auth.users (id, email) values
@@ -149,23 +164,49 @@ insert into realtime.messages(topic, extension, payload)
 values ('royal-tv-ROYAL-TV-001', 'broadcast', '{"command":"A"}');
 
 select set_config('realtime.topic', 'royal-tv-ROYAL-TV-BBBBBBBBBBBB', false);
-do $$
+do $
+declare
+    v_count integer;
 begin
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 0 then
+        raise exception 'Legacy permissive SELECT policy exposed Restaurant B to Owner A';
+    end if;
+
     begin
         insert into realtime.messages(topic, extension, payload)
         values ('royal-tv-ROYAL-TV-BBBBBBBBBBBB', 'broadcast', '{"command":"cross-tenant"}');
-        raise exception 'Owner A unexpectedly published to Restaurant B';
+        raise exception 'Owner A unexpectedly published to Restaurant B despite legacy permissive policy';
     exception when insufficient_privilege then
         null;
     end;
 end;
-$$;
+$;
 
 -- Owner B can publish only to B's TV.
 select set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', false);
 select set_config('realtime.topic', 'royal-tv-ROYAL-TV-BBBBBBBBBBBB', false);
 insert into realtime.messages(topic, extension, payload)
 values ('royal-tv-ROYAL-TV-BBBBBBBBBBBB', 'broadcast', '{"command":"B"}');
+
+-- Existing policies for unrelated topics remain effective.
+select set_config('realtime.topic', 'royal-orders:restaurant-b', false);
+insert into realtime.messages(topic, extension, payload)
+values ('royal-orders:restaurant-b', 'broadcast', '{"command":"legacy-topic-still-works"}');
+do $
+declare
+    v_count integer;
+begin
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 1 then
+        raise exception 'Restrictive guard unexpectedly blocked a non-ROYAL-TV topic';
+    end if;
+end;
+$;
 
 -- TV A receives A's message, never B's, and cannot publish commands.
 select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', false);
@@ -211,6 +252,34 @@ begin
     end;
 end;
 $$;
+reset role;
+
+-- Anonymous clients are also denied, even though the simulated legacy policies
+-- target PUBLIC and would otherwise permit every read/write.
+set role anon;
+select set_config('request.jwt.claim.role', 'anon', false);
+select set_config('request.jwt.claim.sub', '', false);
+select set_config('realtime.topic', 'royal-tv-ROYAL-TV-001', false);
+do $
+declare
+    v_count integer;
+begin
+    select count(*) into v_count
+      from realtime.messages
+     where topic = realtime.topic();
+    if v_count <> 0 then
+        raise exception 'Anonymous client read a private ROYAL TV topic';
+    end if;
+
+    begin
+        insert into realtime.messages(topic, extension, payload)
+        values ('royal-tv-ROYAL-TV-001', 'broadcast', '{"command":"anonymous-forgery"}');
+        raise exception 'Anonymous client published to a private ROYAL TV topic';
+    exception when insufficient_privilege then
+        null;
+    end;
+end;
+$;
 reset role;
 
 -- Revocation immediately blocks new authorization checks and owner publishes.
