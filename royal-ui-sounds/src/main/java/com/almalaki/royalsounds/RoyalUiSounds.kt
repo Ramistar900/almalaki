@@ -129,7 +129,7 @@ object RoyalUiSounds {
                     }
                 }
             }
-            preloadSounds.forEach { loadSampleLocked(applicationContext, it) }
+            if (enabled) preloadSounds.forEach { loadSampleLocked(applicationContext, it) }
         }
     }
 
