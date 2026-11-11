@@ -362,3 +362,107 @@ create policy "ROYAL TV reserved topics require owner authorization for writes"
             and (select private.royal_tv_owner_can_send_topic())
         )
     );
+
+
+-- Private-channel authorization for the other existing application topics.
+-- These are required before the project-wide "Allow public access" setting can
+-- be disabled without breaking order notifications or customer branding refresh.
+
+create or replace function private.royal_orders_can_join_topic()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select
+        (select realtime.topic()) = 'royal-orders'
+        and exists (
+            select 1
+              from public.restaurant_members rm
+             where rm.user_id = (select auth.uid())
+               and rm.role = 'owner'
+               and rm.is_active
+        );
+$$;
+
+create or replace function private.restaurant_interface_can_join_topic()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select exists (
+        select 1
+          from public.restaurants r
+         where r.status = 'active'
+           and (select realtime.topic()) =
+               'restaurant-interface-' || r.id::text
+    );
+$$;
+
+revoke all on function private.royal_orders_can_join_topic()
+    from public, anon;
+revoke all on function private.restaurant_interface_can_join_topic()
+    from public;
+grant execute on function private.royal_orders_can_join_topic()
+    to authenticated;
+grant execute on function private.restaurant_interface_can_join_topic()
+    to anon, authenticated;
+
+drop policy if exists "Restaurant owner can join order notification topic"
+    on realtime.messages;
+create policy "Restaurant owner can join order notification topic"
+    on realtime.messages
+    for select
+    to authenticated
+    using ((select private.royal_orders_can_join_topic()));
+
+drop policy if exists "Customers can join active restaurant interface topic"
+    on realtime.messages;
+create policy "Customers can join active restaurant interface topic"
+    on realtime.messages
+    for select
+    to anon, authenticated
+    using ((select private.restaurant_interface_can_join_topic()));
+
+-- Restrictive guards prevent any pre-existing permissive PUBLIC policy from
+-- opening these application topics to users outside the rules above.
+drop policy if exists "Order and interface topics require tenant authorization"
+    on realtime.messages;
+create policy "Order and interface topics require tenant authorization"
+    on realtime.messages
+    as restrictive
+    for select
+    to public
+    using (
+        coalesce(
+            (select realtime.topic()) <> 'royal-orders'
+            and (select realtime.topic()) not like 'restaurant-interface-%',
+            false
+        )
+        or (
+            (select realtime.topic()) = 'royal-orders'
+            and (select private.royal_orders_can_join_topic())
+        )
+        or (
+            (select realtime.topic()) like 'restaurant-interface-%'
+            and (select private.restaurant_interface_can_join_topic())
+        )
+    );
+
+drop policy if exists "Order and interface topics are read only"
+    on realtime.messages;
+create policy "Order and interface topics are read only"
+    on realtime.messages
+    as restrictive
+    for insert
+    to public
+    with check (
+        coalesce(
+            (select realtime.topic()) <> 'royal-orders'
+            and (select realtime.topic()) not like 'restaurant-interface-%',
+            false
+        )
+    );
