@@ -155,6 +155,84 @@ select *
   );
 reset role;
 
+reset role;
+
+-- Reusing a consumed activation code must fail and must not create a second device.
+set role service_role;
+select set_config('request.jwt.claim.role', 'service_role', false);
+do $
+begin
+    begin
+        perform *
+          from public.redeem_royal_tv_activation_code(
+            encode(extensions.digest(convert_to(:'code_a', 'UTF8'), 'sha256'), 'hex'),
+            'aaaaaaaa-3333-4333-8333-333333333333',
+            'ROYAL-TV-003',
+            'TV A duplicate',
+            'a1000000-0000-4000-8000-000000000001'
+          );
+        raise exception 'A consumed activation code was redeemed twice';
+    exception when sqlstate '28000' then
+        null;
+    end;
+end;
+$;
+reset role;
+
+-- Expired activation codes must fail even when their hash is correct.
+set role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', false);
+select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', false);
+select activation_code as expired_code
+  from public.issue_royal_tv_activation_code('aaaaaaaa-0000-4000-8000-000000000001')
+\gset
+reset role;
+
+set role service_role;
+select set_config('request.jwt.claim.role', 'service_role', false);
+update public.royal_tv_activation_codes
+   set expires_at = now() - interval '1 minute'
+ where code_hash = encode(
+     extensions.digest(convert_to(:'expired_code', 'UTF8'), 'sha256'),
+     'hex'
+ );
+do $
+begin
+    begin
+        perform *
+          from public.redeem_royal_tv_activation_code(
+            encode(extensions.digest(convert_to(:'expired_code', 'UTF8'), 'sha256'), 'hex'),
+            'aaaaaaaa-4444-4444-8444-444444444444',
+            'ROYAL-TV-004',
+            'TV A expired',
+            'a1000000-0000-4000-8000-000000000001'
+          );
+        raise exception 'An expired activation code was redeemed';
+    exception when sqlstate '28000' then
+        null;
+    end;
+end;
+$;
+reset role;
+
+-- Public clients and signed-in owners cannot read the server-only registry directly.
+do $
+begin
+    if has_table_privilege('anon', 'public.royal_tv_devices', 'SELECT')
+       or has_table_privilege('authenticated', 'public.royal_tv_devices', 'SELECT')
+       or has_table_privilege('anon', 'public.royal_tv_activation_codes', 'SELECT')
+       or has_table_privilege('authenticated', 'public.royal_tv_activation_codes', 'SELECT') then
+        raise exception 'A client role can read the private ROYAL TV registry';
+    end if;
+    if not has_table_privilege('service_role', 'public.restaurant_members', 'SELECT') then
+        raise exception 'The trusted Edge Function cannot validate owner membership';
+    end if;
+    if has_function_privilege('anon', 'public.issue_royal_tv_activation_code(uuid)', 'EXECUTE') then
+        raise exception 'Anonymous users can issue ROYAL TV activation codes';
+    end if;
+end;
+$;
+
 -- Owner A can publish to A's registered TV, but not B's.
 set role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', false);
