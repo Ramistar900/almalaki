@@ -47,6 +47,10 @@ revoke all on table public.royal_tv_activation_codes
 grant all on table public.royal_tv_devices to service_role;
 grant all on table public.royal_tv_activation_codes to service_role;
 
+-- The Edge Function uses the service role only to validate the caller's
+-- active owner membership before listing or revoking registered TVs.
+grant select on table public.restaurant_members to service_role;
+
 create or replace function public.issue_royal_tv_activation_code(
     p_restaurant_id uuid
 )
