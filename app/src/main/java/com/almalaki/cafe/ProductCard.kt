@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -62,6 +64,18 @@ fun ProductCard(
     onRemove: () -> Unit
 ) {
     val context = LocalContext.current
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val productImageHeight = when {
+        screenWidthDp < 360 -> 84.dp
+        screenWidthDp >= 840 -> 148.dp
+        screenWidthDp >= 600 -> 122.dp
+        else -> 96.dp
+    }
+    val cartButtonSize = when {
+        screenWidthDp < 360 -> 27.dp
+        screenWidthDp >= 600 -> 36.dp
+        else -> 32.dp
+    }
     var isFocused by remember { mutableStateOf(false) }
 
     val transition =
@@ -167,7 +181,7 @@ fun ProductCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp)
+                    .height(productImageHeight)
                     .clip(RoundedCornerShape(7.dp))
                     .background(Color(0xFFE9DFC8)),
                 contentAlignment = Alignment.Center
@@ -282,6 +296,7 @@ fun ProductCard(
                         SmallCartButton(
                             text = "−",
                             modifier = Modifier.weight(1f),
+                            size = cartButtonSize,
                             onClick = {
                                 AppSounds.productClick(context)
                                 onRemove()
@@ -303,6 +318,7 @@ fun ProductCard(
                         SmallCartButton(
                             text = "+",
                             modifier = Modifier.weight(1f),
+                            size = cartButtonSize,
                             onClick = {
                                 AppSounds.productAdded(context)
                                 onAdd()
@@ -319,7 +335,8 @@ fun ProductCard(
 fun SmallCartButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    size: Dp = 32.dp
 ) {
     val glintTransition =
         rememberInfiniteTransition(label = "cart_button_glint")
@@ -345,7 +362,7 @@ fun SmallCartButton(
 
     Box(
         modifier = modifier
-            .size(32.dp)
+            .size(size)
             .clip(CircleShape)
             .background(Color(0xFF032817))
             .border(
