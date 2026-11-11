@@ -52,7 +52,9 @@ fun startRoyalOrderRealtime(
 
             supabase.realtime.setAuth(accessToken)
 
-            val channel = supabase.channel("royal-orders")
+            val channel = supabase.channel("royal-orders") {
+                isPrivate = true
+            }
 
             val changeFlow =
                 channel.postgresChangeFlow<PostgresAction.Insert>(
