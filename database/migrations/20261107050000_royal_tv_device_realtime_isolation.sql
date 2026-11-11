@@ -407,7 +407,7 @@ revoke all on function private.royal_orders_can_join_topic()
 revoke all on function private.restaurant_interface_can_join_topic()
     from public;
 grant execute on function private.royal_orders_can_join_topic()
-    to authenticated;
+    to anon, authenticated;
 grant execute on function private.restaurant_interface_can_join_topic()
     to anon, authenticated;
 
