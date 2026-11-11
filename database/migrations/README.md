@@ -23,20 +23,27 @@ The migration filename prefix is the Supabase migration version. Keep it identic
 
 - `supabase/functions/owner-activation/index.ts` — issues one-time owner activation codes, lists and pauses/revokes them for dashboard administrators, and redeems an active code only after the new owner's email is confirmed. The full code is returned once; only its SHA-256 hash is stored.
 
-## Applied historical migrations whose original SQL is not present here
+## Recovered applied migration sources and remaining gaps
 
-The live Almalaki Supabase project reports these migrations as already applied, but their original SQL source files were not present in this repository during the isolation audit:
+Two applied migrations were recovered from the historical `royal-link-phase2-tenant-columns` branch. Their filenames match the versions reported by the live Supabase migration history, and the original commits explicitly say they align the filenames with the applied Supabase versions:
+
+| Applied version | Migration | Historical source commit |
+|---|---|---|
+| 20261029021146 | royal_link_atomic_checkout | `a596b6073195ef644119b4cff93f2538f39e7eac` |
+| 20261029021342 | royal_link_legacy_write_guard | `e6f460c83d504602865e8e3ee258a934425e0fbd` |
+
+The recovered SQL files are now present in this branch under their applied filenames. They have not been replayed against any database. Before enabling local migration replay, compare their function definitions, triggers, grants, and constraints with the live catalog.
+
+These six applied migration sources remain unavailable in the current repository history:
 
 - 20261028023548 — royal_link_phase2_tenant_columns
 - 20261028024710 — royal_link_phase2_tenant_policies
 - 20261028030546 — revoke_public_truncate_privileges
-- 20261029021146 — royal_link_atomic_checkout
-- 20261029021342 — royal_link_legacy_write_guard
 - 20261029033908 — revoke_anon_orders_select
 - 20261105015756 — create_tenant_scoped_restaurant_reservations
 - 20261105015922 — restrict_reservation_sequence_access
 
-Do not create empty or guessed replacement files for these eight versions. Recover the original SQL from the deployment source or a backup, then review it against the live schema before committing it.
+Do not create guessed replacements for the six remaining versions. Recover their original SQL from deployment records or backups, or reconstruct a reviewed baseline from the live schema without pretending it is the original migration source.
 
 ## Repository migrations not yet reported as applied
 
@@ -54,7 +61,7 @@ The explicit owner-scope migration `20261105080000` is also not listed as applie
 
 `database/tests/tenant_isolation_and_checkout.sql` is an integration fixture, not a standalone PostgreSQL script. It depends on Supabase Auth objects, Storage objects and policies, private helper functions, and the applied tenant/checkout migration history. A bare `postgres:16` service does not provide those Supabase schemas or policies.
 
-The repository currently has no `supabase/config.toml` local-stack configuration, and the eight applied historical migration sources above are missing. Do not claim the full integration suite passed by running it against a bare PostgreSQL container or production. First recover the original migration sources and prepare a reproducible isolated Supabase test stack. Storage upload/update/delete behavior must be tested through the Storage API; direct writes to `storage.objects` do not simulate real Storage API operations.
+The repository currently has no `supabase/config.toml` local-stack configuration, and the six remaining applied historical migration sources above are missing. Do not claim the full integration suite passed by running it against a bare PostgreSQL container or production. First recover the original migration sources and prepare a reproducible isolated Supabase test stack. Storage upload/update/delete behavior must be tested through the Storage API; direct writes to `storage.objects` do not simulate real Storage API operations.
 
 ## Safe workflow
 
@@ -66,7 +73,7 @@ The repository currently has no `supabase/config.toml` local-stack configuration
 6. Verify RLS, grants, constraints, policies, and rollback behavior.
 7. Commit the exact applied SQL to `main`; never publish a second filename/version for an already-applied migration.
 
-A live database with all migrations applied is not automatically reproducible from GitHub until the eight historical source files above are recovered.
+A live database with all migrations applied is not automatically reproducible from GitHub until the the six remaining historical source files above are recovered and the two restored files are verified against the live catalog.
 
 ## Current tenant domains
 
