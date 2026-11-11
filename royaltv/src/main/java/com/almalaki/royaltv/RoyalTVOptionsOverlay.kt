@@ -1,5 +1,7 @@
 package com.almalaki.royaltv
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
@@ -116,6 +118,7 @@ var menuOpen by remember {
 mutableStateOf(false)
 }
 val context = LocalContext.current
+val adaptiveProfile = LocalRoyalAdaptiveProfile.current
 
 var selectedOption by remember {
     mutableStateOf<RoyalOption?>(null)
@@ -155,7 +158,13 @@ Box(
             .align(Alignment.TopEnd)
             .fillMaxHeight()
             .fillMaxWidth(0.86f)
-            .widthIn(max = 340.dp),
+            .widthIn(
+                max = when {
+                    adaptiveProfile.isTelevision -> 520.dp
+                    adaptiveProfile.isTablet -> 440.dp
+                    else -> 340.dp
+                }
+            ),
         enter = slideInHorizontally(
             initialOffsetX = { it },
             animationSpec = tween(320)
