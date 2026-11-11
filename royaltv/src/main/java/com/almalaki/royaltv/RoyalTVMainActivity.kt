@@ -260,7 +260,13 @@ class RoyalTVMainActivity : ComponentActivity() {
                         RoyalTVRealtime.start(
                             context = applicationContext,
                             deviceId = channelDeviceId,
-                            onCommand = onRoyalTVCommand
+                            onCommand = onRoyalTVCommand,
+                            onAuthenticationInvalid = {
+                                runOnUiThread {
+                                    RoyalTVRealtime.stop()
+                                    deviceRegistered = false
+                                }
+                            }
                         )
                     }
 
