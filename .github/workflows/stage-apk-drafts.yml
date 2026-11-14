@@ -111,7 +111,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN:-}" ]; then
-            echo "::error::Configure repository secret GH_RELEASE_TOKEN with Contents: Read and write permission."
+            echo "::error::Configure repository secret GH_RELEASE_TOKEN with Contents: Read and write and Workflows: Read and write permissions."
             exit 1
           fi
           APK="$(find "$RUNNER_TEMP/apk-release" -type f -name "*.apk" -print -quit)"
