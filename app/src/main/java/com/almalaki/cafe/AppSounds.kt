@@ -33,6 +33,9 @@ object AppSounds {
     fun paymentSuccess(context: Context) =
         playUi(context, RoyalUiSound.ACTION_SUCCESS)
 
+    /** Kept for compatibility with the Activity lifecycle; SoundPool is released centrally. */
+    fun release() = Unit
+
     private fun playUi(context: Context, sound: RoyalUiSound) {
         // Do not fall back to legacy generated beeps: the Royal library is the
         // single source of UI sound effects throughout Almalaki.
