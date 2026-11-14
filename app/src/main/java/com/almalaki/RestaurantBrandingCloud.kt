@@ -221,7 +221,9 @@ fun startRoyalRestaurantBrandingRealtime(restaurantId: String, onChanged: () -> 
                 supabaseUrl = BRANDING_URL,
                 supabaseKey = BRANDING_KEY
             ) { install(Realtime) }
-            val channel = client.channel("restaurant-interface-$restaurantId")
+            val channel = client.channel("restaurant-interface-$restaurantId") {
+                isPrivate = true
+            }
             val changes = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "restaurant_interface_settings"
             }

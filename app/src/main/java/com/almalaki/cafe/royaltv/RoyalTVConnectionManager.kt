@@ -10,7 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancel
 
 class RoyalTVConnectionManager(
-    context: Context
+    context: Context,
+    private val ownerAccessToken: String
 ) {
 
     private val appContext =
@@ -54,8 +55,8 @@ class RoyalTVConnectionManager(
      * بدء مراقبة الاتصال وربط جهاز ROYAL TV.
      */
     fun start(
-        onCommand:
-            (RoyalTVCommand) -> Unit,
+        @Suppress("UNUSED_PARAMETER") onCommand:
+            (RoyalTVCommand) -> Unit = {},
         onConnectionStateChanged:
             (RoyalTVNetworkState) -> Unit = {}
     ) {
@@ -85,9 +86,7 @@ class RoyalTVConnectionManager(
 
                 RoyalTVNetworkState.ONLINE -> {
 
-                    scheduleReconnect(
-                        onCommand
-                    )
+                    scheduleReconnect()
                 }
 
                 RoyalTVNetworkState.OFFLINE -> {
@@ -104,10 +103,7 @@ class RoyalTVConnectionManager(
     /**
      * تجهيز اتصال ROYAL TV بعد عودة الشبكة.
      */
-    private fun scheduleReconnect(
-        onCommand:
-            (RoyalTVCommand) -> Unit
-    ) {
+    private fun scheduleReconnect() {
 
         reconnectJob?.cancel()
 
@@ -126,17 +122,9 @@ class RoyalTVConnectionManager(
 
                 try {
 
-                    RoyalTVRealtime.start(
-                        deviceId =
-                            deviceId,
-                        onCommand =
-                            onCommand
-                    )
-
                     /*
-                     * بعد نجاح تشغيل قناة Realtime
-                     * نحاول إرسال جميع الأوامر
-                     * التي تم حفظها أثناء Offline.
+                     * لا يشترك تطبيق المالك كمستقبل تلفاز.
+                     * كل إرسال ينشئ قناة خاصة جديدة باستخدام JWT المالك.
                      */
                     syncOfflineCommands()
 
@@ -191,10 +179,9 @@ class RoyalTVConnectionManager(
 
         val sent =
             RoyalTVRealtime.sendCommand(
-                targetDeviceId =
-                    targetDeviceId,
-                command =
-                    command
+                targetDeviceId = targetDeviceId,
+                ownerAccessToken = ownerAccessToken,
+                command = command
             )
 
         if (!sent) {
@@ -249,11 +236,9 @@ class RoyalTVConnectionManager(
 
                     val sent =
                         RoyalTVRealtime.sendCommand(
-                            targetDeviceId =
-                                pendingCommand
-                                    .targetDeviceId,
-                            command =
-                                pendingCommand.command
+                            targetDeviceId = pendingCommand.targetDeviceId,
+                            ownerAccessToken = ownerAccessToken,
+                            command = pendingCommand.command
                         )
 
                     if (sent) {

@@ -68,6 +68,8 @@ if (section == AdminSection.ROYAL_TV) {
 }
 if (section == AdminSection.ROYAL_TV_CONTROL) {
     RoyalTVControlScreen(
+        accessToken = accessToken,
+        restaurantId = restaurantId,
         modifier = Modifier.fillMaxSize()
     )
     return
@@ -321,6 +323,8 @@ AdminSection.INTERFACE_SETTINGS -> {
 AdminSection.ROYAL_TV_CONTROL -> {
     item {
         RoyalTVControlScreen(
+            accessToken = accessToken,
+            restaurantId = restaurantId,
             modifier = Modifier.fillMaxWidth()
         )
     }

@@ -182,16 +182,15 @@ class RoyalTVMainActivity : ComponentActivity() {
                 RoyalTVUpdateChecker.check(this)
                 
         /*
-         * بدء استقبال أوامر ROYAL TV.
+         * احتفظ بمعرّف القناة القديم للتوافق، لكن لا تبدأ الاستقبال
+         * إلا بعد ربط التلفاز بجلسة مصادقة خاصة به.
          */
-        val royalTvDisplayId =
-            RoyalTVDisplayIdAllocator.getDisplayId(
-                applicationContext
-            )
+        val channelDeviceId =
+            RoyalTVDisplayIdAllocator.getDisplayId(applicationContext)
 
-                RoyalTVTickerManager.initialize(applicationContext)
+        RoyalTVTickerManager.initialize(applicationContext)
 
-        RoyalTVRealtime.start(royalTvDisplayId) { command ->
+        val onRoyalTVCommand: (RoyalTVCommand) -> Unit = { command ->
             Log.i(
                 "RoyalTVMainActivity",
                 "تم استقبال أمر ROYAL TV: ${command.type}"
@@ -282,18 +281,53 @@ class RoyalTVMainActivity : ComponentActivity() {
             android.graphics.Color.rgb(8, 12, 18)
 
         setContent {
+            var deviceRegistered by remember {
+                mutableStateOf(
+                    RoyalTVDeviceAuthManager.hasSession(applicationContext)
+                )
+            }
+
             MaterialTheme {
-                RoyalTVChannelScreen(
-                    remoteExitRequested = remoteExitRequested.value,
-                    onRemoteExitHandled = {
-                        remoteExitRequested.value = false
-                    },
-                    onRequestHomeScreenBroadcast = {
-                        screenCapturePermissionLauncher.launch(
-                            projectionManager.createScreenCaptureIntent()
+                if (deviceRegistered) {
+                    LaunchedEffect(deviceRegistered) {
+                        RoyalTVRealtime.start(
+                            context = applicationContext,
+                            deviceId = channelDeviceId,
+                            onCommand = onRoyalTVCommand,
+                            onAuthenticationInvalid = {
+                                runOnUiThread {
+                                    RoyalTVRealtime.stop()
+                                    deviceRegistered = false
+                                }
+                            }
                         )
                     }
-                )
+
+                    RoyalTVChannelScreen(
+                        remoteExitRequested = remoteExitRequested.value,
+                        onRemoteExitHandled = {
+                            remoteExitRequested.value = false
+                        },
+                        onRequestHomeScreenBroadcast = {
+                            screenCapturePermissionLauncher.launch(
+                                projectionManager.createScreenCaptureIntent()
+                            )
+                        }
+                    )
+                } else {
+                    RoyalTVDeviceActivationScreen(
+                        deviceId = channelDeviceId,
+                        onActivate = { code ->
+                            RoyalTVDeviceAuthManager.redeemActivationCode(
+                                applicationContext,
+                                code
+                            )
+                        },
+                        onActivated = {
+                            deviceRegistered = true
+                        }
+                    )
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ object RoyalTVDeviceIdentity {
 
     private const val PREFS_NAME = "royal_tv_device_identity"
     private const val KEY_DEVICE_ID = "device_id"
+    private const val KEY_REGISTRATION_ID = "registration_id"
     private const val KEY_DEVICE_NAME = "device_name"
 
     /**
@@ -43,6 +44,34 @@ object RoyalTVDeviceIdentity {
             .putString(KEY_DEVICE_ID, newId)
             .apply()
 
+        return newId
+    }
+
+    /**
+     * Stable UUID used by the server-side restaurant device registry.
+     *
+     * This remains separate from getDeviceId(), which preserves the
+     * existing ROYAL-TV channel identity and TCP/display compatibility.
+     */
+    fun getRegistrationId(context: Context): String {
+        val prefs = context.applicationContext
+            .getSharedPreferences(
+                PREFS_NAME,
+                Context.MODE_PRIVATE
+            )
+
+        val savedId = prefs.getString(KEY_REGISTRATION_ID, null)
+        val isValid = !savedId.isNullOrBlank() && runCatching {
+            UUID.fromString(savedId).toString()
+                .equals(savedId, ignoreCase = true)
+        }.getOrDefault(false)
+
+        if (isValid) return savedId!!
+
+        val newId = UUID.randomUUID().toString()
+        prefs.edit()
+            .putString(KEY_REGISTRATION_ID, newId)
+            .apply()
         return newId
     }
 
