@@ -9,6 +9,7 @@ on:
     paths:
       - 'app/**'
       - 'royal-ui-sounds/**'
+      - 'royal-adaptive-ui/**'
       - 'database/**'
       - 'gradle/**'
       - 'build.gradle.kts'
@@ -23,6 +24,7 @@ on:
     paths:
       - 'app/**'
       - 'royal-ui-sounds/**'
+      - 'royal-adaptive-ui/**'
       - 'database/**'
       - 'gradle/**'
       - 'build.gradle.kts'
