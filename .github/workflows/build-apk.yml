@@ -16,8 +16,12 @@ on:
       - 'gradle/libs.versions.toml'
       - '.github/workflows/build-apk.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build-almalaki:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
