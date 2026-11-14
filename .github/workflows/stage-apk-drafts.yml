@@ -31,6 +31,7 @@ jobs:
         run: |
           grep -F "github.event.workflow_run.conclusion == 'success'" .github/workflows/stage-apk-drafts.yml
           grep -F "github.event.workflow_run.head_branch == 'main'" .github/workflows/stage-apk-drafts.yml
+          grep -F "secrets.GH_RELEASE_TOKEN" .github/workflows/stage-apk-drafts.yml
 
   stage-draft:
     name: Create or refresh the app draft
@@ -101,7 +102,7 @@ jobs:
 
       - name: Publish signed APK release automatically
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
           TITLE: ${{ steps.release.outputs.title }}
           SOURCE_SHA: ${{ steps.release.outputs.source_sha }}
@@ -109,6 +110,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Configure repository secret GH_RELEASE_TOKEN with Contents: Read and write permission."
+            exit 1
+          fi
           APK="$(find "$RUNNER_TEMP/apk-release" -type f -name "*.apk" -print -quit)"
           test -n "$APK"
           mv "$APK" "$RUNNER_TEMP/$FILENAME"
