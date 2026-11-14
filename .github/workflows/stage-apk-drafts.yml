@@ -1,6 +1,8 @@
 name: Stage APK Builds as Draft Releases
 
 on:
+  pull_request:
+    branches: [main]
   workflow_run:
     workflows:
       - Build Almalaki APK
@@ -13,6 +15,23 @@ permissions:
   contents: write
 
 jobs:
+  validate-publish-workflow:
+    name: Validate automatic release workflow
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Parse workflow YAML
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/stage-apk-drafts.yml")'
+
+      - name: Confirm publishing is restricted to successful main builds
+        shell: bash
+        run: |
+          grep -F "github.event.workflow_run.conclusion == 'success'" .github/workflows/stage-apk-drafts.yml
+          grep -F "github.event.workflow_run.head_branch == 'main'" .github/workflows/stage-apk-drafts.yml
+
   stage-draft:
     name: Create or refresh the app draft
     if: >-
@@ -39,13 +58,13 @@ jobs:
           case "$WORKFLOW_NAME" in
             "Build Almalaki APK")
               echo "artifact=Almalaki-Release-APK" >> "$GITHUB_OUTPUT"
-              echo "tag=almalaki-auto-staging-draft" >> "$GITHUB_OUTPUT"
+              echo "tag=almalaki-build-$RUN_ID" >> "$GITHUB_OUTPUT"
               echo "title=Almalaki staged build $RUN_ID" >> "$GITHUB_OUTPUT"
               echo "filename=almalaki-release.apk" >> "$GITHUB_OUTPUT"
               ;;
             "Build ROYAL TV APK")
               echo "artifact=ROYAL-TV-Release-APK" >> "$GITHUB_OUTPUT"
-              echo "tag=royaltv-latest-draft" >> "$GITHUB_OUTPUT"
+              echo "tag=royaltv-build-$RUN_ID" >> "$GITHUB_OUTPUT"
               echo "title=ROYAL TV staged build $RUN_ID" >> "$GITHUB_OUTPUT"
               echo "filename=royaltv-release.apk" >> "$GITHUB_OUTPUT"
               ;;
@@ -80,42 +99,7 @@ jobs:
             exit 1
           fi
 
-      - name: Replace previous staging draft only
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if gh release view "$TAG" \
-            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-
-            IS_DRAFT="$(gh release view "$TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --json isDraft --jq '.isDraft')"
-
-            if [ "$IS_DRAFT" != "true" ]; then
-              echo "Refusing to replace a published release: $TAG"
-              exit 1
-            fi
-
-            # Delete only the unpublished draft for the selected app.
-            # Do not use --cleanup-tag when the tag reference may be missing.
-            gh release delete "$TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --yes
-
-            # Delete the tag only if GitHub confirms that it exists.
-            if gh api \
-              "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" \
-              >/dev/null 2>&1; then
-              gh api --method DELETE \
-                "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG"
-            fi
-          fi
-
-      - name: Create latest unpublished APK draft
+      - name: Publish signed APK release automatically
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
@@ -125,17 +109,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          APK="$(find "$RUNNER_TEMP/apk-release" \
-            -type f -name '*.apk' -print -quit)"
-
+          APK="$(find "$RUNNER_TEMP/apk-release" -type f -name "*.apk" -print -quit)"
           test -n "$APK"
           mv "$APK" "$RUNNER_TEMP/$FILENAME"
-
-          gh release create "$TAG" "$RUNNER_TEMP/$FILENAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$SOURCE_SHA" \
-            --draft \
-            --title "$TITLE" \
-            --notes "Latest signed APK staged from source commit $SOURCE_SHA after a successful build. Manual review and publication required."
-            
+          NOTES="Automatically published signed APK from successful build of commit $SOURCE_SHA."
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$RUNNER_TEMP/$FILENAME" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --title "$TITLE" --notes "$NOTES"
+          else
+            gh release create "$TAG" "$RUNNER_TEMP/$FILENAME" --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" --title "$TITLE" --notes "$NOTES"
+          fi
