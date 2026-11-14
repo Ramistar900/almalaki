@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'royaltv/**'
+      - 'royal-ui-sounds/**'
+      - 'royal-adaptive-ui/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -19,6 +21,8 @@ on:
       - main
     paths:
       - 'royaltv/**'
+      - 'royal-ui-sounds/**'
+      - 'royal-adaptive-ui/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
