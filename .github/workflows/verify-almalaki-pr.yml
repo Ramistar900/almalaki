@@ -67,6 +67,15 @@ jobs:
           PGDATABASE: almalaki_test
         run: psql -v ON_ERROR_STOP=1 -f database/tests/strict_owner_restaurant_scope.sql
 
+  fixture-safety:
+    name: Guard tenant integration fixture safety
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate rollback and tenant coverage guards
+        run: python3 database/tests/validate_tenant_isolation_fixture.py
+
   debug-build:
     name: Compile Almalaki Debug APK
     runs-on: ubuntu-latest
