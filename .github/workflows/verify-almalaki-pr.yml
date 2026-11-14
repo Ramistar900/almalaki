@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'royal-ui-sounds/**'
       - 'database/**'
       - 'gradle/**'
       - 'build.gradle.kts'
@@ -21,6 +22,7 @@ on:
       - main
     paths:
       - 'app/**'
+      - 'royal-ui-sounds/**'
       - 'database/**'
       - 'gradle/**'
       - 'build.gradle.kts'
