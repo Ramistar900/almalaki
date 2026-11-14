@@ -1,0 +1,7 @@
+# Supabase CLI configuration for this repository.
+# Device-auth function supports custom device tokens, so gateway JWT verification
+# is disabled ONLY for this function. The function validates owner JWTs itself and
+# validates device tokens against server-side hashes. Never deploy without required
+# SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY secrets configured.
+[functions.royal-tv-device-auth]
+verify_jwt = false
