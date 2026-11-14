@@ -1,11 +1,9 @@
 package com.almalaki.cafe
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,47 +16,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private var royalOrderAlertPlayer: MediaPlayer? = null
+import com.almalaki.royalsounds.RoyalUiSound
+import com.almalaki.royalsounds.RoyalUiSounds
 
 private val RoyalAlertGold = Color(0xFFD4AF37)
 private val RoyalAlertBlack = Color(0xFF050505)
 
-fun startRoyalOrderAlert(context: Context) {
-    if (royalOrderAlertPlayer?.isPlaying == true) return
+private val royalOrderAlertHandler = Handler(Looper.getMainLooper())
+private var royalOrderAlertContext: Context? = null
 
-    stopRoyalOrderAlert()
-val uri = Uri.parse(
-    "android.resource://${context.packageName}/${R.raw.royal_order_alert}"
-)
-    royalOrderAlertPlayer = MediaPlayer().apply {
-        setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-        )
-        setDataSource(context.applicationContext, uri)
-        isLooping = true
-        prepare()
-        start()
+private val royalOrderAlertRunnable = object : Runnable {
+    override fun run() {
+        val context = royalOrderAlertContext ?: return
+        RoyalUiSounds.play(context, RoyalUiSound.SYSTEM_NOTIFICATION)
+        // Preserve the previous repeating alert behaviour while using the new
+        // Royal notification sample instead of the legacy looping audio file.
+        royalOrderAlertHandler.postDelayed(this, 3_000L)
     }
 }
 
+fun startRoyalOrderAlert(context: Context) {
+    if (royalOrderAlertContext != null) return
+
+    royalOrderAlertContext = context.applicationContext
+    royalOrderAlertHandler.removeCallbacks(royalOrderAlertRunnable)
+    royalOrderAlertRunnable.run()
+}
+
 fun stopRoyalOrderAlert() {
-    royalOrderAlertPlayer?.let { player ->
-        try {
-            if (player.isPlaying) player.stop()
-        } catch (_: Exception) {
-        }
-
-        try {
-            player.release()
-        } catch (_: Exception) {
-        }
-    }
-
-    royalOrderAlertPlayer = null
+    royalOrderAlertHandler.removeCallbacks(royalOrderAlertRunnable)
+    royalOrderAlertContext = null
 }
 
 @Composable
@@ -73,8 +60,7 @@ fun RoyalOrderAlertBanner(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-.background(RoyalAlertBlack)
-
+            .background(RoyalAlertBlack)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -85,16 +71,14 @@ fun RoyalOrderAlertBanner(
             fontSize = 16.sp
         )
 
-        Row(
-    verticalAlignment = Alignment.CenterVertically
-) {
-    TextButton(onClick = onOpen) {
-        Text(
-            text = "عرض الطلب",
-            color = RoyalAlertGold,
-            fontSize = 14.sp
-        )
-    }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onOpen) {
+                Text(
+                    text = "عرض الطلب",
+                    color = RoyalAlertGold,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }

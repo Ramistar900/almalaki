@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        stopRoyalOrderAlert()
         RoyalUiSounds.release()
         AppSounds.release()
         super.onDestroy()
