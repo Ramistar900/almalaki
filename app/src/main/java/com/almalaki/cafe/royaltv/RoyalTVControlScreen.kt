@@ -72,6 +72,7 @@ val description: String
 @Composable
 fun RoyalTVControlScreen(
 modifier: Modifier = Modifier,
+accessToken: String = "",
 onItemSelected: (RoyalTVControlItem) -> Unit = {}
 ) {
 val context = LocalContext.current
@@ -79,6 +80,8 @@ val context = LocalContext.current
 var identityOpen by remember {
     mutableStateOf(false)
 }
+
+var pairingOpen by remember { mutableStateOf(false) }
 
 var diagnosticsOpen by remember {
     mutableStateOf(false)
@@ -94,6 +97,15 @@ var tickerOpen by remember {
     mutableStateOf(false)
 }
 
+
+if (pairingOpen) {
+    RoyalTVPairingManagementScreen(
+        accessToken = accessToken,
+        modifier = modifier,
+        onBack = { pairingOpen = false }
+    )
+    return
+}
 
 if (identityOpen) {
     RoyalTVLayoutControl(
@@ -148,6 +160,11 @@ if (tickerOpen) {
 
 
 val items = listOf(
+    RoyalTVControlItem(
+        RoyalTVIconKey.IDENTITY,
+        "ربط التلفزيون وتأمينه",
+        "إنشاء رمز اقتران مؤقت لجهاز ROYAL TV والتحقق من صلاحية المالك"
+    ),
     RoyalTVControlItem(
 RoyalTVIconKey.DISPLAY,
 "العرض والشاشة",
@@ -275,7 +292,10 @@ Column(
                 
 onClick = {
 
-    if (item.title == "بث شاشة الهاتف") {
+    if (item.title == "ربط التلفزيون وتأمينه") {
+    pairingOpen = true
+
+} else if (item.title == "بث شاشة الهاتف") {
     senderOpen = true
 
 } else if (item.title == "العرض والشاشة") {
