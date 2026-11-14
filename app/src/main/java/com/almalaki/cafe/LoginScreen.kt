@@ -160,6 +160,7 @@ private fun LoginContent(
 ) {
     Column(
         modifier = Modifier
+            .widthIn(max = 520.dp)
             .fillMaxWidth()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -278,6 +279,7 @@ private fun PasswordResetContent(
 ) {
     Column(
         modifier = Modifier
+            .widthIn(max = 520.dp)
             .fillMaxWidth()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally

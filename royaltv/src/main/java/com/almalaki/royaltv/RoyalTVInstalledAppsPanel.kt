@@ -1,6 +1,8 @@
 
 package com.almalaki.royaltv
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
 import com.almalaki.royalsounds.RoyalUiSound
 import com.almalaki.royalsounds.RoyalUiSounds
 
@@ -33,6 +35,7 @@ fun RoyalTVInstalledAppsPanel(
     onClose: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val adaptiveProfile = LocalRoyalAdaptiveProfile.current
     val apps = remember {
         mutableStateListOf<RoyalTVInstalledApp>()
     }
@@ -61,13 +64,13 @@ fun RoyalTVInstalledAppsPanel(
         modifier = modifier
             .fillMaxSize()
             .background(AppsBlack, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(adaptiveProfile.pageHorizontalPadding.coerceIn(14.dp, 28.dp)),
+        verticalArrangement = Arrangement.spacedBy(adaptiveProfile.itemSpacing.coerceAtMost(18.dp))
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(adaptiveProfile.itemSpacing.coerceAtMost(16.dp))
         ) {
             Column(Modifier.weight(1f)) {
                 Text(

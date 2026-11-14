@@ -1,5 +1,7 @@
 package com.almalaki.cafe
 
+import com.royal.adaptive.RoyalAdaptiveHost
+
 import com.almalaki.royalsounds.RoyalUiSound
 import com.almalaki.royalsounds.RoyalUiSounds
 
@@ -97,12 +99,14 @@ class MainActivity : ComponentActivity() {
         recoveryTokenState.value = extractRecoveryToken(intent)
 
         setContent {
-            RoyalCoffeeApp(
-                recoveryToken = recoveryTokenState.value,
-                onRecoveryFinished = {
-                    recoveryTokenState.value = ""
-                }
-            )
+            RoyalAdaptiveHost {
+                RoyalCoffeeApp(
+                    recoveryToken = recoveryTokenState.value,
+                    onRecoveryFinished = {
+                        recoveryTokenState.value = ""
+                    }
+                )
+            }
         }
     }
 

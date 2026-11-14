@@ -1,5 +1,9 @@
 package com.almalaki.royaltv
 
+import com.royal.adaptive.LocalRoyalAdaptiveProfile
+
+import com.royal.adaptive.RoyalAdaptiveHost
+
 import com.almalaki.royalsounds.RoyalUiSound
 import com.almalaki.royalsounds.RoyalUiSounds
 
@@ -282,18 +286,20 @@ class RoyalTVMainActivity : ComponentActivity() {
             android.graphics.Color.rgb(8, 12, 18)
 
         setContent {
-            MaterialTheme {
-                RoyalTVChannelScreen(
-                    remoteExitRequested = remoteExitRequested.value,
-                    onRemoteExitHandled = {
-                        remoteExitRequested.value = false
-                    },
-                    onRequestHomeScreenBroadcast = {
-                        screenCapturePermissionLauncher.launch(
-                            projectionManager.createScreenCaptureIntent()
-                        )
-                    }
-                )
+            RoyalAdaptiveHost {
+                MaterialTheme {
+                    RoyalTVChannelScreen(
+                        remoteExitRequested = remoteExitRequested.value,
+                        onRemoteExitHandled = {
+                            remoteExitRequested.value = false
+                        },
+                        onRequestHomeScreenBroadcast = {
+                            screenCapturePermissionLauncher.launch(
+                                projectionManager.createScreenCaptureIntent()
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -340,6 +346,7 @@ private fun RoyalTVChannelScreen(
     onRemoteExitHandled: () -> Unit
 ) {
         val context = LocalContext.current
+    val adaptiveProfile = LocalRoyalAdaptiveProfile.current
 
     val productSection =
         RoyalTVLocalMediaLibrary.Section.NEW_PRODUCTS
@@ -803,19 +810,24 @@ modifier = Modifier.fillMaxSize()
 
         } else {
 
-            val compact = maxWidth < 700.dp
+            val compact =
+                adaptiveProfile.widthClass == com.royal.adaptive.RoyalWindowWidthClass.COMPACT
 
-            val outerPadding =
-                if (compact) 5.dp else 12.dp
+            val outerPadding = if (compact) {
+                6.dp
+            } else {
+                adaptiveProfile.pageHorizontalPadding.coerceAtMost(28.dp)
+            }
 
-            val gap =
-                if (compact) 5.dp else 9.dp
+            val gap = adaptiveProfile.itemSpacing.coerceIn(6.dp, 18.dp)
 
-            val identityHeight =
-                if (compact) 48.dp else 60.dp
+            val identityHeight = when {
+                adaptiveProfile.isTelevision -> 72.dp
+                compact -> 48.dp
+                else -> 64.dp
+            }
 
-            val sideFraction =
-                if (compact) 0.34f else 0.29f
+            val sideFraction = if (compact) 0.34f else 0.29f
 
             Column(
                 modifier = Modifier
